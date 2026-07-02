@@ -63,6 +63,18 @@ export default function AdminHub({
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState("mesero");
   const [newUserPin, setNewUserPin] = useState("");
+  const [newUserAddress, setNewUserAddress] = useState("");
+  const [newUserPhone, setNewUserPhone] = useState("");
+  const [newUserEmergencyPhone, setNewUserEmergencyPhone] = useState("");
+  const [newUserSalary, setNewUserSalary] = useState("");
+  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any | null>(null);
+  const [usersMetadata, setUsersMetadata] = useState<Record<string, {
+    direccion?: string;
+    telefono?: string;
+    telefono_contacto?: string;
+    sueldo?: number;
+    permissions?: string[];
+  }>>({});
 
   const [calibrationData, setCalibrationData] = useState(() => {
     try {
@@ -277,6 +289,17 @@ export default function AdminHub({
         if (settingsData) {
           setTipPool(Number(settingsData.value));
         }
+
+        // 5. Fetch Users Metadata
+        const { data: metaData } = await supabase.from("system_settings").select("*").eq("key", "users_metadata").single();
+        if (metaData) {
+          setUsersMetadata(JSON.parse(metaData.value));
+        } else {
+          const saved = localStorage.getItem("puglia_users_metadata");
+          if (saved) {
+            setUsersMetadata(JSON.parse(saved));
+          }
+        }
       } catch (err) {
         console.error("Error fetching admin data from Supabase:", err);
       }
@@ -293,6 +316,16 @@ export default function AdminHub({
       }
     } catch (e) {
       console.error("Error fetching users:", e);
+    }
+  };
+
+  const saveUsersMetadata = async (newMeta: any) => {
+    setUsersMetadata(newMeta);
+    localStorage.setItem("puglia_users_metadata", JSON.stringify(newMeta));
+    try {
+      await supabase.from("system_settings").upsert({ key: "users_metadata", value: JSON.stringify(newMeta) });
+    } catch (e) {
+      console.error("Error syncing users metadata to Supabase:", e);
     }
   };
 
@@ -314,12 +347,36 @@ export default function AdminHub({
     try {
       const { error } = await supabase.from("users_accounts").insert(newUser);
       if (error) throw error;
+
+      // Save metadata
+      const defaultPerms = newUserRole === "administrador"
+        ? ["dashboard", "inventario", "precios", "salon", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
+        : newUserRole === "mesero"
+        ? ["salon", "pedidos_mozo", "caja"]
+        : ["inventario", "personal"]; // barista
+
+      const newMeta = {
+        ...usersMetadata,
+        [newId]: {
+          direccion: newUserAddress.trim(),
+          telefono: newUserPhone.trim(),
+          telefono_contacto: newUserEmergencyPhone.trim(),
+          sueldo: parseFloat(newUserSalary) || 0,
+          permissions: defaultPerms
+        }
+      };
+      await saveUsersMetadata(newMeta);
+
       onShowNotification(`✅ Usuario ${newUserName} creado con éxito.`, "success");
       setNewUserName("");
       setNewUserEmail("");
       setNewUserPassword("");
       setNewUserRole("mesero");
       setNewUserPin("");
+      setNewUserAddress("");
+      setNewUserPhone("");
+      setNewUserEmergencyPhone("");
+      setNewUserSalary("");
       fetchUsers();
     } catch (err) {
       onShowNotification("❌ Error al crear usuario.", "warning");
@@ -338,7 +395,16 @@ export default function AdminHub({
     try {
       const { error } = await supabase.from("users_accounts").delete().eq("id", userId);
       if (error) throw error;
+
+      // Clean up metadata
+      const updatedMeta = { ...usersMetadata };
+      delete updatedMeta[userId];
+      await saveUsersMetadata(updatedMeta);
+
       onShowNotification(`✅ Usuario ${userName} eliminado.`, "success");
+      if (selectedUserForPermissions?.id === userId) {
+        setSelectedUserForPermissions(null);
+      }
       fetchUsers();
     } catch (err) {
       onShowNotification("❌ Error al eliminar usuario.", "warning");
@@ -2589,7 +2655,7 @@ export default function AdminHub({
               { id: "barista", label: "Calibración" },
               { id: "consumo", label: "Mesa Colaborador" },
               { id: "profit", label: "Profit-Sharing" },
-              ...(currentUser.role === "administrador" ? [{ id: "cuentas", label: "Cuentas y Accesos" }] : [])
+              { id: "cuentas", label: "Cuentas y Accesos" }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -2950,100 +3016,155 @@ export default function AdminHub({
                 </div>
               </motion.div>
             )}
-          {personalSubTab === "cuentas" && currentUser.role === "administrador" && (
+          {personalSubTab === "cuentas" && (
             <motion.div
               key="subtab-cuentas"
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+              className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2C1810]"
             >
-              {/* Form to add user */}
-              <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
-                <form onSubmit={handleAddUser} className="space-y-4">
-                  <div className="border-b border-[#2C1810]/15 pb-2">
-                    <h3 className="font-serif text-base font-bold text-[#2C1810]">Crear Nueva Cuenta</h3>
-                    <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Registre empleados y asigne sus permisos de acceso.</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Nombre Completo</label>
-                    <input
-                      type="text"
-                      value={newUserName}
-                      onChange={(e) => setNewUserName(e.target.value)}
-                      placeholder="Ej. Juan Pérez"
-                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Correo Electrónico</label>
-                    <input
-                      type="email"
-                      value={newUserEmail}
-                      onChange={(e) => setNewUserEmail(e.target.value)}
-                      placeholder="juan@cafepuglia.com"
-                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Contraseña</label>
-                    <input
-                      type="text"
-                      value={newUserPassword}
-                      onChange={(e) => setNewUserPassword(e.target.value)}
-                      placeholder="Min. 6 caracteres"
-                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Rol / Cargo</label>
-                      <select
-                        value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value)}
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] font-bold text-[#2C1810]"
-                      >
-                        <option value="mesero">Mesero</option>
-                        <option value="barista">Barista</option>
-                        <option value="administrador">Administrador</option>
-                      </select>
+              {/* Form to add user: only visible to owner/administrator */}
+              {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+                  <form onSubmit={handleAddUser} className="space-y-4">
+                    <div className="border-b border-[#2C1810]/15 pb-2">
+                      <h3 className="font-serif text-base font-bold text-[#2C1810]">Crear Nueva Cuenta</h3>
+                      <p className="text-[10px] text-[#2C1810]/50 mt-0.5 font-normal">Registre empleados y asigne sus permisos de acceso.</p>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">PIN de Salón</label>
+                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Nombre Completo</label>
                       <input
                         type="text"
-                        maxLength={4}
-                        value={newUserPin}
-                        onChange={(e) => setNewUserPin(e.target.value.replace(/\D/g, ""))}
-                        placeholder="1234"
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] text-center font-mono font-bold"
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        placeholder="Ej. Juan Pérez"
+                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
                         required
                       />
                     </div>
-                  </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4"
-                  >
-                    + Registrar Colaborador
-                  </button>
-                </form>
-              </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Correo Electrónico</label>
+                      <input
+                        type="email"
+                        value={newUserEmail}
+                        onChange={(e) => setNewUserEmail(e.target.value)}
+                        placeholder="juan@cafepuglia.com"
+                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Contraseña de Acceso</label>
+                      <input
+                        type="text"
+                        value={newUserPassword}
+                        onChange={(e) => setNewUserPassword(e.target.value)}
+                        placeholder="Min. 6 caracteres"
+                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Dirección Particular</label>
+                      <input
+                        type="text"
+                        value={newUserAddress}
+                        onChange={(e) => setNewUserAddress(e.target.value)}
+                        placeholder="Calle 50 nro. 123, Mar del Plata"
+                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Teléfono Personal</label>
+                        <input
+                          type="text"
+                          value={newUserPhone}
+                          onChange={(e) => setNewUserPhone(e.target.value)}
+                          placeholder="+54 223 555-1234"
+                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Tel. Contacto Emerg.</label>
+                        <input
+                          type="text"
+                          value={newUserEmergencyPhone}
+                          onChange={(e) => setNewUserEmergencyPhone(e.target.value)}
+                          placeholder="+54 223 555-9876"
+                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Sueldo Base ($ Mensual)</label>
+                      <input
+                        type="number"
+                        value={newUserSalary}
+                        onChange={(e) => setNewUserSalary(e.target.value)}
+                        placeholder="Ej. 180000"
+                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Rol / Cargo</label>
+                        <select
+                          value={newUserRole}
+                          onChange={(e) => setNewUserRole(e.target.value)}
+                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] font-bold text-[#2C1810] cursor-pointer"
+                        >
+                          <option value="mesero">Mesero</option>
+                          <option value="barista">Barista</option>
+                          <option value="administrador">Administrador</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">PIN de Salón</label>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          value={newUserPin}
+                          onChange={(e) => setNewUserPin(e.target.value.replace(/\D/g, ""))}
+                          placeholder="1234"
+                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] text-center font-mono font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4"
+                    >
+                      + Registrar Colaborador
+                    </button>
+                  </form>
+                </div>
+              )}
 
               {/* Users list */}
-              <div className="lg:col-span-8 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6" : "lg:col-span-12 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6"}>
                 <div className="border-b border-[#2C1810]/15 pb-2">
                   <h3 className="font-serif text-base font-bold text-[#2C1810]">Cuentas Registradas</h3>
-                  <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Listado de accesos autorizados para operar la plataforma.</p>
+                  <p className="text-[10px] text-[#2C1810]/50 mt-0.5">
+                    {(currentUser.role === "administrador" || currentUser.role === "dueño") 
+                      ? "Listado completo de accesos, datos salariales y permisos del personal." 
+                      : "Directorio de contacto de colaboradores en turno."}
+                  </p>
                 </div>
 
                 <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
@@ -3051,48 +3172,154 @@ export default function AdminHub({
                     <thead>
                       <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
                         <th className="p-3">Nombre</th>
-                        <th className="p-3">Email</th>
+                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3">Email / Dirección</th>}
+                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3">Teléfono</th>}
+                        <th className="p-3">Contacto Emergencia</th>
+                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-right">Sueldo</th>}
                         <th className="p-3 text-center">Rol</th>
-                        <th className="p-3 text-center">PIN</th>
-                        <th className="p-3 text-right">Acciones</th>
+                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-center">PIN</th>}
+                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-right">Acciones</th>}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-[#2C1810]/10">
-                      {users.map((user) => (
-                        <tr key={user.id} className="hover:bg-stone-50/50 transition-colors">
-                          <td className="p-3 font-bold text-[#2C1810]">{user.name}</td>
-                          <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">{user.email}</td>
-                          <td className="p-3 text-center">
-                            <span className={`px-2 py-0.5 text-[8px] font-black rounded-full uppercase ${
-                              user.role === "administrador"
-                                ? "bg-amber-100 text-amber-800"
-                                : user.role === "barista"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-stone-100 text-stone-800"
-                            }`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="p-3 text-center font-mono font-bold text-caramel">{user.pin}</td>
-                          <td className="p-3 text-right">
-                            <button
-                              onClick={() => handleDeleteUser(user.id, user.name)}
-                              disabled={user.id === "usr-1" || user.id === currentUser.id}
-                              className={`p-1.5 rounded-lg transition-all border ${
-                                user.id === "usr-1" || user.id === currentUser.id
-                                  ? "text-stone-300 border-stone-100 cursor-not-allowed"
-                                  : "text-red-600 border-red-100 hover:bg-red-50 cursor-pointer"
-                              }`}
-                              title="Eliminar Cuenta"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {users.map((user) => {
+                        const meta = usersMetadata[user.id] || {};
+                        return (
+                          <tr 
+                            key={user.id} 
+                            onClick={() => {
+                              if (currentUser.role === "administrador" || currentUser.role === "dueño") {
+                                setSelectedUserForPermissions(user);
+                              }
+                            }}
+                            className={`transition-colors cursor-pointer ${
+                              selectedUserForPermissions?.id === user.id 
+                                ? "bg-amber-50/40 hover:bg-amber-50/60" 
+                                : "hover:bg-stone-50/50"
+                            }`}
+                          >
+                            <td className="p-3 font-bold text-[#2C1810]">{user.name}</td>
+                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                              <td className="p-3">
+                                <span className="font-mono text-[9px] text-[#2C1810]/70 block">{user.email}</span>
+                                <span className="text-[9px] text-[#2C1810]/40 block mt-0.5">{meta.direccion || "No cargado"}</span>
+                              </td>
+                            )}
+                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                              <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">
+                                {meta.telefono || "No cargado"}
+                              </td>
+                            )}
+                            <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">
+                              {meta.telefono_contacto || "No cargado"}
+                            </td>
+                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                              <td className="p-3 text-right font-mono font-bold text-emerald-800">
+                                ${meta.sueldo ? meta.sueldo.toLocaleString() : "0"}
+                              </td>
+                            )}
+                            <td className="p-3 text-center">
+                              <span className={`px-2 py-0.5 text-[8px] font-black rounded-full uppercase ${
+                                user.role === "administrador"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : user.role === "barista"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-stone-100 text-stone-800"
+                              }`}>
+                                {user.role}
+                              </span>
+                            </td>
+                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                              <td className="p-3 text-center font-mono font-bold text-caramel">{user.pin}</td>
+                            )}
+                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                              <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={() => handleDeleteUser(user.id, user.name)}
+                                  disabled={user.id === "usr-1" || user.id === currentUser.id}
+                                  className={`p-1.5 rounded-lg transition-all border ${
+                                    user.id === "usr-1" || user.id === currentUser.id
+                                      ? "text-stone-300 border-stone-100 cursor-not-allowed"
+                                      : "text-red-600 border-red-100 hover:bg-red-50 cursor-pointer"
+                                  }`}
+                                  title="Eliminar Cuenta"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
+
+                {/* Granular Permissions Settings panel */}
+                {(currentUser.role === "administrador" || currentUser.role === "dueño") && selectedUserForPermissions && (
+                  <div className="p-5 bg-[#FDFBF7] border border-[#C2956E]/20 rounded-2xl space-y-4">
+                    <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-2.5">
+                      <div>
+                        <span className="text-[8px] font-black uppercase text-[#C2956E] tracking-widest block">Configurar Accesos del Sistema</span>
+                        <h4 className="font-serif text-sm font-bold text-[#2C1810]">Permisos para {selectedUserForPermissions.name}</h4>
+                      </div>
+                      <span className="text-[10px] font-mono font-semibold text-[#2C1810]/60 bg-[#2C1810]/5 px-2.5 py-1 rounded-lg">
+                        Rol: {selectedUserForPermissions.role}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-semibold text-[#2C1810]/80">
+                      {[
+                        { id: "dashboard", label: "📈 Dashboard" },
+                        { id: "inventario", label: "📦 Stock & Insumos" },
+                        { id: "precios", label: "📖 Carta & Recetas" },
+                        { id: "salon", label: "🗺️ Mapa de Salón" },
+                        { id: "pedidos_mozo", label: "📋 Módulo Mozo" },
+                        { id: "caja", label: "💰 Caja & Comandas" },
+                        { id: "proveedores", label: "🤝 Proveedores" },
+                        { id: "personal", label: "👥 Personal" },
+                        { id: "reportes", label: "📊 Reportes" }
+                      ].map((mod) => {
+                        const meta = usersMetadata[selectedUserForPermissions.id] || {};
+                        const userPerms = meta.permissions || [];
+                        const hasPerm = userPerms.includes(mod.id);
+
+                        return (
+                          <label 
+                            key={mod.id}
+                            className="flex items-center gap-2.5 p-2 bg-white border border-[#2C1810]/5 rounded-xl cursor-pointer hover:bg-stone-50 select-none"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={hasPerm}
+                              disabled={selectedUserForPermissions.id === "usr-1" && mod.id === "personal"}
+                              onChange={() => {
+                                let updatedPerms = [...userPerms];
+                                if (hasPerm) {
+                                  updatedPerms = updatedPerms.filter(p => p !== mod.id);
+                                } else {
+                                  updatedPerms.push(mod.id);
+                                }
+
+                                const updatedMeta = {
+                                  ...usersMetadata,
+                                  [selectedUserForPermissions.id]: {
+                                    ...meta,
+                                    permissions: updatedPerms
+                                  }
+                                };
+                                saveUsersMetadata(updatedMeta);
+                                onShowNotification(`⚙️ Permisos de ${selectedUserForPermissions.name} actualizados.`, "info");
+                              }}
+                              className="h-4 w-4 rounded border-stone-300 text-[#2C1810] focus:ring-[#2C1810]/30 cursor-pointer"
+                            />
+                            <span>{mod.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -3402,7 +3629,19 @@ export default function AdminHub({
               { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: Users, roles: ["administrador", "barista"] },
               { id: "reportes", label: "Reportes", icon: FileText, roles: ["administrador"] }
-            ].filter(link => link.roles.includes(currentUser.role)).map((link) => {
+            ].filter(link => {
+              if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
+                return false;
+              }
+              if (currentUser.role === "administrador" || currentUser.role === "dueño") {
+                return true;
+              }
+              const meta = usersMetadata[currentUser.id];
+              if (meta && meta.permissions) {
+                return meta.permissions.includes(link.id);
+              }
+              return true;
+            }).map((link) => {
               const active = activeSubTab === link.id;
               const Icon = link.icon;
               return (
