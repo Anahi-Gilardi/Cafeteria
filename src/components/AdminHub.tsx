@@ -138,6 +138,14 @@ export default function AdminHub({
   const [selectedSplitItems, setSelectedSplitItems] = useState<Record<string, number>>({});
   const [selectedCtaCteClient, setSelectedCtaCteClient] = useState<string>("");
 
+  // Waiter ordering (Mozo module) states
+  const [selectedWaiter, setSelectedWaiter] = useState<string>("Enzo");
+  const [mozoSelectedTable, setMozoSelectedTable] = useState<string | null>(null);
+  const [mozoCart, setMozoCart] = useState<{ item: MenuItem; qty: number }[]>([]);
+  const [mozoCategory, setMozoCategory] = useState<string>("todos");
+  const [mozoSearchQuery, setMozoSearchQuery] = useState<string>("");
+  const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
+
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
 
@@ -2092,6 +2100,426 @@ export default function AdminHub({
     );
   };
 
+  const renderPedidosMozo = () => {
+    const MOZO_TABLES = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Mesa 5", "Mesa 6", "Mesa 8", "Mesa 12", "VIP-1", "Terraza-3"];
+    
+    const getActiveOrderForTable = (table: string) => {
+      return orders.find(o => o.tableNumber === table && o.status !== "Completado");
+    };
+
+    const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
+
+    const filteredMenuItems = menuItems.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
+                            item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
+      const matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
+      return matchesSearch && matchesCategory;
+    });
+
+    const handleSelectMozoTable = (table: string) => {
+      setMozoSelectedTable(table);
+      const activeOrder = getActiveOrderForTable(table);
+      if (activeOrder) {
+        const cartItems = activeOrder.items.map(it => {
+          const menuItem = menuItems.find(m => m.name === it.name) || {
+            id: it.name,
+            name: it.name,
+            price: it.price,
+            description: "",
+            category: "coffee",
+            image: "",
+            customizable: false,
+            nutrition: { calories: 0, allergens: [] }
+          } as MenuItem;
+          return { item: menuItem, qty: it.quantity };
+        });
+        setMozoCart(cartItems);
+      } else {
+        setMozoCart([]);
+      }
+    };
+
+    const handleAddMozoCart = (item: MenuItem) => {
+      if (!mozoSelectedTable) {
+        onShowNotification("⚠️ Seleccione una mesa a la izquierda antes de añadir productos.", "warning");
+        return;
+      }
+      setMozoCart(prev => {
+        const match = prev.find(c => c.item.id === item.id);
+        if (match) {
+          return prev.map(c => c.item.id === item.id ? { ...c, qty: c.qty + 1 } : c);
+        }
+        return [...prev, { item, qty: 1 }];
+      });
+    };
+
+    const handleUpdateMozoCartQty = (itemId: string, val: number) => {
+      setMozoCart(prev => 
+        prev.map(c => c.item.id === itemId ? { ...c, qty: Math.max(1, c.qty + val) } : c)
+      );
+    };
+
+    const handleRemoveFromMozoCart = (itemId: string) => {
+      setMozoCart(prev => prev.filter(c => c.item.id !== itemId));
+    };
+
+    const handleSubmitMozoOrder = () => {
+      if (!mozoSelectedTable) return;
+      if (mozoCart.length === 0) {
+        onShowNotification("⚠️ Añada productos a la comanda antes de enviar.", "warning");
+        return;
+      }
+
+      const activeOrder = getActiveOrderForTable(mozoSelectedTable);
+      const subtotal = mozoCart.reduce((sum, c) => sum + c.item.price * c.qty, 0);
+      const tax = subtotal * 0.21;
+      const total = subtotal;
+
+      if (activeOrder) {
+        const updatedOrderObj: Order = {
+          ...activeOrder,
+          items: mozoCart.map(c => ({
+            name: c.item.name,
+            quantity: c.qty,
+            price: c.item.price,
+            customizationSummary: ""
+          })),
+          subtotal,
+          tax,
+          total
+        };
+        if (onUpdateOrders) {
+          onUpdateOrders(orders.map(o => o.id === activeOrder.id ? updatedOrderObj : o));
+        }
+        onShowNotification(`🍳 Comanda de la ${mozoSelectedTable} actualizada y enviada a cocina.`, "success");
+      } else {
+        const newOrder: Order = {
+          id: "PED-" + Math.floor(Math.random() * 9000 + 1000).toString(),
+          tableNumber: mozoSelectedTable,
+          items: mozoCart.map(c => ({
+            name: c.item.name,
+            quantity: c.qty,
+            price: c.item.price,
+            customizationSummary: ""
+          })),
+          subtotal,
+          tax,
+          total,
+          status: "Recibido",
+          createdAt: "Hace instantes",
+          type: "Mesa",
+          priceList: "Salon",
+          estimatedMinutes: 15
+        };
+        if (onUpdateOrders) {
+          onUpdateOrders([newOrder, ...orders]);
+        }
+        onShowNotification(`🍳 Nueva comanda para la ${mozoSelectedTable} enviada a cocina.`, "success");
+      }
+
+      setMozoCart([]);
+      setMozoSelectedTable(null);
+    };
+
+    const subtotal = mozoCart.reduce((sum, c) => sum + c.item.price * c.qty, 0);
+    const tax = subtotal * 0.21;
+    const total = subtotal;
+
+    // Helper for table guest mock count matching screenshot
+    const getDinersMockCount = (table: string) => {
+      if (table === "Mesa 2") return 2;
+      if (table === "Mesa 4") return 3;
+      if (table === "Mesa 8") return 1;
+      if (table === "Mesa 12") return 4;
+      return 2;
+    };
+
+    return (
+      <motion.div
+        key="mozo-view"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2C1810]"
+      >
+        {/* Left Column: Waiter & Tables */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Waiter Card */}
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-amber-50 border border-[#C2956E]/20 text-[#C2956E] flex items-center justify-center">
+                <Users className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Mozo en Turno Activo</span>
+                <strong className="text-xs font-serif block">Terminal Registrada</strong>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {["Enzo", "Micaela", "Sofía"].map(waiter => (
+                <button
+                  key={waiter}
+                  onClick={() => setSelectedWaiter(waiter)}
+                  className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                    selectedWaiter === waiter 
+                      ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810] shadow-xs" 
+                      : "bg-white border-stone-250 text-[#2C1810]/75 hover:bg-stone-50"
+                  }`}
+                >
+                  {waiter}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tables Card */}
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
+              <div>
+                <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Distribución de Mesas</span>
+                <h3 className="font-serif text-sm font-bold mt-0.5">Mapa de Comensales</h3>
+              </div>
+              <span className="px-2 py-0.5 rounded bg-[#2C1810] text-[#FDFBF7] text-[8px] font-black uppercase tracking-wider">
+                {occupiedTablesCount} Ocupadas
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
+              {MOZO_TABLES.map(table => {
+                const activeOrder = getActiveOrderForTable(table);
+                const isOccupied = activeOrder !== undefined;
+                const isSelected = mozoSelectedTable === table;
+                
+                return (
+                  <div
+                    key={table}
+                    onClick={() => handleSelectMozoTable(table)}
+                    className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between h-20 ${
+                      isSelected
+                        ? "bg-[#C2956E]/10 border-[#C2956E] shadow-sm"
+                        : isOccupied
+                        ? "bg-red-50/70 border-red-200 text-red-800"
+                        : "bg-white border-[#2C1810]/10 hover:bg-stone-50"
+                    }`}
+                  >
+                    <strong className="text-xs font-bold block">{table}</strong>
+                    {isOccupied ? (
+                      <span className="text-[8px] font-bold text-red-700/80 flex items-center gap-1 mt-2">
+                        <Users className="h-3 w-3" /> {getDinersMockCount(table)} comensales
+                      </span>
+                    ) : (
+                      <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/30 mt-2 block">
+                        Libre
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Center Column: Categories and Products */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Categories card with search */}
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div>
+                <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Filtro de Categorías Premium</span>
+                <h3 className="font-serif text-sm font-bold mt-0.5">Catálogo de Productos</h3>
+              </div>
+              <div className="relative w-full sm:w-48">
+                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#2C1810]/40" />
+                <input
+                  type="text"
+                  placeholder="Buscar plato o bebida..."
+                  value={mozoSearchQuery}
+                  onChange={(e) => setMozoSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-8 py-1.5 border border-[#2C1810]/20 rounded-xl text-[10px] bg-white font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
+              {[
+                { id: "todos", label: "Todos 🍽️" },
+                { id: "coffee", label: "Cafetería ☕" },
+                { id: "pastry", label: "Pastelería 🥐" },
+                { id: "brunch", label: "Brunch 🍳" },
+                { id: "cold", label: "Bebidas 🍷" },
+                { id: "traditional", label: "Cocina 🍝" }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setMozoCategory(cat.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border shrink-0 transition-all cursor-pointer ${
+                    mozoCategory === cat.id
+                      ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]"
+                      : "bg-white border-stone-250 text-[#2C1810]/60 hover:bg-stone-50"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Product grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[480px] overflow-y-auto pr-1">
+            {filteredMenuItems.map(item => {
+              const isOut = item.stock === 0;
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white border border-[#2C1810]/10 rounded-2xl overflow-hidden flex flex-col justify-between h-44 shadow-xs relative"
+                >
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="h-20 w-full object-cover" />
+                  ) : (
+                    <div className="h-20 w-full bg-[#2C1810]/5 flex items-center justify-center text-[#2C1810]/30 border-b border-[#2C1810]/5">
+                      <Coffee className="h-7 w-7 stroke-1" />
+                    </div>
+                  )}
+
+                  {/* Stock status badge overlay */}
+                  <div className="absolute top-2 right-2">
+                    {isOut ? (
+                      <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-red-100 border border-red-200 text-red-700 tracking-wider">
+                        Sin Stock (Fórmulas 0)
+                      </span>
+                    ) : (
+                      item.stock !== undefined && (
+                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-emerald-50 border border-emerald-250 text-emerald-800 tracking-wider">
+                          Disp: {item.stock}u
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  <div className="p-3 flex justify-between items-center gap-3 bg-white">
+                    <div className="space-y-0.5">
+                      <strong className="text-xs font-bold text-[#2C1810] line-clamp-1">{item.name}</strong>
+                      <span className="text-xs font-mono font-black text-[#2C1810]/80">${item.price.toFixed(0)}</span>
+                    </div>
+                    <button
+                      onClick={() => handleAddMozoCart(item)}
+                      disabled={isOut}
+                      className={`h-8 w-8 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                        isOut 
+                          ? "bg-stone-100 border border-stone-200 text-stone-300 cursor-not-allowed" 
+                          : "bg-[#2C1810] hover:bg-[#3d2217] text-white shadow-sm"
+                      }`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Column: Draft Comanda */}
+        <div className="lg:col-span-3">
+          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs flex flex-col justify-between h-[580px]">
+            {!mozoSelectedTable ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-300 p-6">
+                <Coffee className="h-12 w-12 stroke-1 animate-pulse" />
+                <span className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest mt-3 block">Nueva Comanda</span>
+                <p className="text-[9px] text-[#2C1810]/30 mt-1.5 leading-normal">Seleccione una mesa disponible en el plano izquierdo para iniciar la comanda.</p>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-between h-full">
+                <div className="space-y-4 flex-1 flex flex-col">
+                  <div className="border-b border-[#2C1810]/10 pb-3 flex justify-between items-center">
+                    <div>
+                      <h4 className="font-serif text-sm font-bold">Comanda {mozoSelectedTable}</h4>
+                      <span className="text-[8px] font-bold text-[#2C1810]/45 block">Mozo: {selectedWaiter}</span>
+                    </div>
+                    <span className="text-[9px] font-black uppercase text-[#C2956E] tracking-wider">
+                      {getActiveOrderForTable(mozoSelectedTable) ? "Edición" : "Borrador"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[320px]">
+                    {mozoCart.length > 0 ? (
+                      mozoCart.map((cart, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-[10px] font-semibold">
+                          <div className="space-y-0.5 truncate pr-2">
+                            <strong className="text-[#2C1810] block truncate">{cart.item.name}</strong>
+                            <span className="text-[8px] text-[#2C1810]/40 font-bold font-mono">${cart.item.price.toFixed(0)} c/u</span>
+                          </div>
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
+                                className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                              >
+                                -
+                              </button>
+                              <span className="font-mono font-bold w-4 text-center">{cart.qty}</span>
+                              <button
+                                onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
+                                className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveFromMozoCart(cart.item.id)}
+                              className="p-1 text-[#2C1810]/40 hover:text-red-700 transition-all cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-16 text-stone-300 text-center">
+                        <ClipboardList className="h-8 w-8 stroke-1.5 mb-2" />
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-[#2C1810]/40 block">Comanda Vacía</span>
+                        <p className="text-[8px] text-[#2C1810]/30 mt-1 max-w-[120px]">Haga clic en los productos del panel central para añadirlos.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-[#2C1810]/15 pt-4 space-y-4">
+                  <div className="space-y-1.5 text-[10px] font-semibold text-[#2C1810]/70">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span className="font-mono">${subtotal.toFixed(0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>IVA (21% Incl.)</span>
+                      <span className="font-mono">${tax.toFixed(0)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-[#2C1810]/10 pt-2 text-xs font-black text-[#2C1810]">
+                      <span>TOTAL COMANDA</span>
+                      <span className="font-mono text-emerald-800">${total.toFixed(0)}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSubmitMozoOrder}
+                    disabled={mozoCart.length === 0}
+                    className={`w-full py-3 rounded-2xl font-bold text-xs shadow-md transition-all cursor-pointer uppercase tracking-wider ${
+                      mozoCart.length > 0
+                        ? "bg-[#2C1810] hover:bg-[#3d2217] text-white"
+                        : "bg-stone-100 text-[#2C1810]/30 border border-stone-200 cursor-not-allowed"
+                    }`}
+                  >
+                    🍳 Enviar Comanda a Cocina ✓
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   const renderProveedores = () => {
     return (
       <motion.div
@@ -2969,6 +3397,7 @@ export default function AdminHub({
               { id: "inventario", label: "Stock & Insumos", icon: Package, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
               { id: "precios", label: "Carta & Recetas", icon: BookOpen, roles: ["administrador"] },
               { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] },
+              { id: "pedidos_mozo", label: "Módulo Mozo", icon: ClipboardList, roles: ["administrador", "mesero"] },
               { id: "caja", label: "Caja & Comandas", icon: Coins, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
               { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: Users, roles: ["administrador", "barista"] },
@@ -3034,6 +3463,7 @@ export default function AdminHub({
           {activeSubTab === "inventario" && renderInventario()}
           {activeSubTab === "precios" && renderPrecios()}
           {activeSubTab === "salon" && renderSalon()}
+          {activeSubTab === "pedidos_mozo" && renderPedidosMozo()}
           {activeSubTab === "caja" && renderCaja()}
           {activeSubTab === "proveedores" && renderProveedores()}
           {activeSubTab === "personal" && renderPersonal()}
