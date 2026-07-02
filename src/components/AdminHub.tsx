@@ -4,7 +4,8 @@ import {
   Coins, ClipboardList, Package, TrendingUp, AlertCircle, Plus, Edit2, Save, 
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
-  Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X
+  Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
+  Lock, Unlock, Percent, Printer, Scissors
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
@@ -92,6 +93,50 @@ export default function AdminHub({
     mercadopago: 0,
     transactions: []
   });
+
+  const [isShiftOpen, setIsShiftOpen] = useState<boolean>(() => {
+    return localStorage.getItem("puglia_shift_open") === "true";
+  });
+  const [shiftOpenTime, setShiftOpenTime] = useState<string>(() => {
+    return localStorage.getItem("puglia_shift_open_time") || "";
+  });
+  const [closuresHistory, setClosuresHistory] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_closures_history");
+      return saved ? JSON.parse(saved) : [
+        {
+          id: "cls-1",
+          user: "Sofía Colombo",
+          apertura: "2026-06-18 13:24:56",
+          cierre: "2026-06-26 16:48:55",
+          observaciones: "Facturación normal del turno",
+          ventasTurno: 294254,
+          montoReal: 120000,
+          diferencia: -174254
+        }
+      ];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Modal open states
+  const [isConfigRestaurantOpen, setIsConfigRestaurantOpen] = useState(false);
+  const [isConfigTicketerisOpen, setIsConfigTicketerisOpen] = useState(false);
+  const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState(false);
+  const [closeShiftRealCash, setCloseShiftRealCash] = useState<string>("");
+  const [closeShiftNotes, setCloseShiftNotes] = useState<string>("");
+  const [selectedClosureForModal, setSelectedClosureForModal] = useState<any>(null);
+
+  // Split bill & billing details state
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
+  const [cuitNumber, setCuitNumber] = useState<string>("");
+  const [cuitName, setCuitName] = useState<string>("");
+  const [ivaCondition, setIvaCondition] = useState<string>("Consumidor Final");
+  const [splitPaymentType, setSplitPaymentType] = useState<"indiviso" | "comensales" | "articulos">("indiviso");
+  const [dinersCount, setDinersCount] = useState<number>(2);
+  const [selectedSplitItems, setSelectedSplitItems] = useState<Record<string, number>>({});
+  const [selectedCtaCteClient, setSelectedCtaCteClient] = useState<string>("");
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -508,6 +553,16 @@ export default function AdminHub({
     syncCash();
   }, [cashLedger]);
 
+  // Sync Shift states to LocalStorage
+  useEffect(() => {
+    localStorage.setItem("puglia_shift_open", isShiftOpen ? "true" : "false");
+    localStorage.setItem("puglia_shift_open_time", shiftOpenTime);
+  }, [isShiftOpen, shiftOpenTime]);
+
+  useEffect(() => {
+    localStorage.setItem("puglia_closures_history", JSON.stringify(closuresHistory));
+  }, [closuresHistory]);
+
   useEffect(() => {
     const syncInsumos = async () => {
       try {
@@ -646,18 +701,66 @@ export default function AdminHub({
     onShowNotification("✍️ Cambios guardados con éxito en el catálogo de productos.", "success");
   };
 
-  // Reset shift sales
-  const handleResetShift = () => {
-    if (confirm("¿Estás seguro de que deseas cerrar el turno de caja y reiniciar los registros diarios?")) {
-      setCashLedger({
-        totalCollected: 0,
-        cash: 0,
-        card: 0,
-        mercadopago: 0,
-        transactions: []
-      });
-      onShowNotification("🧾 Turno cerrado. Registros de caja reiniciados a cero.", "info");
-    }
+  // Open Daily Shift
+  const handleOpenShift = () => {
+    const now = new Date();
+    const formattedDate = now.getFullYear() + "-" + 
+      String(now.getMonth() + 1).padStart(2, '0') + "-" + 
+      String(now.getDate()).padStart(2, '0') + " " + 
+      String(now.getHours()).padStart(2, '0') + ":" + 
+      String(now.getMinutes()).padStart(2, '0') + ":" + 
+      String(now.getSeconds()).padStart(2, '0');
+      
+    setIsShiftOpen(true);
+    setShiftOpenTime(formattedDate);
+    setCashLedger({
+      totalCollected: 0,
+      cash: 0,
+      card: 0,
+      mercadopago: 0,
+      transactions: []
+    });
+    onShowNotification("🔓 Turno fiscal de caja abierto con éxito.", "success");
+  };
+
+  // Close Daily Shift
+  const handleConfirmCloseShift = (montoReal: number, observaciones: string) => {
+    const now = new Date();
+    const formattedDate = now.getFullYear() + "-" + 
+      String(now.getMonth() + 1).padStart(2, '0') + "-" + 
+      String(now.getDate()).padStart(2, '0') + " " + 
+      String(now.getHours()).padStart(2, '0') + ":" + 
+      String(now.getMinutes()).padStart(2, '0') + ":" + 
+      String(now.getSeconds()).padStart(2, '0');
+
+    const ventas = cashLedger.totalCollected;
+    const diff = montoReal - ventas;
+
+    const newClosure = {
+      id: "cls-" + Date.now(),
+      user: currentUser.name,
+      apertura: shiftOpenTime,
+      cierre: formattedDate,
+      observaciones: observaciones || "Cierre de caja ordinario",
+      ventasTurno: ventas,
+      montoReal: montoReal,
+      diferencia: diff,
+      transactions: cashLedger.transactions
+    };
+
+    setClosuresHistory(prev => [newClosure, ...prev]);
+    setIsShiftOpen(false);
+    setShiftOpenTime("");
+    setCashLedger({
+      totalCollected: 0,
+      cash: 0,
+      card: 0,
+      mercadopago: 0,
+      transactions: []
+    });
+    setPosCheckoutOrder(null);
+    setIsCloseShiftModalOpen(false);
+    onShowNotification("🔒 Turno de caja cerrado y homologado en auditoría.", "info");
   };
 
   // Unit Costs mapping for dynamic recipe costing
@@ -1205,6 +1308,7 @@ export default function AdminHub({
   };
 
   const renderCaja = () => {
+    // 1. Calculate values
     const posSubtotal = posCart.reduce((sum, item) => sum + item.item.price * item.qty, 0);
     const posIva = posSubtotal * 0.21;
     const posTotal = posSubtotal;
@@ -1274,43 +1378,74 @@ export default function AdminHub({
       onShowNotification(`📋 Nueva comanda registrada con éxito para la ${posTable}.`, "success");
     };
 
-    const openCheckoutModal = (order: Order) => {
+    const openCheckoutPanel = (order: Order) => {
       setPosCheckoutOrder(order);
       setPaymentMethod("Tarjeta");
       setReceivedCashInput("");
       setPosCouponInput("");
+      setDiscountPercentage(0);
+      setCuitNumber("");
+      setCuitName("");
+      setSplitPaymentType("indiviso");
+      setDinersCount(2);
+      setSelectedSplitItems({});
+      setSelectedCtaCteClient("");
     };
+
+    // Calculate checkout totals dynamically
+    const orderTotalOriginal = posCheckoutOrder ? posCheckoutOrder.total : 0;
+    const discountAmount = orderTotalOriginal * (discountPercentage / 105);
+    const orderTotalWithDiscount = Math.max(0, orderTotalOriginal - discountAmount);
+
+    // Calculate split totals
+    let activeCheckoutTotal = orderTotalWithDiscount;
+    if (posCheckoutOrder && splitPaymentType === "comensales") {
+      activeCheckoutTotal = orderTotalWithDiscount / dinersCount;
+    } else if (posCheckoutOrder && splitPaymentType === "articulos") {
+      const selectedItemsSum = Object.entries(selectedSplitItems).reduce((sum, [itemName, qty]) => {
+        const matchedItem = posCheckoutOrder.items.find(i => i.name === itemName);
+        return sum + (matchedItem ? matchedItem.price * qty : 0);
+      }, 0);
+      activeCheckoutTotal = selectedItemsSum * (1 - discountPercentage / 100);
+    }
 
     const handleProcessPosCheckout = () => {
       if (!posCheckoutOrder) return;
       const orderId = posCheckoutOrder.id;
-      const total = posCheckoutOrder.total;
 
+      // Validation
       if (paymentMethod === "Tarjeta" && !posCouponInput) {
         onShowNotification("⚠️ Registre el número de cupón POSNET.", "warning");
         return;
       }
-      if (paymentMethod === "Efectivo" && receivedCashInput && parseFloat(receivedCashInput) < total) {
+      if (paymentMethod === "Efectivo" && receivedCashInput && parseFloat(receivedCashInput) < activeCheckoutTotal) {
         onShowNotification("⚠️ El efectivo recibido es menor al total a pagar.", "warning");
         return;
       }
+      if (paymentMethod === "Fiado / Cta Cte" && !selectedCtaCteClient) {
+        onShowNotification("⚠️ Seleccione una cuenta corriente para imputar el saldo.", "warning");
+        return;
+      }
 
+      const totalToRecord = activeCheckoutTotal;
+
+      // Update ledger state
       setCashLedger(prev => {
-        const addedCash = paymentMethod === "Efectivo" ? total : 0;
-        const addedCard = paymentMethod === "Tarjeta" ? total : 0;
-        const addedMp = paymentMethod === "MercadoPago" ? total : 0;
+        const addedCash = paymentMethod === "Efectivo" ? totalToRecord : 0;
+        const addedCard = paymentMethod === "Tarjeta" ? totalToRecord : 0;
+        const addedMp = paymentMethod === "MercadoPago" ? totalToRecord : 0;
 
         return {
-          totalCollected: Number((prev.totalCollected + total).toFixed(2)),
+          totalCollected: Number((prev.totalCollected + totalToRecord).toFixed(2)),
           cash: Number((prev.cash + addedCash).toFixed(2)),
           card: Number((prev.card + addedCard).toFixed(2)),
           mercadopago: Number((prev.mercadopago + addedMp).toFixed(2)),
           transactions: [
             {
               id: "tx-" + Date.now(),
-              type: "Cobro",
+              type: splitPaymentType !== "indiviso" ? `Cobro Parcial (${splitPaymentType === "comensales" ? "Comensal" : "Items"})` : "Cobro Total",
               orderId: orderId,
-              total: total,
+              total: totalToRecord,
               method: paymentMethod,
               timestamp: "Hace instantes"
             },
@@ -1319,9 +1454,90 @@ export default function AdminHub({
         };
       });
 
-      onOrderStatusUpdate(orderId, "Completado");
-      setPosCheckoutOrder(null);
-      onShowNotification(`💵 Cobro por $${total.toFixed(0)} registrado con éxito vía ${paymentMethod}.`, "success");
+      // Handle split logic
+      if (splitPaymentType === "indiviso") {
+        onOrderStatusUpdate(orderId, "Completado");
+        setPosCheckoutOrder(null);
+        onShowNotification(`💵 Cobro por $${totalToRecord.toFixed(0)} completado con éxito vía ${paymentMethod}.`, "success");
+      } else if (splitPaymentType === "comensales") {
+        onShowNotification(`💵 Pago de comensal por $${totalToRecord.toFixed(0)} registrado con éxito.`, "success");
+        if (dinersCount <= 1) {
+          onOrderStatusUpdate(orderId, "Completado");
+          setPosCheckoutOrder(null);
+          onShowNotification(`🎉 Todos los comensales han abonado. Comanda finalizada.`, "success");
+        } else {
+          setDinersCount(prev => prev - 1);
+          setReceivedCashInput("");
+          setPosCouponInput("");
+        }
+      } else if (splitPaymentType === "articulos") {
+        onShowNotification(`💵 Pago parcial por artículos ($${totalToRecord.toFixed(0)}) registrado con éxito.`, "success");
+        
+        // Subtract paid items from order items list
+        const updatedItems = posCheckoutOrder.items.map(it => {
+          const qtyPaid = selectedSplitItems[it.name] || 0;
+          return {
+            ...it,
+            quantity: Math.max(0, it.quantity - qtyPaid)
+          };
+        }).filter(it => it.quantity > 0);
+
+        if (updatedItems.length === 0) {
+          onOrderStatusUpdate(orderId, "Completado");
+          setPosCheckoutOrder(null);
+          onShowNotification(`🎉 Todos los artículos han sido abonados. Comanda finalizada.`, "success");
+        } else {
+          const updatedSubtotal = updatedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+          const updatedIva = updatedSubtotal * 0.21;
+          const updatedTotal = updatedSubtotal;
+
+          const updatedOrderObj = {
+            ...posCheckoutOrder,
+            items: updatedItems,
+            subtotal: updatedSubtotal,
+            tax: updatedIva,
+            total: updatedTotal
+          };
+
+          // Update orders state
+          if (onUpdateOrders) {
+            onUpdateOrders(orders.map(o => o.id === orderId ? updatedOrderObj : o));
+          }
+          setPosCheckoutOrder(updatedOrderObj);
+          setSelectedSplitItems({});
+          setReceivedCashInput("");
+          setPosCouponInput("");
+        }
+      }
+
+      // If fiado, debit client account
+      if (paymentMethod === "Fiado / Cta Cte" && selectedCtaCteClient) {
+        const clientAcc = clientAccounts.find(c => c.name === selectedCtaCteClient);
+        if (clientAcc) {
+          const updatedClients = clientAccounts.map(c => {
+            if (c.id === clientAcc.id) {
+              const currentDebt = c.cuit ? parseFloat(c.cuit) || 0 : 0;
+              return {
+                ...c,
+                cuit: String(currentDebt + totalToRecord)
+              };
+            }
+            return c;
+          });
+          onUpdateClientAccounts(updatedClients);
+          onShowNotification(`🤝 Saldo de $${totalToRecord.toFixed(0)} cargado a la Cuenta Corriente de ${clientAcc.name}.`, "info");
+        }
+      }
+    };
+
+    const getMozoName = (id: string) => {
+      const lastChar = id.slice(-1);
+      if (lastChar === "1") return "Enzo";
+      if (lastChar === "2") return "Enzo";
+      if (lastChar === "3") return "Micaela";
+      if (lastChar === "4") return "Enzo";
+      if (lastChar === "5") return "PedidosYa Delivery";
+      return "Enzo";
     };
 
     return (
@@ -1330,301 +1546,548 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 text-[#2C1810]"
       >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Punto de Venta Fase 1</span>
-            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Terminal de Caja</h2>
+        {/* Header Terminal */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white border border-[#2C1810]/10 p-6 rounded-3xl shadow-xs">
+          <div className="flex items-center gap-3.5">
+            <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-[#C2956E]/20 text-[#C2956E] flex items-center justify-center shadow-xs">
+              <Receipt className="h-6 w-6 stroke-1.5" />
+            </div>
+            <div>
+              <h2 className="font-serif text-xl font-bold tracking-tight">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
+              <p className="text-[10px] text-[#2C1810]/60 font-semibold mt-0.5">Gestor de comprobantes de salón • Café Puglia</p>
+            </div>
           </div>
-          <button 
-            onClick={handleResetShift}
-            className="px-4 py-2.5 rounded-xl bg-red-950 text-red-200 border border-red-900/50 text-xs font-bold hover:bg-red-900 hover:text-white transition-all cursor-pointer flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" /> Cerrar Caja (Cierre de Caja)
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setIsConfigRestaurantOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-white border border-[#2C1810]/15 hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Settings className="h-3.5 w-3.5" /> CONFIGURAR RESTAURANT
+            </button>
+            <button 
+              onClick={() => setIsConfigTicketerisOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-white border border-[#2C1810]/15 hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Printer className="h-3.5 w-3.5" /> CONFIGURACIÓN TICKETERA
+            </button>
+          </div>
         </div>
 
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 space-y-6">
+          {/* Left panel: Shift & Active orders (col-span-4) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Box 1: Flujo Contable Diario */}
             <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-3">
-                <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider">Nueva Orden (Draft)</h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-[#2C1810]/60 uppercase">Mesa:</span>
-                  <select 
-                    value={posTable}
-                    onChange={(e) => setPosTable(e.target.value)}
-                    className="p-1.5 border border-[#2C1810]/20 rounded-lg text-xs font-bold bg-[#FDFBF7] text-[#2C1810]"
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, "Barra"].map(m => (
-                      <option key={m} value={typeof m === "number" ? `Mesa ${m}` : m}>{typeof m === "number" ? `Mesa ${m}` : m}</option>
-                    ))}
-                  </select>
+              <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
+                <div>
+                  <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Flujo Contable Diario</span>
+                  <h3 className="font-serif text-sm font-bold mt-0.5">Estado de Caja Diaria</h3>
                 </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider flex items-center gap-1 ${
+                  isShiftOpen 
+                    ? "bg-emerald-50 border-emerald-250 text-emerald-800" 
+                    : "bg-stone-50 border-stone-250 text-stone-600"
+                }`}>
+                  {isShiftOpen ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                  {isShiftOpen ? "Abierta" : "Cerrada"}
+                </span>
               </div>
 
-              <div className="flex gap-2">
-                {["todos", "coffee", "pastry"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedPosCategory(cat)}
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
-                      selectedPosCategory === cat 
-                        ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]" 
-                        : "bg-stone-50 border-[#2C1810]/10 text-[#2C1810]/60 hover:bg-stone-100"
-                    }`}
-                  >
-                    {cat === "todos" ? "Todo" : cat === "coffee" ? "Cafetería" : "Pastelería"}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-h-[360px] overflow-y-auto pr-1">
-                {posMenuItems.map((item, idx) => (
-                  <div 
-                    key={idx}
-                    onClick={() => addToPosCart(item)}
-                    className="p-3 bg-[#FDFBF7] hover:bg-stone-50 border border-[#2C1810]/10 rounded-2xl cursor-pointer transition-all flex flex-col justify-between h-28"
-                  >
-                    <div>
-                      <strong className="text-xs font-bold text-[#2C1810] block line-clamp-1">{item.name}</strong>
-                      <span className="text-[9px] text-[#2C1810]/40 line-clamp-2 mt-0.5 leading-tight">{item.description}</span>
-                    </div>
-                    <span className="text-xs font-black text-[#2C1810] font-mono mt-2">${item.price.toFixed(0)}</span>
+              {!isShiftOpen ? (
+                <div className="space-y-4">
+                  <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-center">
+                    <p className="text-[10px] text-[#2C1810]/60 font-semibold">No se registran turnos fiscales abiertos</p>
+                    <p className="text-[9px] text-[#2C1810]/40 mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
-              <h3 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Comandas Listas para Facturar & Cobrar</h3>
-              <p className="text-xs text-[#2C1810]/60 mb-6">Pedidos realizados por clientes desde sus mesas o para llevar que requieren cobro final.</p>
-
-              {pendingOrders.length === 0 ? (
-                <div className="text-center py-16 border-2 border-dashed border-[#2C1810]/20 rounded-2xl bg-[#2C1810]/5">
-                  <Check className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-[#2C1810]/70">¡Cero deudas pendientes en el salón!</p>
-                  <p className="text-xs text-[#2C1810]/40 mt-1">Todas las mesas activas tienen sus cuentas al día.</p>
+                  <button 
+                    onClick={handleOpenShift}
+                    className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Unlock className="h-4 w-4" /> ABRIR CAJA DIARIA
+                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pendingOrders.map((order) => (
-                    <div key={order.id} className="border border-[#2C1810]/20 rounded-2xl bg-[#2C1810]/5 p-4 flex flex-col justify-between relative">
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-[10px] font-mono uppercase bg-[#2C1810]/10 px-2 py-0.5 rounded text-[#2C1810] font-bold">
-                            {order.tableNumber || "Para Llevar"}
-                          </span>
-                          <span className="text-[11px] font-bold text-[#C2956E] font-serif">${order.total.toFixed(0)}</span>
-                        </div>
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-stone-50 border border-stone-150 rounded-xl space-y-2">
+                    <p className="text-[10px] text-[#2C1810]/50 font-bold uppercase tracking-wider">Turno en curso</p>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div>Efectivo: <span className="font-mono font-bold">${cashLedger.cash.toLocaleString()}</span></div>
+                      <div>Tarjeta: <span className="font-mono font-bold">${cashLedger.card.toLocaleString()}</span></div>
+                      <div>MP: <span className="font-mono font-bold">${cashLedger.mercadopago.toLocaleString()}</span></div>
+                      <div className="border-t border-[#2C1810]/10 pt-1 font-bold">Total: <span className="font-mono text-emerald-800">${cashLedger.totalCollected.toLocaleString()}</span></div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setCloseShiftRealCash("");
+                      setCloseShiftNotes("");
+                      setIsCloseShiftModalOpen(true);
+                    }}
+                    className="w-full py-3 rounded-2xl bg-red-950 text-red-200 border border-red-900/50 text-xs font-bold hover:bg-red-900 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Lock className="h-4 w-4" /> CERRAR CAJA DIARIA (Arqueo)
+                  </button>
+                </div>
+              )}
+            </div>
 
-                        <div className="space-y-1.5 mb-4 border-t border-b border-[#2C1810]/15 py-2.5">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between text-[11px] italic text-[#2C1810]/85">
-                              <span>{item.quantity}x {item.name}</span>
-                              <span>${(item.price * item.quantity).toFixed(0)}</span>
-                            </div>
-                          ))}
+            {/* Box 2: Comandas en Salón */}
+            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+              <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
+                <h3 className="font-serif text-sm font-bold flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-[#C2956E]" /> COMANDAS EN SALÓN
+                </h3>
+                {isShiftOpen && (
+                  <span className="px-2 py-0.5 rounded bg-[#C2956E]/10 text-[#C2956E] text-[9px] font-black uppercase">
+                    {pendingOrders.length} pendientes
+                  </span>
+                )}
+              </div>
+
+              {!isShiftOpen ? (
+                <div className="text-center py-12 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col items-center justify-center text-stone-400">
+                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-stone-300" />
+                  <p className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest">Caja Cerrada</p>
+                  <p className="text-[9px] text-[#2C1810]/30 mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
+                </div>
+              ) : pendingOrders.length === 0 ? (
+                <div className="text-center py-12 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col items-center justify-center text-stone-400">
+                  <CheckCircle className="h-8 w-8 text-emerald-600 mb-2 stroke-1.5" />
+                  <p className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest">Sin Pendientes</p>
+                  <p className="text-[9px] text-[#2C1810]/30 mt-1">Todas las mesas han cobrado.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                  {pendingOrders.map((order) => {
+                    const active = posCheckoutOrder?.id === order.id;
+                    const statusText = order.status === "Listo" ? "Listo" : order.status === "Preparando" ? "En Cocina" : "Pendiente";
+                    const statusColor = order.status === "Listo" 
+                      ? "bg-amber-50 border-amber-250 text-amber-800" 
+                      : order.status === "Preparando"
+                      ? "bg-blue-50 border-blue-250 text-blue-800"
+                      : "bg-stone-50 border-stone-250 text-stone-600";
+
+                    return (
+                      <div 
+                        key={order.id}
+                        onClick={() => openCheckoutPanel(order)}
+                        className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                          active 
+                            ? "bg-[#C2956E]/10 border-[#C2956E] shadow-sm" 
+                            : "bg-[#FDFBF7] hover:bg-stone-50 border-[#2C1810]/10"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <strong className="text-xs font-serif text-[#2C1810] block">Mesa {order.tableNumber?.replace("Mesa ", "") || "1"}</strong>
+                            <span className="text-[9px] font-bold text-[#2C1810]/40 block mt-0.5">Mozo: {getMozoName(order.id)} • {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</span>
+                          </div>
+                          <span className="text-xs font-mono font-black text-[#2C1810]">${order.total.toLocaleString()}</span>
                         </div>
-                        
-                        <div className="flex items-center justify-between text-[10px] text-[#2C1810]/60 mb-3">
-                          <span>Estado: <strong className="text-emerald-700 uppercase font-extrabold">{order.status}</strong></span>
-                          <span>{order.createdAt}</span>
+                        <div className="flex justify-between items-center">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${statusColor}`}>
+                            {statusText}
+                          </span>
+                          <span className="font-mono text-[8px] font-black text-[#2C1810]/30">#{order.id.replace("PED-", "")}</span>
                         </div>
                       </div>
-
-                      <button
-                        onClick={() => openCheckoutModal(order)}
-                        className="w-full mt-2 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold py-2.5 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-                      >
-                        <DollarSign className="h-3.5 w-3.5" />
-                        Cobrar en Caja
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between h-[450px]">
-            <div className="space-y-4 flex-1 flex flex-col justify-between">
-              <div>
-                <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">Resumen de Comanda</h3>
-                <div className="space-y-2 mt-4 max-h-[220px] overflow-y-auto pr-1 flex-1">
-                  {posCart.length > 0 ? (
-                    posCart.map((cart, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-xs">
-                        <div className="space-y-0.5">
-                          <strong className="text-xs font-bold text-[#2C1810]">{cart.item.name}</strong>
-                          <span className="text-[9px] text-[#2C1810]/40 font-semibold block">${cart.item.price.toFixed(0)} c/u</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <button 
-                              onClick={() => updatePosCartQty(cart.item.id, -1)}
-                              className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
-                            >
-                              -
-                            </button>
-                            <span className="text-xs font-mono font-black w-4 text-center">{cart.qty}</span>
-                            <button 
-                              onClick={() => updatePosCartQty(cart.item.id, 1)}
-                              className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
-                            >
-                              +
-                            </button>
+          {/* Right panel: POS Checkout Panel or Empty State (col-span-8) */}
+          <div className="lg:col-span-8">
+            {!isShiftOpen || !posCheckoutOrder ? (
+              <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-10 shadow-xs flex flex-col items-center justify-center text-center h-[560px]">
+                <div className="h-16 w-16 bg-[#2C1810]/5 border border-[#2C1810]/10 rounded-2xl flex items-center justify-center text-[#2C1810]/60 mb-6">
+                  <Receipt className="h-8 w-8 stroke-1" />
+                </div>
+                <h3 className="font-serif text-lg font-bold">TERMINAL DE COBRO CAFÉ PUGLIA PRO</h3>
+                <p className="text-xs text-[#2C1810]/60 max-w-md mt-2.5 leading-relaxed">
+                  Seleccione una mesa ocupada desde la lista lateral. Se iniciará el panel interactivo de check-out, permitiéndole coordinar pagos mixtos, aplicar deducciones manuales, configurar datos de CUIT, fraccionar saldos por comensales u artículos indivisos, y emitir comprobantes en PDF y thermal roll.
+                </p>
+                {!isShiftOpen ? (
+                  <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-amber-700 shrink-0" />
+                    <div>
+                      <strong className="text-[10px] font-bold uppercase tracking-wider text-amber-850 block">Caja Cerrada</strong>
+                      <span className="text-[9px] text-amber-900 mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-blue-700 shrink-0" />
+                    <div>
+                      <strong className="text-[10px] font-bold uppercase tracking-wider text-blue-850 block">Turno Activo</strong>
+                      <span className="text-[9px] text-blue-900 mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Active POS Checkout Interactive Panel
+              <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 lg:p-8 shadow-xs space-y-6">
+                
+                {/* Header panel */}
+                <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-4">
+                  <div>
+                    <button 
+                      onClick={() => setPosCheckoutOrder(null)}
+                      className="text-[9px] font-bold uppercase tracking-wider text-[#C2956E] hover:text-[#2C1810] flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
+                    >
+                      <ArrowUp className="-rotate-90 h-3.5 w-3.5" /> VOLVER AL TERMINAL
+                    </button>
+                    <h3 className="font-serif text-lg font-bold">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[9px] font-black uppercase text-[#2C1810]/40 font-mono">Orden #{posCheckoutOrder.id}</span>
+                    <div className="text-xl font-serif font-black text-emerald-805 font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
+                  </div>
+                </div>
+
+                {/* Grid Checkout Form */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Left subcolumn: Consumo & Fraccionar */}
+                  <div className="space-y-5">
+                    {/* Resumen de Consumo */}
+                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-3">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
+                        <Coffee className="h-3.5 w-3.5 text-[#C2956E]" /> Resumen de Consumo
+                      </h4>
+                      <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                        {posCheckoutOrder.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#2C1810]/80">
+                            <span className="italic">{item.quantity}x {item.name}</span>
+                            <span className="font-mono">${(item.price * item.quantity).toLocaleString()}</span>
                           </div>
-                          <button 
-                            onClick={() => removeFromPosCart(cart.item.id)}
-                            className="p-1 text-[#2C1810]/40 hover:text-red-700 transition-all cursor-pointer"
+                        ))}
+                      </div>
+                      <div className="border-t border-[#2C1810]/10 pt-2.5 flex justify-between text-[10px] font-bold">
+                        <span>Total Comanda</span>
+                        <span className="font-mono text-[#2C1810]">${orderTotalOriginal.toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Fraccionar Cuenta */}
+                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-4">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
+                        <Scissors className="h-3.5 w-3.5 text-[#C2956E]" /> Fraccionar Saldo
+                      </h4>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: "indiviso", label: "Indiviso", icon: Coins },
+                          { id: "comensales", label: "Comensales", icon: Users },
+                          { id: "articulos", label: "Artículos", icon: ClipboardList }
+                        ].map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              setSplitPaymentType(t.id as any);
+                              setSelectedSplitItems({});
+                            }}
+                            className={`p-2 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer flex flex-col items-center gap-1 justify-center ${
+                              splitPaymentType === t.id
+                                ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810] shadow-xs"
+                                : "bg-white border-stone-250 text-[#2C1810]/60 hover:bg-stone-50"
+                            }`}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <t.icon className="h-3.5 w-3.5" />
+                            {t.label}
                           </button>
+                        ))}
+                      </div>
+
+                      {splitPaymentType === "comensales" && (
+                        <div className="p-3 bg-white border border-stone-200 rounded-xl space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-[#2C1810]/60">Número de Comensales:</span>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-stone-150 hover:bg-stone-200 rounded text-xs font-bold cursor-pointer">-</button>
+                              <strong className="font-mono text-sm w-4 text-center">{dinersCount}</strong>
+                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-stone-150 hover:bg-stone-200 rounded text-xs font-bold cursor-pointer">+</button>
+                            </div>
+                          </div>
+                          <div className="text-[10px] border-t border-[#2C1810]/5 pt-2 flex justify-between font-bold">
+                            <span>Monto por Comensal</span>
+                            <span className="font-mono text-emerald-805">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {splitPaymentType === "articulos" && (
+                        <div className="p-3 bg-white border border-stone-200 rounded-xl space-y-2.5">
+                          <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
+                          <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
+                            {posCheckoutOrder.items.map((it, idx) => {
+                              const selectedQty = selectedSplitItems[it.name] || 0;
+                              return (
+                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-stone-100 pb-1.5">
+                                  <span className="truncate">{it.name} (${it.price.toFixed(0)})</span>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button 
+                                      onClick={() => setSelectedSplitItems(prev => ({
+                                        ...prev,
+                                        [it.name]: Math.max(0, (prev[it.name] || 0) - 1)
+                                      }))}
+                                      className="h-5 w-5 bg-stone-100 hover:bg-stone-200 rounded text-[10px] font-bold cursor-pointer"
+                                    >
+                                      -
+                                    </button>
+                                    <strong className="font-mono w-4 text-center">{selectedQty}</strong>
+                                    <button 
+                                      onClick={() => setSelectedSplitItems(prev => ({
+                                        ...prev,
+                                        [it.name]: Math.min(it.quantity, (prev[it.name] || 0) + 1)
+                                      }))}
+                                      className="h-5 w-5 bg-stone-100 hover:bg-stone-200 rounded text-[10px] font-bold cursor-pointer"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right subcolumn: Discounts, Fiscal data, Payment Method */}
+                  <div className="space-y-5">
+                    {/* Deducciones Manuales (Discounts) */}
+                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-3.5">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
+                        <Percent className="h-3.5 w-3.5 text-[#C2956E]" /> Deducciones Manuales (Descuento)
+                      </h4>
+                      <div className="flex gap-2">
+                        {[0, 5, 10, 15, 20].map(p => (
+                          <button
+                            key={p}
+                            onClick={() => setDiscountPercentage(p)}
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black border transition-all cursor-pointer flex-1 text-center ${
+                              discountPercentage === p
+                                ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]"
+                                : "bg-white border-stone-250 text-[#2C1810]/60 hover:bg-stone-50"
+                            }`}
+                          >
+                            {p === 0 ? "Sin Dto" : `${p}%`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Datos de CUIT / Facturación */}
+                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-3.5">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-[#C2956E]" /> Datos de CUIT / Razón Social
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">CUIT/CUIL</label>
+                          <input 
+                            type="text" 
+                            placeholder="Ingrese CUIT" 
+                            value={cuitNumber}
+                            onChange={(e) => setCuitNumber(e.target.value)}
+                            className="w-full p-2 border border-[#2C1810]/20 rounded-lg text-[10px] bg-white font-bold" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Razón Social</label>
+                          <input 
+                            type="text" 
+                            placeholder="Nombre del Cliente" 
+                            value={cuitName}
+                            onChange={(e) => setCuitName(e.target.value)}
+                            className="w-full p-2 border border-[#2C1810]/20 rounded-lg text-[10px] bg-white font-bold" 
+                          />
                         </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-stone-300">
-                      <Coffee className="h-10 w-10 stroke-1 animate-pulse" />
-                      <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-widest mt-2 block text-center">Mesa sin comanda</span>
-                      <p className="text-[8px] text-[#2C1810]/30 text-center mt-1">Haga clic en los productos del panel izquierdo para añadirlos.</p>
+                      <div>
+                        <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Condición Frente al IVA</label>
+                        <select 
+                          value={ivaCondition}
+                          onChange={(e) => setIvaCondition(e.target.value)}
+                          className="w-full p-2 border border-[#2C1810]/20 rounded-lg text-[10px] bg-white font-bold cursor-pointer"
+                        >
+                          <option>Consumidor Final</option>
+                          <option>Responsable Inscripto</option>
+                          <option>Monotributista</option>
+                          <option>Exento</option>
+                        </select>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Método de Cobro */}
+                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-4">
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
+                        <Coins className="h-3.5 w-3.5 text-[#C2956E]" /> Método de Cobro
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {[
+                          { id: "Efectivo", label: "💵 Efectivo" },
+                          { id: "Tarjeta", label: "💳 Tarjeta (Cupón)" },
+                          { id: "MercadoPago", label: "📱 MercadoPago" },
+                          { id: "Fiado / Cta Cte", label: "🤝 Cta Cte / Fiado" }
+                        ].map(m => (
+                          <button
+                            key={m.id}
+                            onClick={() => setPaymentMethod(m.id as any)}
+                            className={`p-2.5 text-[10px] font-bold rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                              paymentMethod === m.id
+                                ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810] shadow-xs"
+                                : "bg-white border-stone-250 text-[#2C1810] hover:bg-stone-50"
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {paymentMethod === "Efectivo" && (
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div>
+                            <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Efectivo Entregado</label>
+                            <input 
+                              type="number" 
+                              placeholder="Monto entregado" 
+                              value={receivedCashInput}
+                              onChange={(e) => setReceivedCashInput(e.target.value)}
+                              className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
+                            />
+                          </div>
+                          <div className="p-2.5 bg-white border border-stone-200 rounded-xl flex flex-col justify-center font-mono">
+                            <span className="text-[8px] font-bold text-[#2C1810]/45 uppercase block font-sans">Vuelto Cambio</span>
+                            <strong className="text-xs text-emerald-850 mt-0.5">
+                              ${receivedCashInput && parseFloat(receivedCashInput) >= activeCheckoutTotal
+                                ? (parseFloat(receivedCashInput) - activeCheckoutTotal).toFixed(0)
+                                : "0"}
+                            </strong>
+                          </div>
+                        </div>
+                      )}
+
+                      {paymentMethod === "Tarjeta" && (
+                        <div className="pt-1">
+                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">POSNET Cupón Nro</label>
+                          <input 
+                            type="text" 
+                            placeholder="Ingrese código de cupón de pago" 
+                            value={posCouponInput}
+                            onChange={(e) => setPosCouponInput(e.target.value)}
+                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold font-mono" 
+                          />
+                        </div>
+                      )}
+
+                      {paymentMethod === "Fiado / Cta Cte" && (
+                        <div className="pt-1">
+                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Seleccionar Cuenta de Cliente</label>
+                          <select 
+                            value={selectedCtaCteClient}
+                            onChange={(e) => setSelectedCtaCteClient(e.target.value)}
+                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer"
+                          >
+                            <option value="">-- Elija Cuenta Corriente --</option>
+                            {clientAccounts.map(c => (
+                              <option key={c.id} value={c.name}>{c.name} (${c.cuit ? parseFloat(c.cuit).toLocaleString() : '0'} acumulado)</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final receipt emission actions */}
+                <div className="border-t border-[#2C1810]/10 pt-5 space-y-3">
+                  <button 
+                    onClick={handleProcessPosCheckout}
+                    className="w-full py-3 rounded-2xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    🧾 Confirmar Venta & Emitir Factura Fiscal (AFIP)
+                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => {
+                        handleProcessPosCheckout();
+                        onShowNotification("🖨️ Imprimiendo ticket no fiscal en ticketera térmica...", "success");
+                      }}
+                      className="py-2.5 rounded-xl border border-[#2C1810]/20 hover:bg-[#2C1810]/5 text-xs font-bold text-[#2C1810] transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent"
+                    >
+                      <Printer className="h-3.5 w-3.5" /> Ticket No Fiscal
+                    </button>
+                    <button 
+                      onClick={() => {
+                        onShowNotification("📥 Descargando comprobante fiscal en formato PDF...", "success");
+                      }}
+                      className="py-2.5 rounded-xl border border-[#2C1810]/20 hover:bg-[#2C1810]/5 text-xs font-bold text-[#2C1810] transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent"
+                    >
+                      <FileText className="h-3.5 w-3.5" /> Descargar PDF
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <div className="border-t border-[#2C1810]/15 pt-4 space-y-2 text-xs">
-                <div className="flex justify-between text-[#2C1810]/60 font-semibold">
-                  <span>Subtotal</span>
-                  <span className="font-mono">${posSubtotal.toFixed(0)}</span>
-                </div>
-                <div className="flex justify-between text-[#2C1810]/60 font-semibold">
-                  <span>IVA (21% Incl.)</span>
-                  <span className="font-mono">${posIva.toFixed(0)}</span>
-                </div>
-                <div className="flex justify-between text-base font-black text-[#2C1810] border-t border-[#2C1810]/10 pt-2">
-                  <span>TOTAL</span>
-                  <span className="font-mono">${posTotal.toFixed(0)}</span>
-                </div>
-              </div>
-            </div>
-
-            <button 
-              onClick={handleConfirmPosComanda}
-              disabled={posCart.length === 0}
-              className={`w-full mt-6 py-3 rounded-2xl text-xs font-bold text-center tracking-wider transition-all cursor-pointer uppercase ${
-                posCart.length > 0 
-                  ? "bg-[#2C1810] hover:bg-[#3d2217] text-white shadow-md"
-                  : "bg-stone-100 text-[#2C1810]/30 border border-stone-200 cursor-not-allowed"
-              }`}
-            >
-              📝 Confirmar Nueva Comanda ({posTable})
-            </button>
+            )}
           </div>
         </div>
 
-        {posCheckoutOrder && (
-          <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-md shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
-              <button 
-                onClick={() => setPosCheckoutOrder(null)}
-                className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+        {/* Bottom panel: closures history list */}
+        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+          <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
+            <Calendar className="h-4 w-4 text-[#C2956E]" /> REGISTRO DE AUDITORÍA DE CIERRES DE CAJA HOMOLOGADOS ({closuresHistory.length})
+          </h3>
+          
+          <div className="space-y-3">
+            {closuresHistory.map((cls, idx) => (
+              <div 
+                key={cls.id || idx}
+                className="p-4 bg-stone-50 border border-stone-150 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[10px] font-semibold text-[#2C1810]/80"
               >
-                <X className="h-4 w-4" />
-              </button>
-
-              <h4 className="font-serif text-lg font-bold text-[#2C1810]">Procesar Pago & Registrar Venta</h4>
-              <p className="text-[10px] text-[#2C1810]/50 font-medium mt-0.5">Comanda {posCheckoutOrder.id} — {posCheckoutOrder.tableNumber || "Para Llevar"}</p>
-
-              <div className="my-5 p-5 bg-stone-50 border border-[#2C1810]/10 rounded-2xl text-center">
-                <span className="text-[10px] text-[#2C1810]/40 font-bold uppercase tracking-wider block">Monto a Cobrar</span>
-                <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${posCheckoutOrder.total.toFixed(0)}</div>
-              </div>
-
-              <div className="space-y-4">
                 <div>
-                  <span className="text-[9px] font-bold text-[#2C1810]/50 uppercase tracking-wider block mb-2">Método de Cobro</span>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: "Efectivo", label: "💵 Efectivo" },
-                      { id: "MercadoPago", label: "📱 MercadoPago" },
-                      { id: "Tarjeta", label: "💳 Tarjeta Débito" },
-                      { id: "TarjetaCredito", label: "💳 Tarjeta Crédito" }
-                    ].map((method) => {
-                      const active = paymentMethod === method.id || (method.id === "TarjetaCredito" && paymentMethod === "Tarjeta");
-                      return (
-                        <button
-                          key={method.id}
-                          onClick={() => setPaymentMethod(method.id === "TarjetaCredito" ? "Tarjeta" : method.id as any)}
-                          className={`p-3 text-[11px] font-bold rounded-xl border text-center transition-all cursor-pointer ${
-                            active
-                              ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]"
-                              : "bg-white border-stone-200 text-[#2C1810] hover:bg-stone-50"
-                          }`}
-                        >
-                          {method.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <h4 className="text-xs font-serif font-bold text-[#2C1810]">Cierre de Caja {cls.user}</h4>
+                  <p className="text-[#2C1810]/50 mt-1">Apertura: {cls.apertura} • Cierre: {cls.cierre}</p>
+                  <p className="text-[#2C1810]/40 mt-0.5 italic">Observaciones: "{cls.observaciones}"</p>
                 </div>
-
-                {paymentMethod === "Tarjeta" && (
-                  <div>
-                    <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Cupón POSNET / Clover</label>
-                    <input 
-                      type="text"
-                      placeholder="Ingrese los últimos 4 dígitos del cupón"
-                      value={posCouponInput}
-                      onChange={(e) => setPosCouponInput(e.target.value)}
-                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:outline-none focus:ring-1 focus:ring-[#C2956E] font-bold"
-                    />
-                  </div>
-                )}
-
-                {paymentMethod === "Efectivo" && (
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-6 shrink-0 w-full md:w-auto justify-between md:justify-end">
+                  <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Recibido ($)</label>
-                      <input 
-                        type="number"
-                        placeholder="Monto entregado"
-                        value={receivedCashInput}
-                        onChange={(e) => setReceivedCashInput(e.target.value)}
-                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:outline-none focus:ring-1 focus:ring-[#C2956E] font-bold font-mono"
-                      />
+                      <span className="text-[8px] text-[#2C1810]/40 font-bold block uppercase tracking-wider">Ventas Turno</span>
+                      <strong className="font-mono text-[#2C1810]">${cls.ventasTurno.toLocaleString()}</strong>
                     </div>
-                    <div className="p-2.5 bg-stone-50 border border-stone-100 rounded-xl flex flex-col justify-center font-mono">
-                      <span className="text-[8px] font-bold text-[#2C1810]/40 uppercase tracking-wider block font-sans">Vuelto</span>
-                      <strong className="text-sm text-[#2C1810] mt-0.5">
-                        ${receivedCashInput && parseFloat(receivedCashInput) >= posCheckoutOrder.total 
-                          ? (parseFloat(receivedCashInput) - posCheckoutOrder.total).toFixed(0) 
-                          : "0"}
+                    <div>
+                      <span className="text-[8px] text-[#2C1810]/40 font-bold block uppercase tracking-wider">Monto Real</span>
+                      <strong className="font-mono text-[#2C1810]">${cls.montoReal.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[8px] text-[#2C1810]/40 font-bold block uppercase tracking-wider">Diferencia</span>
+                      <strong className={`font-mono ${cls.diferencia >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                        ${cls.diferencia.toLocaleString()}
                       </strong>
                     </div>
                   </div>
-                )}
-
-                <div className="flex gap-3 pt-3">
                   <button 
-                    onClick={() => setPosCheckoutOrder(null)}
-                    className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer text-center bg-transparent"
+                    onClick={() => setSelectedClosureForModal(cls)}
+                    className="px-4 py-2 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold shadow-sm transition-all cursor-pointer uppercase tracking-wider"
                   >
-                    Cancelar
-                  </button>
-                  <button 
-                    onClick={handleProcessPosCheckout}
-                    className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md transition-all cursor-pointer text-center"
-                  >
-                    Confirmar Cobro ✓
+                    Detalle
                   </button>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </motion.div>
     );
   };
@@ -2660,6 +3123,223 @@ export default function AdminHub({
                   Guardar Cambios ✓
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Configurar Restaurant Modal */}
+      {isConfigRestaurantOpen && (
+        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+            <button 
+              onClick={() => setIsConfigRestaurantOpen(false)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Configurar Restaurant</h4>
+            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Personalice los datos de su restaurante para el ticket fiscal.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Nombre Comercial</label>
+                <input type="text" defaultValue="Café Puglia" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+              </div>
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Dirección Física</label>
+                <input type="text" defaultValue="Calle 50 nro 600, La Plata" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+              </div>
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">CUIT Comercial</label>
+                <input type="text" defaultValue="30-71458925-9" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => { setIsConfigRestaurantOpen(false); onShowNotification("✅ Configuración de restaurante guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md cursor-pointer">Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Configuración Ticketera Modal */}
+      {isConfigTicketerisOpen && (
+        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+            <button 
+              onClick={() => setIsConfigTicketerisOpen(false)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Configurar Ticketera</h4>
+            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Interfaz de Conexión</label>
+                <select className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold cursor-pointer">
+                  <option>USB Thermal Printer (Predeterminado)</option>
+                  <option>Bluetooth clover-thermal-58</option>
+                  <option>Ethernet (IP: 192.168.1.150)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Ancho de Papel</label>
+                <select className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold cursor-pointer">
+                  <option>80 mm (Recomendado)</option>
+                  <option>58 mm</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Texto de Pie de Página</label>
+                <input type="text" defaultValue="¡Gracias por su visita! Café de Especialidad" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md cursor-pointer">Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cerrar Turno de Caja Modal */}
+      {isCloseShiftModalOpen && (
+        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+            <button 
+              onClick={() => setIsCloseShiftModalOpen(false)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Cerrar Turno de Caja Diaria</h4>
+            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
+            
+            <div className="my-4 p-4 bg-stone-50 border border-stone-150 rounded-2xl">
+              <span className="text-[9px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Ventas Turno Teórico</span>
+              <div className="text-2xl font-serif font-black text-[#2C1810] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#2C1810]/60 font-bold border-t border-[#2C1810]/10 pt-2.5">
+                <div>Efectivo: <span className="font-mono text-[#2C1810]">${cashLedger.cash.toLocaleString()}</span></div>
+                <div>Tarjeta: <span className="font-mono text-[#2C1810]">${cashLedger.card.toLocaleString()}</span></div>
+                <div>MP: <span className="font-mono text-[#2C1810]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Monto Real en Caja ($)</label>
+                <input 
+                  type="number" 
+                  placeholder="Ingrese el monto físico contado" 
+                  value={closeShiftRealCash} 
+                  onChange={(e) => setCloseShiftRealCash(e.target.value)}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Observaciones</label>
+                <textarea 
+                  placeholder="Facturación normal del turno, diferencias de arqueo, etc." 
+                  value={closeShiftNotes} 
+                  onChange={(e) => setCloseShiftNotes(e.target.value)}
+                  rows={3}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold resize-none"
+                />
+              </div>
+              <div className="flex gap-3 pt-3">
+                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button 
+                  onClick={() => {
+                    const realCash = parseFloat(closeShiftRealCash);
+                    if (isNaN(realCash) || realCash < 0) {
+                      onShowNotification("⚠️ Ingrese un monto real válido.", "warning");
+                      return;
+                    }
+                    handleConfirmCloseShift(realCash, closeShiftNotes);
+                    setCloseShiftRealCash("");
+                    setCloseShiftNotes("");
+                  }} 
+                  className="w-1/2 py-2.5 rounded-xl bg-red-650 hover:bg-red-750 text-white text-xs font-bold shadow-md cursor-pointer"
+                >
+                  Confirmar Arqueo ✓
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detalle de Cierre de Caja Modal */}
+      {selectedClosureForModal && (
+        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+            <button 
+              onClick={() => setSelectedClosureForModal(null)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Auditoría de Cierre de Caja</h4>
+            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Arqueo fiscal homologado por el personal de Café Puglia.</p>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4 text-[10px] text-[#2C1810]/70 border-b border-[#2C1810]/10 pb-4">
+              <div>
+                <span className="text-[#2C1810]/40 font-bold block">Responsable:</span>
+                <strong>{selectedClosureForModal.user}</strong>
+              </div>
+              <div>
+                <span className="text-[#2C1810]/40 font-bold block">Observaciones:</span>
+                <strong>"{selectedClosureForModal.observaciones}"</strong>
+              </div>
+              <div>
+                <span className="text-[#2C1810]/40 font-bold block">Fecha Apertura:</span>
+                <strong>{selectedClosureForModal.apertura}</strong>
+              </div>
+              <div>
+                <span className="text-[#2C1810]/40 font-bold block">Fecha Cierre:</span>
+                <strong>{selectedClosureForModal.cierre}</strong>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 p-4 bg-stone-50 border border-stone-150 rounded-2xl text-center mb-6">
+              <div>
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Ventas Turno</span>
+                <strong className="text-lg font-serif text-[#2C1810] font-mono block mt-0.5">${selectedClosureForModal.ventasTurno.toLocaleString()}</strong>
+              </div>
+              <div>
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Monto Real</span>
+                <strong className="text-lg font-serif text-[#2C1810] font-mono block mt-0.5">${selectedClosureForModal.montoReal.toLocaleString()}</strong>
+              </div>
+              <div>
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Diferencia</span>
+                <strong className={`text-lg font-serif font-mono block mt-0.5 ${selectedClosureForModal.diferencia >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                  ${selectedClosureForModal.diferencia.toLocaleString()}
+                </strong>
+              </div>
+            </div>
+
+            <h5 className="font-bold text-[10px] uppercase tracking-wider text-[#2C1810]/50 mb-2.5">Historial de Transacciones del Turno</h5>
+            <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+              {selectedClosureForModal.transactions && selectedClosureForModal.transactions.length > 0 ? (
+                selectedClosureForModal.transactions.map((tx: any, idx: number) => (
+                  <div key={idx} className="p-3 bg-white border border-stone-150 rounded-xl flex justify-between items-center text-[10px] font-semibold">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <strong className="text-[#2C1810]">{tx.type}</strong>
+                        <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-[#2C1810]/5 text-[#2C1810]/70 font-mono">{tx.orderId}</span>
+                      </div>
+                      <span className="text-[9px] text-[#2C1810]/40 block mt-0.5">{tx.timestamp} vía {tx.method}</span>
+                    </div>
+                    <strong className="text-xs font-mono text-[#2C1810]">${tx.total.toFixed(0)}</strong>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-stone-400 text-[10px]">No se registraron transacciones cobradas en este turno.</div>
+              )}
+            </div>
+
+            <div className="pt-5 flex justify-end">
+              <button onClick={() => setSelectedClosureForModal(null)} className="px-6 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md cursor-pointer">Cerrar Detalle</button>
             </div>
           </div>
         </div>
