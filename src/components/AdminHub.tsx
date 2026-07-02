@@ -5,7 +5,7 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
@@ -3595,6 +3595,40 @@ export default function AdminHub({
     );
   };
 
+  const handleExportCSV = () => {
+    // Generate CSV for transactions
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "=== REPORTES DE AUDITORIA - CAFE PUGLIA ===\n\n";
+    
+    // Section 1: Transacciones de Caja
+    csvContent += "=== TRANSACCIONES DE CAJA ===\n";
+    csvContent += "ID Comanda,Fecha y Hora,Metodo de Pago,Total Facturado\n";
+    cashLedger.transactions.forEach((tx: any) => {
+      csvContent += `"${tx.orderId}","${tx.timestamp}","${tx.method}",$${tx.total.toFixed(0)}\n`;
+    });
+
+    csvContent += "\n=== HISTORIAL DE MERMAS DE MATERIA PRIMA ===\n";
+    csvContent += "Fecha,Insumo,Descripcion,Cantidad,Costo Estimado,Auditor\n";
+    
+    const mermasData = [
+      { date: "Hoy", desc: "Leche cortada por corte de refrigeración", qty: "4.0 L", cost: "$4.800", auditor: "Carlos Gómez" },
+      { date: "Ayer", desc: "Harina mojada por humedad de limpieza", qty: "2.5 kg", cost: "$3.750", auditor: "Lucía Fernández" },
+      { date: "Hace 3 días", desc: "Granos de descarte de purga de molienda", qty: "0.5 kg", cost: "$12.000", auditor: "Mariano Díaz" }
+    ];
+    mermasData.forEach((merma) => {
+      csvContent += `"${merma.date}","${merma.qty}","${merma.desc}","${merma.cost}","${merma.auditor}"\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Reporte_Auditoria_Cafe_Puglia_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onShowNotification("📊 Reporte de auditoría exportado en CSV correctamente.", "success");
+  };
+
   const renderReportes = () => {
     // Math indicators based on actual data
     const totalSalesSum = orders.reduce((acc, curr) => acc + curr.total, 0);
@@ -3610,10 +3644,18 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="space-y-8 animate-fade-in"
       >
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Análisis de Negocio</span>
-          <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Reportes e Informes</h2>
-          <p className="text-xs text-[#2C1810]/60 mt-1">Estadísticas reales de facturación, mermas y métodos de pago.</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Análisis de Negocio</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Reportes e Informes</h2>
+            <p className="text-xs text-[#2C1810]/60 mt-1">Estadísticas reales de facturación, mermas y métodos de pago.</p>
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#C2956E] hover:bg-[#a37956] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Download className="h-4 w-4" /> Exportar Auditoría (.csv)
+          </button>
         </div>
 
         {/* Real Analytical Charts */}
