@@ -112,6 +112,7 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTrackedOrder, setActiveTrackedOrder] = useState<Order | null>(null);
   const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Ticket Preview States
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
@@ -627,31 +628,34 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-paper font-sans text-espresso selection:bg-caramel selection:text-white flex flex-col justify-between">
-      <div>
-        {/* Navbar Header */}
-        <Navbar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          cartCount={cartItems.reduce((acc, curr) => acc + curr.quantity, 0)}
-          onCartClick={() => setIsCartOpen(true)}
-          onLogout={handleLogout}
-          currentUser={currentUser}
-        />
+    <div className="min-h-screen bg-[#FDFBF7] font-sans text-espresso selection:bg-caramel selection:text-white flex">
+      {/* Sidebar Navigation */}
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        cartCount={cartItems.reduce((acc, curr) => acc + curr.quantity, 0)}
+        onCartClick={() => setIsCartOpen(true)}
+        onLogout={handleLogout}
+        currentUser={currentUser}
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+      />
 
-        {/* Sliding Bag Drawer */}
-        <CartDrawer
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          cartItems={cartItems}
-          onUpdateQuantity={handleUpdateQuantity}
-          onRemoveItem={handleRemoveItem}
-          onCheckout={handleCheckoutComplete}
-          activeBookings={bookings}
-        />
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? "md:pl-80" : "pl-0"}`}>
+        <div className="flex-1">
+          {/* Sliding Bag Drawer */}
+          <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            cartItems={cartItems}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveItem}
+            onCheckout={handleCheckoutComplete}
+            activeBookings={bookings}
+          />
 
-        {/* Content routing based on activeTab */}
-        <main className="pb-24">
+          {/* Content routing based on activeTab */}
+          <main className="pb-24">
           <AnimatePresence mode="wait">
             {activeTab === "inicio" && (
               <motion.div
@@ -1042,6 +1046,7 @@ export default function App() {
           © 2026 Café Puglia. Todos los derechos reservados.
         </div>
       </footer>
+    </div>
 
       {/* Interactive Ticket & AFIP Invoice Preview Modal */}
       <TicketPreviewModal
