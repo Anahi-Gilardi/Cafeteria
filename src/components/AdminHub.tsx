@@ -313,7 +313,19 @@ export default function AdminHub({
       const { data, error } = await supabase.from("users_accounts").select("*");
       const dbUsers = data || [];
 
-      // Load local custom users
+      // Extract metadata from DB columns if available
+      const newMeta: any = {};
+      dbUsers.forEach(u => {
+        newMeta[u.id] = {
+          direccion: u.direccion || "",
+          telefono: u.telefono || "",
+          telefono_contacto: u.telefono_contacto || "",
+          sueldo: u.sueldo ? parseFloat(u.sueldo) : 0,
+          permissions: u.permissions || []
+        };
+      });
+
+      // Merge local storage data
       let localUsers: any[] = [];
       try {
         const saved = localStorage.getItem("puglia_local_users");
@@ -322,13 +334,24 @@ export default function AdminHub({
         }
       } catch (e) {}
 
+      const savedMeta = localStorage.getItem("puglia_users_metadata");
+      let localMeta: any = {};
+      if (savedMeta) {
+        try { localMeta = JSON.parse(savedMeta); } catch (e) {}
+      }
+
       // Merge avoiding duplicates by ID
       const merged = [...dbUsers];
       localUsers.forEach(l => {
         if (!merged.some(m => m.id === l.id)) {
           merged.push(l);
         }
+        if (localMeta[l.id] && !newMeta[l.id]) {
+          newMeta[l.id] = localMeta[l.id];
+        }
       });
+
+      setUsersMetadata(newMeta);
       setUsers(merged);
     } catch (e) {
       console.error("Error fetching users:", e);
@@ -341,13 +364,28 @@ export default function AdminHub({
     }
   };
 
-  const saveUsersMetadata = async (newMeta: any) => {
+  const saveUsersMetadata = async (newMeta: any, updatedUserId?: string) => {
     setUsersMetadata(newMeta);
     localStorage.setItem("puglia_users_metadata", JSON.stringify(newMeta));
-    try {
-      await supabase.from("system_settings").upsert({ key: "users_metadata", value: JSON.stringify(newMeta) });
-    } catch (e) {
-      console.error("Error syncing users metadata to Supabase:", e);
+    
+    if (updatedUserId) {
+      const metaVal = newMeta[updatedUserId];
+      if (metaVal) {
+        try {
+          const { error } = await supabase.from("users_accounts").update({
+            direccion: metaVal.direccion,
+            telefono: metaVal.telefono,
+            telefono_contacto: metaVal.telefono_contacto,
+            sueldo: metaVal.sueldo,
+            permissions: metaVal.permissions
+          }).eq("id", updatedUserId);
+          if (error) {
+            console.warn("DB update failed, using local storage fallback", error);
+          }
+        } catch (e) {
+          console.warn("DB update failed, using local storage fallback", e);
+        }
+      }
     }
   };
 
@@ -358,13 +396,24 @@ export default function AdminHub({
       return;
     }
     const newId = "usr-" + Date.now();
+    const defaultPerms = newUserRole === "administrador"
+      ? ["dashboard", "inventario", "precios", "salon", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
+      : newUserRole === "mesero"
+      ? ["salon", "pedidos_mozo", "caja"]
+      : ["inventario", "personal"]; // barista
+
     const newUser = {
       id: newId,
       name: newUserName.trim(),
       email: newUserEmail.trim().toLowerCase(),
       password: newUserPassword.trim(),
       role: newUserRole,
-      pin: newUserPin.trim()
+      pin: newUserPin.trim(),
+      direccion: newUserAddress.trim(),
+      telefono: newUserPhone.trim(),
+      telefono_contacto: newUserEmergencyPhone.trim(),
+      sueldo: parseFloat(newUserSalary) || 0,
+      permissions: defaultPerms
     };
 
     let savedLocally = false;
@@ -393,13 +442,6 @@ export default function AdminHub({
       }
     }
 
-    // Save metadata
-    const defaultPerms = newUserRole === "administrador"
-      ? ["dashboard", "inventario", "precios", "salon", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
-      : newUserRole === "mesero"
-      ? ["salon", "pedidos_mozo", "caja"]
-      : ["inventario", "personal"]; // barista
-
     const newMeta = {
       ...usersMetadata,
       [newId]: {
@@ -410,7 +452,7 @@ export default function AdminHub({
         permissions: defaultPerms
       }
     };
-    await saveUsersMetadata(newMeta);
+    await saveUsersMetadata(newMeta, savedLocally ? undefined : newId);
 
     onShowNotification(
       savedLocally 
@@ -3379,7 +3421,7 @@ export default function AdminHub({
                                     permissions: updatedPerms
                                   }
                                 };
-                                saveUsersMetadata(updatedMeta);
+                                saveUsersMetadata(updatedMeta, selectedUserForPermissions.id);
                                 onShowNotification(`⚙️ Permisos de ${selectedUserForPermissions.name} actualizados.`, "info");
                               }}
                               className="h-4 w-4 rounded border-stone-300 text-[#2C1810] focus:ring-[#2C1810]/30 cursor-pointer"
