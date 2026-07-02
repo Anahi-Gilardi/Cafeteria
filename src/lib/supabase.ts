@@ -1,3 +1,4 @@
+// Cliente de Supabase para la Cafetería - Conectado con las credenciales del proyecto
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://idjecovmqlyjhflfakfr.supabase.co";
