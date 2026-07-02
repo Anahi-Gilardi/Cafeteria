@@ -629,8 +629,23 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] font-sans text-espresso selection:bg-caramel selection:text-white flex">
-      {/* Sidebar Navigation */}
+    <div className="min-h-screen bg-[#FDFBF7] font-sans text-espresso selection:bg-caramel selection:text-white">
+      <AdminHub
+        orders={orders}
+        onOrderStatusUpdate={handleOrderStatusUpdate}
+        onUpdateOrders={setOrders}
+        menuItems={menuItems}
+        onUpdateMenu={setMenuItems}
+        onShowNotification={showNotification}
+        clientAccounts={clientAccounts}
+        onUpdateClientAccounts={setClientAccounts}
+        onClosePanel={handleLogout}
+        currentUser={currentUser}
+        bookings={bookings}
+      />
+
+      <div className="hidden">
+        {/* Sidebar Navigation */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -878,6 +893,7 @@ export default function App() {
           © 2026 Café Puglia. Todos los derechos reservados.
         </div>
       </footer>
+      </div>
     </div>
 
       {/* Interactive Ticket & AFIP Invoice Preview Modal */}

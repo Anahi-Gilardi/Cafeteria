@@ -47,7 +47,11 @@ export default function AdminHub({
   bookings = []
 }: AdminHubProps) {
   const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "proveedores" | "personal" | "reportes">(
-    currentUser.role === "barista" ? "inventario" : "dashboard"
+    currentUser.role === "barista" 
+      ? "inventario" 
+      : currentUser.role === "mesero" 
+      ? "salon" 
+      : "dashboard"
   );
   const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas">("barista");
 
@@ -2548,10 +2552,10 @@ export default function AdminHub({
 
           <button
             onClick={onClosePanel}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/20 hover:border-white text-xs font-bold text-white transition-all cursor-pointer bg-transparent"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/20 hover:border-red-500 hover:bg-red-500/10 text-xs font-bold text-red-200 hover:text-white transition-all cursor-pointer bg-transparent"
           >
             <LogOut className="h-4 w-4 rotate-180" />
-            Volver al Portal
+            Cerrar Sesión
           </button>
           
           <div className="text-[8px] text-white/30 text-center font-bold tracking-wider uppercase">
