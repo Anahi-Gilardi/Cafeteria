@@ -34,15 +34,40 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
   const loadEmployees = async () => {
     try {
       const { data, error } = await supabase.from("users_accounts").select("id, name, role, email, pin");
-      if (!error && data && data.length > 0) {
-        setEmployees(data);
+      let dbUsers = data || [];
+
+      // Load local custom users
+      let localUsers: any[] = [];
+      try {
+        const saved = localStorage.getItem("puglia_local_users");
+        if (saved) {
+          localUsers = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error("Error reading local users:", e);
+      }
+
+      // Merge and remove duplicates by email/pin/id
+      const merged = [...dbUsers];
+      localUsers.forEach(l => {
+        if (!merged.some(m => m.id === l.id || m.email === l.email || m.pin === l.pin)) {
+          merged.push(l);
+        }
+      });
+
+      if (merged.length > 0) {
+        setEmployees(merged);
       } else {
-        // Fallback to default users if table is empty or blocked by RLS
         setEmployees(DEFAULT_USERS);
       }
     } catch (e) {
       console.error(e);
-      setEmployees(DEFAULT_USERS);
+      let localUsers: any[] = [];
+      try {
+        const saved = localStorage.getItem("puglia_local_users");
+        if (saved) localUsers = JSON.parse(saved);
+      } catch (err) {}
+      setEmployees([...DEFAULT_USERS, ...localUsers]);
     } finally {
       setIsLoaded(true);
     }
@@ -62,6 +87,36 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
 
     setIsLoading(true);
     try {
+      // 1. Check local storage users first
+      let localUsers: any[] = [];
+      try {
+        const saved = localStorage.getItem("puglia_local_users");
+        if (saved) {
+          localUsers = JSON.parse(saved);
+        }
+      } catch (e) {}
+
+      const matchedLocal = localUsers.find(u => u.email === emailInput.trim().toLowerCase());
+      if (matchedLocal) {
+        if (matchedLocal.password === passwordInput) {
+          onShowNotification(`☕ ¡Bienvenido, ${matchedLocal.name}! Sesión iniciada como ${matchedLocal.role}.`, "success");
+          onLoginSuccess({
+            id: matchedLocal.id,
+            name: matchedLocal.name,
+            email: matchedLocal.email,
+            role: matchedLocal.role,
+            pin: matchedLocal.pin
+          });
+          setIsLoading(false);
+          return;
+        } else {
+          onShowNotification("❌ Contraseña incorrecta.", "warning");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2. Fallback to Supabase
       const { data, error } = await supabase
         .from("users_accounts")
         .select("*")

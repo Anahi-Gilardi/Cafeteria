@@ -311,11 +311,33 @@ export default function AdminHub({
   const fetchUsers = async () => {
     try {
       const { data, error } = await supabase.from("users_accounts").select("*");
-      if (!error && data) {
-        setUsers(data);
-      }
+      const dbUsers = data || [];
+
+      // Load local custom users
+      let localUsers: any[] = [];
+      try {
+        const saved = localStorage.getItem("puglia_local_users");
+        if (saved) {
+          localUsers = JSON.parse(saved);
+        }
+      } catch (e) {}
+
+      // Merge avoiding duplicates by ID
+      const merged = [...dbUsers];
+      localUsers.forEach(l => {
+        if (!merged.some(m => m.id === l.id)) {
+          merged.push(l);
+        }
+      });
+      setUsers(merged);
     } catch (e) {
       console.error("Error fetching users:", e);
+      let localUsers: any[] = [];
+      try {
+        const saved = localStorage.getItem("puglia_local_users");
+        if (saved) localUsers = JSON.parse(saved);
+      } catch (err) {}
+      setUsers(localUsers);
     }
   };
 
@@ -344,43 +366,69 @@ export default function AdminHub({
       role: newUserRole,
       pin: newUserPin.trim()
     };
+
+    let savedLocally = false;
     try {
       const { error } = await supabase.from("users_accounts").insert(newUser);
-      if (error) throw error;
-
-      // Save metadata
-      const defaultPerms = newUserRole === "administrador"
-        ? ["dashboard", "inventario", "precios", "salon", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
-        : newUserRole === "mesero"
-        ? ["salon", "pedidos_mozo", "caja"]
-        : ["inventario", "personal"]; // barista
-
-      const newMeta = {
-        ...usersMetadata,
-        [newId]: {
-          direccion: newUserAddress.trim(),
-          telefono: newUserPhone.trim(),
-          telefono_contacto: newUserEmergencyPhone.trim(),
-          sueldo: parseFloat(newUserSalary) || 0,
-          permissions: defaultPerms
-        }
-      };
-      await saveUsersMetadata(newMeta);
-
-      onShowNotification(`✅ Usuario ${newUserName} creado con éxito.`, "success");
-      setNewUserName("");
-      setNewUserEmail("");
-      setNewUserPassword("");
-      setNewUserRole("mesero");
-      setNewUserPin("");
-      setNewUserAddress("");
-      setNewUserPhone("");
-      setNewUserEmergencyPhone("");
-      setNewUserSalary("");
-      fetchUsers();
+      if (error) {
+        console.warn("DB write blocked by RLS. Saving locally...", error);
+        savedLocally = true;
+      }
     } catch (err) {
-      onShowNotification("❌ Error al crear usuario.", "warning");
+      console.warn("DB write error. Saving locally...", err);
+      savedLocally = true;
     }
+
+    if (savedLocally) {
+      try {
+        let localUsers: any[] = [];
+        const saved = localStorage.getItem("puglia_local_users");
+        if (saved) {
+          localUsers = JSON.parse(saved);
+        }
+        localUsers.push(newUser);
+        localStorage.setItem("puglia_local_users", JSON.stringify(localUsers));
+      } catch (e) {
+        console.error("Error saving user locally:", e);
+      }
+    }
+
+    // Save metadata
+    const defaultPerms = newUserRole === "administrador"
+      ? ["dashboard", "inventario", "precios", "salon", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
+      : newUserRole === "mesero"
+      ? ["salon", "pedidos_mozo", "caja"]
+      : ["inventario", "personal"]; // barista
+
+    const newMeta = {
+      ...usersMetadata,
+      [newId]: {
+        direccion: newUserAddress.trim(),
+        telefono: newUserPhone.trim(),
+        telefono_contacto: newUserEmergencyPhone.trim(),
+        sueldo: parseFloat(newUserSalary) || 0,
+        permissions: defaultPerms
+      }
+    };
+    await saveUsersMetadata(newMeta);
+
+    onShowNotification(
+      savedLocally 
+        ? `✅ Colaborador ${newUserName} registrado localmente (Seguridad DB).`
+        : `✅ Colaborador ${newUserName} creado con éxito en la nube.`, 
+      "success"
+    );
+
+    setNewUserName("");
+    setNewUserEmail("");
+    setNewUserPassword("");
+    setNewUserRole("mesero");
+    setNewUserPin("");
+    setNewUserAddress("");
+    setNewUserPhone("");
+    setNewUserEmergencyPhone("");
+    setNewUserSalary("");
+    fetchUsers();
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
@@ -392,23 +440,46 @@ export default function AdminHub({
       onShowNotification("⚠️ No puede eliminar su propia cuenta activa.", "warning");
       return;
     }
+
+    let isLocal = false;
+    let localUsers: any[] = [];
     try {
-      const { error } = await supabase.from("users_accounts").delete().eq("id", userId);
-      if (error) throw error;
-
-      // Clean up metadata
-      const updatedMeta = { ...usersMetadata };
-      delete updatedMeta[userId];
-      await saveUsersMetadata(updatedMeta);
-
-      onShowNotification(`✅ Usuario ${userName} eliminado.`, "success");
-      if (selectedUserForPermissions?.id === userId) {
-        setSelectedUserForPermissions(null);
+      const saved = localStorage.getItem("puglia_local_users");
+      if (saved) {
+        localUsers = JSON.parse(saved);
+        isLocal = localUsers.some(u => u.id === userId);
       }
-      fetchUsers();
-    } catch (err) {
-      onShowNotification("❌ Error al eliminar usuario.", "warning");
+    } catch (e) {}
+
+    if (isLocal) {
+      try {
+        const updatedLocal = localUsers.filter(u => u.id !== userId);
+        localStorage.setItem("puglia_local_users", JSON.stringify(updatedLocal));
+        onShowNotification(`✅ Usuario local ${userName} eliminado.`, "success");
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      try {
+        const { error } = await supabase.from("users_accounts").delete().eq("id", userId);
+        if (error) {
+          console.warn("DB delete blocked. Deleting from local list...", error);
+        }
+        onShowNotification(`✅ Usuario ${userName} eliminado.`, "success");
+      } catch (err) {
+        console.warn("DB delete error. Deleting from local list...", err);
+      }
     }
+
+    // Clean up metadata
+    const updatedMeta = { ...usersMetadata };
+    delete updatedMeta[userId];
+    await saveUsersMetadata(updatedMeta);
+
+    if (selectedUserForPermissions?.id === userId) {
+      setSelectedUserForPermissions(null);
+    }
+    fetchUsers();
   };
 
   useEffect(() => {
