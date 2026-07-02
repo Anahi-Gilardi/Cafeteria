@@ -5,7 +5,7 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors
+  Lock, Unlock, Percent, Printer, Scissors, Settings
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
@@ -1404,7 +1404,7 @@ export default function AdminHub({
     } else if (posCheckoutOrder && splitPaymentType === "articulos") {
       const selectedItemsSum = Object.entries(selectedSplitItems).reduce((sum, [itemName, qty]) => {
         const matchedItem = posCheckoutOrder.items.find(i => i.name === itemName);
-        return sum + (matchedItem ? matchedItem.price * qty : 0);
+        return sum + (matchedItem ? matchedItem.price * Number(qty) : 0);
       }, 0);
       activeCheckoutTotal = selectedItemsSum * (1 - discountPercentage / 100);
     }
