@@ -89,6 +89,7 @@ export default function TicketPreviewModal({
   }, [isOpen]);
 
   const hasCoffee = useMemo(() => {
+    if (!order) return false;
     return order.items.some(it => 
       it.name.toLowerCase().includes("café") || 
       it.name.toLowerCase().includes("cortado") || 
@@ -98,7 +99,7 @@ export default function TicketPreviewModal({
       it.name.toLowerCase().includes("latte") || 
       it.name.toLowerCase().includes("submarino")
     );
-  }, [order.items]);
+  }, [order]);
 
   if (!order) return null;
 
