@@ -47,7 +47,7 @@ export default function AdminHub({
   currentUser,
   bookings = []
 }: AdminHubProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "proveedores" | "personal" | "reportes">(
+  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "proveedores" | "personal" | "reportes">(
     currentUser.role === "barista" 
       ? "inventario" 
       : currentUser.role === "mesero" 
@@ -75,6 +75,8 @@ export default function AdminHub({
     sueldo?: number;
     permissions?: string[];
   }>>({});
+
+  const [adminBookings, setAdminBookings] = useState<any[]>([]);
 
   const [calibrationData, setCalibrationData] = useState(() => {
     try {
@@ -397,9 +399,9 @@ export default function AdminHub({
     }
     const newId = "usr-" + Date.now();
     const defaultPerms = newUserRole === "administrador"
-      ? ["dashboard", "inventario", "precios", "salon", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
+      ? ["dashboard", "inventario", "precios", "salon", "reservas", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
       : newUserRole === "mesero"
-      ? ["salon", "pedidos_mozo", "caja"]
+      ? ["salon", "reservas", "pedidos_mozo", "caja"]
       : ["inventario", "personal"]; // barista
 
     const newUser = {
@@ -546,6 +548,75 @@ export default function AdminHub({
       fetchTipPool();
     }
   }, [activeSubTab, personalSubTab]);
+
+  const fetchBookings = async () => {
+    try {
+      const { data, error } = await supabase.from("reservations").select("*").order("date", { ascending: true });
+      if (!error && data) {
+        setAdminBookings(data.map(b => ({
+          id: b.id,
+          tableId: b.table_id,
+          tableName: b.table_name,
+          date: b.date,
+          timeSlot: b.time_slot,
+          guests: b.guests,
+          customerName: b.customer_name,
+          customerPhone: b.customer_phone,
+          createdAt: b.created_at,
+          referenceCode: b.reference_code
+        })));
+      }
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+    }
+  };
+
+  const handleAdminCancelBooking = async (bookingId: string) => {
+    try {
+      const { error } = await supabase.from("reservations").delete().eq("id", bookingId);
+      if (!error) {
+        setAdminBookings(prev => prev.filter(b => b.id !== bookingId));
+        onShowNotification("🛑 Reserva cancelada con éxito.", "success");
+      } else {
+        onShowNotification("⚠️ Error al cancelar la reserva.", "warning");
+      }
+    } catch (err) {
+      console.error("Error deleting reservation:", err);
+    }
+  };
+
+  const handleAdminAddBooking = async (newBookingData: any) => {
+    const newBooking = {
+      id: "RES-" + Math.floor(Math.random() * 9000 + 1000).toString(),
+      table_id: newBookingData.tableId,
+      table_name: newBookingData.tableName,
+      date: newBookingData.date,
+      time_slot: newBookingData.timeSlot,
+      guests: parseInt(newBookingData.guests),
+      customer_name: newBookingData.customerName,
+      customer_phone: newBookingData.customerPhone,
+      created_at: new Date().toLocaleDateString("es-AR"),
+      reference_code: Math.random().toString(36).substring(2, 8).toUpperCase()
+    };
+
+    try {
+      const { error } = await supabase.from("reservations").insert(newBooking);
+      if (!error) {
+        fetchBookings();
+        onShowNotification("📅 Nueva reserva registrada con éxito.", "success");
+      } else {
+        onShowNotification("⚠️ Error al guardar la reserva.", "warning");
+      }
+    } catch (err) {
+      console.error("Error creating reservation:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSubTab === "reservas" || activeSubTab === "salon") {
+      fetchBookings();
+    }
+  }, [activeSubTab]);
 
   // Massive Inflation Price Adjustments
   const [inflationPercentage, setInflationPercentage] = useState<number>(10);
@@ -2279,6 +2350,247 @@ export default function AdminHub({
     );
   };
 
+  const renderReservas = () => {
+    const [isAddingBooking, setIsAddingBooking] = useState(false);
+    const [formName, setFormName] = useState("");
+    const [formPhone, setFormPhone] = useState("");
+    const [formDate, setFormDate] = useState("");
+    const [formSlot, setFormSlot] = useState("16:00 - 18:00");
+    const [formTableId, setFormTableId] = useState("mesa-1");
+    const [formGuests, setFormGuests] = useState(2);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleFormSubmit = async (e: FormEvent) => {
+      e.preventDefault();
+      if (!formName || !formPhone || !formDate) {
+        onShowNotification("⚠️ Complete los campos obligatorios.", "warning");
+        return;
+      }
+      const tableName = formTableId.replace("mesa-", "Mesa ");
+      await handleAdminAddBooking({
+        tableId: formTableId,
+        tableName,
+        date: formDate,
+        timeSlot: formSlot,
+        guests: formGuests,
+        customerName: formName,
+        customerPhone: formPhone
+      });
+      setIsAddingBooking(false);
+      setFormName("");
+      setFormPhone("");
+      setFormDate("");
+    };
+
+    const filteredBookings = adminBookings.filter(b => 
+      b.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.tableName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.referenceCode.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+      <motion.div
+        key="reservas-view"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="space-y-8"
+      >
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Control de Clientes</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Reservas de Mesas</h2>
+            <p className="text-xs text-[#2C1810]/60 mt-1">Gestione y agende reservas de clientes para el salón en tiempo real.</p>
+          </div>
+          <button
+            onClick={() => setIsAddingBooking(!isAddingBooking)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer uppercase tracking-wider"
+          >
+            <Plus className="h-4 w-4" /> Nueva Reserva
+          </button>
+        </div>
+
+        {/* Add Booking Modal / Form */}
+        {isAddingBooking && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="bg-white border border-[#2C1810]/15 rounded-3xl p-6 shadow-xs space-y-4"
+          >
+            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Agendar Nueva Reserva</h3>
+            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2C1810]/70">
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Nombre del Cliente *</label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ej: Mariano Closs"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Teléfono *</label>
+                <input
+                  type="text"
+                  value={formPhone}
+                  onChange={(e) => setFormPhone(e.target.value)}
+                  placeholder="Ej: 11-4567-8901"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Fecha de Reserva *</label>
+                <input
+                  type="date"
+                  value={formDate}
+                  onChange={(e) => setFormDate(e.target.value)}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Horario / Turno</label>
+                <select
+                  value={formSlot}
+                  onChange={(e) => setFormSlot(e.target.value)}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                >
+                  <option value="08:00 - 10:00">Desayuno (08:00 - 10:00)</option>
+                  <option value="10:00 - 12:00">Media Mañana (10:00 - 12:00)</option>
+                  <option value="12:00 - 14:00">Almuerzo (12:00 - 14:00)</option>
+                  <option value="14:00 - 16:00">Tarde Corta (14:00 - 16:00)</option>
+                  <option value="16:00 - 18:00">Merienda (16:00 - 18:00)</option>
+                  <option value="18:00 - 20:00">After Office (18:00 - 20:00)</option>
+                  <option value="20:00 - 22:00">Cena 1 (20:00 - 22:00)</option>
+                  <option value="22:00 - 00:00">Cena 2 (22:00 - 00:00)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Asignar Mesa</label>
+                <select
+                  value={formTableId}
+                  onChange={(e) => setFormTableId(e.target.value)}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                >
+                  <option value="mesa-1">Mesa 1 (2 Pers.)</option>
+                  <option value="mesa-2">Mesa 2 (2 Pers.)</option>
+                  <option value="mesa-3">Mesa 3 (4 Pers.)</option>
+                  <option value="mesa-4">Mesa 4 (4 Pers.)</option>
+                  <option value="mesa-5">Mesa 5 (6 Pers.)</option>
+                  <option value="mesa-6">Mesa 6 (6 Pers.)</option>
+                  <option value="mesa-7">Mesa 7 (8 Pers.)</option>
+                  <option value="mesa-8">Mesa 8 (8 Pers.)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Cantidad de Comensales</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={formGuests}
+                  onChange={(e) => setFormGuests(parseInt(e.target.value))}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-3 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingBooking(false)}
+                  className="px-4 py-2 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer font-bold"
+                >
+                  Guardar Reserva
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+
+        {/* Filter bar */}
+        <div className="max-w-md">
+          <div className="relative">
+            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#2C1810]/40" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por cliente, mesa o código..."
+              className="w-full rounded-xl border border-[#2C1810]/15 bg-white py-2.5 pr-4 pl-11 shadow-2xs outline-none transition-all focus:border-[#C2956E] text-xs font-semibold text-[#2C1810]"
+            />
+          </div>
+        </div>
+
+        {/* List of Bookings */}
+        <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs font-semibold text-[#2C1810]/80">
+              <thead>
+                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] uppercase tracking-wider text-[#2C1810]/60">
+                  <th className="p-4 font-black">Cliente</th>
+                  <th className="p-4 font-black">Teléfono</th>
+                  <th className="p-4 font-black">Fecha</th>
+                  <th className="p-4 font-black">Horario</th>
+                  <th className="p-4 font-black">Mesa Asignada</th>
+                  <th className="p-4 font-black">Comensales</th>
+                  <th className="p-4 font-black">Código Ref.</th>
+                  <th className="p-4 font-black text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2C1810]/5">
+                {filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center text-espresso/50 font-medium italic">
+                      No hay reservas agendadas que coincidan con la búsqueda.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBookings.map((b) => (
+                    <tr key={b.id} className="hover:bg-stone-50/50 transition-colors">
+                      <td className="p-4 font-bold text-[#2C1810]">{b.customerName}</td>
+                      <td className="p-4 font-mono">{b.customerPhone}</td>
+                      <td className="p-4">{b.date}</td>
+                      <td className="p-4">{b.timeSlot}</td>
+                      <td className="p-4 font-bold">{b.tableName}</td>
+                      <td className="p-4 text-center">
+                        <span className="px-2 py-0.5 rounded-full bg-[#2C1810]/5 text-[#2C1810] text-[10px] font-bold">
+                          {b.guests} Pers.
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono font-bold text-caramel">{b.referenceCode}</td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => handleAdminCancelBooking(b.id)}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs"
+                        >
+                          Cancelar
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   const renderPedidosMozo = () => {
     const MOZO_TABLES = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Mesa 5", "Mesa 6", "Mesa 8", "Mesa 12", "VIP-1", "Terraza-3"];
     
@@ -3387,6 +3699,7 @@ export default function AdminHub({
                         { id: "inventario", label: "📦 Stock & Insumos" },
                         { id: "precios", label: "📖 Carta & Recetas" },
                         { id: "salon", label: "🗺️ Mapa de Salón" },
+                        { id: "reservas", label: "📅 Reservas" },
                         { id: "pedidos_mozo", label: "📋 Módulo Mozo" },
                         { id: "caja", label: "💰 Caja & Comandas" },
                         { id: "proveedores", label: "🤝 Proveedores" },
@@ -3783,6 +4096,7 @@ export default function AdminHub({
               { id: "inventario", label: "Stock & Insumos", icon: Package, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
               { id: "precios", label: "Carta & Recetas", icon: BookOpen, roles: ["administrador"] },
               { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] },
+              { id: "reservas", label: "Reservas", icon: Calendar, badge: adminBookings.length, roles: ["administrador", "mesero"] },
               { id: "pedidos_mozo", label: "Módulo Mozo", icon: ClipboardList, roles: ["administrador", "mesero"] },
               { id: "caja", label: "Caja & Comandas", icon: Coins, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
               { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
@@ -3861,6 +4175,7 @@ export default function AdminHub({
           {activeSubTab === "inventario" && renderInventario()}
           {activeSubTab === "precios" && renderPrecios()}
           {activeSubTab === "salon" && renderSalon()}
+          {activeSubTab === "reservas" && renderReservas()}
           {activeSubTab === "pedidos_mozo" && renderPedidosMozo()}
           {activeSubTab === "caja" && renderCaja()}
           {activeSubTab === "proveedores" && renderProveedores()}
