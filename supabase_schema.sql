@@ -114,6 +114,17 @@ CREATE TABLE IF NOT EXISTS system_settings (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- 9. Tabla de Usuarios y Roles (Autenticación y Privacidad)
+CREATE TABLE IF NOT EXISTS users_accounts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'mesero',
+    pin TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- ==========================================
 -- DESACTIVAR RLS (ROW LEVEL SECURITY)
 -- Para simplificar la conexión en redes internas de administración.
@@ -126,3 +137,4 @@ ALTER TABLE reservations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE barista_calibrations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE cash_ledger DISABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users_accounts DISABLE ROW LEVEL SECURITY;
