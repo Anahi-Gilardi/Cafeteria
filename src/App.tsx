@@ -9,6 +9,7 @@ import OrderStatus from "./components/OrderStatus";
 import BaristaAI from "./components/BaristaAI";
 import HistoryHub from "./components/HistoryHub";
 import AdminHub from "./components/AdminHub";
+import Dashboard from "./components/Dashboard";
 import CartaDigital from "./components/CartaDigital";
 import TicketPreviewModal from "./components/TicketPreviewModal";
 import ManualPuglia from "./components/ManualPuglia";
@@ -34,7 +35,7 @@ export default function App() {
     }
   });
 
-  const [activeTab, setActiveTab] = useState<string>("inicio");
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
   // Live dynamic menu items catalog synced with Supabase
@@ -505,7 +506,7 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setActiveTab("inicio");
+    setActiveTab("dashboard");
     showNotification("👋 Sesión cerrada correctamente.", "info");
   };
 
@@ -518,7 +519,7 @@ export default function App() {
             if (user.role === "barista") {
               setActiveTab("cocina");
             } else {
-              setActiveTab("inicio");
+              setActiveTab("dashboard");
             }
           }}
           onShowNotification={showNotification}
@@ -579,7 +580,7 @@ export default function App() {
           onShowNotification={showNotification}
           clientAccounts={clientAccounts}
           onUpdateClientAccounts={setClientAccounts}
-          onClosePanel={() => setActiveTab("inicio")}
+          onClosePanel={() => setActiveTab("dashboard")}
           currentUser={currentUser}
           bookings={bookings}
         />
@@ -657,181 +658,12 @@ export default function App() {
           {/* Content routing based on activeTab */}
           <main className="pb-24">
           <AnimatePresence mode="wait">
-            {activeTab === "inicio" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-16"
-              >
-                {/* Visual Grand Hero Section */}
-                <section className="relative overflow-hidden bg-espresso text-paper py-24 sm:py-32 px-6">
-                  {/* Background overlay image of espresso pouring */}
-                  <div className="absolute inset-0 z-0 opacity-30">
-                    <img
-                      src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1200"
-                      alt="Cafetería de Especialidad"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute inset-0 bg-linear-to-r from-espresso via-espresso/80 to-transparent z-0" />
-
-                  <div className="relative z-10 mx-auto max-w-7xl">
-                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-caramel block mb-3 flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4" /> Cafés de Especialidad & Repostería Artesanal
-                    </span>
-                    <h1 className="font-serif text-4xl font-extrabold tracking-tight sm:text-6xl max-w-3xl leading-tight italic">
-                      El Ritual del Café con Alma de Especialidad
-                    </h1>
-                    <p className="mt-4 text-base sm:text-lg text-paper/80 max-w-xl leading-relaxed">
-                      En <strong className="text-caramel font-serif">Café Puglia</strong> fusionamos la devoción por el café de especialidad de excelencia con la calidez del encuentro familiar. Venga a disfrutar de nuestra repostería artesanal producida en el día y viva un ritual único en la ciudad de La Plata.
-                    </p>
-
-                    <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                      <button
-                        id="hero-go-menu-btn"
-                        onClick={() => setActiveTab("menu")}
-                        className="rounded-full bg-caramel hover:bg-caramel/90 text-white font-bold px-8 py-3.5 text-sm shadow-md transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                      >
-                        <span>Explorar el Menú</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-
-                      <button
-                        id="hero-go-bookings-btn"
-                        onClick={() => setActiveTab("reservas")}
-                        className="rounded-full border border-paper/30 bg-white/10 hover:bg-white/15 text-paper font-bold px-8 py-3.5 text-sm transition-all cursor-pointer"
-                      >
-                        Reservar Mesa Física
-                      </button>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Café Origen Experience Highlights */}
-                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                  <div className="text-center max-w-2xl mx-auto mb-12">
-                    <h2 className="font-serif text-3xl font-bold text-espresso tracking-tight">La Experiencia Café Puglia</h2>
-                    <p className="text-xs text-espresso/60 mt-2">La calidez de nuestro equipo y la devoción por el buen café inspiran cada rincón de nuestra casa.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {/* Feature 1 */}
-                    <div className="rounded-2xl border border-coffee bg-white p-6 shadow-xs flex flex-col justify-between hover:border-caramel transition-all">
-                      <div>
-                        <div className="h-10 w-10 rounded-xl bg-caramel/10 text-caramel flex items-center justify-center mb-4">
-                          <Coffee className="h-5 w-5" />
-                        </div>
-                        <h3 className="font-serif font-bold text-lg text-espresso">Menú Digital Interactivo</h3>
-                        <p className="text-xs text-espresso/70 mt-2 leading-relaxed">
-                          Filtre por preferencias alimentarias, explore alérgenos y caliente sus postres favoritos o personalice su tipo de leche de avena o almendras.
-                        </p>
-                      </div>
-                      <button
-                        id="feature-btn-menu"
-                        onClick={() => setActiveTab("menu")}
-                        className="text-xs font-bold text-caramel hover:text-espresso flex items-center gap-1 mt-5 cursor-pointer"
-                      >
-                        <span>Pedir ahora</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Feature 2 */}
-                    <div className="rounded-2xl border border-coffee bg-white p-6 shadow-xs flex flex-col justify-between hover:border-caramel transition-all">
-                      <div>
-                        <div className="h-10 w-10 rounded-xl bg-caramel/10 text-caramel flex items-center justify-center mb-4">
-                          <BookOpen className="h-5 w-5" />
-                        </div>
-                        <h3 className="font-serif font-bold text-lg text-espresso">Plano de Mesas Interactivo</h3>
-                        <p className="text-xs text-espresso/70 mt-2 leading-relaxed">
-                          Elija su ambiente ideal desde el plano de distribución en 2D: rincón de lectura íntimo, mesa ventana con luz natural, o la terraza exterior.
-                        </p>
-                      </div>
-                      <button
-                        id="feature-btn-reservas"
-                        onClick={() => setActiveTab("reservas")}
-                        className="text-xs font-bold text-caramel hover:text-espresso flex items-center gap-1 mt-5 cursor-pointer"
-                      >
-                        <span>Elegir mi mesa</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Feature 3 */}
-                    <div className="rounded-2xl border border-coffee bg-white p-6 shadow-xs flex flex-col justify-between hover:border-caramel transition-all">
-                      <div>
-                        <div className="h-10 w-10 rounded-xl bg-caramel/10 text-caramel flex items-center justify-center mb-4">
-                          <Sparkles className="h-5 w-5" />
-                        </div>
-                        <h3 className="font-serif font-bold text-lg text-espresso">Asesor Barista IA</h3>
-                        <p className="text-xs text-espresso/70 mt-2 leading-relaxed">
-                          Responde a las preguntas de nuestro Barista Virtual para recibir una recomendación de maridaje de café y repostería personalizada.
-                        </p>
-                      </div>
-                      <button
-                        id="feature-btn-barista"
-                        onClick={() => setActiveTab("barista-ia")}
-                        className="text-xs font-bold text-caramel hover:text-espresso flex items-center gap-1 mt-5 cursor-pointer"
-                      >
-                        <span>Consultar barista</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Promotional Banner (Featured Specials Showcase) */}
-                <section className="bg-white border-y border-coffee py-16 px-4">
-                  <div className="mx-auto max-w-7xl">
-                    <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
-                      <div className="max-w-md lg:max-w-lg">
-                        <span className="text-[10px] font-bold tracking-widest text-caramel uppercase block mb-2">Recomendaciones Especiales</span>
-                        <h3 className="font-serif text-3xl font-extrabold text-espresso leading-tight italic">Submarino con Medialunas de Manteca</h3>
-                        <p className="text-xs text-espresso/70 mt-3 leading-relaxed">
-                          La experiencia porteña definitiva. Sumerja la barra de chocolate puro de Bariloche en la leche espumosa caliente y acompáñela con una medialuna calentita pintada con almíbar cítrico casero.
-                        </p>
-                        <div className="flex items-center gap-6 mt-6">
-                          <div className="text-center">
-                            <span className="text-2xl font-extrabold text-espresso">$4.50</span>
-                            <span className="text-[9px] text-espresso/50 block font-bold">Precio Especial</span>
-                          </div>
-                          <button
-                            id="promo-order-submarino"
-                            onClick={() => {
-                              const item = menuItems.find(m => m.id === "arg-submarino")!;
-                              handleAddToBag(item, { size: "M", milk: "Regular", sweetness: "100%" });
-                            }}
-                            className="rounded-full bg-espresso hover:bg-caramel text-paper font-bold text-xs px-6 py-3 shadow-md flex items-center space-x-1.5 transition-all cursor-pointer"
-                          >
-                            <span>Pedir Ahora</span>
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Right showcase image card */}
-                      <div className="w-full max-w-sm shrink-0 rounded-2xl overflow-hidden shadow-lg border border-coffee bg-white">
-                        <img
-                          src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=500"
-                          alt="Submarino de Chocolate"
-                          className="h-64 w-full object-cover"
-                        />
-                        <div className="p-4 border-t border-coffee flex justify-between items-center bg-paper">
-                          <div>
-                            <h4 className="font-serif font-bold text-sm text-espresso">Submarino de Chocolate Bariloche</h4>
-                            <span className="text-[10px] text-espresso/60">Leche de Campo Caliente • Chocolate de Autor</span>
-                          </div>
-                          <div className="flex items-center gap-1 bg-caramel/10 px-2 py-1 rounded text-caramel font-bold text-[10px]">
-                            <Star className="h-3.5 w-3.5 fill-caramel text-caramel" />
-                            <span>Tradiciones</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              </motion.div>
+            {activeTab === "dashboard" && (
+              <Dashboard
+                onGoToCaja={() => setActiveTab("admin")}
+                onGoToInventario={() => setActiveTab("admin")}
+                onShowNotification={showNotification}
+              />
             )}
 
             {activeTab === "menu" && (
@@ -905,7 +737,7 @@ export default function App() {
                   onShowNotification={showNotification}
                   clientAccounts={clientAccounts}
                   onUpdateClientAccounts={setClientAccounts}
-                  onClosePanel={() => setActiveTab("inicio")}
+                  onClosePanel={() => setActiveTab("dashboard")}
                   currentUser={currentUser}
                   bookings={bookings}
                 />

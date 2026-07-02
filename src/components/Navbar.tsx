@@ -1,4 +1,4 @@
-import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll, LogOut, ChevronLeft } from "lucide-react";
+import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll, LogOut, ChevronLeft, LayoutDashboard } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface NavbarProps {
@@ -15,7 +15,7 @@ interface NavbarProps {
 export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick, onLogout, currentUser, isOpen, setIsOpen }: NavbarProps) {
   // Restrict navigation based on role
   const navItems = [
-    { id: "inicio", label: "Inicio", icon: Coffee, roles: ["administrador", "barista", "mesero"] },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador", "barista", "mesero"] },
     { id: "menu", label: "Menú", icon: Coffee, roles: ["administrador", "mesero"] },
     { id: "carta-digital", label: "Carta Digital", icon: BookOpen, roles: ["administrador", "mesero"] },
     { id: "reservas", label: "Reservas", icon: Calendar, roles: ["administrador", "mesero"] },
