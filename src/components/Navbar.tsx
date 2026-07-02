@@ -1,4 +1,4 @@
-import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll } from "lucide-react";
+import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion } from "motion/react";
 
@@ -7,21 +7,27 @@ interface NavbarProps {
   setActiveTab: (tab: string) => void;
   cartCount: number;
   onCartClick: () => void;
+  onLogout: () => void;
+  currentUser: { name: string; role: string };
 }
 
-export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick }: NavbarProps) {
+export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick, onLogout, currentUser }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Restrict navigation based on role
+  // Administrador: all
+  // Barista: inicio, manual, admin
+  // Mesero: inicio, menu, carta-digital, reservas, historial, admin (restricted views inside)
   const navItems = [
-    { id: "inicio", label: "Inicio", icon: Coffee },
-    { id: "menu", label: "Menú", icon: Coffee },
-    { id: "carta-digital", label: "Carta Digital", icon: BookOpen },
-    { id: "reservas", label: "Reservas", icon: Calendar },
-    { id: "barista-ia", label: "Barista IA", icon: Bot },
-    { id: "manual", label: "Manual Operativo", icon: Scroll },
-    { id: "historial", label: "Mis Pedidos", icon: ListOrdered },
-    { id: "admin", label: "Administración", icon: Settings },
-  ];
+    { id: "inicio", label: "Inicio", icon: Coffee, roles: ["administrador", "barista", "mesero"] },
+    { id: "menu", label: "Menú", icon: Coffee, roles: ["administrador", "mesero"] },
+    { id: "carta-digital", label: "Carta Digital", icon: BookOpen, roles: ["administrador", "mesero"] },
+    { id: "reservas", label: "Reservas", icon: Calendar, roles: ["administrador", "mesero"] },
+    { id: "barista-ia", label: "Barista IA", icon: Bot, roles: ["administrador", "barista", "mesero"] },
+    { id: "manual", label: "Manual Operativo", icon: Scroll, roles: ["administrador", "barista", "mesero"] },
+    { id: "historial", label: "Mis Pedidos", icon: ListOrdered, roles: ["administrador", "mesero"] },
+    { id: "admin", label: "Administración", icon: Settings, roles: ["administrador", "barista", "mesero"] },
+  ].filter(item => item.roles.includes(currentUser.role));
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-coffee bg-paper/90 backdrop-blur-md">
@@ -46,8 +52,15 @@ export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick
             </div>
           </div>
 
+          {/* User badge */}
+          <div className="hidden lg:flex items-center space-x-2 text-[10px] uppercase tracking-wider font-bold text-espresso/70 bg-[#2C1810]/5 px-3.5 py-1.5 rounded-full border border-coffee/10">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span>{currentUser.name}</span>
+            <span className="text-caramel font-black">({currentUser.role})</span>
+          </div>
+
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
+          <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -56,9 +69,9 @@ export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick
                   key={item.id}
                   id={`nav-btn-${item.id}`}
                   onClick={() => setActiveTab(item.id)}
-                  className={`relative flex items-center space-x-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`relative flex items-center space-x-1.5 px-3.5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
                     isActive 
-                      ? "text-espresso font-semibold" 
+                      ? "text-espresso font-black" 
                       : "text-espresso/70 hover:text-espresso hover:bg-espresso/5"
                   }`}
                 >
@@ -69,31 +82,42 @@ export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
-                  <Icon className={`h-4 w-4 ${isActive ? "text-caramel" : "text-espresso/40"}`} />
+                  <Icon className={`h-3.5 w-3.5 ${isActive ? "text-caramel" : "text-espresso/40"}`} />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Cart & Mobile Hamburger */}
-          <div className="flex items-center space-x-3">
+          {/* Cart, Logout & Mobile Hamburger */}
+          <div className="flex items-center space-x-2.5">
             {/* Shopping Cart Trigger Button */}
+            {currentUser.role !== "barista" && (
+              <button
+                id="cart-trigger-btn"
+                onClick={onCartClick}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full bg-espresso text-paper transition-all hover:bg-caramel hover:scale-105 shadow-md"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-caramel text-[10px] font-bold text-white ring-2 ring-paper"
+                  >
+                    {cartCount}
+                  </motion.span>
+                )}
+              </button>
+            )}
+
+            {/* Logout Button */}
             <button
-              id="cart-trigger-btn"
-              onClick={onCartClick}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full bg-espresso text-paper transition-all hover:bg-caramel hover:scale-105 shadow-md"
+              onClick={onLogout}
+              className="relative flex h-11 w-11 items-center justify-center rounded-full border border-coffee bg-white text-espresso transition-all hover:bg-[#2C1810]/5 hover:text-red-700 hover:scale-105 shadow-sm cursor-pointer"
+              title="Cerrar Sesión"
             >
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-caramel text-[10px] font-bold text-white ring-2 ring-paper"
-                >
-                  {cartCount}
-                </motion.span>
-              )}
+              <LogOut className="h-5 w-5" />
             </button>
 
             {/* Mobile Hamburger Menu */}

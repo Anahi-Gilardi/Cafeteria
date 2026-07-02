@@ -15,6 +15,8 @@ import ManualPuglia from "./components/ManualPuglia";
 import { Coffee, ArrowRight, Sparkles, BookOpen, Clock, Heart, Star, Phone, MapPin, X, CheckCircle, Info, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "./lib/supabase";
+import LoginScreen from "./components/LoginScreen";
+import KitchenDisplay from "./components/KitchenDisplay";
 
 interface ToastNotification {
   id: string;
@@ -23,6 +25,15 @@ interface ToastNotification {
 }
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    try {
+      const saved = localStorage.getItem("origen_current_user");
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [activeTab, setActiveTab] = useState<string>("inicio");
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
@@ -111,6 +122,15 @@ export default function App() {
     localStorage.setItem("origen_cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
+  // Sync currentUser to local storage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem("origen_current_user", JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem("origen_current_user");
+    }
+  }, [currentUser]);
+
   // Load and seed initial data from Supabase
   useEffect(() => {
     const loadSupabaseData = async () => {
@@ -193,6 +213,17 @@ export default function App() {
             fiscal: o.fiscal || undefined
           }));
           setOrders(mappedOrders);
+        }
+
+        // 5. Fetch & Seed User Accounts
+        const { data: userData } = await supabase.from("users_accounts").select("*");
+        if (!userData || userData.length === 0) {
+          const defaultUsers = [
+            { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@cafepuglia.com", password: "pablo123", role: "administrador", pin: "1111" },
+            { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@cafepuglia.com", password: "barista123", role: "barista", pin: "2222" },
+            { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@cafepuglia.com", password: "mesero123", role: "mesero", pin: "3333" }
+          ];
+          await supabase.from("users_accounts").insert(defaultUsers);
         }
       } catch (err) {
         console.error("Error loading data from Supabase:", err);
@@ -471,6 +502,70 @@ export default function App() {
     showNotification(`📋 Pedido actualizado a estado: '${status}'.`, "info");
   };
 
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setActiveTab("inicio");
+    showNotification("👋 Sesión cerrada correctamente.", "info");
+  };
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-paper font-sans text-espresso selection:bg-caramel selection:text-white flex flex-col justify-between">
+        <LoginScreen
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            if (user.role === "barista") {
+              setActiveTab("cocina");
+            } else {
+              setActiveTab("inicio");
+            }
+          }}
+          onShowNotification={showNotification}
+        />
+        
+        {/* Floating Interactive Toast Notifications Overlay Stack */}
+        <div className="fixed top-6 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+          <AnimatePresence>
+            {notifications.map((toast) => {
+              const isSuccess = toast.type === "success";
+              const isWarning = toast.type === "warning";
+              const Icon = isSuccess ? CheckCircle : isWarning ? AlertTriangle : Info;
+              return (
+                <motion.div
+                  key={toast.id}
+                  initial={{ opacity: 0, x: 50, y: -10 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                  className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-lg ${
+                    isSuccess
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                      : isWarning
+                      ? "bg-amber-50 border-amber-200 text-amber-900"
+                      : "bg-blue-50 border-blue-200 text-blue-900"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${
+                    isSuccess ? "text-emerald-700" : isWarning ? "text-amber-700" : "text-blue-700"
+                  }`} />
+                  <div className="flex-1 text-xs font-semibold leading-relaxed">
+                    {toast.message}
+                  </div>
+                  <button
+                    onClick={() => removeNotification(toast.id)}
+                    className="p-0.5 hover:bg-stone-200/50 rounded transition-all cursor-pointer text-stone-500"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      </div>
+    );
+  }
+
   if (activeTab === "admin") {
     return (
       <div className="min-h-screen bg-paper font-sans text-espresso selection:bg-caramel selection:text-white">
@@ -484,6 +579,8 @@ export default function App() {
           clientAccounts={clientAccounts}
           onUpdateClientAccounts={setClientAccounts}
           onClosePanel={() => setActiveTab("inicio")}
+          currentUser={currentUser}
+          bookings={bookings}
         />
         
         {/* Floating Interactive Toast Notifications Overlay Stack */}
@@ -538,6 +635,8 @@ export default function App() {
           setActiveTab={setActiveTab}
           cartCount={cartItems.reduce((acc, curr) => acc + curr.quantity, 0)}
           onCartClick={() => setIsCartOpen(true)}
+          onLogout={handleLogout}
+          currentUser={currentUser}
         />
 
         {/* Sliding Bag Drawer */}
@@ -803,6 +902,22 @@ export default function App() {
                   clientAccounts={clientAccounts}
                   onUpdateClientAccounts={setClientAccounts}
                   onClosePanel={() => setActiveTab("inicio")}
+                  currentUser={currentUser}
+                  bookings={bookings}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === "cocina" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                key="cocina-tab-content"
+              >
+                <KitchenDisplay
+                  orders={orders}
+                  onOrderStatusUpdate={handleOrderStatusUpdate}
                 />
               </motion.div>
             )}
