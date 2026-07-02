@@ -7,6 +7,7 @@ import {
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface AdminHubProps {
   orders: Order[];
@@ -66,64 +67,16 @@ export default function AdminHub({
   });
 
   // Local Storage state for Cash Register ledger
-  const [cashLedger, setCashLedger] = useState(() => {
-    try {
-      const saved = localStorage.getItem("origen_cash_ledger");
-      return saved ? JSON.parse(saved) : {
-        totalCollected: 125.40,
-        cash: 45.20,
-        card: 55.20,
-        mercadopago: 25.00,
-        transactions: [
-          { id: "tx-1", type: "Cobro", orderId: "PRE-0941", total: 15.20, method: "Efectivo", timestamp: "Hace 1 hora" },
-          { id: "tx-2", type: "Cobro", orderId: "PRE-0932", total: 45.00, method: "Tarjeta", timestamp: "Hace 2 horas" },
-          { id: "tx-3", type: "Cobro", orderId: "PRE-0925", total: 65.20, method: "MercadoPago", timestamp: "Hace 3 horas" }
-        ]
-      };
-    } catch (e) {
-      return {
-        totalCollected: 125.40,
-        cash: 45.20,
-        card: 55.20,
-        mercadopago: 25.00,
-        transactions: [
-          { id: "tx-1", type: "Cobro", orderId: "PRE-0941", total: 15.20, method: "Efectivo", timestamp: "Hace 1 hora" },
-          { id: "tx-2", type: "Cobro", orderId: "PRE-0932", total: 45.00, method: "Tarjeta", timestamp: "Hace 2 horas" },
-          { id: "tx-3", type: "Cobro", orderId: "PRE-0925", total: 65.20, method: "MercadoPago", timestamp: "Hace 3 horas" }
-        ]
-      };
-    }
+  const [cashLedger, setCashLedger] = useState({
+    totalCollected: 0,
+    cash: 0,
+    card: 0,
+    mercadopago: 0,
+    transactions: []
   });
 
   // Local Storage state for Raw Materials Insumos
-  const [insumos, setInsumos] = useState<Insumo[]>(() => {
-    const defaultInsumos = [
-      { id: "ins-harina", name: "Harina 000 Pastelera", quantity: 0.8, unit: "kg", minLimit: 10.0, provider: "Distribuidora Sur", expirationDate: "2026-08-15" },
-      { id: "ins-leche", name: "Leche Entera La Suipachense", quantity: 1.2, unit: "L", minLimit: 12.0, provider: "Lácteos del Campo", expirationDate: "2026-06-10" },
-      { id: "ins-crema", name: "Crema de Leche 44% Tenor Gras", quantity: 4.5, unit: "L", minLimit: 6.0, provider: "Lácteos del Campo", expirationDate: "2026-06-12" },
-      { id: "ins-cafe", name: "Tostado Etiopía Yirgacheffe (Especialidad)", quantity: 8.5, unit: "kg", minLimit: 5.0, provider: "Moinho Alegre", expirationDate: "2026-11-01" },
-      { id: "ins-cafe-colombia", name: "Tostado Colombia Huila (Finca El Diviso)", quantity: 12.0, unit: "kg", minLimit: 6.0, provider: "Moinho Alegre", expirationDate: "2026-11-15" },
-      { id: "ins-manteca", name: "Manteca Calidad Extra", quantity: 3.2, unit: "kg", minLimit: 8.0, provider: "Distribuidora Sur", expirationDate: "2026-07-20" },
-      { id: "ins-azucar", name: "Azúcar Chango Refinada", quantity: 15.0, unit: "kg", minLimit: 10.0, provider: "Mayorista Altiplano", expirationDate: "2027-01-10" },
-      { id: "ins-huevos", name: "Huevos de Campo Orgánicos", quantity: 120, unit: "un", minLimit: 90, provider: "Granja La Pradera", expirationDate: "2026-06-25" },
-      { id: "ins-ddl", name: "Dulce de Leche Repostero", quantity: 4.2, unit: "kg", minLimit: 5.0, provider: "Distribuidora Sur", expirationDate: "2026-09-01" },
-      { id: "ins-chocolate", name: "Chocolate Fino de Bariloche", quantity: 38, unit: "barras", minLimit: 15, provider: "Distribuidora Sur", expirationDate: "2026-12-15" },
-      { id: "ins-yerba", name: "Yerba Mate Orgánica Barbacuá", quantity: 3.5, unit: "kg", minLimit: 4.0, provider: "Mayorista Altiplano", expirationDate: "2027-03-20" }
-    ];
-    try {
-      const saved = localStorage.getItem("origen_insumos");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return defaultInsumos.map(d => {
-          const match = parsed.find((p: any) => p.id === d.id);
-          return match ? { ...d, ...match } : d;
-        });
-      }
-      return defaultInsumos;
-    } catch (e) {
-      return defaultInsumos;
-    }
-  });
+  const [insumos, setInsumos] = useState<Insumo[]>([]);
 
   // Billing calculation states
   const [billingOrder, setBillingOrder] = useState<Order | null>(null);
@@ -149,11 +102,134 @@ export default function AdminHub({
     { id: "staff-3", name: "Mariano Díaz", rol: "Mozo", consumedToday: 3.20, limit: 12.00 }
   ]);
 
+  // Load and seed initial data from Supabase
   useEffect(() => {
-    if (activeSubTab === "profitsharing") {
-      setTipPool(parseFloat(localStorage.getItem("origen_tip_pool") || "0"));
+    const loadSupabaseData = async () => {
+      try {
+        // 1. Fetch Insumos
+        const { data: insData } = await supabase.from("insumos").select("*");
+        if (insData && insData.length > 0) {
+          setInsumos(insData.map(i => ({
+            id: i.id,
+            name: i.name,
+            quantity: Number(i.quantity),
+            unit: i.unit,
+            minLimit: Number(i.min_limit),
+            provider: i.provider || undefined,
+            expirationDate: i.expiration_date || undefined
+          })));
+        } else {
+          // Seed default insumos if empty
+          const defaultInsumos = [
+            { id: "ins-harina", name: "Harina 000 Pastelera", quantity: 0.8, unit: "kg", minLimit: 10.0, provider: "Distribuidora Sur", expirationDate: "2026-08-15" },
+            { id: "ins-leche", name: "Leche Entera La Suipachense", quantity: 1.2, unit: "L", minLimit: 12.0, provider: "Lácteos del Campo", expirationDate: "2026-06-10" },
+            { id: "ins-crema", name: "Crema de Leche 44% Tenor Gras", quantity: 4.5, unit: "L", minLimit: 6.0, provider: "Lácteos del Campo", expirationDate: "2026-06-12" },
+            { id: "ins-cafe", name: "Tostado Etiopía Yirgacheffe (Especialidad)", quantity: 8.5, unit: "kg", minLimit: 5.0, provider: "Moinho Alegre", expirationDate: "2026-11-01" },
+            { id: "ins-cafe-colombia", name: "Tostado Colombia Huila (Finca El Diviso)", quantity: 12.0, unit: "kg", minLimit: 6.0, provider: "Moinho Alegre", expirationDate: "2026-11-15" },
+            { id: "ins-manteca", name: "Manteca Calidad Extra", quantity: 3.2, unit: "kg", minLimit: 8.0, provider: "Distribuidora Sur", expirationDate: "2026-07-20" },
+            { id: "ins-azucar", name: "Azúcar Chango Refinada", quantity: 15.0, unit: "kg", minLimit: 10.0, provider: "Mayorista Altiplano", expirationDate: "2027-01-10" },
+            { id: "ins-huevos", name: "Huevos de Campo Orgánicos", quantity: 120, unit: "un", minLimit: 90, provider: "Granja La Pradera", expirationDate: "2026-06-25" },
+            { id: "ins-ddl", name: "Dulce de Leche Repostero", quantity: 4.2, unit: "kg", minLimit: 5.0, provider: "Distribuidora Sur", expirationDate: "2026-09-01" },
+            { id: "ins-chocolate", name: "Chocolate Fino de Bariloche", quantity: 38, unit: "barras", minLimit: 15, provider: "Distribuidora Sur", expirationDate: "2026-12-15" },
+            { id: "ins-yerba", name: "Yerba Mate Orgánica Barbacuá", quantity: 5.0, unit: "kg", minLimit: 3.0, provider: "Mayorista Altiplano", expirationDate: "2027-04-18" },
+            { id: "ins-jugo-naranja", name: "Naranjas de Jugo Seleccionadas", quantity: 18.0, unit: "kg", minLimit: 10.0, provider: "Granja La Pradera", expirationDate: "2026-06-18" }
+          ];
+          await supabase.from("insumos").insert(defaultInsumos.map(i => ({
+            id: i.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit,
+            min_limit: i.minLimit,
+            provider: i.provider,
+            expiration_date: i.expirationDate
+          })));
+          setInsumos(defaultInsumos);
+        }
+
+        // 2. Fetch Cash Ledger
+        const { data: cashData } = await supabase.from("cash_ledger").select("*").eq("id", "current").single();
+        if (cashData) {
+          setCashLedger({
+            totalCollected: Number(cashData.total_collected),
+            cash: Number(cashData.cash),
+            card: Number(cashData.card),
+            mercadopago: Number(cashData.mercadopago),
+            transactions: cashData.transactions || []
+          });
+        } else {
+          const defaultLedger = {
+            id: 'current',
+            total_collected: 125.40,
+            cash: 45.20,
+            card: 55.20,
+            mercadopago: 25.00,
+            transactions: [
+              { id: "tx-1", type: "Cobro", orderId: "PRE-0941", total: 15.20, method: "Efectivo", timestamp: "Hace 1 hora" },
+              { id: "tx-2", type: "Cobro", orderId: "PRE-0932", total: 45.00, method: "Tarjeta", timestamp: "Hace 2 horas" },
+              { id: "tx-3", type: "Cobro", orderId: "PRE-0925", total: 65.20, method: "MercadoPago", timestamp: "Hace 3 horas" }
+            ]
+          };
+          await supabase.from("cash_ledger").insert({
+            id: defaultLedger.id,
+            total_collected: defaultLedger.total_collected,
+            cash: defaultLedger.cash,
+            card: defaultLedger.card,
+            mercadopago: defaultLedger.mercadopago,
+            transactions: defaultLedger.transactions
+          });
+          setCashLedger({
+            totalCollected: defaultLedger.total_collected,
+            cash: defaultLedger.cash,
+            card: defaultLedger.card,
+            mercadopago: defaultLedger.mercadopago,
+            transactions: defaultLedger.transactions
+          });
+        }
+
+        // 3. Fetch Barista Calibration Data
+        const { data: calData } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
+        if (calData && calData.length > 0) {
+          const latest = calData[0];
+          const parsedCal = {
+            gramosIn: Number(latest.gramos_in),
+            mililitrosOut: Number(latest.mililitros_out),
+            tiempo: Number(latest.tiempo),
+            temperatura: Number(latest.temperatura),
+            clima: latest.clima
+          };
+          setCalibrationData(parsedCal);
+          localStorage.setItem("puglia_calibration", JSON.stringify(parsedCal));
+        }
+
+        // 4. Fetch Tip Pool
+        const { data: settingsData } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
+        if (settingsData) {
+          setTipPool(Number(settingsData.value));
+        }
+      } catch (err) {
+        console.error("Error fetching admin data from Supabase:", err);
+      }
+    };
+
+    loadSupabaseData();
+  }, []);
+
+  // Fetch tip pool whenever user navigates to personal subtab
+  useEffect(() => {
+    if (activeSubTab === "personal" && personalSubTab === "profit") {
+      const fetchTipPool = async () => {
+        try {
+          const { data } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
+          if (data) {
+            setTipPool(Number(data.value));
+          }
+        } catch (err) {
+          console.error("Error reading tip pool setting:", err);
+        }
+      };
+      fetchTipPool();
     }
-  }, [activeSubTab]);
+  }, [activeSubTab, personalSubTab]);
 
   // Massive Inflation Price Adjustments
   const [inflationPercentage, setInflationPercentage] = useState<number>(10);
@@ -328,13 +404,46 @@ export default function AdminHub({
     setIsScannerOpen(false);
   };
 
-  // Sync to local storage
+  // Sync to Supabase
   useEffect(() => {
-    localStorage.setItem("origen_cash_ledger", JSON.stringify(cashLedger));
+    const syncCash = async () => {
+      try {
+        if (cashLedger.transactions.length === 0 && cashLedger.totalCollected === 0) return;
+        await supabase.from("cash_ledger").upsert({
+          id: "current",
+          total_collected: cashLedger.totalCollected,
+          cash: cashLedger.cash,
+          card: cashLedger.card,
+          mercadopago: cashLedger.mercadopago,
+          transactions: cashLedger.transactions
+        });
+      } catch (err) {
+        console.error("Error syncing cash ledger to Supabase:", err);
+      }
+    };
+    syncCash();
   }, [cashLedger]);
 
   useEffect(() => {
-    localStorage.setItem("origen_insumos", JSON.stringify(insumos));
+    const syncInsumos = async () => {
+      try {
+        if (insumos.length === 0) return;
+        await supabase.from("insumos").upsert(
+          insumos.map(ins => ({
+            id: ins.id,
+            name: ins.name,
+            quantity: ins.quantity,
+            unit: ins.unit,
+            min_limit: ins.minLimit,
+            provider: ins.provider || null,
+            expiration_date: ins.expirationDate || null
+          }))
+        );
+      } catch (err) {
+        console.error("Error syncing insumos to Supabase:", err);
+      }
+    };
+    syncInsumos();
   }, [insumos]);
 
   // Handle cash ledger collection
@@ -1538,10 +1647,22 @@ export default function AdminHub({
                   </div>
 
                   <form
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
-                      localStorage.setItem("puglia_calibration", JSON.stringify(calibrationData));
-                      onShowNotification("☕ Calibración del Barista guardada e integrada con éxito.", "success");
+                      try {
+                        await supabase.from("barista_calibrations").insert({
+                          gramos_in: calibrationData.gramosIn,
+                          mililitros_out: calibrationData.mililitrosOut,
+                          tiempo: calibrationData.tiempo,
+                          temperatura: calibrationData.temperatura,
+                          clima: calibrationData.clima
+                        });
+                        localStorage.setItem("puglia_calibration", JSON.stringify(calibrationData));
+                        onShowNotification("☕ Calibración del Barista guardada e integrada con éxito.", "success");
+                      } catch (err) {
+                        console.error("Error saving calibration to Supabase:", err);
+                        onShowNotification("⚠️ Error al guardar calibración en la nube.", "warning");
+                      }
                     }}
                     className="space-y-4 text-xs font-semibold text-[#2C1810]/70"
                   >
@@ -1721,15 +1842,19 @@ export default function AdminHub({
                     </div>
 
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (tipPool <= 0) {
                           onShowNotification("⚠️ No hay propinas acumuladas para repartir.", "warning");
                           return;
                         }
-                        const split = tipPool / 5;
-                        localStorage.setItem("origen_tip_pool", "0");
-                        setTipPool(0);
-                        onShowNotification("✅ Se liquidaron las propinas acumuladas.", "success");
+                        try {
+                          await supabase.from("system_settings").upsert({ key: "tip_pool", value: 0 });
+                          localStorage.setItem("origen_tip_pool", "0");
+                          setTipPool(0);
+                          onShowNotification("✅ Se liquidaron las propinas acumuladas.", "success");
+                        } catch (err) {
+                          console.error("Error clearing tip pool on Supabase:", err);
+                        }
                       }}
                       className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer mt-4 uppercase tracking-wider"
                     >

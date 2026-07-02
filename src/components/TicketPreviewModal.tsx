@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Order, FiscalDetails, ClientAccount } from "../types";
 import { X, Printer, Download, QrCode, CreditCard, DollarSign, Users, AlertTriangle, CheckCircle, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface TicketPreviewModalProps {
   order: Order | null;
@@ -51,24 +52,39 @@ export default function TicketPreviewModal({
 
   const ticketRef = useRef<HTMLDivElement>(null);
 
-  const calibration = useMemo(() => {
-    try {
-      const calibStr = localStorage.getItem("puglia_calibration");
-      return calibStr ? JSON.parse(calibStr) : {
-        gramosIn: 18,
-        mililitrosOut: 36,
-        tiempo: 27,
-        temperatura: 92,
-        clima: "Despejado y Seco"
+  const [calibration, setCalibration] = useState({
+    gramosIn: 18,
+    mililitrosOut: 36,
+    tiempo: 27,
+    temperatura: 92,
+    clima: "Despejado y Seco"
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCalibration = async () => {
+        try {
+          const { data } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
+          if (data && data.length > 0) {
+            const latest = data[0];
+            const parsedCal = {
+              gramosIn: Number(latest.gramos_in),
+              mililitrosOut: Number(latest.mililitros_out),
+              tiempo: Number(latest.tiempo),
+              temperatura: Number(latest.temperatura),
+              clima: latest.clima
+            };
+            setCalibration(parsedCal);
+            localStorage.setItem("puglia_calibration", JSON.stringify(parsedCal));
+          } else {
+            const calibStr = localStorage.getItem("puglia_calibration");
+            if (calibStr) setCalibration(JSON.parse(calibStr));
+          }
+        } catch (err) {
+          console.error("Error fetching calibration for TicketPreviewModal:", err);
+        }
       };
-    } catch (e) {
-      return {
-        gramosIn: 18,
-        mililitrosOut: 36,
-        tiempo: 27,
-        temperatura: 92,
-        clima: "Despejado y Seco"
-      };
+      fetchCalibration();
     }
   }, [isOpen]);
 
@@ -215,31 +231,40 @@ export default function TicketPreviewModal({
     }
 
     // Add transaction ledger entry
-    let savedLedger: any = {};
-    try {
-      savedLedger = JSON.parse(localStorage.getItem("origen_cash_ledger") || "{}");
-    } catch (e) {
-      savedLedger = {};
-    }
-    const updatedLedger = {
-      ...savedLedger,
-      totalCollected: (savedLedger.totalCollected || 0) + activeBillTotal,
-      cash: (savedLedger.cash || 0) + (paymentMethod === "Efectivo" ? activeBillTotal : 0),
-      card: (savedLedger.card || 0) + (paymentMethod === "Tarjeta" ? activeBillTotal : 0),
-      mercadopago: (savedLedger.mercadopago || 0) + (paymentMethod === "MercadoPago" ? activeBillTotal : 0),
-      transactions: [
-        {
-          id: "tx-" + Date.now(),
-          type: "Cobro POS",
-          orderId: `PED-${order.id.substring(order.id.length - 4).toUpperCase()}`,
-          total: activeBillTotal,
-          method: paymentMethod,
-          timestamp: "Hace instantes"
-        },
-        ...(savedLedger.transactions || [])
-      ]
-    };
-    localStorage.setItem("origen_cash_ledger", JSON.stringify(updatedLedger));
+    (async () => {
+      try {
+        const { data: cashData } = await supabase.from("cash_ledger").select("*").eq("id", "current").single();
+        const savedLedger = cashData || { total_collected: 0, cash: 0, card: 0, mercadopago: 0, transactions: [] };
+        
+        const updatedLedger = {
+          total_collected: Number(savedLedger.total_collected || 0) + activeBillTotal,
+          cash: Number(savedLedger.cash || 0) + (paymentMethod === "Efectivo" ? activeBillTotal : 0),
+          card: Number(savedLedger.card || 0) + (paymentMethod === "Tarjeta" ? activeBillTotal : 0),
+          mercadopago: Number(savedLedger.mercadopago || 0) + (paymentMethod === "MercadoPago" ? activeBillTotal : 0),
+          transactions: [
+            {
+              id: "tx-" + Date.now(),
+              type: "Cobro POS",
+              orderId: `PED-${order.id.substring(order.id.length - 4).toUpperCase()}`,
+              total: activeBillTotal,
+              method: paymentMethod,
+              timestamp: "Hace instantes"
+            },
+            ...(savedLedger.transactions || [])
+          ]
+        };
+        await supabase.from("cash_ledger").upsert({ id: "current", ...updatedLedger });
+        localStorage.setItem("origen_cash_ledger", JSON.stringify({
+          totalCollected: updatedLedger.total_collected,
+          cash: updatedLedger.cash,
+          card: updatedLedger.card,
+          mercadopago: updatedLedger.mercadopago,
+          transactions: updatedLedger.transactions
+        }));
+      } catch (err) {
+        console.error("Error updating cash ledger on Supabase:", err);
+      }
+    })();
 
     // If split bill, show separate notification or reset division
     if (splitType !== "none") {

@@ -14,6 +14,7 @@ import TicketPreviewModal from "./components/TicketPreviewModal";
 import ManualPuglia from "./components/ManualPuglia";
 import { Coffee, ArrowRight, Sparkles, BookOpen, Clock, Heart, Star, Phone, MapPin, X, CheckCircle, Info, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "./lib/supabase";
 
 interface ToastNotification {
   id: string;
@@ -25,16 +26,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
-  // Live dynamic menu items catalog synced with localStorage
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("origen_menu_items_v2");
-      return saved ? JSON.parse(saved) : MENU_ITEMS;
-    } catch (e) {
-      console.error("Failed to parse menuItems from localStorage", e);
-      return MENU_ITEMS;
-    }
-  });
+  // Live dynamic menu items catalog synced with Supabase
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
 
   // Global notification toast states
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
@@ -54,9 +47,46 @@ export default function App() {
     setNotifications((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  useEffect(() => {
-    localStorage.setItem("origen_menu_items_v2", JSON.stringify(menuItems));
-  }, [menuItems]);
+  // Helper mappers for Supabase
+  const mapDbToMenuItem = (db: any): MenuItem => ({
+    id: db.id,
+    name: db.name,
+    price: Number(db.price),
+    takeawayPrice: db.takeaway_price ? Number(db.takeaway_price) : undefined,
+    deliveryPrice: db.delivery_price ? Number(db.delivery_price) : undefined,
+    description: db.description,
+    category: db.category as any,
+    tags: db.tags || [],
+    image: db.image,
+    customizable: db.customizable,
+    nutrition: {
+      calories: db.calories || 0,
+      allergens: db.allergens || []
+    },
+    stock: db.stock !== null ? Number(db.stock) : undefined,
+    isOffer: db.is_offer,
+    offerPrice: db.offer_price ? Number(db.offer_price) : undefined,
+    recipe: db.recipe || []
+  });
+
+  const mapMenuItemToDb = (item: MenuItem) => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    takeaway_price: item.takeawayPrice ?? null,
+    delivery_price: item.deliveryPrice ?? null,
+    description: item.description,
+    category: item.category,
+    tags: item.tags,
+    image: item.image,
+    customizable: item.customizable,
+    calories: item.nutrition?.calories ?? null,
+    allergens: item.nutrition?.allergens ?? [],
+    stock: item.stock ?? null,
+    is_offer: item.isOffer ?? false,
+    offer_price: item.offerPrice ?? null,
+    recipe: item.recipe || []
+  });
 
   // Core synchronized persistent states
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
@@ -67,73 +97,138 @@ export default function App() {
       return [];
     }
   });
-  const [bookings, setBookings] = useState<Reservation[]>(() => {
-    try {
-      const saved = localStorage.getItem("origen_bookings");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem("origen_orders");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  // Track the single active order being prepared
-  const [activeTrackedOrder, setActiveTrackedOrder] = useState<Order | null>(() => {
-    try {
-      const savedOrders: Order[] = JSON.parse(localStorage.getItem("origen_orders") || "[]");
-      const active = savedOrders.find(o => o.status !== "Completado");
-      return active || null;
-    } catch (e) {
-      return null;
-    }
-  });
-
-  // Client Accounts (Cuentas Corrientes / Fiado) Ledger
-  const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>(() => {
-    try {
-      const saved = localStorage.getItem("origen_client_accounts");
-      return saved ? JSON.parse(saved) : [
-        { id: "cli-1", name: "Mariano Closs", cuit: "20-33445566-9", phone: "11-4567-8901", balance: -450.00, creditLimit: 20000 },
-        { id: "cli-2", name: "Estela de Carlotto", cuit: "27-05556667-1", phone: "11-9876-5432", balance: 0.00, creditLimit: 50000 },
-        { id: "cli-3", name: "Enzo Francescoli", cuit: "20-99887766-3", phone: "11-2345-6789", balance: -1200.00, creditLimit: 30000 }
-      ];
-    } catch (e) {
-      return [
-        { id: "cli-1", name: "Mariano Closs", cuit: "20-33445566-9", phone: "11-4567-8901", balance: -450.00, creditLimit: 20000 },
-        { id: "cli-2", name: "Estela de Carlotto", cuit: "27-05556667-1", phone: "11-9876-5432", balance: 0.00, creditLimit: 50000 },
-        { id: "cli-3", name: "Enzo Francescoli", cuit: "20-99887766-3", phone: "11-2345-6789", balance: -1200.00, creditLimit: 30000 }
-      ];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem("origen_client_accounts", JSON.stringify(clientAccounts));
-  }, [clientAccounts]);
+  const [bookings, setBookings] = useState<Reservation[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [activeTrackedOrder, setActiveTrackedOrder] = useState<Order | null>(null);
+  const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>([]);
 
   // Ticket Preview States
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
   const [orderToPreview, setOrderToPreview] = useState<Order | null>(null);
 
-  // Keep state in local storage
+  // Sync cartItems to local storage (individual customer state)
   useEffect(() => {
     localStorage.setItem("origen_cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
+  // Load and seed initial data from Supabase
   useEffect(() => {
-    localStorage.setItem("origen_bookings", JSON.stringify(bookings));
-  }, [bookings]);
+    const loadSupabaseData = async () => {
+      try {
+        // 1. Fetch & Seed Menu Items
+        const { data: menuData } = await supabase.from("menu_items").select("*");
+        if (menuData && menuData.length > 0) {
+          setMenuItems(menuData.map(mapDbToMenuItem));
+        } else {
+          // Seed default menu items
+          await supabase.from("menu_items").insert(MENU_ITEMS.map(mapMenuItemToDb));
+          setMenuItems(MENU_ITEMS);
+        }
 
+        // 2. Fetch & Seed Client Accounts
+        const { data: clientData } = await supabase.from("client_accounts").select("*");
+        if (clientData && clientData.length > 0) {
+          setClientAccounts(clientData.map(c => ({
+            id: c.id,
+            name: c.name,
+            cuit: c.cuit,
+            phone: c.phone,
+            balance: Number(c.balance),
+            creditLimit: Number(c.credit_limit)
+          })));
+        } else {
+          const defaultClients = [
+            { id: "cli-1", name: "Mariano Closs", cuit: "20-33445566-9", phone: "11-4567-8901", balance: -450.00, creditLimit: 20000 },
+            { id: "cli-2", name: "Estela de Carlotto", cuit: "27-05556667-1", phone: "11-9876-5432", balance: 0.00, creditLimit: 50000 },
+            { id: "cli-3", name: "Enzo Francescoli", cuit: "20-99887766-3", phone: "11-2345-6789", balance: -1200.00, creditLimit: 30000 }
+          ];
+          await supabase.from("client_accounts").insert(defaultClients.map(c => ({
+            id: c.id,
+            name: c.name,
+            cuit: c.cuit,
+            phone: c.phone,
+            balance: c.balance,
+            credit_limit: c.creditLimit
+          })));
+          setClientAccounts(defaultClients);
+        }
+
+        // 3. Fetch Reservations
+        const { data: bookingsData } = await supabase.from("reservations").select("*");
+        if (bookingsData) {
+          setBookings(bookingsData.map(b => ({
+            id: b.id,
+            tableId: b.table_id,
+            tableName: b.table_name,
+            date: b.date,
+            timeSlot: b.time_slot as any,
+            guests: b.guests,
+            customerName: b.customer_name,
+            customerPhone: b.customer_phone,
+            createdAt: b.created_at,
+            referenceCode: b.reference_code
+          })));
+        }
+
+        // 4. Fetch Orders
+        const { data: ordersData } = await supabase.from("orders").select("*");
+        if (ordersData) {
+          const mappedOrders: Order[] = ordersData.map(o => ({
+            id: o.id,
+            items: o.items,
+            subtotal: Number(o.subtotal),
+            tax: Number(o.tax),
+            total: Number(o.total),
+            type: o.type as any,
+            priceList: o.price_list as any,
+            tableReservationId: o.table_reservation_id || undefined,
+            tableNumber: o.table_number || undefined,
+            status: o.status as any,
+            createdAt: o.created_at,
+            estimatedMinutes: o.estimated_minutes,
+            paymentMethod: o.payment_method as any,
+            couponNumber: o.coupon_number || undefined,
+            clientAccountName: o.client_account_name || undefined,
+            tipAmount: o.tip_amount ? Number(o.tip_amount) : undefined,
+            fiscal: o.fiscal || undefined
+          }));
+          setOrders(mappedOrders);
+        }
+      } catch (err) {
+        console.error("Error loading data from Supabase:", err);
+      }
+    };
+
+    loadSupabaseData();
+  }, []);
+
+  // Sync menuItems changes to Supabase
   useEffect(() => {
-    localStorage.setItem("origen_orders", JSON.stringify(orders));
-    
-    // Sync the active tracked order
+    const syncMenu = async () => {
+      if (menuItems.length === 0) return;
+      await supabase.from("menu_items").upsert(menuItems.map(mapMenuItemToDb));
+    };
+    syncMenu();
+  }, [menuItems]);
+
+  // Sync clientAccounts changes to Supabase
+  useEffect(() => {
+    const syncClients = async () => {
+      if (clientAccounts.length === 0) return;
+      await supabase.from("client_accounts").upsert(clientAccounts.map(c => ({
+        id: c.id,
+        name: c.name,
+        cuit: c.cuit,
+        phone: c.phone,
+        balance: c.balance,
+        credit_limit: c.creditLimit
+      })));
+    };
+    syncClients();
+  }, [clientAccounts]);
+
+  // Sync active tracked order
+  useEffect(() => {
     const active = orders.find(o => o.status !== "Completado");
     setActiveTrackedOrder(active || null);
   }, [orders]);
@@ -188,10 +283,31 @@ export default function App() {
   };
 
   // Complete checkout with live inventory deduction
-  const handleCheckoutComplete = (newOrder: Order) => {
-    // Deduct stock levels from our dynamic state
-    setMenuItems((prev) =>
-      prev.map((m) => {
+  const handleCheckoutComplete = async (newOrder: Order) => {
+    try {
+      // Save order to Supabase
+      await supabase.from("orders").insert({
+        id: newOrder.id,
+        items: newOrder.items,
+        subtotal: newOrder.subtotal,
+        tax: newOrder.tax,
+        total: newOrder.total,
+        type: newOrder.type,
+        price_list: newOrder.priceList,
+        table_reservation_id: newOrder.tableReservationId || null,
+        table_number: newOrder.tableNumber || null,
+        status: newOrder.status,
+        created_at: newOrder.createdAt,
+        estimated_minutes: newOrder.estimatedMinutes,
+        payment_method: newOrder.paymentMethod || null,
+        coupon_number: newOrder.couponNumber || null,
+        client_account_name: newOrder.clientAccountName || null,
+        tip_amount: newOrder.tipAmount || 0,
+        fiscal: newOrder.fiscal || null
+      });
+
+      // Deduct stock levels from our dynamic state
+      const updatedMenu = menuItems.map((m) => {
         const orderedItem = newOrder.items.find((item) => item.name === m.name);
         if (orderedItem && m.stock !== undefined) {
           const updatedStock = Math.max(0, m.stock - orderedItem.quantity);
@@ -203,42 +319,38 @@ export default function App() {
           return { ...m, stock: updatedStock };
         }
         return m;
-      })
-    );
+      });
+      setMenuItems(updatedMenu); // This triggers the useEffect which upserts to Supabase
 
-    // Deduct raw materials (insumos) stock by recipe
-    const savedInsumos = localStorage.getItem("origen_insumos");
-    if (savedInsumos) {
-      try {
-        const insList = JSON.parse(savedInsumos);
-        const updatedInsumos = insList.map((ins: any) => {
+      // Deduct raw materials (insumos) stock by recipe in Supabase
+      const { data: insList } = await supabase.from("insumos").select("*");
+      if (insList) {
+        const updates = insList.map(async (ins: any) => {
           let consumedAmount = 0;
           newOrder.items.forEach((orderedItem) => {
             const menuItem = menuItems.find(m => m.name === orderedItem.name);
             if (menuItem && menuItem.recipe) {
               const recipeItem = menuItem.recipe.find(r => r.ingredientId === ins.id);
               if (recipeItem) {
-                // Deduct consumed amount (convert grams/mililiters to kg/liters if unit is kg or litros)
-                const isKgOrLiters = ins.unit === "kg" || ins.unit === "litros";
-                const divisor = isKgOrLiters ? 1000 : 1; // if grams/ml, divide by 1000 for kg/liters
+                const isKgOrLiters = ins.unit === "kg" || ins.unit === "litros" || ins.unit === "L";
+                const divisor = isKgOrLiters ? 1000 : 1;
                 consumedAmount += (recipeItem.amount / divisor) * orderedItem.quantity;
               }
             }
           });
 
           if (consumedAmount > 0) {
-            const newQty = Math.max(0, parseFloat((ins.quantity - consumedAmount).toFixed(2)));
-            if (newQty <= ins.minLimit && ins.quantity > ins.minLimit) {
+            const newQty = Math.max(0, parseFloat((Number(ins.quantity) - consumedAmount).toFixed(2)));
+            if (newQty <= ins.min_limit && ins.quantity > ins.min_limit) {
               showNotification(`⚠️ Insumo crítico: '${ins.name}' quedó por debajo de su stock de seguridad.`, "warning");
             }
-            return { ...ins, quantity: newQty };
+            await supabase.from("insumos").update({ quantity: newQty }).eq("id", ins.id);
           }
-          return ins;
         });
-        localStorage.setItem("origen_insumos", JSON.stringify(updatedInsumos));
-      } catch (err) {
-        console.error("Error updating insumos from recipe", err);
+        await Promise.all(updates);
       }
+    } catch (err) {
+      console.error("Error writing checkout data to Supabase:", err);
     }
 
     setOrders((prev) => [newOrder, ...prev]);
@@ -250,14 +362,35 @@ export default function App() {
   };
 
   // Confirm booking
-  const handleConfirmReservation = (newBooking: Reservation) => {
+  const handleConfirmReservation = async (newBooking: Reservation) => {
+    try {
+      await supabase.from("reservations").insert({
+        id: newBooking.id,
+        table_id: newBooking.tableId,
+        table_name: newBooking.tableName,
+        date: newBooking.date,
+        time_slot: newBooking.timeSlot,
+        guests: newBooking.guests,
+        customer_name: newBooking.customerName,
+        customer_phone: newBooking.customerPhone,
+        created_at: newBooking.createdAt,
+        reference_code: newBooking.referenceCode
+      });
+    } catch (err) {
+      console.error("Error creating reservation on Supabase:", err);
+    }
     setBookings((prev) => [newBooking, ...prev]);
     showNotification(`📅 ¡Mesa reservada! ${newBooking.tableName} para el ${newBooking.date} a las ${newBooking.timeSlot}. Cód: ${newBooking.referenceCode}`, "success");
   };
 
   // Cancel booking
-  const handleCancelBooking = (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     const b = bookings.find((bk) => bk.id === bookingId);
+    try {
+      await supabase.from("reservations").delete().eq("id", bookingId);
+    } catch (err) {
+      console.error("Error deleting reservation from Supabase:", err);
+    }
     setBookings((prev) => prev.filter((b) => b.id !== bookingId));
     showNotification(`🛑 Reserva cancelada con éxito para la ${b?.tableName || "Mesa"}.`, "info");
   };
@@ -313,7 +446,12 @@ export default function App() {
   };
 
   // Update order status if completed in order Status tracker component
-  const handleOrderStatusCompleted = (orderId: string) => {
+  const handleOrderStatusCompleted = async (orderId: string) => {
+    try {
+      await supabase.from("orders").update({ status: "Completado" }).eq("id", orderId);
+    } catch (err) {
+      console.error("Error updating order status on Supabase:", err);
+    }
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: "Completado" as OrderStatusType } : o))
     );
@@ -321,7 +459,12 @@ export default function App() {
   };
 
   // Direct backend comanda status modifier for Admin Panel
-  const handleOrderStatusUpdate = (orderId: string, status: OrderStatusType) => {
+  const handleOrderStatusUpdate = async (orderId: string, status: OrderStatusType) => {
+    try {
+      await supabase.from("orders").update({ status }).eq("id", orderId);
+    } catch (err) {
+      console.error("Error updating order status on Supabase:", err);
+    }
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status } : o))
     );

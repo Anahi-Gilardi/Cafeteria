@@ -2,6 +2,7 @@ import { useState, useMemo, ChangeEvent, FormEvent } from "react";
 import { CartItem, Order, Reservation, OrderStatusType } from "../types";
 import { X, Trash2, Plus, Minus, ShoppingBag, CreditCard, ArrowRight, Table, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -182,10 +183,18 @@ export default function CartDrawer({
         tipAmount
       };
 
-      // Add to digital tip pool in localStorage
+      // Add to digital tip pool in Supabase
       if (tipAmount > 0) {
-        const currentPool = parseFloat(localStorage.getItem("origen_tip_pool") || "0");
-        localStorage.setItem("origen_tip_pool", (currentPool + tipAmount).toString());
+        (async () => {
+          try {
+            const { data } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
+            const currentPool = data ? Number(data.value) : 0;
+            await supabase.from("system_settings").upsert({ key: "tip_pool", value: currentPool + tipAmount });
+            localStorage.setItem("origen_tip_pool", (currentPool + tipAmount).toString());
+          } catch (err) {
+            console.error("Error updating tip pool in Supabase:", err);
+          }
+        })();
       }
 
       onCheckout(order);
