@@ -3443,12 +3443,14 @@ export default function AdminHub({
 
   const renderSalon = () => {
     const tablesList = [
-      { id: "1", name: "Mesa 1", capacity: 2 },
-      { id: "2", name: "Mesa 2", capacity: 2 },
-      { id: "3", name: "Mesa 3", capacity: 4 },
-      { id: "4", name: "Mesa 4", capacity: 4 },
-      { id: "5", name: "Mesa 5", capacity: 6 },
-      { id: "6", name: "Mesa 6", capacity: 8 }
+      { id: "mesa-1", name: "Mesa 1", capacity: 2 },
+      { id: "mesa-2", name: "Mesa 2", capacity: 2 },
+      { id: "mesa-3", name: "Mesa 3", capacity: 4 },
+      { id: "mesa-4", name: "Mesa 4", capacity: 4 },
+      { id: "mesa-5", name: "Mesa 5", capacity: 6 },
+      { id: "mesa-6", name: "Mesa 6", capacity: 6 },
+      { id: "mesa-7", name: "Mesa 7", capacity: 8 },
+      { id: "mesa-8", name: "Mesa 8", capacity: 8 }
     ];
 
     return (
@@ -3484,9 +3486,9 @@ export default function AdminHub({
         {/* Grid of tables */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tablesList.map((table) => {
-            // Find active order for this table
-            const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.id);
-            // Find reservation for this table
+            // Find active order for this table (matching string name e.g. "Mesa 1")
+            const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
+            // Find reservation for this table (matching ID e.g. "mesa-1")
             const reservation = bookings.find(b => b.tableId === table.id);
 
             let status: "Libre" | "Ocupada" | "Reservada" = "Libre";
@@ -3547,8 +3549,9 @@ export default function AdminHub({
                   {status === "Libre" && (
                     <button
                       onClick={() => {
+                        setPosTable(table.name);
                         setActiveSubTab("caja");
-                        onShowNotification(`✨ Iniciando pedido para la Mesa ${table.id}.`, "info");
+                        onShowNotification(`✨ Iniciando pedido para la ${table.name}.`, "info");
                       }}
                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider"
                     >
@@ -3559,8 +3562,9 @@ export default function AdminHub({
                   {status === "Reservada" && (
                     <button
                       onClick={() => {
+                        setPosTable(table.name);
                         setActiveSubTab("caja");
-                        onShowNotification(`📌 Ocupando mesa reservada para Mesa ${table.id}.`, "info");
+                        onShowNotification(`📌 Ocupando mesa reservada para la ${table.name}.`, "info");
                       }}
                       className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider"
                     >
