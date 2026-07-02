@@ -1,0 +1,6 @@
+{
+  "name": "Café San Telmo",
+  "description": "Auténtica cafetería argentina de estilo porteño en San Telmo, con menú interactivo (cortado, submarino, medialunas, alfajores), sistema interactivo de reserva de mesas y pedidos en línea en tiempo real.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

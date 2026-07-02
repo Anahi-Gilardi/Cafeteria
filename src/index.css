@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Marcellus", ui-serif, Georgia, serif;
+  --color-paper: #FDFBF7;
+  --color-espresso: #2C1810;
+  --color-caramel: #C2956E;
+  --color-coffee: rgba(44, 24, 16, 0.1);
+}
+
+/* Premium Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FDFBF7;
+}
+::-webkit-scrollbar-thumb {
+  background: #C2956E;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2C1810;
+}
+
+/* Glassmorphism Effect */
+.glass-morphic {
+  background: rgba(253, 251, 247, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(44, 24, 16, 0.08);
+}
+
+/* Premium Gold Text Gradient */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #2C1810 0%, #C2956E 50%, #2C1810 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Coffee Steam Micro-animation */
+@keyframes steamEffect {
+  0% {
+    transform: translateY(0) scaleX(0.8) rotate(0deg);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translateY(-4px) scaleX(1) rotate(5deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-8px) scaleX(0.8) rotate(-5deg);
+    opacity: 0;
+  }
+}
+
+.animate-steam {
+  animation: steamEffect 2.8s infinite ease-in-out;
+}
+
+/* Smooth transition for active tab content */
+.tab-fade-enter {
+  opacity: 0;
+  transform: translateY(5px);
+}
+.tab-fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
