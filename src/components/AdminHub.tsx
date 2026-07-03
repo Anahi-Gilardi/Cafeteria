@@ -750,6 +750,17 @@ export default function AdminHub({
     try {
       const { error } = await supabase.from("menu_items").insert(newProduct);
       if (!error) {
+        if (newProduct.image && newProduct.image.startsWith("data:image")) {
+          try {
+            await supabase.from("product_images").upsert({
+              id: newProduct.id,
+              product_id: newProduct.id,
+              image_base64: newProduct.image
+            });
+          } catch (imgErr) {
+            console.error("Error inserting custom image to product_images table:", imgErr);
+          }
+        }
         // Map database object structure to client model structure
         const mappedProduct = {
           id: newProduct.id,
@@ -782,6 +793,94 @@ export default function AdminHub({
       }
     } catch (err) {
       console.error("Error creating product:", err);
+    }
+  };
+
+  const handleStartEditingProduct = (item: MenuItem) => {
+    setIsEditingProduct(true);
+    setEditProdName(item.name);
+    setEditProdCategory(item.category);
+    setEditProdPrice(String(item.price));
+    setEditProdTakeawayPrice(String(item.takeawayPrice || Number((item.price * 0.9).toFixed(2))));
+    setEditProdDeliveryPrice(String(item.deliveryPrice || Number((item.price * 1.15).toFixed(2))));
+    setEditProdStock(String(item.stock || 50));
+    setEditProdDescription(item.description || "");
+    setEditProdImage(item.image || "");
+  };
+
+  const handleSaveProductDetails = async (e: FormEvent, itemId: string) => {
+    e.preventDefault();
+    if (!editProdName || !editProdPrice) {
+      onShowNotification("⚠️ Ingrese el nombre y precio del producto.", "warning");
+      return;
+    }
+    const priceVal = parseFloat(editProdPrice);
+    if (isNaN(priceVal) || priceVal <= 0) {
+      onShowNotification("⚠️ Ingrese un precio válido.", "warning");
+      return;
+    }
+    const takeawayVal = parseFloat(editProdTakeawayPrice) || Number((priceVal * 0.9).toFixed(2));
+    const deliveryVal = parseFloat(editProdDeliveryPrice) || Number((priceVal * 1.15).toFixed(2));
+    const stockVal = parseInt(editProdStock) || 50;
+
+    const original = menuItems.find(i => i.id === itemId);
+    if (!original) return;
+
+    const updatedProduct: MenuItem = {
+      ...original,
+      name: editProdName.trim(),
+      price: priceVal,
+      takeawayPrice: takeawayVal,
+      deliveryPrice: deliveryVal,
+      stock: stockVal,
+      category: editProdCategory as any,
+      description: editProdDescription.trim() || "Delicioso producto de especialidad Café Puglia.",
+      image: editProdImage.trim() || original.image
+    };
+
+    try {
+      const dbProduct = {
+        id: updatedProduct.id,
+        name: updatedProduct.name,
+        price: updatedProduct.price,
+        takeaway_price: updatedProduct.takeawayPrice,
+        delivery_price: updatedProduct.deliveryPrice,
+        description: updatedProduct.description,
+        category: updatedProduct.category,
+        tags: updatedProduct.tags || ["Artesanal"],
+        image: updatedProduct.image,
+        customizable: updatedProduct.customizable !== undefined ? updatedProduct.customizable : true,
+        calories: updatedProduct.nutrition?.calories || 180,
+        allergens: updatedProduct.nutrition?.allergens || ["Gluten"],
+        stock: updatedProduct.stock,
+        is_offer: updatedProduct.isOffer || false,
+        offer_price: updatedProduct.offerPrice || null,
+        recipe: updatedProduct.recipe || []
+      };
+
+      const { error } = await supabase.from("menu_items").upsert(dbProduct);
+      if (error) throw error;
+
+      if (updatedProduct.image && updatedProduct.image.startsWith("data:image")) {
+        try {
+          await supabase.from("product_images").upsert({
+            id: updatedProduct.id,
+            product_id: updatedProduct.id,
+            image_base64: updatedProduct.image
+          });
+        } catch (imgErr) {
+          console.error("Error upserting to product_images table:", imgErr);
+        }
+      }
+
+      const updatedMenu = menuItems.map(item => item.id === itemId ? updatedProduct : item);
+      onUpdateMenu(updatedMenu);
+      setSelectedMenuProduct(updatedProduct);
+      setIsEditingProduct(false);
+      onShowNotification("✅ Ficha de producto guardada y sincronizada.", "success");
+    } catch (err) {
+      console.error("Error saving product changes:", err);
+      onShowNotification("❌ Error al guardar en Supabase.", "warning");
     }
   };
 
@@ -841,6 +940,17 @@ export default function AdminHub({
   // 3. Salon
   const [newTableName, setNewTableName] = useState("");
   const [newTableCapacity, setNewTableCapacity] = useState(2);
+
+  // 4. Carta & Recetas Edit Mode states
+  const [isEditingProduct, setIsEditingProduct] = useState(false);
+  const [editProdName, setEditProdName] = useState("");
+  const [editProdCategory, setEditProdCategory] = useState("coffee");
+  const [editProdPrice, setEditProdPrice] = useState("");
+  const [editProdTakeawayPrice, setEditProdTakeawayPrice] = useState("");
+  const [editProdDeliveryPrice, setEditProdDeliveryPrice] = useState("");
+  const [editProdStock, setEditProdStock] = useState("");
+  const [editProdDescription, setEditProdDescription] = useState("");
+  const [editProdImage, setEditProdImage] = useState("");
 
   const [mermaLogs, setMermaLogs] = useState<{ id: string; date: string; name: string; qty: string; cost: string; reason: string; auditor: string }[]>(() => {
     try {
@@ -1701,14 +1811,41 @@ export default function AdminHub({
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">URL de Imagen (Opcional)</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Foto (URL o Subir Local) *</label>
                     <input 
                       type="text" 
-                      value={newProdImage} 
+                      value={newProdImage.startsWith("data:image") ? "Foto subida localmente" : newProdImage} 
                       onChange={(e) => setNewProdImage(e.target.value)} 
                       placeholder="Url de Unsplash..." 
-                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none" 
+                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none text-[10px]" 
+                      disabled={newProdImage.startsWith("data:image")}
                     />
+                    <div className="mt-1 flex items-center justify-between">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setNewProdImage(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="w-full text-[9px] text-[#2C1810]/60 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-semibold file:bg-[#2C1810]/10 file:text-[#2C1810] hover:file:bg-[#2C1810]/20 cursor-pointer" 
+                      />
+                      {newProdImage.startsWith("data:image") && (
+                        <button
+                          type="button"
+                          onClick={() => setNewProdImage("")}
+                          className="text-[8px] text-red-600 underline font-bold bg-transparent border-none cursor-pointer"
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1754,6 +1891,7 @@ export default function AdminHub({
                       onClick={() => {
                         setSelectedMenuProduct(item);
                         setSimulatedPrice(item.price);
+                        setIsEditingProduct(false);
                       }}
                       className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border transition-all ${
                         active 
@@ -1783,70 +1921,229 @@ export default function AdminHub({
 
           <div className="lg:col-span-7 space-y-6">
             <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6">
-              <div>
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
-                <h3 className="font-serif text-2xl font-bold text-[#2C1810] mt-1">{currentItem.name}</h3>
-                <p className="text-xs text-[#2C1810]/60 mt-1 leading-relaxed">{currentItem.description}</p>
-              </div>
+              {isEditingProduct ? (
+                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#2C1810]/70">
+                  <div className="border-b border-[#2C1810]/10 pb-2 flex justify-between items-center">
+                    <h3 className="font-serif text-base font-bold text-[#2C1810]">Editar Ficha de Producto</h3>
+                    <span className="text-[9px] bg-[#2C1810]/5 text-[#2C1810] px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
+                  </div>
+                  
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Nombre del Producto *</label>
+                    <input 
+                      type="text" 
+                      value={editProdName} 
+                      onChange={(e) => setEditProdName(e.target.value)} 
+                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none text-xs"
+                      required 
+                    />
+                  </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
-                  <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Costo Materia Prima</span>
-                  <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
-                  <span className="text-[7px] text-[#2C1810]/40 block font-semibold mt-1">Calculado por gramo/mL</span>
-                </div>
-                <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
-                  <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Utilidad Bruta</span>
-                  <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${utility.toFixed(0)}</div>
-                  <span className="text-[7px] text-[#2C1810]/40 block font-semibold mt-1">Sugerido menos costos fijos</span>
-                </div>
-                <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
-                  <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Margen de Contribución</span>
-                  <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
-                  <span className={`text-[7px] font-bold block mt-1 uppercase text-center ${
-                    margin >= 60 ? "text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.5 rounded" : "text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded"
-                  }`}>
-                    {margin >= 60 ? "EXCELENTE" : "BAJO"}
-                  </span>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Comercial ($) *</label>
+                      <input 
+                        type="number" 
+                        value={editProdPrice} 
+                        onChange={(e) => setEditProdPrice(e.target.value)} 
+                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs"
+                        required 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1">Categoría</label>
+                      <select 
+                        value={editProdCategory} 
+                        onChange={(e) => setEditProdCategory(e.target.value)} 
+                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer text-xs"
+                      >
+                        <option value="coffee">☕ Cafetería</option>
+                        <option value="bakery">🍰 Pastelería</option>
+                        <option value="brunch">🥪 Tostados / Cocina</option>
+                        <option value="cold">❄️ Bebida Fría</option>
+                        <option value="traditional">☕ Clásico</option>
+                      </select>
+                    </div>
+                  </div>
 
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-[#2C1810] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
-                <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-stone-50 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
-                        <th className="p-3">Insumo</th>
-                        <th className="p-3 text-center">Cantidad Receta</th>
-                        <th className="p-3 text-center">Costo Unitario</th>
-                        <th className="p-3 text-right">Inversión</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#2C1810]/5">
-                      {currentItem.recipe && currentItem.recipe.length > 0 ? (
-                        currentItem.recipe.map((r, idx) => {
-                          const ins = insumos.find(i => i.id === r.ingredientId);
-                          const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || 0;
-                          const totalCost = r.amount * unitCost;
-                          return (
-                            <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                              <td className="p-3 font-bold text-[#2C1810]">{ins?.name || r.ingredientId}</td>
-                              <td className="p-3 text-center font-mono font-semibold text-[#2C1810]/80">{r.amount} {ins?.unit}</td>
-                              <td className="p-3 text-center font-mono font-semibold text-[#2C1810]/50">${unitCost.toLocaleString("es-AR")} / {ins?.unit}</td>
-                              <td className="p-3 text-right font-mono font-bold text-[#2C1810]">${totalCost.toFixed(0)}</td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan={4} className="p-4 text-center text-xs text-[#2C1810]/40 font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
-                        </tr>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Takeaway ($)</label>
+                      <input 
+                        type="number" 
+                        value={editProdTakeawayPrice} 
+                        onChange={(e) => setEditProdTakeawayPrice(e.target.value)} 
+                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Delivery ($)</label>
+                      <input 
+                        type="number" 
+                        value={editProdDeliveryPrice} 
+                        onChange={(e) => setEditProdDeliveryPrice(e.target.value)} 
+                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1">Stock Actual</label>
+                      <input 
+                        type="number" 
+                        value={editProdStock} 
+                        onChange={(e) => setEditProdStock(e.target.value)} 
+                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs" 
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Foto (URL o Subir Local) *</label>
+                    <input 
+                      type="text" 
+                      value={editProdImage.startsWith("data:image") ? "Foto subida localmente" : editProdImage} 
+                      onChange={(e) => setEditProdImage(e.target.value)} 
+                      placeholder="Url de Unsplash..." 
+                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none text-[10px]" 
+                      disabled={editProdImage.startsWith("data:image")}
+                    />
+                    <div className="mt-1 flex items-center justify-between">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setEditProdImage(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="w-full text-[9px] text-[#2C1810]/60 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-semibold file:bg-[#2C1810]/10 file:text-[#2C1810] hover:file:bg-[#2C1810]/20 cursor-pointer" 
+                      />
+                      {editProdImage.startsWith("data:image") && (
+                        <button
+                          type="button"
+                          onClick={() => setEditProdImage("")}
+                          className="text-[9px] text-red-600 underline font-bold bg-transparent border-none cursor-pointer"
+                        >
+                          Eliminar
+                        </button>
                       )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Descripción</label>
+                    <textarea 
+                      value={editProdDescription} 
+                      onChange={(e) => setEditProdDescription(e.target.value)} 
+                      placeholder="Descripción de la especialidad..." 
+                      rows={3} 
+                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-normal resize-none text-xs" 
+                    />
+                  </div>
+
+                  {editProdImage && (
+                    <div className="mt-2 text-center">
+                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#2C1810]/40">Vista Previa de la Imagen</span>
+                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#2C1810]/15 mx-auto object-cover shadow-sm" />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[#2C1810]/10">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsEditingProduct(false)} 
+                      className="px-4 py-2 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="px-5 py-2 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer"
+                    >
+                      Guardar Ficha
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
+                      <h3 className="font-serif text-2xl font-bold text-[#2C1810] mt-1">{currentItem.name}</h3>
+                      <p className="text-xs text-[#2C1810]/60 mt-1 leading-relaxed">{currentItem.description}</p>
+                    </div>
+                    <button
+                      onClick={() => handleStartEditingProduct(currentItem)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#C2956E] hover:bg-[#a37956] text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
+                    >
+                      ✏️ Editar Ficha
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Costo Materia Prima</span>
+                      <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#2C1810]/40 block font-semibold mt-1">Calculado por gramo/mL</span>
+                    </div>
+                    <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Utilidad Bruta</span>
+                      <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${utility.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#2C1810]/40 block font-semibold mt-1">Sugerido menos costos fijos</span>
+                    </div>
+                    <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Margen de Contribución</span>
+                      <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
+                      <span className={`text-[7px] font-bold block mt-1 uppercase text-center ${
+                        margin >= 60 ? "text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.5 rounded" : "text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded"
+                      }`}>
+                        {margin >= 60 ? "EXCELENTE" : "BAJO"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black text-[#2C1810] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
+                    <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-stone-50 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                            <th className="p-3">Insumo</th>
+                            <th className="p-3 text-center">Cantidad Receta</th>
+                            <th className="p-3 text-center">Costo Unitario</th>
+                            <th className="p-3 text-right">Inversión</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#2C1810]/5">
+                          {currentItem.recipe && currentItem.recipe.length > 0 ? (
+                            currentItem.recipe.map((r, idx) => {
+                              const ins = insumos.find(i => i.id === r.ingredientId);
+                              const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || 0;
+                              const totalCost = r.amount * unitCost;
+                              return (
+                                <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
+                                  <td className="p-3 font-bold text-[#2C1810]">{ins?.name || r.ingredientId}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#2C1810]/80">{r.amount} {ins?.unit}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#2C1810]/50">${unitCost.toLocaleString("es-AR")} / {ins?.unit}</td>
+                                  <td className="p-3 text-right font-mono font-bold text-[#2C1810]">${totalCost.toFixed(0)}</td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={4} className="p-4 text-center text-xs text-[#2C1810]/40 font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="bg-amber-50/40 border border-[#C2956E]/20 rounded-3xl p-6 shadow-xs space-y-4">

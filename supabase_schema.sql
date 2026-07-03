@@ -137,6 +137,7 @@ ALTER TABLE barista_calibrations DISABLE ROW LEVEL SECURITY;
 ALTER TABLE cash_ledger DISABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE users_accounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE product_images DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================
 -- ELIMINAR REGISTROS PREVIOS (Para evitar duplicados si se vuelve a correr)
@@ -221,3 +222,11 @@ INSERT INTO menu_items (id, name, price, takeaway_price, delivery_price, descrip
 ('offer-promo-portena', 'PROMO: Café con Leche + 3 Medialunas', 6.20, 5.55, 7.10, 'El ritual porteño absoluto con precio promocional especial. Un tazón de café con leche clásico caliente acompañado de tres medialunas de manteca recién horneadas y pintadas con almíbar.', 'coffee', '{"OFERTA", "Recomendado"}', 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=600', true, 460, '{"Gluten", "Lácteos", "Huevo"}', 50, true, 5.20, '[]'),
 ('offer-merienda-puglia', 'OFERTA MERIENDA: Submarino + Alfajor de Maicena', 6.80, 6.10, 7.80, 'El combo perfecto para entibiar el alma. Una taza de leche bien caliente con barra de chocolate Bariloche y un auténtico alfajor de maicena relleno de dulce de leche con coco.', 'coffee', '{"OFERTA", "Especial"}', 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600', true, 550, '{"Gluten", "Lácteos", "Huevo"}', 25, true, 5.90, '[]'),
 ('offer-almuerzo-ejecutivo', 'PROMO MEDIODÍA: Tostado Mixto + Mate Cocido Helado', 9.80, 8.80, 11.25, 'Almuerzo rápido, clásico y porteño. Tostado de jamón y queso caliente en pan de miga extra fino de manteca acompañado de un refrescante vaso de mate cocido helado de menta y limón.', 'brunch', '{"OFERTA"}', 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&q=80&w=600', false, 500, '{"Gluten", "Lácteos"}', 20, true, 8.50, '[]');
+
+-- 8. Tabla de Fotos de Productos Locales
+CREATE TABLE IF NOT EXISTS product_images (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+    image_base64 TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);

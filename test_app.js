@@ -16,6 +16,7 @@ async function testApp() {
   const tables = [
     { name: "users_accounts", desc: "Cuentas del personal y roles" },
     { name: "menu_items", desc: "Carta de productos y stock" },
+    { name: "product_images", desc: "Fotos de platos y productos locales" },
     { name: "orders", desc: "Comandas y estados" },
     { name: "client_accounts", desc: "Cuentas corrientes (Fiado)" },
     { name: "reservations", desc: "Reservas de mesas del salón" },

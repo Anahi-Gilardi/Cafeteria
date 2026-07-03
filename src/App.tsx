@@ -139,8 +139,23 @@ export default function App() {
       try {
         // 1. Fetch & Seed Menu Items
         const { data: menuData } = await supabase.from("menu_items").select("*");
+        let customImages: any[] = [];
+        try {
+          const { data: imgData } = await supabase.from("product_images").select("*");
+          if (imgData) customImages = imgData;
+        } catch (imgErr) {
+          console.error("Error fetching product_images:", imgErr);
+        }
+
         if (menuData && menuData.length > 0) {
-          setMenuItems(menuData.map(mapDbToMenuItem));
+          const mapped = menuData.map(mapDbToMenuItem);
+          customImages.forEach((img: any) => {
+            const match = mapped.find(item => item.id === img.product_id);
+            if (match) {
+              match.image = img.image_base64;
+            }
+          });
+          setMenuItems(mapped);
         } else {
           // Seed default menu items
           await supabase.from("menu_items").insert(MENU_ITEMS.map(mapMenuItemToDb));
