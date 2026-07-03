@@ -182,7 +182,7 @@ export default function AdminHub({
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>("Enzo");
   const [mozoSelectedTable, setMozoSelectedTable] = useState<string | null>(null);
-  const [mozoCart, setMozoCart] = useState<{ item: MenuItem; qty: number }[]>([]);
+  const [mozoCart, setMozoCart] = useState<{ item: MenuItem; qty: number; notes?: string }[]>([]);
   const [mozoCategory, setMozoCategory] = useState<string>("todos");
   const [mozoSearchQuery, setMozoSearchQuery] = useState<string>("");
   const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
@@ -2890,7 +2890,7 @@ export default function AdminHub({
             customizable: false,
             nutrition: { calories: 0, allergens: [] }
           } as MenuItem;
-          return { item: menuItem, qty: it.quantity };
+          return { item: menuItem, qty: it.quantity, notes: it.customizationSummary || "" };
         });
         setMozoCart(cartItems);
       } else {
@@ -2941,7 +2941,7 @@ export default function AdminHub({
             name: c.item.name,
             quantity: c.qty,
             price: c.item.price,
-            customizationSummary: ""
+            customizationSummary: c.notes || ""
           })),
           subtotal,
           tax,
@@ -2959,7 +2959,7 @@ export default function AdminHub({
             name: c.item.name,
             quantity: c.qty,
             price: c.item.price,
-            customizationSummary: ""
+            customizationSummary: c.notes || ""
           })),
           subtotal,
           tax,
@@ -3203,34 +3203,46 @@ export default function AdminHub({
                   <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[320px]">
                     {mozoCart.length > 0 ? (
                       mozoCart.map((cart, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-[10px] font-semibold">
-                          <div className="space-y-0.5 truncate pr-2">
-                            <strong className="text-[#2C1810] block truncate">{cart.item.name}</strong>
-                            <span className="text-[8px] text-[#2C1810]/40 font-bold font-mono">${cart.item.price.toFixed(0)} c/u</span>
-                          </div>
-                          <div className="flex items-center gap-2.5 shrink-0">
-                            <div className="flex items-center gap-1">
+                        <div key={idx} className="border-b border-[#2C1810]/5 pb-2.5 space-y-2">
+                          <div className="flex justify-between items-center text-[10px] font-semibold">
+                            <div className="space-y-0.5 truncate pr-2">
+                              <strong className="text-[#2C1810] block truncate">{cart.item.name}</strong>
+                              <span className="text-[8px] text-[#2C1810]/40 font-bold font-mono">${cart.item.price.toFixed(0)} c/u</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 shrink-0">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
+                                  className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <span className="font-mono font-bold w-4 text-center">{cart.qty}</span>
+                                <button
+                                  onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
+                                  className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
                               <button
-                                onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
-                                className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                                onClick={() => handleRemoveFromMozoCart(cart.item.id)}
+                                className="p-1 text-[#2C1810]/40 hover:text-red-700 transition-all cursor-pointer"
                               >
-                                -
-                              </button>
-                              <span className="font-mono font-bold w-4 text-center">{cart.qty}</span>
-                              <button
-                                onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
-                                className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
-                              >
-                                +
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
-                            <button
-                              onClick={() => handleRemoveFromMozoCart(cart.item.id)}
-                              className="p-1 text-[#2C1810]/40 hover:text-red-700 transition-all cursor-pointer"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
                           </div>
+                          <input 
+                            type="text"
+                            value={cart.notes || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
+                            }}
+                            placeholder="Añadir nota (ej: almendra, sin azúcar, caliente...)"
+                            className="w-full text-[9px] px-2 py-1.5 border border-[#2C1810]/10 rounded-lg bg-[#FDFBF7] text-[#2C1810]/80 placeholder-[#2C1810]/40 outline-none font-semibold"
+                          />
                         </div>
                       ))
                     ) : (
