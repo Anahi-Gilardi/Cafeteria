@@ -1183,10 +1183,14 @@ export default function AdminHub({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Venta Neta Hoy</span>
-              <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">$185.400</div>
-              <span className="text-[10px] text-emerald-600 font-semibold block mt-1.5 flex items-center gap-0.5">
-                <ArrowUp className="h-3 w-3" /> +18.4% vs promedio histórico
+              <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Caja Turno Actual</span>
+              <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">${isShiftOpen ? cashLedger.totalCollected.toLocaleString() : (closuresHistory[0]?.ventasTurno || 0).toLocaleString()}</div>
+              <span className="text-[10px] text-emerald-700 font-semibold block mt-1.5 flex items-center gap-0.5">
+                {isShiftOpen 
+                  ? "🟢 Turno abierto y operando en Caja" 
+                  : closuresHistory.length > 0 
+                  ? `Último arqueo: $${(closuresHistory[0]?.ventasTurno || 0).toLocaleString()}` 
+                  : "🔴 Sin turnos activos actualmente"}
               </span>
             </div>
             <div className="h-12 w-12 rounded-2xl bg-[#C2956E]/10 flex items-center justify-center text-[#C2956E]">
@@ -1196,10 +1200,16 @@ export default function AdminHub({
 
           <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Costo de Insumos</span>
-              <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">$58.401</div>
+              <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Auditoría (Diferencias)</span>
+              <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">
+                {closuresHistory.length > 0 
+                  ? `${closuresHistory.reduce((sum, c) => sum + c.diferencia, 0) >= 0 ? "+" : ""}$${closuresHistory.reduce((sum, c) => sum + c.diferencia, 0).toLocaleString()}` 
+                  : "$0"}
+              </div>
               <span className="text-[10px] text-[#2C1810]/60 font-semibold block mt-1.5">
-                Ratio objetivo: 32% (Actual: 31.5%)
+                {closuresHistory.length > 0 
+                  ? `Acumulado de ${closuresHistory.length} arqueos cerrados` 
+                  : "Sin descuadres de arqueo declarados"}
               </span>
             </div>
             <div className="h-12 w-12 rounded-2xl bg-[#C2956E]/10 flex items-center justify-center text-[#C2956E]">
@@ -1209,10 +1219,12 @@ export default function AdminHub({
 
           <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Margen Bruto</span>
-              <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">68.5%</div>
+              <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Arqueos Homologados</span>
+              <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">{closuresHistory.length}</div>
               <span className="text-[10px] text-[#2C1810]/60 font-semibold block mt-1.5">
-                Generando $126.999 neto hoy
+                {closuresHistory.length > 0 
+                  ? `Promedio por turno: $${(closuresHistory.reduce((sum, c) => sum + c.ventasTurno, 0) / closuresHistory.length).toFixed(0)}` 
+                  : "Ningún turno de caja cerrado todavía"}
               </span>
             </div>
             <div className="h-12 w-12 rounded-2xl bg-[#C2956E]/10 flex items-center justify-center text-[#C2956E]">
