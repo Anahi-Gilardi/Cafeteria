@@ -815,6 +815,33 @@ export default function AdminHub({
   const [movInsumoId, setMovInsumoId] = useState<string>("");
   const [movQty, setMovQty] = useState<string>("");
   const [movReason, setMovReason] = useState<string>("");
+  const [historySearchTable, setHistorySearchTable] = useState("");
+  const [historyFilterWaiter, setHistoryFilterWaiter] = useState("todos");
+  const [historyFilterPayment, setHistoryFilterPayment] = useState("todos");
+
+  // Relocated states from sub tabs to respect React Rules of Hooks
+  // 1. Reservas
+  const [isAddingBooking, setIsAddingBooking] = useState(false);
+  const [bookingFormName, setBookingFormName] = useState("");
+  const [bookingFormPhone, setBookingFormPhone] = useState("");
+  const [bookingFormDate, setBookingFormDate] = useState("");
+  const [bookingFormSlot, setBookingFormSlot] = useState("16:00 - 18:00");
+  const [bookingFormTableId, setBookingFormTableId] = useState("mesa-1");
+  const [bookingFormGuests, setBookingFormGuests] = useState(2);
+  const [bookingSearchQuery, setBookingSearchQuery] = useState("");
+
+  // 2. Proveedores
+  const [isAddingProv, setIsAddingProv] = useState(false);
+  const [provFormName, setProvFormName] = useState("");
+  const [provFormItems, setProvFormItems] = useState("");
+  const [provFormContact, setProvFormContact] = useState("");
+  const [provFormPhone, setProvFormPhone] = useState("");
+  const [provFormStatus, setProvFormStatus] = useState("ACTIVO");
+
+  // 3. Salon
+  const [newTableName, setNewTableName] = useState("");
+  const [newTableCapacity, setNewTableCapacity] = useState(2);
+
   const [mermaLogs, setMermaLogs] = useState<{ id: string; date: string; name: string; qty: string; cost: string; reason: string; auditor: string }[]>(() => {
     try {
       const saved = localStorage.getItem("puglia_mermas");
@@ -1872,10 +1899,6 @@ export default function AdminHub({
   };
 
   const renderCaja = () => {
-    const [historySearchTable, setHistorySearchTable] = useState("");
-    const [historyFilterWaiter, setHistoryFilterWaiter] = useState("todos");
-    const [historyFilterPayment, setHistoryFilterPayment] = useState("todos");
-
     // 1. Calculate values
     const posSubtotal = posCart.reduce((sum, item) => sum + item.item.price * item.qty, 0);
     const posIva = posSubtotal * 0.21;
@@ -2769,41 +2792,32 @@ export default function AdminHub({
   };
 
   const renderReservas = () => {
-    const [isAddingBooking, setIsAddingBooking] = useState(false);
-    const [formName, setFormName] = useState("");
-    const [formPhone, setFormPhone] = useState("");
-    const [formDate, setFormDate] = useState("");
-    const [formSlot, setFormSlot] = useState("16:00 - 18:00");
-    const [formTableId, setFormTableId] = useState("mesa-1");
-    const [formGuests, setFormGuests] = useState(2);
-    const [searchQuery, setSearchQuery] = useState("");
-
     const handleFormSubmit = async (e: FormEvent) => {
       e.preventDefault();
-      if (!formName || !formPhone || !formDate) {
+      if (!bookingFormName || !bookingFormPhone || !bookingFormDate) {
         onShowNotification("⚠️ Complete los campos obligatorios.", "warning");
         return;
       }
-      const tableName = formTableId.replace("mesa-", "Mesa ");
+      const tableName = bookingFormTableId.replace("mesa-", "Mesa ");
       await handleAdminAddBooking({
-        tableId: formTableId,
+        tableId: bookingFormTableId,
         tableName,
-        date: formDate,
-        timeSlot: formSlot,
-        guests: formGuests,
-        customerName: formName,
-        customerPhone: formPhone
+        date: bookingFormDate,
+        timeSlot: bookingFormSlot,
+        guests: bookingFormGuests,
+        customerName: bookingFormName,
+        customerPhone: bookingFormPhone
       });
       setIsAddingBooking(false);
-      setFormName("");
-      setFormPhone("");
-      setFormDate("");
+      setBookingFormName("");
+      setBookingFormPhone("");
+      setBookingFormDate("");
     };
 
     const filteredBookings = adminBookings.filter(b => 
-      b.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.tableName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.referenceCode.toLowerCase().includes(searchQuery.toLowerCase())
+      b.customerName.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
+      b.tableName.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
+      b.referenceCode.toLowerCase().includes(bookingSearchQuery.toLowerCase())
     );
 
     return (
@@ -2841,8 +2855,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Nombre del Cliente *</label>
                 <input
                   type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                  value={bookingFormName}
+                  onChange={(e) => setBookingFormName(e.target.value)}
                   placeholder="Ej: Mariano Closs"
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                   required
@@ -2853,8 +2867,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Teléfono *</label>
                 <input
                   type="text"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
+                  value={bookingFormPhone}
+                  onChange={(e) => setBookingFormPhone(e.target.value)}
                   placeholder="Ej: 11-4567-8901"
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                   required
@@ -2865,8 +2879,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Fecha de Reserva *</label>
                 <input
                   type="date"
-                  value={formDate}
-                  onChange={(e) => setFormDate(e.target.value)}
+                  value={bookingFormDate}
+                  onChange={(e) => setBookingFormDate(e.target.value)}
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                   required
                 />
@@ -2875,8 +2889,8 @@ export default function AdminHub({
               <div>
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Horario / Turno</label>
                 <select
-                  value={formSlot}
-                  onChange={(e) => setFormSlot(e.target.value)}
+                  value={bookingFormSlot}
+                  onChange={(e) => setBookingFormSlot(e.target.value)}
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                 >
                   <option value="08:00 - 10:00">Desayuno (08:00 - 10:00)</option>
@@ -2893,8 +2907,8 @@ export default function AdminHub({
               <div>
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Asignar Mesa</label>
                 <select
-                  value={formTableId}
-                  onChange={(e) => setFormTableId(e.target.value)}
+                  value={bookingFormTableId}
+                  onChange={(e) => setBookingFormTableId(e.target.value)}
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                 >
                   {restaurantTables.filter(t => t.status === "Activo").map(t => (
@@ -2909,8 +2923,8 @@ export default function AdminHub({
                   type="number"
                   min="1"
                   max="12"
-                  value={formGuests}
-                  onChange={(e) => setFormGuests(parseInt(e.target.value))}
+                  value={bookingFormGuests}
+                  onChange={(e) => setBookingFormGuests(parseInt(e.target.value))}
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                 />
               </div>
@@ -2940,8 +2954,8 @@ export default function AdminHub({
             <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#2C1810]/40" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={bookingSearchQuery}
+              onChange={(e) => setBookingSearchQuery(e.target.value)}
               placeholder="Buscar por cliente, mesa o código..."
               className="w-full rounded-xl border border-[#2C1810]/15 bg-white py-2.5 pr-4 pl-11 shadow-2xs outline-none transition-all focus:border-[#C2956E] text-xs font-semibold text-[#2C1810]"
             />
@@ -3437,33 +3451,26 @@ export default function AdminHub({
   };
 
   const renderProveedores = () => {
-    const [isAddingProv, setIsAddingProv] = useState(false);
-    const [formName, setFormName] = useState("");
-    const [formItems, setFormItems] = useState("");
-    const [formContact, setFormContact] = useState("");
-    const [formPhone, setFormPhone] = useState("");
-    const [formStatus, setFormStatus] = useState("ACTIVO");
-
     const handleAddProvSubmit = (e: FormEvent) => {
       e.preventDefault();
-      if (!formName || !formPhone) {
+      if (!provFormName || !provFormPhone) {
         onShowNotification("⚠️ Ingrese el nombre y teléfono del proveedor.", "warning");
         return;
       }
       const newProv = {
-        name: formName.trim(),
-        items: formItems.trim() || "Insumos Varios",
-        contact: formContact.trim() || "contacto@proveedor.com",
-        phone: formPhone.replace(/\D/g, ""), // clean digits
-        status: formStatus,
-        color: formStatus === "ACTIVO" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-blue-50 border-blue-200 text-blue-700"
+        name: provFormName.trim(),
+        items: provFormItems.trim() || "Insumos Varios",
+        contact: provFormContact.trim() || "contacto@proveedor.com",
+        phone: provFormPhone.replace(/\D/g, ""), // clean digits
+        status: provFormStatus,
+        color: provFormStatus === "ACTIVO" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-blue-50 border-blue-200 text-blue-700"
       };
       setProveedores(prev => [...prev, newProv]);
       setIsAddingProv(false);
-      setFormName("");
-      setFormItems("");
-      setFormContact("");
-      setFormPhone("");
+      setProvFormName("");
+      setProvFormItems("");
+      setProvFormContact("");
+      setProvFormPhone("");
       onShowNotification(`🤝 Proveedor '${newProv.name}' agregado con éxito.`, "success");
     };
 
@@ -3511,8 +3518,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Nombre / Razón Social *</label>
                 <input
                   type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                  value={provFormName}
+                  onChange={(e) => setProvFormName(e.target.value)}
                   placeholder="Ej: Distribuidora Sur"
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                   required
@@ -3523,8 +3530,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Teléfono / WhatsApp *</label>
                 <input
                   type="text"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
+                  value={provFormPhone}
+                  onChange={(e) => setProvFormPhone(e.target.value)}
                   placeholder="Ej: 221 444-1234"
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                   required
@@ -3535,8 +3542,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Correo de Ventas</label>
                 <input
                   type="email"
-                  value={formContact}
-                  onChange={(e) => setFormContact(e.target.value)}
+                  value={provFormContact}
+                  onChange={(e) => setProvFormContact(e.target.value)}
                   placeholder="Ej: ventas@proveedor.com"
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                 />
@@ -3546,8 +3553,8 @@ export default function AdminHub({
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Insumos Abastecidos</label>
                 <input
                   type="text"
-                  value={formItems}
-                  onChange={(e) => setFormItems(e.target.value)}
+                  value={provFormItems}
+                  onChange={(e) => setProvFormItems(e.target.value)}
                   placeholder="Ej: Café de especialidad, Yerba orgánica, Azúcar"
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                 />
@@ -3556,8 +3563,8 @@ export default function AdminHub({
               <div>
                 <label className="text-[9px] uppercase tracking-wider block mb-1">Estado Comercial</label>
                 <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value)}
+                  value={provFormStatus}
+                  onChange={(e) => setProvFormStatus(e.target.value)}
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer"
                 >
                   <option value="ACTIVO">ACTIVO</option>
@@ -4375,9 +4382,6 @@ export default function AdminHub({
     };
 
   const renderSalon = () => {
-    const [newTableName, setNewTableName] = useState("");
-    const [newTableCapacity, setNewTableCapacity] = useState(2);
-
     const handleAddTable = (e: FormEvent) => {
       e.preventDefault();
       if (!newTableName) return;
