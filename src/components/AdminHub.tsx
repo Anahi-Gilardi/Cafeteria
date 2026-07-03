@@ -86,6 +86,25 @@ export default function AdminHub({
   const [newProdStock, setNewProdStock] = useState("50");
   const [newProdImage, setNewProdImage] = useState("");
 
+  const [proveedores, setProveedores] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_proveedores");
+      return saved ? JSON.parse(saved) : [
+        { name: "Distribuidora Sur", items: "Harina, Manteca, DDL, Chocolate", contact: "ventas@distribuidorasur.com", phone: "+542214441234", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+        { name: "Lácteos del Campo", items: "Leche Entera, Crema de Leche 44%", contact: "pedidos@lacteosdelcampo.com.ar", phone: "+542214559876", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+        { name: "Moinho Alegre", items: "Tostado Etiopía, Tostado Colombia", contact: "compras@moinhoalegre.com", phone: "+541150008800", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+        { name: "Mayorista Altiplano", items: "Azúcar Chango, Yerba Mate Orgánica", contact: "contacto@altiplano.com.ar", phone: "+542214774545", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+        { name: "Granja La Pradera", items: "Huevos de Campo Orgánicos", contact: "granja@lapradera.com", phone: "+542241881290", status: "PENDIENTE", color: "bg-blue-50 border-blue-200 text-blue-700" }
+      ];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("puglia_proveedores", JSON.stringify(proveedores));
+  }, [proveedores]);
+
   const [calibrationData, setCalibrationData] = useState(() => {
     try {
       const saved = localStorage.getItem("puglia_calibration");
@@ -3193,50 +3212,199 @@ export default function AdminHub({
   };
 
   const renderProveedores = () => {
+    const [isAddingProv, setIsAddingProv] = useState(false);
+    const [formName, setFormName] = useState("");
+    const [formItems, setFormItems] = useState("");
+    const [formContact, setFormContact] = useState("");
+    const [formPhone, setFormPhone] = useState("");
+    const [formStatus, setFormStatus] = useState("ACTIVO");
+
+    const handleAddProvSubmit = (e: FormEvent) => {
+      e.preventDefault();
+      if (!formName || !formPhone) {
+        onShowNotification("⚠️ Ingrese el nombre y teléfono del proveedor.", "warning");
+        return;
+      }
+      const newProv = {
+        name: formName.trim(),
+        items: formItems.trim() || "Insumos Varios",
+        contact: formContact.trim() || "contacto@proveedor.com",
+        phone: formPhone.replace(/\D/g, ""), // clean digits
+        status: formStatus,
+        color: formStatus === "ACTIVO" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-blue-50 border-blue-200 text-blue-700"
+      };
+      setProveedores(prev => [...prev, newProv]);
+      setIsAddingProv(false);
+      setFormName("");
+      setFormItems("");
+      setFormContact("");
+      setFormPhone("");
+      onShowNotification(`🤝 Proveedor '${newProv.name}' agregado con éxito.`, "success");
+    };
+
+    const handleWhatsAppOrder = (phone: string, name: string) => {
+      const cleanPhone = phone.replace(/\D/g, "");
+      const targetPhone = cleanPhone.startsWith("54") ? cleanPhone : "54" + cleanPhone;
+      const text = `Hola ${name}, les escribo desde Café Puglia para realizar un pedido de insumos.`;
+      const url = `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
+      window.open(url, "_blank");
+      onShowNotification(`📱 Abriendo chat de WhatsApp con ${name}...`, "info");
+    };
+
     return (
       <motion.div
         key="proveedores-view"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 animate-fade-in"
       >
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Abastecimiento y Logística</span>
-          <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Directorio de Proveedores</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Abastecimiento y Logística</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Directorio de Proveedores</h2>
+            <p className="text-xs text-[#2C1810]/60 mt-1">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp.</p>
+          </div>
+          <button
+            onClick={() => setIsAddingProv(!isAddingProv)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer uppercase tracking-wider"
+          >
+            <Plus className="h-4 w-4" /> Agregar Proveedor
+          </button>
         </div>
 
+        {/* Form to Add Supplier */}
+        {isAddingProv && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="bg-white border border-[#2C1810]/15 rounded-3xl p-6 shadow-xs space-y-4"
+          >
+            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Nuevo Proveedor de Compra</h3>
+            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2C1810]/70">
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Nombre / Razón Social *</label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ej: Distribuidora Sur"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Teléfono / WhatsApp *</label>
+                <input
+                  type="text"
+                  value={formPhone}
+                  onChange={(e) => setFormPhone(e.target.value)}
+                  placeholder="Ej: 221 444-1234"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Correo de Ventas</label>
+                <input
+                  type="email"
+                  value={formContact}
+                  onChange={(e) => setFormContact(e.target.value)}
+                  placeholder="Ej: ventas@proveedor.com"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Insumos Abastecidos</label>
+                <input
+                  type="text"
+                  value={formItems}
+                  onChange={(e) => setFormItems(e.target.value)}
+                  placeholder="Ej: Café de especialidad, Yerba orgánica, Azúcar"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] uppercase tracking-wider block mb-1">Estado Comercial</label>
+                <select
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value)}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer"
+                >
+                  <option value="ACTIVO">ACTIVO</option>
+                  <option value="PENDIENTE">PENDIENTE</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-3 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingProv(false)}
+                  className="px-4 py-2 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer font-bold"
+                >
+                  Guardar Proveedor
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+
+        {/* Suppliers Table */}
         <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
-                <th className="p-4">Proveedor</th>
-                <th className="p-4">Insumos Abastecidos</th>
-                <th className="p-4">Contacto Ventas</th>
-                <th className="p-4">Teléfono / Pedidos</th>
-                <th className="p-4 text-center">Estado Comercial</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#2C1810]/10 text-xs">
-              {[
-                { name: "Distribuidora Sur", items: "Harina, Manteca, DDL, Chocolate", contact: "ventas@distribuidorasur.com", phone: "+54 221 444-1234", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-                { name: "Lácteos del Campo", items: "Leche Entera, Crema de Leche 44%", contact: "pedidos@lacteosdelcampo.com.ar", phone: "+54 221 455-9876", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-                { name: "Moinho Alegre", items: "Tostado Etiopía, Tostado Colombia", contact: "compras@moinhoalegre.com", phone: "+54 11 5000-8800", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-                { name: "Mayorista Altiplano", items: "Azúcar Chango, Yerba Mate Orgánica", contact: "contacto@altiplano.com.ar", phone: "+54 221 477-4545", status: "ACTIVO", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-                { name: "Granja La Pradera", items: "Huevos de Campo Orgánicos", contact: "granja@lapradera.com", phone: "+54 2241 88-1290", status: "PENDIENTE", color: "bg-blue-50 border-blue-200 text-blue-700" }
-              ].map((prov, idx) => (
-                <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                  <td className="p-4 font-bold text-[#2C1810]">{prov.name}</td>
-                  <td className="p-4 text-[#2C1810]/70 font-semibold">{prov.items}</td>
-                  <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{prov.contact}</td>
-                  <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{prov.phone}</td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2.5 py-1 text-[8px] font-extrabold uppercase rounded-full tracking-wider border ${prov.color}`}>{prov.status}</span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                  <th className="p-4">Proveedor</th>
+                  <th className="p-4">Insumos Abastecidos</th>
+                  <th className="p-4">Contacto Ventas</th>
+                  <th className="p-4">Teléfono / Pedidos</th>
+                  <th className="p-4 text-center">Estado Comercial</th>
+                  <th className="p-4 text-center">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[#2C1810]/10 text-xs">
+                {proveedores.map((prov, idx) => (
+                  <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
+                    <td className="p-4 font-bold text-[#2C1810]">{prov.name}</td>
+                    <td className="p-4 text-[#2C1810]/70 font-semibold">{prov.items}</td>
+                    <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{prov.contact}</td>
+                    <td className="p-4 font-mono font-semibold text-[#2C1810]/60">+{prov.phone}</td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2.5 py-1 text-[8px] font-extrabold uppercase rounded-full tracking-wider border ${prov.color}`}>{prov.status}</span>
+                    </td>
+                    <td className="p-4 text-center flex items-center justify-center gap-2.5">
+                      <button
+                        onClick={() => handleWhatsAppOrder(prov.phone, prov.name)}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                      >
+                        💬 WhatsApp
+                      </button>
+                      <button
+                        onClick={() => {
+                          setProveedores(prev => prev.filter(p => p.name !== prov.name));
+                          onShowNotification(`🗑️ Proveedor '${prov.name}' eliminado.`, "info");
+                        }}
+                        className="p-1 text-red-600 hover:text-red-700 rounded-md hover:bg-red-50 transition-all cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </motion.div>
     );
