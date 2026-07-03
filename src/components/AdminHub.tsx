@@ -34,6 +34,19 @@ interface Insumo {
   expirationDate?: string;
 }
 
+const getInsumoUnitCost = (name: string): number => {
+  const lowercase = name.toLowerCase();
+  if (lowercase.includes("café") || lowercase.includes("etiopía") || lowercase.includes("colombia")) return 24000;
+  if (lowercase.includes("leche")) return 1200;
+  if (lowercase.includes("azúcar")) return 1500;
+  if (lowercase.includes("harina")) return 1500;
+  if (lowercase.includes("chocolate")) return 8000;
+  if (lowercase.includes("huevo")) return 200;
+  if (lowercase.includes("manteca")) return 6000;
+  if (lowercase.includes("dulce de leche") || lowercase.includes("ddl")) return 4500;
+  return 2000; // default cost
+};
+
 export default function AdminHub({
   orders,
   onOrderStatusUpdate,
@@ -104,6 +117,28 @@ export default function AdminHub({
   useEffect(() => {
     localStorage.setItem("puglia_proveedores", JSON.stringify(proveedores));
   }, [proveedores]);
+
+  const [restaurantTables, setRestaurantTables] = useState<{ id: string; name: string; capacity: number; status: "Activo" | "Mantenimiento" }[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_tables");
+      return saved ? JSON.parse(saved) : [
+        { id: "mesa-1", name: "Mesa 1", capacity: 2, status: "Activo" },
+        { id: "mesa-2", name: "Mesa 2", capacity: 2, status: "Activo" },
+        { id: "mesa-3", name: "Mesa 3", capacity: 4, status: "Activo" },
+        { id: "mesa-4", name: "Mesa 4", capacity: 4, status: "Activo" },
+        { id: "mesa-5", name: "Mesa 5", capacity: 6, status: "Activo" },
+        { id: "mesa-6", name: "Mesa 6", capacity: 6, status: "Activo" },
+        { id: "mesa-7", name: "Mesa 7", capacity: 8, status: "Activo" },
+        { id: "mesa-8", name: "Mesa 8", capacity: 8, status: "Activo" }
+      ];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("puglia_tables", JSON.stringify(restaurantTables));
+  }, [restaurantTables]);
 
   const [calibrationsHistory, setCalibrationsHistory] = useState<any[]>([]);
 
@@ -761,6 +796,23 @@ export default function AdminHub({
   const [movType, setMovType] = useState<"Ingreso" | "Egreso">("Ingreso");
   const [movInsumoId, setMovInsumoId] = useState<string>("");
   const [movQty, setMovQty] = useState<string>("");
+  const [movReason, setMovReason] = useState<string>("");
+  const [mermaLogs, setMermaLogs] = useState<{ id: string; date: string; name: string; qty: string; cost: string; reason: string; auditor: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_mermas");
+      return saved ? JSON.parse(saved) : [
+        { id: "m-1", date: "Hace 2 horas", name: "Leche Entera", qty: "4.0 L", cost: "$4.800", reason: "Leche cortada por corte de refrigeración", auditor: "Enzo" },
+        { id: "m-2", date: "Ayer", name: "Harina de Trigo", qty: "2.5 kg", cost: "$3.750", reason: "Harina mojada por humedad de limpieza", auditor: "Micaela" },
+        { id: "m-3", date: "Hace 3 días", name: "Tostado Etiopía", qty: "0.5 kg", cost: "$12.000", reason: "Granos de descarte de purga de molienda", auditor: "Enzo" }
+      ];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("puglia_mermas", JSON.stringify(mermaLogs));
+  }, [mermaLogs]);
 
   useEffect(() => {
     if (menuItems.length > 0 && !selectedMenuProduct) {
@@ -1802,6 +1854,10 @@ export default function AdminHub({
   };
 
   const renderCaja = () => {
+    const [historySearchTable, setHistorySearchTable] = useState("");
+    const [historyFilterWaiter, setHistoryFilterWaiter] = useState("todos");
+    const [historyFilterPayment, setHistoryFilterPayment] = useState("todos");
+
     // 1. Calculate values
     const posSubtotal = posCart.reduce((sum, item) => sum + item.item.price * item.qty, 0);
     const posIva = posSubtotal * 0.21;
@@ -2542,6 +2598,47 @@ export default function AdminHub({
           <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
             <Receipt className="h-4 w-4 text-[#C2956E]" /> Historial de Comandas Cobradas
           </h3>
+
+          {/* Filters bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-stone-50 border border-stone-150 rounded-2xl text-[#2C1810] text-xs font-semibold">
+            <div>
+              <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Buscar por Mesa</label>
+              <input
+                type="text"
+                placeholder="ej: Mesa 3"
+                value={historySearchTable}
+                onChange={(e) => setHistorySearchTable(e.target.value)}
+                className="w-full p-2 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold"
+              />
+            </div>
+            <div>
+              <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Filtrar por Mozo</label>
+              <select
+                value={historyFilterWaiter}
+                onChange={(e) => setHistoryFilterWaiter(e.target.value)}
+                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer outline-none"
+              >
+                <option value="todos">Todos los Mozos</option>
+                <option value="Enzo">Enzo</option>
+                <option value="Micaela">Micaela</option>
+                <option value="PedidosYa Delivery">PedidosYa Delivery</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Filtrar por Método de Pago</label>
+              <select
+                value={historyFilterPayment}
+                onChange={(e) => setHistoryFilterPayment(e.target.value)}
+                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer outline-none"
+              >
+                <option value="todos">Todos los Métodos</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="MercadoPago">MercadoPago</option>
+                <option value="Fiado / Cta Cte">Cta Cte / Fiado</option>
+              </select>
+            </div>
+          </div>
           
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs font-semibold text-[#2C1810]/80">
@@ -2556,19 +2653,31 @@ export default function AdminHub({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#2C1810]/5">
-                {orders.filter(o => o.status === "Completado").length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-6 text-center text-stone-400 font-medium italic">
-                      No hay comandas cobradas en la sesión actual.
-                    </td>
-                  </tr>
-                ) : (
-                  orders.filter(o => o.status === "Completado").map((o) => (
+                {(() => {
+                  const filteredCompletedOrders = orders.filter(o => {
+                    if (o.status !== "Completado") return false;
+                    if (historySearchTable && !(o.tableNumber || "").toLowerCase().includes(historySearchTable.toLowerCase())) return false;
+                    if (historyFilterWaiter !== "todos" && getMozoName(o.id) !== historyFilterWaiter) return false;
+                    if (historyFilterPayment !== "todos" && (o.paymentMethod || "Efectivo").toLowerCase() !== historyFilterPayment.toLowerCase()) return false;
+                    return true;
+                  });
+
+                  if (filteredCompletedOrders.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={6} className="p-6 text-center text-stone-400 font-medium italic">
+                          No se encontraron comandas cobradas con los filtros seleccionados.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return filteredCompletedOrders.map((o) => (
                     <tr key={o.id} className="hover:bg-stone-50/50 transition-colors">
                       <td className="p-3 font-mono font-bold text-[#2C1810]">{o.id}</td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-md bg-[#2C1810]/5 text-[#2C1810] text-[10px] font-bold">
-                          {o.tableNumber ? `Mesa ${o.tableNumber}` : o.type}
+                          {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
                         </span>
                       </td>
                       <td className="p-3 text-[#2C1810]/70 max-w-[200px] truncate">
@@ -2579,14 +2688,14 @@ export default function AdminHub({
                       <td className="p-3 text-center">
                         <button
                           onClick={() => setSelectedOrderForTicket(o)}
-                          className="px-3 py-1 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1 mx-auto"
+                          className="px-3 py-1 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1 mx-auto border-none"
                         >
                           <Printer className="h-3 w-3" /> Ver Ticket
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
@@ -2770,14 +2879,9 @@ export default function AdminHub({
                   onChange={(e) => setFormTableId(e.target.value)}
                   className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
                 >
-                  <option value="mesa-1">Mesa 1 (2 Pers.)</option>
-                  <option value="mesa-2">Mesa 2 (2 Pers.)</option>
-                  <option value="mesa-3">Mesa 3 (4 Pers.)</option>
-                  <option value="mesa-4">Mesa 4 (4 Pers.)</option>
-                  <option value="mesa-5">Mesa 5 (6 Pers.)</option>
-                  <option value="mesa-6">Mesa 6 (6 Pers.)</option>
-                  <option value="mesa-7">Mesa 7 (8 Pers.)</option>
-                  <option value="mesa-8">Mesa 8 (8 Pers.)</option>
+                  {restaurantTables.filter(t => t.status === "Activo").map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.capacity} Pers.)</option>
+                  ))}
                 </select>
               </div>
 
@@ -2883,7 +2987,7 @@ export default function AdminHub({
   };
 
   const renderPedidosMozo = () => {
-    const MOZO_TABLES = ["Mesa 1", "Mesa 2", "Mesa 3", "Mesa 4", "Mesa 5", "Mesa 6", "Mesa 8", "Mesa 12", "VIP-1", "Terraza-3"];
+    const MOZO_TABLES = restaurantTables.filter(t => t.status === "Activo").map(t => t.name);
     
     const getActiveOrderForTable = (table: string) => {
       return orders.find(o => o.tableNumber === table && o.status !== "Completado");
@@ -4215,16 +4319,51 @@ export default function AdminHub({
     };
 
   const renderSalon = () => {
-    const tablesList = [
-      { id: "mesa-1", name: "Mesa 1", capacity: 2 },
-      { id: "mesa-2", name: "Mesa 2", capacity: 2 },
-      { id: "mesa-3", name: "Mesa 3", capacity: 4 },
-      { id: "mesa-4", name: "Mesa 4", capacity: 4 },
-      { id: "mesa-5", name: "Mesa 5", capacity: 6 },
-      { id: "mesa-6", name: "Mesa 6", capacity: 6 },
-      { id: "mesa-7", name: "Mesa 7", capacity: 8 },
-      { id: "mesa-8", name: "Mesa 8", capacity: 8 }
-    ];
+    const [newTableName, setNewTableName] = useState("");
+    const [newTableCapacity, setNewTableCapacity] = useState(2);
+
+    const handleAddTable = (e: FormEvent) => {
+      e.preventDefault();
+      if (!newTableName) return;
+      const cleanName = newTableName.trim();
+      if (restaurantTables.some(t => t.name.toLowerCase() === cleanName.toLowerCase())) {
+        onShowNotification("⚠️ Ya existe una mesa con ese nombre.", "warning");
+        return;
+      }
+      const newTable = {
+        id: "mesa-" + Date.now(),
+        name: cleanName,
+        capacity: newTableCapacity,
+        status: "Activo" as const
+      };
+      setRestaurantTables(prev => [...prev, newTable]);
+      setNewTableName("");
+      onShowNotification(`🎉 Mesa "${cleanName}" agregada con éxito.`, "success");
+    };
+
+    const handleDeleteTable = (id: string) => {
+      const tableObj = restaurantTables.find(t => t.id === id);
+      if (tableObj) {
+        const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === tableObj.name);
+        if (activeOrder) {
+          onShowNotification("⚠️ No se puede eliminar una mesa que está ocupada.", "warning");
+          return;
+        }
+      }
+      setRestaurantTables(prev => prev.filter(t => t.id !== id));
+      onShowNotification("🗑️ Mesa eliminada del plano.", "info");
+    };
+
+    const handleToggleTableStatus = (id: string) => {
+      setRestaurantTables(prev => prev.map(t => {
+        if (t.id === id) {
+          const nextStatus = t.status === "Activo" ? "Mantenimiento" : "Activo";
+          onShowNotification(`🔧 Mesa "${t.name}" cambiada a ${nextStatus.toUpperCase()}.`, "info");
+          return { ...t, status: nextStatus };
+        }
+        return t;
+      }));
+    };
 
     return (
       <motion.div
@@ -4258,15 +4397,18 @@ export default function AdminHub({
 
         {/* Grid of tables */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tablesList.map((table) => {
+          {restaurantTables.map((table) => {
             // Find active order for this table (matching string name e.g. "Mesa 1")
             const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
             // Find reservation for this table (matching ID e.g. "mesa-1")
             const reservation = bookings.find(b => b.tableId === table.id);
 
-            let status: "Libre" | "Ocupada" | "Reservada" = "Libre";
+            let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
             let colorClasses = "border-emerald-200 bg-emerald-50/20 text-emerald-900";
-            if (activeOrder) {
+            if (table.status === "Mantenimiento") {
+              status = "Mantenimiento";
+              colorClasses = "border-red-200 bg-red-50/20 text-red-900";
+            } else if (activeOrder) {
               status = "Ocupada";
               colorClasses = "border-[#2C1810]/30 bg-[#2C1810]/5 text-[#2C1810]";
             } else if (reservation) {
@@ -4286,6 +4428,12 @@ export default function AdminHub({
                       {table.capacity} Personas
                     </span>
                   </div>
+
+                  {status === "Mantenimiento" && (
+                    <div className="py-4">
+                      <p className="text-xs text-red-800 italic font-semibold">🔧 Mesa fuera de servicio por mantenimiento.</p>
+                    </div>
+                  )}
 
                   {status === "Libre" && (
                     <div className="py-4">
@@ -4319,6 +4467,15 @@ export default function AdminHub({
                 </div>
 
                 <div className="pt-4 border-t border-[#2C1810]/5 mt-2">
+                  {status === "Mantenimiento" && (
+                    <button
+                      disabled
+                      className="w-full bg-red-100/50 text-red-700/50 text-[10px] font-bold py-2 rounded-xl uppercase tracking-wider cursor-not-allowed border border-red-200/20"
+                    >
+                      Fuera de Servicio
+                    </button>
+                  )}
+
                   {status === "Libre" && (
                     <button
                       onClick={() => {
@@ -4364,6 +4521,90 @@ export default function AdminHub({
             );
           })}
         </div>
+
+        {/* Table Editor Panel */}
+        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
+          <div className="border-b border-[#2C1810]/10 pb-4">
+            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Configuración y Distribución del Salón</h3>
+            <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Form: Add table */}
+            <form onSubmit={handleAddTable} className="lg:col-span-4 space-y-4 text-xs font-semibold text-[#2C1810]/80">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#C2956E] border-b border-[#2C1810]/5 pb-1 flex items-center gap-1.5">
+                ➕ Agregar Mesa Nueva
+              </h4>
+              <div>
+                <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Nombre (ej: Mesa 9, VIP-2)</label>
+                <input 
+                  type="text"
+                  placeholder="Nombre de mesa"
+                  value={newTableName}
+                  onChange={(e) => setNewTableName(e.target.value)}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-white text-[#2C1810] font-bold outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Capacidad (Comensales)</label>
+                <select
+                  value={newTableCapacity}
+                  onChange={(e) => setNewTableCapacity(Number(e.target.value))}
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-white text-[#2C1810] font-bold cursor-pointer outline-none"
+                >
+                  <option value="2">2 Personas</option>
+                  <option value="4">4 Personas</option>
+                  <option value="6">6 Personas</option>
+                  <option value="8">8 Personas</option>
+                  <option value="12">12 Personas</option>
+                </select>
+              </div>
+              <button 
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-none"
+              >
+                Agregar al Plano
+              </button>
+            </form>
+
+            {/* List: Manage existing tables */}
+            <div className="lg:col-span-8 space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#C2956E] border-b border-[#2C1810]/5 pb-1 flex items-center gap-1.5">
+                📋 Listado y Estados de Distribución
+              </h4>
+              <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1">
+                {restaurantTables.map((t) => (
+                  <div key={t.id} className="p-3 bg-stone-50 border border-stone-150 rounded-2xl flex justify-between items-center text-[10px] font-semibold text-[#2C1810]/80">
+                    <div>
+                      <strong className="text-xs text-[#2C1810]">{t.name}</strong>
+                      <span className="text-[9px] text-[#2C1810]/50 block font-normal">Capacidad: {t.capacity} comensales</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleTableStatus(t.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[9px] font-bold border transition-all cursor-pointer ${
+                          t.status === "Activo"
+                            ? "bg-emerald-50 border-emerald-250 text-emerald-800"
+                            : "bg-red-50 border-red-250 text-red-800"
+                        }`}
+                      >
+                        {t.status === "Activo" ? "Activa" : "Mantenimiento"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTable(t.id)}
+                        className="p-1.5 bg-white border border-stone-250 hover:border-red-200 text-stone-400 hover:text-red-700 rounded-lg transition-all cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </motion.div>
     );
   };
@@ -4383,13 +4624,8 @@ export default function AdminHub({
     csvContent += "\n=== HISTORIAL DE MERMAS DE MATERIA PRIMA ===\n";
     csvContent += "Fecha,Insumo,Descripcion,Cantidad,Costo Estimado,Auditor\n";
     
-    const mermasData = [
-      { date: "Hoy", desc: "Leche cortada por corte de refrigeración", qty: "4.0 L", cost: "$4.800", auditor: "Carlos Gómez" },
-      { date: "Ayer", desc: "Harina mojada por humedad de limpieza", qty: "2.5 kg", cost: "$3.750", auditor: "Lucía Fernández" },
-      { date: "Hace 3 días", desc: "Granos de descarte de purga de molienda", qty: "0.5 kg", cost: "$12.000", auditor: "Mariano Díaz" }
-    ];
-    mermasData.forEach((merma) => {
-      csvContent += `"${merma.date}","${merma.qty}","${merma.desc}","${merma.cost}","${merma.auditor}"\n`;
+    mermaLogs.forEach((merma) => {
+      csvContent += `"${merma.date}","${merma.name}","${merma.reason}","${merma.qty}","${merma.cost}","${merma.auditor}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -4494,18 +4730,14 @@ export default function AdminHub({
               El manual obliga a un desecho menor al 2% mensual. Registro descartes:
             </p>
             <div className="space-y-2 text-xs">
-              {[
-                { date: "Hoy", desc: "Leche cortada por corte de refrigeración", qty: "4.0 L", cost: "$4.800", auditor: "Carlos Gómez" },
-                { date: "Ayer", desc: "Harina mojada por humedad de limpieza", qty: "2.5 kg", cost: "$3.750", auditor: "Lucía Fernández" },
-                { date: "Hace 3 días", desc: "Granos de descarte de purga de molienda", qty: "0.5 kg", cost: "$12.000", auditor: "Mariano Díaz" }
-              ].map((merma, idx) => (
-                <div key={idx} className="p-3 bg-stone-50 border border-stone-150 rounded-2xl flex justify-between items-center font-semibold text-[#2C1810]/80">
+              {mermaLogs.map((merma) => (
+                <div key={merma.id} className="p-3 bg-stone-50 border border-stone-150 rounded-2xl flex justify-between items-center font-semibold text-[#2C1810]/80">
                   <div>
                     <div className="flex items-center gap-2">
-                      <strong className="text-xs font-bold text-[#2C1810]">{merma.qty}</strong>
+                      <strong className="text-xs font-bold text-[#2C1810]">{merma.name} ({merma.qty})</strong>
                       <span className="text-[9px] text-[#2C1810]/40 font-bold block">{merma.date}</span>
                     </div>
-                    <span className="text-[10px] text-[#2C1810]/60 block mt-0.5">{merma.desc}</span>
+                    <span className="text-[10px] text-[#2C1810]/60 block mt-0.5">{merma.reason}</span>
                   </div>
                   <div className="text-right">
                     <strong className="text-xs font-mono text-[#2C1810] block">{merma.cost}</strong>
@@ -4702,9 +4934,25 @@ export default function AdminHub({
                 />
               </div>
 
+              {movType === "Egreso" && (
+                <div>
+                  <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Motivo / Descripción de la Merma</label>
+                  <textarea 
+                    placeholder="Escriba el motivo del descarte..."
+                    value={movReason}
+                    onChange={(e) => setMovReason(e.target.value)}
+                    rows={2}
+                    className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold resize-none"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3 pt-3">
                 <button 
-                  onClick={() => setIsMovementModalOpen(false)}
+                  onClick={() => {
+                    setIsMovementModalOpen(false);
+                    setMovReason("");
+                  }}
                   className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer text-center bg-transparent"
                 >
                   Cancelar
@@ -4718,7 +4966,27 @@ export default function AdminHub({
                     }
                     const multiplier = movType === "Ingreso" ? 1 : -1;
                     handleAdjustInsumo(movInsumoId, val * multiplier);
+
+                    // Add to mermas history if it is a waste adjustment
+                    if (movType === "Egreso") {
+                      const insumo = insumos.find(i => i.id === movInsumoId);
+                      if (insumo) {
+                        const costEstimate = val * getInsumoUnitCost(insumo.name);
+                        const newMermaLog = {
+                          id: "m-" + Date.now(),
+                          date: "Hoy",
+                          name: insumo.name,
+                          qty: `${val} ${insumo.unit}`,
+                          cost: `$${costEstimate.toLocaleString("es-AR")}`,
+                          reason: movReason || "Descarte / Ajuste operativo manual",
+                          auditor: selectedWaiter || "Cajero"
+                        };
+                        setMermaLogs(prev => [newMermaLog, ...prev]);
+                      }
+                    }
+
                     setIsMovementModalOpen(false);
+                    setMovReason("");
                     onShowNotification(`📦 Ajuste realizado: Se registró ${movType.toLowerCase()} de ${val} unidades.`, "success");
                   }}
                   className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md transition-all cursor-pointer text-center"
