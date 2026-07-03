@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Coffee, Key, User, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -41,7 +41,10 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
       try {
         const saved = localStorage.getItem("puglia_local_users");
         if (saved) {
-          localUsers = JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            localUsers = parsed;
+          }
         }
       } catch (e) {
         console.error("Error reading local users:", e);
@@ -49,11 +52,13 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
 
       // Merge and remove duplicates by email/pin/id
       const merged = [...dbUsers];
-      localUsers.forEach(l => {
-        if (!merged.some(m => m.id === l.id || m.email === l.email || m.pin === l.pin)) {
-          merged.push(l);
-        }
-      });
+      if (Array.isArray(localUsers)) {
+        localUsers.forEach(l => {
+          if (l && !merged.some(m => m.id === l.id || m.email === l.email || m.pin === l.pin)) {
+            merged.push(l);
+          }
+        });
+      }
 
       if (merged.length > 0) {
         setEmployees(merged);
@@ -65,7 +70,12 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
       let localUsers: any[] = [];
       try {
         const saved = localStorage.getItem("puglia_local_users");
-        if (saved) localUsers = JSON.parse(saved);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            localUsers = parsed;
+          }
+        }
       } catch (err) {}
       setEmployees([...DEFAULT_USERS, ...localUsers]);
     } finally {
@@ -73,9 +83,9 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
     }
   };
 
-  if (!isLoaded) {
+  useEffect(() => {
     loadEmployees();
-  }
+  }, []);
 
   // Handle email/password authentication
   const handleCredentialsLogin = async (e: FormEvent) => {

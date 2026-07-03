@@ -16,14 +16,15 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((t: any) => t.status === "Activo").map((t: any, idx: number) => {
+          return parsed.filter((t: any) => t && t.status === "Activo").map((t: any, idx: number) => {
             const defaultTable = TABLES_DATA[idx] || TABLES_DATA[idx % TABLES_DATA.length];
+            const cap = t.capacity || 2;
             return {
               id: t.id,
-              name: t.name,
-              capacity: t.capacity,
+              name: t.name || `Mesa ${idx + 1}`,
+              capacity: cap,
               type: defaultTable?.type || "table",
-              description: defaultTable?.description || `Mesa de salón para ${t.capacity} comensales.`,
+              description: defaultTable?.description || `Mesa de salón para ${cap} comensales.`,
               coordX: defaultTable?.coordX || (20 + (idx * 15) % 60),
               coordY: defaultTable?.coordY || (20 + Math.floor(idx / 4) * 20),
               status: "Libre" as const
@@ -361,7 +362,7 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
                           <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70">
                             {table.type === "window" ? "🪟" : table.type === "sofa" ? "🛋️" : table.type === "bar" ? "☕" : table.type === "reading" ? "📚" : "🏡"}
                           </span>
-                          <span className="text-xs font-bold truncate max-w-full leading-tight mt-0.5">{table.name.replace("Mesa ", "M ")}</span>
+                          <span className="text-xs font-bold truncate max-w-full leading-tight mt-0.5">{(table.name || "Mesa").replace("Mesa ", "M ")}</span>
                           <span className="text-[9px] opacity-75">{table.capacity}p</span>
                           
                           {/* Selected Checkmark overlay */}
