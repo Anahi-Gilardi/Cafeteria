@@ -241,6 +241,18 @@ export default function AdminHub({
   const [editOfferPrice, setEditOfferPrice] = useState<number>(0);
 
   const [tipPool, setTipPool] = useState(0);
+  const [activeTipEmployees, setActiveTipEmployees] = useState<string[]>([
+    "Carlos Gómez",
+    "Lucía Fernández",
+    "Mariano Díaz",
+    "Sofía Martínez"
+  ]);
+  const [selectedTipStaff, setSelectedTipStaff] = useState<string[]>([
+    "Carlos Gómez",
+    "Lucía Fernández",
+    "Mariano Díaz",
+    "Sofía Martínez"
+  ]);
   const [profitSales, setProfitSales] = useState(80000);
   const [profitNet, setProfitNet] = useState(18000);
   const [profitHoursTotal, setProfitHoursTotal] = useState(4500);
@@ -3872,17 +3884,55 @@ export default function AdminHub({
                       </p>
                     </div>
 
+                    {/* Tip Splitter Tool */}
+                    <div className="pt-3 border-t border-[#2C1810]/5 space-y-2.5">
+                      <h4 className="text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/50">
+                        Seleccionar personal en turno ({selectedTipStaff.length})
+                      </h4>
+                      <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                        {activeTipEmployees.map(name => {
+                          const isChecked = selectedTipStaff.includes(name);
+                          return (
+                            <label key={name} className="flex items-center gap-2 text-[10px] font-semibold text-[#2C1810]/80 cursor-pointer select-none">
+                              <input 
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  setSelectedTipStaff(prev => 
+                                    isChecked ? prev.filter(n => n !== name) : [...prev, name]
+                                  );
+                                }}
+                                className="h-3.5 w-3.5 rounded border-stone-300 text-[#2C1810] focus:ring-[#2C1810]/30 cursor-pointer"
+                              />
+                              <span>{name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div className="p-3 bg-stone-50 border border-stone-150 rounded-xl flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-[#2C1810]/60">Monto por Persona:</span>
+                        <strong className="text-xs font-mono text-emerald-800">
+                          ${selectedTipStaff.length > 0 ? (tipPool / selectedTipStaff.length).toFixed(0) : "0"} c/u
+                        </strong>
+                      </div>
+                    </div>
+
                     <button
                       onClick={async () => {
                         if (tipPool <= 0) {
                           onShowNotification("⚠️ No hay propinas acumuladas para repartir.", "warning");
                           return;
                         }
+                        if (selectedTipStaff.length === 0) {
+                          onShowNotification("⚠️ Seleccione al menos un colaborador para repartir.", "warning");
+                          return;
+                        }
                         try {
                           await supabase.from("system_settings").upsert({ key: "tip_pool", value: 0 });
                           localStorage.setItem("origen_tip_pool", "0");
+                          const perPerson = (tipPool / selectedTipStaff.length).toFixed(0);
                           setTipPool(0);
-                          onShowNotification("✅ Se liquidaron las propinas acumuladas.", "success");
+                          onShowNotification(`✅ Repartido con éxito: $${perPerson} para ${selectedTipStaff.join(", ")}.`, "success");
                         } catch (err) {
                           console.error("Error clearing tip pool on Supabase:", err);
                         }
