@@ -783,6 +783,7 @@ export default function App() {
               >
                 <KitchenDisplay
                   orders={orders}
+                  menuItems={menuItems}
                   onOrderStatusUpdate={handleOrderStatusUpdate}
                 />
               </motion.div>

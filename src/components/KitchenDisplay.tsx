@@ -1,13 +1,15 @@
-import { Order, OrderStatusType } from "../types";
-import { Clock, Play, CheckCircle2, ChevronRight, AlertTriangle, Coffee } from "lucide-react";
+import { Order, OrderStatusType, MenuItem } from "../types";
+import { Clock, Play, CheckCircle2, ChevronRight, AlertTriangle, Coffee, BookOpen, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface KitchenDisplayProps {
   orders: Order[];
+  menuItems: MenuItem[];
   onOrderStatusUpdate: (orderId: string, status: OrderStatusType) => void;
 }
 
-export default function KitchenDisplay({ orders, onOrderStatusUpdate }: KitchenDisplayProps) {
+export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate }: KitchenDisplayProps) {
+  const [selectedItemForRecipe, setSelectedItemForRecipe] = useState<MenuItem | null>(null);
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
   const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina">("all");
   const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
@@ -228,19 +230,35 @@ export default function KitchenDisplay({ orders, onOrderStatusUpdate }: KitchenD
 
                   {/* Items List */}
                   <div className="space-y-2.5 my-3 max-h-[180px] overflow-y-auto pr-1">
-                    {getFilteredItems(order.items).map((it: any, idx: number) => (
-                      <div key={idx} className="text-xs font-semibold leading-relaxed border-b border-[#FDFBF7]/5 pb-2">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[#FDFBF7] font-serif font-black text-caramel text-sm mr-2">{it.quantity}x</span>
-                          <span className="flex-1 text-[#FDFBF7] text-sm">{it.name}</span>
+                    {getFilteredItems(order.items).map((it: any, idx: number) => {
+                      const catalogItem = menuItems.find(m => m.name.toLowerCase() === it.name.toLowerCase());
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => catalogItem && setSelectedItemForRecipe(catalogItem)}
+                          className={`text-xs font-semibold leading-relaxed border-b border-[#FDFBF7]/5 pb-2 transition-all ${
+                            catalogItem ? "cursor-pointer hover:bg-white/5 p-1 rounded-lg" : ""
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-1.5 flex-1">
+                              <span className="text-[#FDFBF7] font-serif font-black text-caramel text-sm">{it.quantity}x</span>
+                              <span className="text-[#FDFBF7] text-sm">{it.name}</span>
+                            </div>
+                            {catalogItem && (
+                              <span className="text-[8px] bg-caramel/20 border border-caramel/30 text-caramel px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider flex items-center gap-0.5 select-none scale-90">
+                                <BookOpen className="h-2.5 w-2.5" /> Receta
+                              </span>
+                            )}
+                          </div>
+                          {it.customizationSummary && (
+                            <p className="text-[10px] text-caramel font-semibold italic pl-6 mt-0.5">
+                              ↳ ({it.customizationSummary})
+                            </p>
+                          )}
                         </div>
-                        {it.customizationSummary && (
-                          <p className="text-[10px] text-caramel font-semibold italic pl-6 mt-0.5">
-                            ↳ ({it.customizationSummary})
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -286,6 +304,95 @@ export default function KitchenDisplay({ orders, onOrderStatusUpdate }: KitchenD
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Recipe Modal (Modelo Terminado) */}
+      {selectedItemForRecipe && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[#2C1810] border border-[#D97706]/30 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Header / Title */}
+            <div className="p-5 border-b border-[#FDFBF7]/10 flex justify-between items-center bg-[#1E110B]">
+              <div>
+                <span className="text-[9px] font-bold text-caramel uppercase tracking-widest block">Receta y Modelo Terminado</span>
+                <h3 className="font-serif text-lg font-black text-white mt-1">{selectedItemForRecipe.name}</h3>
+              </div>
+              <button 
+                onClick={() => setSelectedItemForRecipe(null)}
+                className="p-1.5 hover:bg-white/5 rounded-full text-white/50 hover:text-white transition-all cursor-pointer border-none"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="p-6 overflow-y-auto space-y-6 text-sm">
+              
+              {/* Photo - Modelo Terminado */}
+              {selectedItemForRecipe.image && (
+                <div className="space-y-2">
+                  <span className="text-[9px] font-bold text-[#FDFBF7]/40 uppercase tracking-wider block">Modelo Terminado / Presentación</span>
+                  <div className="relative rounded-2xl overflow-hidden border border-[#D97706]/20 bg-black/30 aspect-video">
+                    <img 
+                      src={selectedItemForRecipe.image} 
+                      alt={selectedItemForRecipe.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedItemForRecipe.description && (
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold text-[#FDFBF7]/40 uppercase tracking-wider block">Descripción del Plato</span>
+                  <p className="text-xs text-[#FDFBF7]/80 leading-relaxed italic">{selectedItemForRecipe.description}</p>
+                </div>
+              )}
+
+              {/* Technical Recipe Table */}
+              <div className="space-y-3">
+                <span className="text-[9px] font-bold text-[#FDFBF7]/40 uppercase tracking-wider block">Ingredientes y Dosificación</span>
+                <div className="border border-[#FDFBF7]/10 rounded-xl overflow-hidden text-xs text-left">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-espresso text-[9px] font-bold uppercase tracking-wider text-caramel border-b border-[#FDFBF7]/10">
+                        <th className="p-3">Insumo</th>
+                        <th className="p-3 text-right">Cantidad de Receta</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#FDFBF7]/5">
+                      {selectedItemForRecipe.recipe && selectedItemForRecipe.recipe.length > 0 ? (
+                        selectedItemForRecipe.recipe.map((r: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-white/5 transition-colors">
+                            <td className="p-3 font-bold text-[#FDFBF7]/90">{r.ingredientId.replace("ins-", "").toUpperCase()}</td>
+                            <td className="p-3 text-right font-mono font-bold text-caramel">{r.amount} {r.ingredientId.includes("leche") ? "L" : r.ingredientId.includes("cafe") || r.ingredientId.includes("yerba") || r.ingredientId.includes("ddl") || r.ingredientId.includes("chocolate") ? "kg" : "unidades"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={2} className="p-4 text-center text-xs text-[#FDFBF7]/40 font-bold italic">
+                            Este producto no requiere ingredientes adicionales registrados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-[#1E110B] border-t border-[#FDFBF7]/10 text-center">
+              <button
+                onClick={() => setSelectedItemForRecipe(null)}
+                className="px-6 py-2 bg-caramel hover:bg-[#B45309] text-white text-xs font-bold rounded-xl transition-all cursor-pointer border-none shadow-md uppercase tracking-wider"
+              >
+                Cerrar Recetario
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
     </div>
