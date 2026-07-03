@@ -105,6 +105,8 @@ export default function AdminHub({
     localStorage.setItem("puglia_proveedores", JSON.stringify(proveedores));
   }, [proveedores]);
 
+  const [calibrationsHistory, setCalibrationsHistory] = useState<any[]>([]);
+
   const [calibrationData, setCalibrationData] = useState(() => {
     try {
       const saved = localStorage.getItem("puglia_calibration");
@@ -573,6 +575,27 @@ export default function AdminHub({
         }
       };
       fetchTipPool();
+    }
+  }, [activeSubTab, personalSubTab]);
+
+  const fetchCalibrationsHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("barista_calibrations")
+        .select("*")
+        .order("id", { ascending: false })
+        .limit(5);
+      if (!error && data) {
+        setCalibrationsHistory(data);
+      }
+    } catch (err) {
+      console.error("Error fetching calibrations history:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSubTab === "personal" && personalSubTab === "barista") {
+      fetchCalibrationsHistory();
     }
   }, [activeSubTab, personalSubTab]);
 
@@ -3555,6 +3578,7 @@ export default function AdminHub({
                         });
                         localStorage.setItem("puglia_calibration", JSON.stringify(calibrationData));
                         onShowNotification("☕ Calibración del Barista guardada e integrada con éxito.", "success");
+                        fetchCalibrationsHistory();
                       } catch (err) {
                         console.error("Error saving calibration to Supabase:", err);
                         onShowNotification("⚠️ Error al guardar calibración en la nube.", "warning");
@@ -3637,29 +3661,36 @@ export default function AdminHub({
                 </div>
 
                 <div className="space-y-3 text-xs">
-                  {[
-                    { fecha: "Hoy - Turno Tarde", gramos: calibrationData.gramosIn, ml: calibrationData.mililitrosOut, tiempo: calibrationData.tiempo, temp: calibrationData.temperatura, clima: calibrationData.clima, estado: "Activa (Perfil actual)" },
-                    { fecha: "Hoy - Turno Mañana", gramos: 18.0, ml: 36, tiempo: 26, temp: 92.0, clima: "Lluvioso y Húmedo", estado: "Archivada" },
-                    { fecha: "Ayer - Turno Tarde", gramos: 18.2, ml: 36, tiempo: 28, temp: 92.5, clima: "Despejado y Seco", estado: "Archivada" }
-                  ].map((log, idx) => (
-                    <div key={idx} className={`p-4 rounded-2xl border ${idx === 0 ? "border-[#C2956E] bg-amber-50/20" : "border-[#2C1810]/10 bg-stone-50/50"} space-y-1.5`}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-[#2C1810]">{log.fecha}</span>
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${idx === 0 ? "bg-[#C2956E] text-white" : "bg-stone-200 text-stone-600"}`}>
-                          {log.estado}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 font-mono text-[11px] text-[#2C1810]/70 pt-1">
-                        <div>In: <strong className="text-[#2C1810]">{log.gramos}g</strong></div>
-                        <div>Out: <strong className="text-[#2C1810]">{log.ml}ml</strong></div>
-                        <div>Tiempo: <strong className="text-[#2C1810]">{log.tiempo}s</strong></div>
-                        <div>Temp: <strong className="text-[#2C1810]">{log.temp}°C</strong></div>
-                      </div>
-                      <div className="text-[9px] text-[#2C1810]/50 italic pt-1 border-t border-[#2C1810]/5 mt-1">
-                        Condición ambiental: {log.clima}
-                      </div>
+                  {calibrationsHistory.length === 0 ? (
+                    <div className="text-center py-8 text-stone-400 font-medium italic border border-dashed border-[#2C1810]/10 rounded-2xl">
+                      No hay calibraciones registradas en el historial.
                     </div>
-                  ))}
+                  ) : (
+                    calibrationsHistory.map((log, idx) => {
+                      const fechaStr = log.created_at 
+                        ? new Date(log.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                        : "Reciente";
+                      return (
+                        <div key={log.id || idx} className={`p-4 rounded-2xl border ${idx === 0 ? "border-[#C2956E] bg-amber-50/20" : "border-[#2C1810]/10 bg-stone-50/50"} space-y-1.5`}>
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-[#2C1810]">Fecha: {fechaStr}</span>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${idx === 0 ? "bg-[#C2956E] text-white" : "bg-stone-200 text-stone-600"}`}>
+                              {idx === 0 ? "Activa (Perfil actual)" : "Archivada"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 font-mono text-[11px] text-[#2C1810]/70 pt-1">
+                            <div>In: <strong className="text-[#2C1810]">{log.gramos_in}g</strong></div>
+                            <div>Out: <strong className="text-[#2C1810]">{log.mililitros_out}ml</strong></div>
+                            <div>Tiempo: <strong className="text-[#2C1810]">{log.tiempo}s</strong></div>
+                            <div>Temp: <strong className="text-[#2C1810]">{log.temperatura}°C</strong></div>
+                          </div>
+                          <div className="text-[9px] text-[#2C1810]/50 italic pt-1 border-t border-[#2C1810]/5 mt-1">
+                            Condición ambiental: {log.clima}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </motion.div>
