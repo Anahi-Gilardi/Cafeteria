@@ -121,19 +121,25 @@ export default function AdminHub({
   const [restaurantTables, setRestaurantTables] = useState<{ id: string; name: string; capacity: number; status: "Activo" | "Mantenimiento" }[]>(() => {
     try {
       const saved = localStorage.getItem("puglia_tables");
-      return saved ? JSON.parse(saved) : [
-        { id: "mesa-1", name: "Mesa 1", capacity: 2, status: "Activo" },
-        { id: "mesa-2", name: "Mesa 2", capacity: 2, status: "Activo" },
-        { id: "mesa-3", name: "Mesa 3", capacity: 4, status: "Activo" },
-        { id: "mesa-4", name: "Mesa 4", capacity: 4, status: "Activo" },
-        { id: "mesa-5", name: "Mesa 5", capacity: 6, status: "Activo" },
-        { id: "mesa-6", name: "Mesa 6", capacity: 6, status: "Activo" },
-        { id: "mesa-7", name: "Mesa 7", capacity: 8, status: "Activo" },
-        { id: "mesa-8", name: "Mesa 8", capacity: 8, status: "Activo" }
-      ];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
     } catch (e) {
-      return [];
+      console.error("Error reading tables from localStorage:", e);
     }
+    return [
+      { id: "mesa-1", name: "Mesa 1", capacity: 2, status: "Activo" },
+      { id: "mesa-2", name: "Mesa 2", capacity: 2, status: "Activo" },
+      { id: "mesa-3", name: "Mesa 3", capacity: 4, status: "Activo" },
+      { id: "mesa-4", name: "Mesa 4", capacity: 4, status: "Activo" },
+      { id: "mesa-5", name: "Mesa 5", capacity: 6, status: "Activo" },
+      { id: "mesa-6", name: "Mesa 6", capacity: 6, status: "Activo" },
+      { id: "mesa-7", name: "Mesa 7", capacity: 8, status: "Activo" },
+      { id: "mesa-8", name: "Mesa 8", capacity: 8, status: "Activo" }
+    ];
   });
 
   useEffect(() => {
@@ -4451,7 +4457,7 @@ export default function AdminHub({
             // Find active order for this table (matching string name e.g. "Mesa 1")
             const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
             // Find reservation for this table (matching ID e.g. "mesa-1")
-            const reservation = bookings.find(b => b.tableId === table.id);
+            const reservation = adminBookings.find(b => b.tableId === table.id);
 
             let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
             let colorClasses = "border-emerald-200 bg-emerald-50/20 text-emerald-900";

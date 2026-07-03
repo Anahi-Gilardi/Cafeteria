@@ -9,6 +9,34 @@ interface TableReservationProps {
 }
 
 export default function TableReservation({ onConfirmReservation }: TableReservationProps) {
+  // Dynamic tables list loaded from configured layout
+  const tables = useMemo(() => {
+    try {
+      const saved = localStorage.getItem("puglia_tables");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((t: any) => t.status === "Activo").map((t: any, idx: number) => {
+            const defaultTable = TABLES_DATA[idx] || TABLES_DATA[idx % TABLES_DATA.length];
+            return {
+              id: t.id,
+              name: t.name,
+              capacity: t.capacity,
+              type: defaultTable?.type || "table",
+              description: defaultTable?.description || `Mesa de salón para ${t.capacity} comensales.`,
+              coordX: defaultTable?.coordX || (20 + (idx * 15) % 60),
+              coordY: defaultTable?.coordY || (20 + Math.floor(idx / 4) * 20),
+              status: "Libre" as const
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error loading dynamic tables for reservation:", e);
+    }
+    return TABLES_DATA;
+  }, []);
+
   // Input states
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
@@ -38,32 +66,33 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
     
     // Select 2 or 3 random tables to block
     const blocked: string[] = [];
-    const tables = TABLES_DATA;
     
-    // Simple deterministic random values
-    const index1 = sum % tables.length;
-    const index2 = (sum + 3) % tables.length;
-    
-    blocked.push(tables[index1].id);
-    if (index1 !== index2) {
-      blocked.push(tables[index2].id);
-    }
-    
-    // Also block based on guest capacity
-    // If guests are more than the table capacity, it's implicitly unavailable
-    tables.forEach(t => {
-      if (t.capacity < selectedGuests && !blocked.includes(t.id)) {
-        blocked.push(t.id);
+    if (tables.length > 0) {
+      // Simple deterministic random values
+      const index1 = sum % tables.length;
+      const index2 = (sum + 3) % tables.length;
+      
+      blocked.push(tables[index1].id);
+      if (index1 !== index2) {
+        blocked.push(tables[index2].id);
       }
-    });
+      
+      // Also block based on guest capacity
+      // If guests are more than the table capacity, it's implicitly unavailable
+      tables.forEach(t => {
+        if (t.capacity < selectedGuests && !blocked.includes(t.id)) {
+          blocked.push(t.id);
+        }
+      });
+    }
 
     return blocked;
-  }, [selectedDate, selectedTimeSlot, selectedGuests]);
+  }, [selectedDate, selectedTimeSlot, selectedGuests, tables]);
 
   // Selected Table Details
   const selectedTable = useMemo(() => {
-    return TABLES_DATA.find(t => t.id === selectedTableId) || null;
-  }, [selectedTableId]);
+    return tables.find(t => t.id === selectedTableId) || null;
+  }, [selectedTableId, tables]);
 
   // Handle reserve submission
   const handleSubmitBooking = (e: FormEvent) => {
@@ -83,7 +112,7 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
       return;
     }
 
-    const matchedTable = TABLES_DATA.find(t => t.id === selectedTableId)!;
+    const matchedTable = tables.find(t => t.id === selectedTableId)!;
     
     // Generate a unique reference
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -300,7 +329,7 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
                     </div>
 
                     {/* Map Tables Placement */}
-                    {TABLES_DATA.map((table) => {
+                    {tables.map((table) => {
                       const isUnavailable = unavailableTableIds.includes(table.id);
                       const isSelected = selectedTableId === table.id;
                       
