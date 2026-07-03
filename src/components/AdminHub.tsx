@@ -78,6 +78,14 @@ export default function AdminHub({
 
   const [adminBookings, setAdminBookings] = useState<any[]>([]);
 
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newProdName, setNewProdName] = useState("");
+  const [newProdCategory, setNewProdCategory] = useState("coffee");
+  const [newProdDescription, setNewProdDescription] = useState("");
+  const [newProdPrice, setNewProdPrice] = useState("");
+  const [newProdStock, setNewProdStock] = useState("50");
+  const [newProdImage, setNewProdImage] = useState("");
+
   const [calibrationData, setCalibrationData] = useState(() => {
     try {
       const saved = localStorage.getItem("puglia_calibration");
@@ -609,6 +617,76 @@ export default function AdminHub({
       }
     } catch (err) {
       console.error("Error creating reservation:", err);
+    }
+  };
+
+  const handleAddNewProduct = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newProdName || !newProdPrice) {
+      onShowNotification("⚠️ Complete el nombre y precio del producto.", "warning");
+      return;
+    }
+    const priceNum = parseFloat(newProdPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      onShowNotification("⚠️ Ingrese un precio válido.", "warning");
+      return;
+    }
+
+    const defaultImage = newProdImage.trim() || "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=600";
+    
+    const newProduct = {
+      id: "prod-" + Date.now(),
+      name: newProdName.trim(),
+      price: priceNum,
+      takeaway_price: Number((priceNum * 0.9).toFixed(2)),
+      delivery_price: Number((priceNum * 1.15).toFixed(2)),
+      description: newProdDescription.trim() || "Delicioso producto de especialidad Café Puglia.",
+      category: newProdCategory,
+      tags: ["Artesanal"],
+      image: defaultImage,
+      customizable: true,
+      calories: 180,
+      allergens: ["Gluten"],
+      stock: parseInt(newProdStock) || 50,
+      is_offer: false,
+      recipe: []
+    };
+
+    try {
+      const { error } = await supabase.from("menu_items").insert(newProduct);
+      if (!error) {
+        // Map database object structure to client model structure
+        const mappedProduct = {
+          id: newProduct.id,
+          name: newProduct.name,
+          price: newProduct.price,
+          takeawayPrice: newProduct.takeaway_price,
+          deliveryPrice: newProduct.delivery_price,
+          description: newProduct.description,
+          category: newProduct.category,
+          tags: newProduct.tags,
+          image: newProduct.image,
+          customizable: newProduct.customizable,
+          nutrition: {
+            calories: newProduct.calories,
+            allergens: newProduct.allergens
+          },
+          stock: newProduct.stock,
+          recipe: []
+        };
+        onUpdateMenu([mappedProduct, ...menuItems]);
+        onShowNotification(`✨ Producto '${newProduct.name}' creado con éxito.`, "success");
+        setIsAddingProduct(false);
+        setNewProdName("");
+        setNewProdDescription("");
+        setNewProdPrice("");
+        setNewProdStock("50");
+        setNewProdImage("");
+      } else {
+        onShowNotification("⚠️ Error al crear el producto.", "warning");
+      }
+    } catch (err) {
+      console.error("Error creating product:", err);
     }
   };
 
@@ -1406,7 +1484,110 @@ export default function AdminHub({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
-            <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">Menú Disponible</h3>
+            <div className="flex justify-between items-center border-b border-[#2C1810]/15 pb-2">
+              <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider">Menú Disponible</h3>
+              <button 
+                onClick={() => setIsAddingProduct(!isAddingProduct)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#C2956E] hover:bg-[#a37956] text-white text-[10px] font-bold rounded-xl shadow-md transition-all cursor-pointer uppercase"
+              >
+                <Plus className="h-3.5 w-3.5" /> Agregar Producto
+              </button>
+            </div>
+
+            {isAddingProduct && (
+              <form onSubmit={handleAddNewProduct} className="p-4 bg-stone-50 border border-[#2C1810]/15 rounded-2xl space-y-3.5 text-xs font-bold text-[#2C1810]/70">
+                <h4 className="font-serif text-sm font-bold text-[#2C1810]">Agregar Nuevo Producto</h4>
+                
+                <div>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1">Nombre del Producto *</label>
+                  <input 
+                    type="text" 
+                    value={newProdName} 
+                    onChange={(e) => setNewProdName(e.target.value)} 
+                    placeholder="Ej: Flat White de Vainilla" 
+                    className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none"
+                    required 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Sugerido ($) *</label>
+                    <input 
+                      type="number" 
+                      value={newProdPrice} 
+                      onChange={(e) => setNewProdPrice(e.target.value)} 
+                      placeholder="Ej: 3200" 
+                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none font-mono"
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Categoría</label>
+                    <select 
+                      value={newProdCategory} 
+                      onChange={(e) => setNewProdCategory(e.target.value)} 
+                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer"
+                    >
+                      <option value="coffee">☕ Cafetería</option>
+                      <option value="bakery">🍰 Pastelería</option>
+                      <option value="brunch">🥪 Tostados / Cocina</option>
+                      <option value="cold">❄️ Bebida Fría</option>
+                      <option value="traditional">☕ Clásico</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">Stock Inicial</label>
+                    <input 
+                      type="number" 
+                      value={newProdStock} 
+                      onChange={(e) => setNewProdStock(e.target.value)} 
+                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none font-mono" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1">URL de Imagen (Opcional)</label>
+                    <input 
+                      type="text" 
+                      value={newProdImage} 
+                      onChange={(e) => setNewProdImage(e.target.value)} 
+                      placeholder="Url de Unsplash..." 
+                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1">Descripción</label>
+                  <textarea 
+                    value={newProdDescription} 
+                    onChange={(e) => setNewProdDescription(e.target.value)} 
+                    placeholder="Descripción corta de la especialidad..." 
+                    rows={2} 
+                    className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none font-normal resize-none" 
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1.5">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsAddingProduct(false)} 
+                    className="px-3.5 py-1.5 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-4 py-1.5 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer"
+                  >
+                    Crear Producto
+                  </button>
+                </div>
+              </form>
+            )}
             <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
               {menuItems
                 .filter(item => selectedPosCategory === "todos" || item.category === selectedPosCategory)
