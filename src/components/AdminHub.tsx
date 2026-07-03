@@ -733,6 +733,7 @@ export default function AdminHub({
   const [posCheckoutOrder, setPosCheckoutOrder] = useState<Order | null>(null);
   const [receivedCashInput, setReceivedCashInput] = useState<string>("");
   const [posCouponInput, setPosCouponInput] = useState<string>("");
+  const [selectedOrderForTicket, setSelectedOrderForTicket] = useState<Order | null>(null);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
   const [movType, setMovType] = useState<"Ingreso" | "Egreso">("Ingreso");
   const [movInsumoId, setMovInsumoId] = useState<string>("");
@@ -2510,6 +2511,61 @@ export default function AdminHub({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Historial de Comandas Facturadas */}
+        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+          <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
+            <Receipt className="h-4 w-4 text-[#C2956E]" /> Historial de Comandas Cobradas
+          </h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs font-semibold text-[#2C1810]/80">
+              <thead>
+                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] uppercase tracking-wider text-[#2C1810]/60">
+                  <th className="p-3">Comanda ID</th>
+                  <th className="p-3">Mesa / Tipo</th>
+                  <th className="p-3">Productos</th>
+                  <th className="p-3">Método Pago</th>
+                  <th className="p-3 text-right">Total Cobrado</th>
+                  <th className="p-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2C1810]/5">
+                {orders.filter(o => o.status === "Completado").length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-stone-400 font-medium italic">
+                      No hay comandas cobradas en la sesión actual.
+                    </td>
+                  </tr>
+                ) : (
+                  orders.filter(o => o.status === "Completado").map((o) => (
+                    <tr key={o.id} className="hover:bg-stone-50/50 transition-colors">
+                      <td className="p-3 font-mono font-bold text-[#2C1810]">{o.id}</td>
+                      <td className="p-3">
+                        <span className="px-2 py-0.5 rounded-md bg-[#2C1810]/5 text-[#2C1810] text-[10px] font-bold">
+                          {o.tableNumber ? `Mesa ${o.tableNumber}` : o.type}
+                        </span>
+                      </td>
+                      <td className="p-3 text-[#2C1810]/70 max-w-[200px] truncate">
+                        {o.items.map(it => `${it.quantity}x ${it.name}`).join(", ")}
+                      </td>
+                      <td className="p-3 font-bold text-caramel">{o.paymentMethod || "Efectivo"}</td>
+                      <td className="p-3 text-right font-mono font-bold text-emerald-800">${o.total.toLocaleString()}</td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => setSelectedOrderForTicket(o)}
+                          className="px-3 py-1 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1 mx-auto"
+                        >
+                          <Printer className="h-3 w-3" /> Ver Ticket
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -4844,6 +4900,89 @@ export default function AdminHub({
 
             <div className="pt-5 flex justify-end">
               <button onClick={() => setSelectedClosureForModal(null)} className="px-6 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md cursor-pointer">Cerrar Detalle</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* simulated thermal ticket modal */}
+      {selectedOrderForTicket && (
+        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-stone-800 rounded-lg p-6 w-full max-w-xs shadow-2xl relative text-xs text-[#2C1810] font-mono">
+            <button 
+              onClick={() => setSelectedOrderForTicket(null)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-100 text-[#2C1810]/40 hover:text-[#2C1810]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Thermal Ticket Monospace Layout */}
+            <div className="text-center space-y-1 mb-4">
+              <span className="font-bold text-sm block">*** CAFÉ PUGLIA ***</span>
+              <span className="text-[10px] block">Mar del Plata, Argentina</span>
+              <span className="text-[9px] block">C.U.I.T.: 30-71122334-9</span>
+              <span className="text-[9px] block">IIBB: Convenio Multilateral</span>
+              <span className="text-[9px] block">Dirección: Av. Colón 1234</span>
+            </div>
+
+            <div className="border-t border-dashed border-stone-800 py-2 space-y-1 text-[10px]">
+              <div>FECHA: {new Date().toLocaleDateString("es-AR")}</div>
+              <div>HORA: {new Date().toLocaleTimeString("es-AR")}</div>
+              <div>TICKET FACTURA NRO: {selectedOrderForTicket.id}</div>
+              <div>ORIGEN: {selectedOrderForTicket.tableNumber ? `SALÓN - Mesa ${selectedOrderForTicket.tableNumber}` : selectedOrderForTicket.type}</div>
+            </div>
+
+            <div className="border-t border-dashed border-stone-800 py-3 text-[10px]">
+              <div className="grid grid-cols-12 gap-1 font-bold mb-1">
+                <span className="col-span-2">Cant</span>
+                <span className="col-span-7">Detalle</span>
+                <span className="col-span-3 text-right">Monto</span>
+              </div>
+              <div className="space-y-1 border-b border-dashed border-stone-300 pb-2">
+                {selectedOrderForTicket.items.map((it: any, idx: number) => (
+                  <div key={idx} className="grid grid-cols-12 gap-1">
+                    <span className="col-span-2">{it.quantity}x</span>
+                    <span className="col-span-7 truncate">{it.name}</span>
+                    <span className="col-span-3 text-right">${(it.price * it.quantity).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-1 font-bold pt-2 text-xs">
+                <span>SUBTOTAL:</span>
+                <span className="text-right">${selectedOrderForTicket.subtotal.toLocaleString()}</span>
+                <span>IVA (21%):</span>
+                <span className="text-right">${selectedOrderForTicket.tax.toLocaleString()}</span>
+                <span className="text-sm font-black border-t border-dashed border-stone-800 pt-1 mt-1">TOTAL ARS:</span>
+                <span className="text-sm font-black text-right border-t border-dashed border-stone-800 pt-1 mt-1">${selectedOrderForTicket.total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-dashed border-stone-800 py-2 text-center text-[9px] space-y-1">
+              <div>PAGO PROCESADO VÍA: {selectedOrderForTicket.paymentMethod?.toUpperCase() || "EFECTIVO"}</div>
+              {selectedOrderForTicket.couponNumber && <div>CUPÓN POSNET NRO: {selectedOrderForTicket.couponNumber}</div>}
+              {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
+              <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
+              <div className="text-[7px] text-[#2C1810]/40 font-sans mt-2">COMPROBANTE HOMOLOGADO POR AFIP EMISIÓN CONTROLADA</div>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button 
+                onClick={() => {
+                  window.print();
+                }} 
+                className="w-1/2 py-2 rounded-lg bg-stone-100 border border-stone-300 text-[10px] font-bold font-sans cursor-pointer hover:bg-stone-200 transition-all flex items-center justify-center gap-1 text-[#2C1810]"
+              >
+                <Printer className="h-3 w-3" /> Imprimir Real
+              </button>
+              <button 
+                onClick={() => {
+                  setSelectedOrderForTicket(null);
+                  onShowNotification("📧 Comprobante enviado al correo del cliente.", "success");
+                }} 
+                className="w-1/2 py-2 rounded-lg bg-[#2C1810] text-white text-[10px] font-bold font-sans cursor-pointer hover:bg-[#3d2217] transition-all flex items-center justify-center gap-1"
+              >
+                <FileText className="h-3 w-3" /> Enviar Mail
+              </button>
             </div>
           </div>
         </div>
