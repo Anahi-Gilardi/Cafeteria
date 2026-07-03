@@ -9,12 +9,37 @@ interface KitchenDisplayProps {
 
 export default function KitchenDisplay({ orders, onOrderStatusUpdate }: KitchenDisplayProps) {
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
+  const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina">("all");
   const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
+
+  const getItemDestination = (name: string): "barra" | "cocina" => {
+    const n = name.toLowerCase();
+    if (
+      n.includes("café") || n.includes("cafe") || n.includes("latte") || n.includes("flat") || 
+      n.includes("espresso") || n.includes("cappuccino") || n.includes("macchiato") || 
+      n.includes("mocaccino") || n.includes("submarino") || n.includes("té") || n.includes("te") || 
+      n.includes("limonada") || n.includes("jugo") || n.includes("licuado") || n.includes("cold") || 
+      n.includes("iced") || n.includes("filtrado") || n.includes("prensa") || n.includes("tonic") ||
+      n.includes("chocolatada") || n.includes("soda") || n.includes("agua") || n.includes("licuados")
+    ) {
+      return "barra";
+    }
+    return "cocina";
+  };
+
+  const getFilteredItems = (items: any[]) => {
+    if (destinationFilter === "all") return items;
+    return items.filter(it => getItemDestination(it.name) === destinationFilter);
+  };
 
   // Filter orders that are active in kitchen (Recibido, Preparando, Listo)
   const activeOrders = orders
     .filter((o) => o.status !== "Completado")
     .filter((o) => filterType === "all" || o.type === filterType)
+    .filter((o) => {
+      if (destinationFilter === "all") return true;
+      return o.items.some(it => getItemDestination(it.name) === destinationFilter);
+    })
     // Sort so older orders are shown first (priority)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
@@ -103,25 +128,49 @@ export default function KitchenDisplay({ orders, onOrderStatusUpdate }: KitchenD
         </div>
 
         {/* Filter buttons */}
-        <div className="flex flex-wrap gap-2 mt-4 md:mt-0 bg-[#2C1810] p-1.5 rounded-xl border border-[#D97706]/15">
-          {[
-            { id: "all", label: "Todas" },
-            { id: "Salon", label: "Salón" },
-            { id: "Takeaway", label: "Takeaway" },
-            { id: "Delivery", label: "Delivery" }
-          ].map((btn) => (
-            <button
-              key={btn.id}
-              onClick={() => setFilterType(btn.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                filterType === btn.id
-                  ? "bg-caramel text-white shadow-md"
-                  : "text-[#FDFBF7]/70 hover:text-white"
-              }`}
-            >
-              {btn.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
+          {/* Workstation Selector */}
+          <div className="flex bg-[#2C1810] p-1.5 rounded-xl border border-[#D97706]/15">
+            {[
+              { id: "all", label: "Todos los Puestos" },
+              { id: "barra", label: "☕ Barra" },
+              { id: "cocina", label: "🍰 Cocina" }
+            ].map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setDestinationFilter(btn.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  destinationFilter === btn.id
+                    ? "bg-caramel text-white shadow-md"
+                    : "text-[#FDFBF7]/70 hover:text-white"
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Channel Selector */}
+          <div className="flex bg-[#2C1810] p-1.5 rounded-xl border border-[#D97706]/15">
+            {[
+              { id: "all", label: "Todas" },
+              { id: "Salon", label: "Salón" },
+              { id: "Takeaway", label: "Takeaway" },
+              { id: "Delivery", label: "Delivery" }
+            ].map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setFilterType(btn.id as any)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterType === btn.id
+                    ? "bg-[#D97706] text-white shadow-md"
+                    : "text-[#FDFBF7]/70 hover:text-white"
+                }`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -179,7 +228,7 @@ export default function KitchenDisplay({ orders, onOrderStatusUpdate }: KitchenD
 
                   {/* Items List */}
                   <div className="space-y-2.5 my-3 max-h-[180px] overflow-y-auto pr-1">
-                    {order.items.map((it: any, idx: number) => (
+                    {getFilteredItems(order.items).map((it: any, idx: number) => (
                       <div key={idx} className="text-xs font-semibold leading-relaxed border-b border-[#FDFBF7]/5 pb-2">
                         <div className="flex justify-between items-start">
                           <span className="text-[#FDFBF7] font-serif font-black text-caramel text-sm mr-2">{it.quantity}x</span>
