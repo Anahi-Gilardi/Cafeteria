@@ -5,7 +5,7 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings, Download
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
@@ -232,6 +232,28 @@ export default function AdminHub({
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
+
+  const [inventarioSubTab, setInventarioSubTab] = useState<"general" | "ciegas" | "comparador">("general");
+  const [blindCounts, setBlindCounts] = useState<Record<string, string>>({});
+  const [auditHistory, setAuditHistory] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_audit_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("puglia_audit_history", JSON.stringify(auditHistory));
+  }, [auditHistory]);
+
+  const [compareInsumoId, setCompareInsumoId] = useState<string>("");
+  const [compareQuotes, setCompareQuotes] = useState<{ supplier: string; price: string }[]>([
+    { supplier: "Distribuidora Sur", price: "" },
+    { supplier: "Lácteos del Campo", price: "" },
+    { supplier: "Moinho Alegre", price: "" }
+  ]);
 
   // Billing calculation states
   const [billingOrder, setBillingOrder] = useState<Order | null>(null);
@@ -1571,6 +1593,352 @@ export default function AdminHub({
     );
   };
 
+  const renderBlindAudit = () => {
+    const handleSubmitBlindAudit = (e: FormEvent) => {
+      e.preventDefault();
+      const details: any[] = [];
+      let hasSignificantDesvio = false;
+
+      insumos.forEach(ins => {
+        const visualValStr = blindCounts[ins.id];
+        if (visualValStr !== undefined && visualValStr.trim() !== "") {
+          const visualVal = parseFloat(visualValStr) || 0;
+          const teoricoVal = ins.quantity;
+          const desvio = visualVal - teoricoVal;
+          const desvioPct = teoricoVal > 0 ? (desvio / teoricoVal) * 100 : 0;
+          if (desvioPct < -2) {
+            hasSignificantDesvio = true;
+          }
+          details.push({
+            insumoId: ins.id,
+            name: ins.name,
+            teorico: teoricoVal,
+            visual: visualVal,
+            desvio,
+            desvioPct,
+            unit: ins.unit
+          });
+        }
+      });
+
+      if (details.length === 0) {
+        onShowNotification("⚠️ Ingrese al menos un conteo físico para registrar la auditoría.", "warning");
+        return;
+      }
+
+      const newAuditRecord = {
+        id: "aud-" + Date.now(),
+        date: new Date().toISOString(),
+        auditor: currentUser.name || "Personal de Turno",
+        details,
+        hasAlert: hasSignificantDesvio
+      };
+
+      setAuditHistory(prev => [newAuditRecord, ...prev]);
+      setBlindCounts({});
+      onShowNotification("📊 Auditoría registrada. Desvíos calculados y publicados en el panel.", "success");
+    };
+
+    return (
+      <div className="space-y-6 text-[#2C1810]">
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-xs text-amber-900 font-semibold leading-relaxed">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-800">Instrucciones de Auditoría a Ciegas</span>
+            El inventario digital teórico se encuentra oculto para forzar un conteo manual honesto. Recorra el local, cuente las existencias físicas de cada insumo e ingréselas abajo. Al finalizar, el sistema calculará las discrepancias y generará alertas si se detectan pérdidas significativas.
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmitBlindAudit} className="space-y-4">
+          <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                  <th className="p-4">Insumo</th>
+                  <th className="p-4">Proveedor Asignado</th>
+                  <th className="p-4 text-center">Unidad</th>
+                  <th className="p-4 text-center w-40">Conteo Relevado (Visual)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2C1810]/10 text-xs">
+                {insumos.map((ins, idx) => (
+                  <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
+                    <td className="p-4 font-bold text-[#2C1810]">{ins.name}</td>
+                    <td className="p-4 text-[#2C1810]/70 font-semibold">{ins.provider || "Sin designar"}</td>
+                    <td className="p-4 text-center text-[#2C1810]/60 uppercase font-bold">{ins.unit}</td>
+                    <td className="p-4 text-center">
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder="Ej. 12"
+                        value={blindCounts[ins.id] || ""}
+                        onChange={(e) => setBlindCounts(prev => ({ ...prev, [ins.id]: e.target.value }))}
+                        className="w-28 text-center p-1.5 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold outline-none focus:ring-1 focus:ring-caramel"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-caramel hover:bg-[#B45309] text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer border-none uppercase tracking-wider"
+            >
+              🔒 Finalizar Auditoría y Procesar Desvíos
+            </button>
+          </div>
+        </form>
+
+        {/* Audit History Log */}
+        <div className="space-y-4 pt-6 border-t border-[#2C1810]/10">
+          <div>
+            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Historial de Auditorías y Desvíos</h3>
+            <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Reportes consolidados de discrepancias físicas vs teóricas.</p>
+          </div>
+
+          {auditHistory.length === 0 ? (
+            <p className="text-xs text-[#2C1810]/50 italic font-semibold">No se han registrado auditorías físicas aún.</p>
+          ) : (
+            <div className="space-y-6">
+              {auditHistory.map((audit) => (
+                <div key={audit.id} className="bg-white border border-[#2C1810]/15 rounded-3xl p-5 shadow-xs space-y-4">
+                  <div className="flex justify-between items-center border-b border-[#2C1810]/15 pb-2.5 text-xs">
+                    <div>
+                      <span className="font-bold text-[#2C1810]">Auditor: {audit.auditor}</span>
+                      <span className="text-[10px] text-[#2C1810]/50 block font-mono font-semibold">{new Date(audit.date).toLocaleString("es-AR")}</span>
+                    </div>
+                    {audit.hasAlert ? (
+                      <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-red-100 border border-red-200 text-red-700 rounded-full tracking-wider animate-pulse flex items-center gap-1">
+                        ⚠️ Alerta de Pérdida (&gt;2%)
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full tracking-wider flex items-center gap-1">
+                        ✅ Conciliación Exitosa
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="border border-[#2C1810]/10 rounded-xl overflow-hidden text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                          <th className="p-3">Insumo</th>
+                          <th className="p-3 text-center">Teórico Digital</th>
+                          <th className="p-3 text-center">Visual Relevado</th>
+                          <th className="p-3 text-center">Diferencia (Desvío)</th>
+                          <th className="p-3 text-center">Desvío %</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#2C1810]/5 font-semibold">
+                        {audit.details.map((d: any, idx: number) => {
+                          const isWarning = d.desvioPct < -2;
+                          return (
+                            <tr key={idx} className={isWarning ? "bg-red-50/20 text-red-900" : "text-[#2C1810]"}>
+                              <td className="p-3 font-bold">{d.name}</td>
+                              <td className="p-3 text-center font-mono">{d.teorico} {d.unit}</td>
+                              <td className="p-3 text-center font-mono">{d.visual} {d.unit}</td>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-red-600" : d.desvio > 0 ? "text-emerald-600" : ""}`}>
+                                {d.desvio > 0 ? `+${d.desvio}` : d.desvio} {d.unit}
+                              </td>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-red-600" : d.desvioPct > 0 ? "text-emerald-600" : ""}`}>
+                                {d.desvioPct > 0 ? `+${d.desvioPct.toFixed(1)}%` : `${d.desvioPct.toFixed(1)}%`}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderBudgetComparator = () => {
+    const selectedInsumo = insumos.find(i => i.id === compareInsumoId);
+
+    const getConsumption = (name: string) => {
+      const n = name.toLowerCase();
+      if (n.includes("café") || n.includes("cafe")) return 60;
+      if (n.includes("leche")) return 200;
+      if (n.includes("harina") || n.includes("manteca") || n.includes("azúcar")) return 80;
+      if (n.includes("vaso") || n.includes("taza") || n.includes("servilleta")) return 400;
+      return 100;
+    };
+
+    const consumption = selectedInsumo ? getConsumption(selectedInsumo.name) : 100;
+
+    const validQuotes = compareQuotes
+      .map((q, idx) => ({
+        ...q,
+        numericPrice: parseFloat(q.price) || 0,
+        idx
+      }))
+      .filter(q => q.numericPrice > 0 && q.supplier.trim() !== "");
+
+    const sortedQuotes = [...validQuotes].sort((a, b) => a.numericPrice - b.numericPrice);
+
+    return (
+      <div className="space-y-6 text-[#2C1810]">
+        <div>
+          <h3 className="font-serif text-lg font-bold text-[#2C1810]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
+          <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-2 bg-white border border-[#2C1810]/10 p-5 rounded-2xl">
+            <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Seleccione el Insumo a Comparar</label>
+            <select
+              value={compareInsumoId}
+              onChange={(e) => {
+                setCompareInsumoId(e.target.value);
+                const ins = insumos.find(i => i.id === e.target.value);
+                if (ins) {
+                  setCompareQuotes([
+                    { supplier: ins.provider || "Distribuidora Sur", price: ins.price ? String(ins.price) : "" },
+                    { supplier: "Lácteos del Campo", price: "" },
+                    { supplier: "Moinho Alegre", price: "" }
+                  ]);
+                }
+              }}
+              className="w-full text-xs p-2.5 border border-[#2C1810]/15 rounded-xl bg-[#FDFBF7] text-[#2C1810] font-bold cursor-pointer outline-none focus:ring-1 focus:ring-caramel"
+            >
+              <option value="">-- Seleccionar Insumo --</option>
+              {insumos.map(ins => (
+                <option key={ins.id} value={ins.id}>{ins.name} ({ins.unit})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {selectedInsumo && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {compareQuotes.map((q, idx) => (
+                <div key={idx} className="space-y-3 bg-white border border-[#2C1810]/10 p-5 rounded-2xl">
+                  <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-1">
+                    <span className="text-[9px] font-black uppercase text-[#C2956E]">Oferta Proveedor #{idx + 1}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block">Nombre de Proveedor</label>
+                    <input
+                      type="text"
+                      value={q.supplier}
+                      onChange={(e) => {
+                        const updated = [...compareQuotes];
+                        updated[idx].supplier = e.target.value;
+                        setCompareQuotes(updated);
+                      }}
+                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-stone-50/50 text-[#2C1810] font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block">Precio Unitario ($)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Ej. 2400"
+                      value={q.price}
+                      onChange={(e) => {
+                        const updated = [...compareQuotes];
+                        updated[idx].price = e.target.value;
+                        setCompareQuotes(updated);
+                      }}
+                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-white text-[#2C1810] font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {validQuotes.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#C2956E]">Resultados Comparativos en Paralelo</h4>
+                  <span className="text-[10px] font-bold text-[#2C1810]/60 italic font-mono bg-stone-100 px-2 py-0.5 rounded-md">
+                    Consumo Estimado Local: {consumption} {selectedInsumo.unit}/mes
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {compareQuotes.map((q, idx) => {
+                    const priceVal = parseFloat(q.price) || 0;
+                    if (!q.supplier.trim() || priceVal <= 0) {
+                      return (
+                        <div key={idx} className="bg-stone-50 border border-stone-200/40 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
+                          <p className="text-xs text-stone-400 font-bold italic">Sin cotización ingresada</p>
+                        </div>
+                      );
+                    }
+
+                    const cheapestPrice = sortedQuotes[0].numericPrice;
+                    const highestPrice = sortedQuotes[sortedQuotes.length - 1].numericPrice;
+
+                    const isCheapest = priceVal === cheapestPrice;
+                    const isExpensive = priceVal === highestPrice && sortedQuotes.length > 1;
+                    const isIntermediate = !isCheapest && !isExpensive;
+
+                    let highlightColor = "border-amber-200 bg-amber-50/10 text-amber-900";
+                    let badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-amber-100 text-amber-800 border border-amber-200">Tarifa Media</span>;
+                    let savingsText = "";
+
+                    if (isCheapest) {
+                      highlightColor = "border-emerald-300 bg-emerald-50/15 text-emerald-950 ring-2 ring-emerald-500/25";
+                      badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-emerald-100 text-emerald-850 border border-emerald-200">¡MEJOR PRECIO!</span>;
+                      
+                      if (sortedQuotes.length > 1) {
+                        const savings = (highestPrice - priceVal) * consumption;
+                        savingsText = `🎉 Ahorro potencial: $${savings.toLocaleString("es-AR")}/mes`;
+                      }
+                    } else if (isExpensive) {
+                      highlightColor = "border-rose-300 bg-rose-50/10 text-rose-950";
+                      badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-rose-100 text-rose-800 border border-rose-200">Tarifa Alta</span>;
+                      
+                      const extraCost = (priceVal - cheapestPrice) * consumption;
+                      savingsText = `⚠️ Extra Costo: +$${extraCost.toLocaleString("es-AR")}/mes`;
+                    } else if (isIntermediate) {
+                      const extraCost = (priceVal - cheapestPrice) * consumption;
+                      savingsText = `⚠️ Extra Costo: +$${extraCost.toLocaleString("es-AR")}/mes`;
+                    }
+
+                    return (
+                      <div key={idx} className={`border rounded-3xl p-6 flex flex-col justify-between min-h-[180px] shadow-xs relative transition-all ${highlightColor}`}>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-2">
+                            <span className="font-serif text-sm font-black">{q.supplier}</span>
+                            {badge}
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <span className="text-[8px] text-[#2C1810]/40 uppercase tracking-widest font-black block">Costo Unitario</span>
+                            <div className="text-2xl font-mono font-black">${priceVal.toFixed(2)}</div>
+                          </div>
+                        </div>
+
+                        {savingsText && (
+                          <div className="pt-3 border-t border-[#2C1810]/5 mt-4 text-[10px] font-bold tracking-wide">
+                            {savingsText}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderInventario = () => {
     const totalInsumosCount = insumos.length;
     const criticalInsumosCount = insumos.filter(i => i.quantity <= i.minLimit / 2).length;
@@ -1595,117 +1963,157 @@ export default function AdminHub({
             <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Módulo de Inventario</span>
             <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Stock & Materias Primas</h2>
           </div>
-          <button 
-            onClick={() => {
-              setMovType("Ingreso");
-              setMovInsumoId(insumos[0]?.id || "");
-              setMovQty("");
-              setIsMovementModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-xs font-bold shadow-md hover:bg-[#3d2217] transition-all cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Registrar Movimiento
-          </button>
+          {inventarioSubTab === "general" && (
+            <button 
+              onClick={() => {
+                setMovType("Ingreso");
+                setMovInsumoId(insumos[0]?.id || "");
+                setMovQty("");
+                setIsMovementModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-xs font-bold shadow-md hover:bg-[#3d2217] transition-all cursor-pointer animate-fade-in"
+            >
+              <Plus className="h-4 w-4" /> Registrar Movimiento
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
-            <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Total Insumos</span>
-            <div className="text-2xl font-serif font-black text-[#2C1810] mt-1">{totalInsumosCount}</div>
-          </div>
-          <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
-            <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span> Críticos
-            </span>
-            <div className="text-2xl font-serif font-black text-red-600 mt-1">{criticalInsumosCount}</div>
-          </div>
-          <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
-            <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Stock Bajo
-            </span>
-            <div className="text-2xl font-serif font-black text-amber-600 mt-1">{lowStockInsumosCount}</div>
-          </div>
-          <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
-            <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Stock Saludable
-            </span>
-            <div className="text-2xl font-serif font-black text-emerald-600 mt-1">{healthyInsumosCount}</div>
-          </div>
+        {/* Sub-tabs header for stock submodules */}
+        <div className="flex border-b border-[#2C1810]/10 pb-3 gap-6 text-xs font-bold text-[#2C1810]/50">
+          {[
+            { id: "general", label: "📋 Vista General" },
+            { id: "ciegas", label: "👁️ Auditoría a Ciegas (US-2.1)" },
+            { id: "comparador", label: "📊 Comparador de Presupuestos (US-2.2)" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setInventarioSubTab(tab.id as any)}
+              className={`pb-3 relative transition-colors cursor-pointer border-none bg-transparent ${
+                inventarioSubTab === tab.id ? "text-caramel font-black" : "hover:text-[#2C1810]"
+              }`}
+            >
+              {tab.label}
+              {inventarioSubTab === tab.id && (
+                <motion.div
+                  layoutId="inventario-active-pill"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-caramel rounded-full"
+                />
+              )}
+            </button>
+          ))}
         </div>
 
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#2C1810]/40" />
-            <input 
-              type="text"
-              placeholder="Buscar insumo, proveedor..."
-              value={searchInsumoQuery}
-              onChange={(e) => setSearchInsumoQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-[#2C1810]/20 rounded-xl text-xs bg-stone-50/50 text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold"
-            />
-          </div>
-          <div className="text-xs font-semibold text-[#2C1810]/60 uppercase tracking-wider">
-            Mostrando {filteredInsumos.length} productos
-          </div>
-        </div>
+        {inventarioSubTab === "general" && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Total Insumos</span>
+                <div className="text-2xl font-serif font-black text-[#2C1810] mt-1">{totalInsumosCount}</div>
+              </div>
+              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span> Críticos
+                </span>
+                <div className="text-2xl font-serif font-black text-red-600 mt-1">{criticalInsumosCount}</div>
+              </div>
+              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Stock Bajo
+                </span>
+                <div className="text-2xl font-serif font-black text-amber-600 mt-1">{lowStockInsumosCount}</div>
+              </div>
+              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Stock Saludable
+                </span>
+                <div className="text-2xl font-serif font-black text-emerald-600 mt-1">{healthyInsumosCount}</div>
+              </div>
+            </div>
 
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
-                <th className="p-4">Producto</th>
-                <th className="p-4">Proveedor</th>
-                <th className="p-4 text-center">Mínimo</th>
-                <th className="p-4 text-center">Actual</th>
-                <th className="p-4 text-center">Unidad</th>
-                <th className="p-4">Vencimiento</th>
-                <th className="p-4 text-center">Estado</th>
-                <th className="p-4 text-center">Ajuste</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#2C1810]/10 text-xs">
-              {filteredInsumos.map((ins, idx) => {
-                const isCritical = ins.quantity <= ins.minLimit / 2;
-                const isLow = ins.quantity <= ins.minLimit && !isCritical;
-                const statusBadge = isCritical ? (
-                  <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-red-50 border border-red-200 text-red-700 rounded-full tracking-wider">CRÍTICO</span>
-                ) : isLow ? (
-                  <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-amber-50 border border-amber-200 text-amber-700 rounded-full tracking-wider">BAJO</span>
-                ) : (
-                  <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full tracking-wider">OK</span>
-                );
+            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#2C1810]/40" />
+                <input 
+                  type="text"
+                  placeholder="Buscar insumo, proveedor..."
+                  value={searchInsumoQuery}
+                  onChange={(e) => setSearchInsumoQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-[#2C1810]/20 rounded-xl text-xs bg-stone-50/50 text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold"
+                />
+              </div>
+              <div className="text-xs font-semibold text-[#2C1810]/60 uppercase tracking-wider">
+                Mostrando {filteredInsumos.length} productos
+              </div>
+            </div>
 
-                return (
-                  <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                    <td className="p-4 font-bold text-[#2C1810]">{ins.name}</td>
-                    <td className="p-4 text-[#2C1810]/70 font-semibold">{ins.provider || "Sin designar"}</td>
-                    <td className="p-4 text-center font-mono font-bold text-[#2C1810]/60">{ins.minLimit}</td>
-                    <td className="p-4 text-center font-mono font-black text-[#2C1810]">{ins.quantity}</td>
-                    <td className="p-4 text-center text-[#2C1810]/60 uppercase font-bold">{ins.unit}</td>
-                    <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{ins.expirationDate || "-"}</td>
-                    <td className="p-4 text-center">{statusBadge}</td>
-                    <td className="p-4 text-center flex items-center justify-center gap-1.5">
-                      <button 
-                        onClick={() => handleAdjustInsumo(ins.id, -1)}
-                        className="h-7 w-7 rounded-lg bg-stone-100 text-espresso hover:bg-stone-200 flex items-center justify-center font-bold text-base cursor-pointer"
-                        title="Descontar 1 unidad"
-                      >
-                        -
-                      </button>
-                      <button 
-                        onClick={() => handleAdjustInsumo(ins.id, 1)}
-                        className="h-7 w-7 rounded-lg bg-stone-100 text-espresso hover:bg-stone-200 flex items-center justify-center font-bold text-base cursor-pointer"
-                        title="Aumentar 1 unidad"
-                      >
-                        +
-                      </button>
-                    </td>
+            <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                    <th className="p-4">Producto</th>
+                    <th className="p-4">Proveedor</th>
+                    <th className="p-4 text-center">Mínimo</th>
+                    <th className="p-4 text-center">Actual</th>
+                    <th className="p-4 text-center">Unidad</th>
+                    <th className="p-4">Vencimiento</th>
+                    <th className="p-4 text-center">Estado</th>
+                    <th className="p-4 text-center">Ajuste</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="divide-y divide-[#2C1810]/10 text-xs">
+                  {filteredInsumos.map((ins, idx) => {
+                    const isCritical = ins.quantity <= ins.minLimit / 2;
+                    const isLow = ins.quantity <= ins.minLimit && !isCritical;
+                    const statusBadge = isCritical ? (
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-red-50 border border-red-200 text-red-700 rounded-full tracking-wider">CRÍTICO</span>
+                    ) : isLow ? (
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-amber-50 border border-amber-200 text-amber-700 rounded-full tracking-wider">BAJO</span>
+                    ) : (
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full tracking-wider">OK</span>
+                    );
+
+                    return (
+                      <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
+                        <td className="p-4 font-bold text-[#2C1810]">{ins.name}</td>
+                        <td className="p-4 text-[#2C1810]/70 font-semibold">{ins.provider || "Sin designar"}</td>
+                        <td className="p-4 text-center font-mono font-bold text-[#2C1810]/60">{ins.minLimit}</td>
+                        <td className="p-4 text-center font-mono font-black text-[#2C1810]">{ins.quantity}</td>
+                        <td className="p-4 text-center text-[#2C1810]/60 uppercase font-bold">{ins.unit}</td>
+                        <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{ins.expirationDate || "-"}</td>
+                        <td className="p-4 text-center">{statusBadge}</td>
+                        <td className="p-4 text-center flex items-center justify-center gap-1.5">
+                          <button 
+                            onClick={() => handleAdjustInsumo(ins.id, -1)}
+                            className="h-7 w-7 rounded-lg bg-stone-100 text-espresso hover:bg-stone-200 flex items-center justify-center font-bold text-base cursor-pointer"
+                            title="Descontar 1 unidad"
+                          >
+                            -
+                          </button>
+                          <button 
+                            onClick={() => handleAdjustInsumo(ins.id, 1)}
+                            className="h-7 w-7 rounded-lg bg-stone-100 text-espresso hover:bg-stone-200 flex items-center justify-center font-bold text-base cursor-pointer"
+                            title="Aumentar 1 unidad"
+                          >
+                            +
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {inventarioSubTab === "ciegas" && (
+          <div className="animate-fade-in">{renderBlindAudit()}</div>
+        )}
+
+        {inventarioSubTab === "comparador" && (
+          <div className="animate-fade-in">{renderBudgetComparator()}</div>
+        )}
       </motion.div>
     );
   };
