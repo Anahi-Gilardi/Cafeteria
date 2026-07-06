@@ -714,7 +714,7 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="carta-digital-tab-content"
               >
-                <CartaDigital onAddToBag={handleAddToBag} onShowNotification={showNotification} />
+                <CartaDigital menuItems={menuItems} onAddToBag={handleAddToBag} onShowNotification={showNotification} />
               </motion.div>
             )}
 
@@ -725,7 +725,7 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="reservas-tab-content"
               >
-                <TableReservation onConfirmReservation={handleConfirmReservation} />
+                <TableReservation bookings={bookings} onConfirmReservation={handleConfirmReservation} />
               </motion.div>
             )}
 

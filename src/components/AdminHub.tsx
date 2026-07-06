@@ -4757,8 +4757,9 @@ export default function AdminHub({
           {restaurantTables.map((table) => {
             // Find active order for this table (matching string name e.g. "Mesa 1")
             const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
-            // Find reservation for this table (matching ID e.g. "mesa-1")
-            const reservation = adminBookings.find(b => b.tableId === table.id);
+            // Find reservation for this table (matching ID e.g. "mesa-1" and date is today)
+            const todayStr = new Date().toISOString().split("T")[0];
+            const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
 
             let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
             let colorClasses = "border-emerald-200 bg-emerald-50/20 text-emerald-900";

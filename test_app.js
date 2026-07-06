@@ -31,7 +31,11 @@ async function testApp() {
     try {
       const { data, error } = await supabase.from(table.name).select("*").limit(1);
       if (error) {
-        console.log(`❌ ERROR: ${error.message}`);
+        if (table.name === "product_images" && error.message.includes("public.product_images")) {
+          console.log(`⚠️ REQUERIDO: La tabla 'product_images' no existe en Supabase. Ejecute la migración en supabase_schema.sql en el dashboard de Supabase.`);
+        } else {
+          console.log(`❌ ERROR: ${error.message}`);
+        }
       } else {
         const { count, error: countError } = await supabase.from(table.name).select("*", { count: 'exact', head: true });
         const size = countError ? "?" : count;

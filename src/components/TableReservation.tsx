@@ -5,10 +5,11 @@ import { Calendar, Clock, Users, MapPin, Check, Phone, User, Landmark, Sparkles 
 import { motion, AnimatePresence } from "motion/react";
 
 interface TableReservationProps {
+  bookings: Reservation[];
   onConfirmReservation: (reservation: Reservation) => void;
 }
 
-export default function TableReservation({ onConfirmReservation }: TableReservationProps) {
+export default function TableReservation({ bookings = [], onConfirmReservation }: TableReservationProps) {
   // Dynamic tables list loaded from configured layout
   const tables = useMemo(() => {
     try {
@@ -56,30 +57,23 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
   // Form Validation
   const [formError, setFormError] = useState<string>("");
 
-  // Create mock unavailable tables based on seed dates/slots to make it realistic
+  // Determine unavailable tables based on actual bookings and guest capacity
   const unavailableTableIds = useMemo(() => {
-    // Generate pseudorandom reserved tables based on the date length and time slot length
-    const combinedSeed = selectedDate + selectedTimeSlot;
-    let sum = 0;
-    for (let i = 0; i < combinedSeed.length; i++) {
-      sum += combinedSeed.charCodeAt(i);
-    }
-    
-    // Select 2 or 3 random tables to block
     const blocked: string[] = [];
     
+    // 1. Block tables that are already booked for the selected date & slot
+    if (Array.isArray(bookings)) {
+      bookings.forEach(b => {
+        if (b.date === selectedDate && b.timeSlot === selectedTimeSlot && b.tableId) {
+          if (!blocked.includes(b.tableId)) {
+            blocked.push(b.tableId);
+          }
+        }
+      });
+    }
+    
+    // 2. Also block tables based on guest capacity
     if (tables.length > 0) {
-      // Simple deterministic random values
-      const index1 = sum % tables.length;
-      const index2 = (sum + 3) % tables.length;
-      
-      blocked.push(tables[index1].id);
-      if (index1 !== index2) {
-        blocked.push(tables[index2].id);
-      }
-      
-      // Also block based on guest capacity
-      // If guests are more than the table capacity, it's implicitly unavailable
       tables.forEach(t => {
         if (t.capacity < selectedGuests && !blocked.includes(t.id)) {
           blocked.push(t.id);
@@ -88,7 +82,7 @@ export default function TableReservation({ onConfirmReservation }: TableReservat
     }
 
     return blocked;
-  }, [selectedDate, selectedTimeSlot, selectedGuests, tables]);
+  }, [selectedDate, selectedTimeSlot, selectedGuests, bookings, tables]);
 
   // Selected Table Details
   const selectedTable = useMemo(() => {

@@ -1,29 +1,58 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MenuItem, Table } from "../types";
-import { MENU_ITEMS, TABLES_DATA } from "../data/menu";
+import { TABLES_DATA } from "../data/menu";
 import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface CartaDigitalProps {
+  menuItems: MenuItem[];
   onAddToBag: (item: MenuItem, customization: any) => void;
   onShowNotification: (message: string, type: "success" | "info" | "warning") => void;
 }
 
-export default function CartaDigital({ onAddToBag, onShowNotification }: CartaDigitalProps) {
+export default function CartaDigital({ menuItems, onAddToBag, onShowNotification }: CartaDigitalProps) {
   const [selectedTable, setSelectedTable] = useState<string>("mesa-1");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Find the selected table details
-  const tableDetails = TABLES_DATA.find(t => t.id === selectedTable);
+  // Dynamic tables list loaded from configured layout
+  const tables = useMemo(() => {
+    try {
+      const saved = localStorage.getItem("puglia_tables");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((t: any) => t && t.status === "Activo").map((t: any, idx: number) => {
+            const defaultTable = TABLES_DATA[idx] || TABLES_DATA[idx % TABLES_DATA.length];
+            return {
+              id: t.id,
+              name: t.name,
+              capacity: t.capacity,
+              type: defaultTable?.type || "table",
+              description: defaultTable?.description || `Mesa de salón para ${t.capacity} comensales.`,
+              coordX: defaultTable?.coordX || 20,
+              coordY: defaultTable?.coordY || 20,
+              status: "Libre" as const
+            };
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error reading tables in CartaDigital:", e);
+    }
+    return TABLES_DATA;
+  }, []);
 
-  // Filter items
-  const filteredItems = MENU_ITEMS.filter((item) => {
+  // Find the selected table details
+  const tableDetails = tables.find(t => t.id === selectedTable);
+
+  // Filter items using dynamic menuItems
+  const filteredItems = menuItems.filter((item) => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = !activeFilter || item.tags.includes(activeFilter);
+    const matchesTag = !activeFilter || (item.tags && item.tags.includes(activeFilter));
     return matchesCategory && matchesSearch && matchesTag;
   });
 
@@ -109,11 +138,11 @@ export default function CartaDigital({ onAddToBag, onShowNotification }: CartaDi
                 value={selectedTable}
                 onChange={(e) => {
                   setSelectedTable(e.target.value);
-                  onShowNotification(`📍 Ha cambiado su ubicación a la ${TABLES_DATA.find(t => t.id === e.target.value)?.name}`, "info");
+                  onShowNotification(`📍 Ha cambiado su ubicación a la ${tables.find(t => t.id === e.target.value)?.name}`, "info");
                 }}
                 className="w-full rounded-xl border border-coffee bg-paper px-4 py-3 text-sm font-semibold text-espresso focus:outline-hidden focus:ring-1 focus:ring-caramel"
               >
-                {TABLES_DATA.map((t) => (
+                {tables.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name} (Cap. {t.capacity} p)
                   </option>
@@ -255,7 +284,7 @@ export default function CartaDigital({ onAddToBag, onShowNotification }: CartaDi
                   </p>
                   <button
                     onClick={() => {
-                      const promo = MENU_ITEMS.find(m => m.id === "offer-promo-portena");
+                      const promo = menuItems.find(m => m.id === "offer-promo-portena");
                       if (promo) {
                         onAddToBag(promo, { size: "M", milk: "Regular", sweetness: "100%" });
                         onShowNotification("☕ ¡Combo Desayuno añadido a su mesa!", "success");
