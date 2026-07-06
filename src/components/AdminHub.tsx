@@ -90,6 +90,8 @@ export default function AdminHub({
   }>>({});
 
   const [adminBookings, setAdminBookings] = useState<any[]>([]);
+  const [isAutoOrderModalOpen, setIsAutoOrderModalOpen] = useState(false);
+  const [draftOrders, setDraftOrders] = useState<Record<string, { message: string; email: string; phone: string; itemsList: any[] }>>({});
 
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProdName, setNewProdName] = useState("");
@@ -1265,6 +1267,56 @@ export default function AdminHub({
     setBillingOrder(null);
   };
 
+  // Generate automatic purchase orders for critical insumos grouped by supplier
+  const handleGenerateAutoOrders = () => {
+    const criticals = insumos.filter(ins => ins.quantity <= ins.minLimit);
+    
+    if (criticals.length === 0) {
+      onShowNotification("✅ No hay insumos en nivel crítico o bajo stock para reordenar.", "info");
+      return;
+    }
+
+    const groups: Record<string, { message: string; email: string; phone: string; itemsList: any[] }> = {};
+
+    criticals.forEach(ins => {
+      const providerName = ins.provider || "Distribuidora Sur";
+      const pObj = proveedores.find(p => p.name.toLowerCase() === providerName.toLowerCase());
+      
+      const email = pObj ? pObj.contact : "ventas@distribuidorasur.com";
+      const phone = pObj ? pObj.phone : "+542214441234";
+
+      const reorderQty = Math.ceil(ins.minLimit * 2.5 - ins.quantity);
+
+      if (!groups[providerName]) {
+        groups[providerName] = {
+          message: "",
+          email,
+          phone,
+          itemsList: []
+        };
+      }
+
+      groups[providerName].itemsList.push({
+        name: ins.name,
+        qty: reorderQty,
+        unit: ins.unit
+      });
+    });
+
+    Object.keys(groups).forEach(prov => {
+      const g = groups[prov];
+      let msg = `Hola ${prov},\n\nNecesitamos realizar el siguiente pedido de reposición para Café Puglia:\n`;
+      g.itemsList.forEach(item => {
+        msg += `• ${item.qty} ${item.unit} de ${item.name}\n`;
+      });
+      msg += `\nPor favor, confírmennos disponibilidad y costo estimado de entrega.\nMuchas gracias.\n--\nCafé Puglia Specialty Coffee`;
+      g.message = msg;
+    });
+
+    setDraftOrders(groups);
+    setIsAutoOrderModalOpen(true);
+  };
+
   // Adjust raw materials stock
   const handleAdjustInsumo = (id: string, amount: number) => {
     setInsumos(prev =>
@@ -1964,17 +2016,25 @@ export default function AdminHub({
             <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Stock & Materias Primas</h2>
           </div>
           {inventarioSubTab === "general" && (
-            <button 
-              onClick={() => {
-                setMovType("Ingreso");
-                setMovInsumoId(insumos[0]?.id || "");
-                setMovQty("");
-                setIsMovementModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-xs font-bold shadow-md hover:bg-[#3d2217] transition-all cursor-pointer animate-fade-in"
-            >
-              <Plus className="h-4 w-4" /> Registrar Movimiento
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={handleGenerateAutoOrders}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-caramel text-white text-xs font-bold shadow-md hover:bg-[#B45309] transition-all cursor-pointer animate-fade-in border-none"
+              >
+                <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos (US-2.3)
+              </button>
+              <button 
+                onClick={() => {
+                  setMovType("Ingreso");
+                  setMovInsumoId(insumos[0]?.id || "");
+                  setMovQty("");
+                  setIsMovementModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-xs font-bold shadow-md hover:bg-[#3d2217] transition-all cursor-pointer animate-fade-in"
+              >
+                <Plus className="h-4 w-4" /> Registrar Movimiento
+              </button>
+            </div>
           )}
         </div>
 
@@ -5641,6 +5701,96 @@ export default function AdminHub({
           {activeSubTab === "reportes" && renderReportes()}
         </AnimatePresence>
       </div>
+
+
+      {/* Automated Purchase Orders (US-2.3) Modal */}
+      {isAutoOrderModalOpen && (
+        <div className="fixed inset-0 bg-[#2C1810]/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FDFBF7] border border-[#C2956E]/30 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative text-xs font-semibold text-[#2C1810] flex flex-col max-h-[90vh]">
+            <button 
+              onClick={() => setIsAutoOrderModalOpen(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810] cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="border-b border-[#2C1810]/10 pb-3 mb-4">
+              <span className="text-[9px] font-black uppercase text-[#C2956E] tracking-widest block">Reabastecimiento Inteligente</span>
+              <h4 className="font-serif text-lg font-bold text-[#2C1810]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
+            </div>
+
+            <div className="overflow-y-auto space-y-6 flex-1 pr-1">
+              <p className="text-xs text-[#2C1810]/70 italic leading-relaxed">
+                El sistema detectó insumos en nivel de seguridad crítico y agrupó las cantidades necesarias de reposición por proveedor. Puede copiar el mensaje directo para enviarlo por WhatsApp o Correo Electrónico.
+              </p>
+
+              {Object.keys(draftOrders).length === 0 ? (
+                <p className="text-xs text-center py-6 font-bold italic text-[#2C1810]/40">No hay borradores para generar.</p>
+              ) : (
+                <div className="space-y-6">
+                  {Object.keys(draftOrders).map((prov) => {
+                    const order = draftOrders[prov];
+                    const whatsappUrl = `https://wa.me/${order.phone.replace(/[+\s-]/g, "")}?text=${encodeURIComponent(order.message)}`;
+                    const mailtoUrl = `mailto:${order.email}?subject=Pedido%20Reposicion%20-%20Cafe%20Puglia&body=${encodeURIComponent(order.message)}`;
+
+                    return (
+                      <div key={prov} className="border border-[#2C1810]/15 rounded-2xl p-4 bg-white space-y-4">
+                        <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-2">
+                          <div>
+                            <span className="font-serif text-sm font-black text-[#2C1810]">{prov}</span>
+                            <span className="text-[10px] text-[#2C1810]/50 block font-mono">Tel: {order.phone} • Email: {order.email}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <a
+                              href={whatsappUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => {
+                                onShowNotification(`📱 Redirigiendo a WhatsApp para ${prov}`, "info");
+                              }}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center"
+                            >
+                              📱 WhatsApp
+                            </a>
+                            <a
+                              href={mailtoUrl}
+                              onClick={() => {
+                                onShowNotification(`📧 Abriendo cliente de correo para ${prov}`, "info");
+                              }}
+                              className="px-3 py-1.5 bg-caramel hover:bg-[#B45309] text-white rounded-lg font-bold text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center"
+                            >
+                              📧 Email
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Borrador del Pedido</label>
+                          <textarea
+                            readOnly
+                            value={order.message}
+                            rows={6}
+                            className="w-full text-xs font-mono p-3 bg-stone-50 border border-stone-200 rounded-xl resize-none outline-none text-stone-700 font-medium"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-[#2C1810]/10 pt-4 mt-4 flex justify-end">
+              <button
+                onClick={() => setIsAutoOrderModalOpen(false)}
+                className="px-5 py-2 bg-espresso hover:bg-[#3d2217] text-white text-xs font-bold rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Unified Movement Registration Modal */}
       {isMovementModalOpen && (
