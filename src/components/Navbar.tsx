@@ -13,17 +13,17 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick, onLogout, currentUser, isOpen, setIsOpen }: NavbarProps) {
-  // Restrict navigation based on role
+  // Restrict navigation based on role (Dueños and Administradores see all tabs)
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador", "barista", "mesero"] },
-    { id: "menu", label: "Menú", icon: Coffee, roles: ["administrador", "mesero"] },
-    { id: "carta-digital", label: "Carta Digital", icon: BookOpen, roles: ["administrador", "mesero"] },
-    { id: "reservas", label: "Reservas", icon: Calendar, roles: ["administrador", "mesero"] },
-    { id: "barista-ia", label: "Barista IA", icon: Bot, roles: ["administrador", "barista", "mesero"] },
-    { id: "manual", label: "Manual Operativo", icon: Scroll, roles: ["administrador", "barista", "mesero"] },
-    { id: "historial", label: "Mis Pedidos", icon: ListOrdered, roles: ["administrador", "mesero"] },
-    { id: "admin", label: "Administración", icon: Settings, roles: ["administrador", "barista", "mesero"] },
-  ].filter(item => item.roles.includes(currentUser.role));
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador", "barista", "mesero", "dueño"] },
+    { id: "menu", label: "Menú", icon: Coffee, roles: ["administrador", "mesero", "dueño"] },
+    { id: "carta-digital", label: "Carta Digital", icon: BookOpen, roles: ["administrador", "mesero", "dueño"] },
+    { id: "reservas", label: "Reservas", icon: Calendar, roles: ["administrador", "mesero", "dueño"] },
+    { id: "barista-ia", label: "Barista IA", icon: Bot, roles: ["administrador", "barista", "mesero", "dueño"] },
+    { id: "manual", label: "Manual Operativo", icon: Scroll, roles: ["administrador", "barista", "mesero", "dueño"] },
+    { id: "historial", label: "Mis Pedidos", icon: ListOrdered, roles: ["administrador", "mesero", "dueño"] },
+    { id: "admin", label: "Administración", icon: Settings, roles: ["administrador", "barista", "mesero", "dueño"] },
+  ].filter(item => item.roles.includes(currentUser.role) || currentUser.role === "dueño" || currentUser.role === "administrador");
 
   return (
     <>
