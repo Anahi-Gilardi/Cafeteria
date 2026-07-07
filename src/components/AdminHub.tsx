@@ -80,12 +80,16 @@ export default function AdminHub({
   const [newUserPhone, setNewUserPhone] = useState("");
   const [newUserEmergencyPhone, setNewUserEmergencyPhone] = useState("");
   const [newUserSalary, setNewUserSalary] = useState("");
+  const [newUserSeniority, setNewUserSeniority] = useState("12");
+  const [profitStaffHours, setProfitStaffHours] = useState<Record<string, number>>({});
+  const [profitStaffAntiguedad, setProfitStaffAntiguedad] = useState<Record<string, number>>({});
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any | null>(null);
   const [usersMetadata, setUsersMetadata] = useState<Record<string, {
     direccion?: string;
     telefono?: string;
     telefono_contacto?: string;
     sueldo?: number;
+    antiguedad?: number;
     permissions?: string[];
   }>>({});
 
@@ -485,6 +489,7 @@ export default function AdminHub({
             telefono: metaVal.telefono,
             telefono_contacto: metaVal.telefono_contacto,
             sueldo: metaVal.sueldo,
+            antiguedad: metaVal.antiguedad,
             permissions: metaVal.permissions
           }).eq("id", updatedUserId);
           if (error) {
@@ -557,6 +562,7 @@ export default function AdminHub({
         telefono: newUserPhone.trim(),
         telefono_contacto: newUserEmergencyPhone.trim(),
         sueldo: parseFloat(newUserSalary) || 0,
+        antiguedad: parseInt(newUserSeniority) || 12,
         permissions: defaultPerms
       }
     };
@@ -578,6 +584,7 @@ export default function AdminHub({
     setNewUserPhone("");
     setNewUserEmergencyPhone("");
     setNewUserSalary("");
+    setNewUserSeniority("12");
     fetchUsers();
   };
 
@@ -4790,27 +4797,79 @@ export default function AdminHub({
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-[#2C1810]/10">
-                        {[
-                          { name: "Julio Puglia", rol: "Director", horas: 960, antiguedad: 12 },
-                          { name: "Carlos Gómez", rol: "Barista Principal", horas: 900, antiguedad: 8 },
-                          { name: "Lucía Fernández", rol: "Chef Pastelería", horas: 880, antiguedad: 7 },
-                          { name: "Mariano Díaz", rol: "Mozo Principal", horas: 860, antiguedad: 6 },
-                          { name: "Sofía Martínez", rol: "Ayudante Bachero", horas: 600, antiguedad: 3 }
-                        ].map((emp, idx) => {
-                          const eligible = emp.antiguedad >= 6;
-                          const eligibleCount = 4;
-                          const equitativa = eligible ? (proporcionalPartTotal / eligibleCount) : 0;
-                          const proporcional = (eligible && profitHoursTotal > 0) ? (emp.horas / profitHoursTotal) * proporcionalPartTotal : 0;
-                          const totalEmp = equitativa + proporcional;
+                        {(() => {
+                          const activeStaffList = users.map(u => {
+                            const meta = usersMetadata[u.id] || {};
+                            const horasVal = profitStaffHours[u.id] !== undefined ? profitStaffHours[u.id] : 800;
+                            const antVal = profitStaffAntiguedad[u.id] !== undefined ? profitStaffAntiguedad[u.id] : (meta.antiguedad || 12);
+                            return {
+                              id: u.id,
+                              name: u.name,
+                              rol: u.role === "administrador" ? "Administrador" : u.role === "barista" ? "Barista" : "Mesero",
+                              horas: horasVal,
+                              antiguedad: antVal
+                            };
+                          });
 
-                          return (
-                            <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                              <td className="p-3">
-                                <strong className="text-[#2C1810] font-bold block">{emp.name}</strong>
-                                <span className="text-[9px] text-[#2C1810]/50 block">{emp.rol}</span>
-                              </td>
-                                <td className="p-3 text-center font-mono text-[10px] text-[#2C1810]/80">
-                                  {emp.horas}h / {emp.antiguedad}m
+                          const staffList = activeStaffList.length > 0 ? activeStaffList : [
+                            { id: "mock-1", name: "Julio Puglia", rol: "Director", horas: 960, antiguedad: 12 },
+                            { id: "mock-2", name: "Carlos Gómez", rol: "Barista Principal", horas: 900, antiguedad: 8 },
+                            { id: "mock-3", name: "Lucía Fernández", rol: "Chef Pastelería", horas: 880, antiguedad: 7 },
+                            { id: "mock-4", name: "Mariano Díaz", rol: "Mozo Principal", horas: 860, antiguedad: 6 },
+                            { id: "mock-5", name: "Sofía Martínez", rol: "Ayudante Bachero", horas: 600, antiguedad: 3 }
+                          ];
+
+                          const eligibleStaff = staffList.filter(s => s.antiguedad >= 6);
+                          const eligibleCount = eligibleStaff.length;
+                          const totalEligibleHours = eligibleStaff.reduce((sum, s) => sum + s.horas, 0);
+
+                          return staffList.map((emp, idx) => {
+                            const eligible = emp.antiguedad >= 6;
+                            const equitativa = eligible ? ((pozoProfitSharing * 0.50) / eligibleCount) : 0;
+                            const proporcional = (eligible && totalEligibleHours > 0) ? (emp.horas / totalEligibleHours) * (pozoProfitSharing * 0.50) : 0;
+                            const totalEmp = equitativa + proporcional;
+
+                            return (
+                              <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
+                                <td className="p-3">
+                                  <strong className="text-[#2C1810] font-bold block">{emp.name}</strong>
+                                  <span className="text-[9px] text-[#2C1810]/50 block">{emp.rol}</span>
+                                </td>
+                                <td className="p-3 text-center flex items-center justify-center gap-1.5 min-h-[50px]">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="text-[8px] uppercase tracking-wider text-stone-400 font-bold">Horas</span>
+                                    <input 
+                                      type="number" 
+                                      value={emp.horas} 
+                                      onChange={(e) => {
+                                        const val = Math.max(0, parseInt(e.target.value) || 0);
+                                        setProfitStaffHours(prev => ({ ...prev, [emp.id]: val }));
+                                      }}
+                                      className="w-14 p-1 text-center border border-stone-200 rounded font-mono text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-caramel bg-stone-50/50"
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="text-[8px] uppercase tracking-wider text-stone-400 font-bold">Meses</span>
+                                    <input 
+                                      type="number" 
+                                      value={emp.antiguedad} 
+                                      onChange={(e) => {
+                                        const val = Math.max(0, parseInt(e.target.value) || 0);
+                                        setProfitStaffAntiguedad(prev => ({ ...prev, [emp.id]: val }));
+                                        if (!emp.id.startsWith("mock-")) {
+                                          const userMeta = usersMetadata[emp.id] || {};
+                                          saveUsersMetadata({
+                                            ...usersMetadata,
+                                            [emp.id]: {
+                                              ...userMeta,
+                                              antiguedad: val
+                                            }
+                                          }, emp.id);
+                                        }
+                                      }}
+                                      className="w-12 p-1 text-center border border-stone-200 rounded font-mono text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-caramel bg-stone-50/50"
+                                    />
+                                  </div>
                                 </td>
                                 <td className="p-3 text-center font-mono text-[10px] text-[#2C1810]/60">
                                   {eligible ? `$${equitativa.toFixed(0)}` : "-"}
@@ -4825,8 +4884,9 @@ export default function AdminHub({
                                 </td>
                               </tr>
                             );
-                          })}
-                        </tbody>
+                          });
+                        })()}
+                      </tbody>
                       </table>
                     </div>
                   </div>
@@ -4923,16 +4983,29 @@ export default function AdminHub({
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Sueldo Base ($ Mensual)</label>
-                      <input
-                        type="number"
-                        value={newUserSalary}
-                        onChange={(e) => setNewUserSalary(e.target.value)}
-                        placeholder="Ej. 180000"
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold"
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Sueldo Base ($ Mensual)</label>
+                        <input
+                          type="number"
+                          value={newUserSalary}
+                          onChange={(e) => setNewUserSalary(e.target.value)}
+                          placeholder="Ej. 180000"
+                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Antigüedad (Meses)</label>
+                        <input
+                          type="number"
+                          value={newUserSeniority}
+                          onChange={(e) => setNewUserSeniority(e.target.value)}
+                          placeholder="Ej. 12"
+                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold"
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
