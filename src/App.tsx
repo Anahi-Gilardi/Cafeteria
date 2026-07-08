@@ -693,6 +693,8 @@ export default function App() {
                 onGoToCaja={() => setActiveTab("admin")}
                 onGoToInventario={() => setActiveTab("admin")}
                 onShowNotification={showNotification}
+                orders={orders}
+                menuItems={menuItems}
               />
             )}
 
