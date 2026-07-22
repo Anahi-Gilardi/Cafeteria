@@ -1,5 +1,5 @@
 import { useState, useMemo, ChangeEvent, FormEvent } from "react";
-import { CartItem, Order, Reservation, OrderStatusType } from "../types";
+import { CartItem, Order, Reservation, OrderStatusType, ClientAccount } from "../types";
 import { X, Trash2, Plus, Minus, ShoppingBag, CreditCard, ArrowRight, Table, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
@@ -12,6 +12,7 @@ interface CartDrawerProps {
   onRemoveItem: (cartItemId: string) => void;
   onCheckout: (order: Order) => void;
   activeBookings: Reservation[];
+  clientAccounts?: ClientAccount[];
 }
 
 export default function CartDrawer({
@@ -21,7 +22,8 @@ export default function CartDrawer({
   onUpdateQuantity,
   onRemoveItem,
   onCheckout,
-  activeBookings
+  activeBookings,
+  clientAccounts = []
 }: CartDrawerProps) {
   const [checkoutMode, setCheckoutMode] = useState<"view_cart" | "checkout">("view_cart");
   const [orderType, setOrderType] = useState<"Llevar" | "Mesa">("Llevar");
@@ -30,6 +32,9 @@ export default function CartDrawer({
   const [customTableNumber, setCustomTableNumber] = useState<string>("");
 
   // Payment Form States
+  const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte">("Tarjeta");
+  const [receivedCash, setReceivedCash] = useState<string>("");
+  const [selectedClientAccountId, setSelectedClientAccountId] = useState<string>("");
   const [cardName, setCardName] = useState<string>("");
   const [cardNumber, setCardNumber] = useState<string>("");
   const [cardExpiry, setCardExpiry] = useState<string>("");
@@ -120,21 +125,42 @@ export default function CartDrawer({
     e.preventDefault();
     setErrorMsg("");
 
-    if (!cardName.trim()) {
-      setErrorMsg("Introduce el nombre del titular de la tarjeta.");
-      return;
-    }
-    if (cardNumber.replace(/\s/g, "").length < 16) {
-      setErrorMsg("Introduce un número de tarjeta de crédito válido (16 dígitos).");
-      return;
-    }
-    if (cardExpiry.length < 5) {
-      setErrorMsg("Introduce la fecha de caducidad en formato MM/AA.");
-      return;
-    }
-    if (cardCVV.length < 3) {
-      setErrorMsg("Introduce el código CVV (3 dígitos).");
-      return;
+    if (paymentMethod === "Tarjeta") {
+      if (!cardName.trim()) {
+        setErrorMsg("Introduce el nombre del titular de la tarjeta.");
+        return;
+      }
+      if (cardNumber.replace(/\s/g, "").length < 16) {
+        setErrorMsg("Introduce un número de tarjeta de crédito válido (16 dígitos).");
+        return;
+      }
+      if (cardExpiry.length < 5) {
+        setErrorMsg("Introduce la fecha de caducidad en formato MM/AA.");
+        return;
+      }
+      if (cardCVV.length < 3) {
+        setErrorMsg("Introduce el código CVV (3 dígitos).");
+        return;
+      }
+    } else if (paymentMethod === "Efectivo") {
+      const cashVal = parseFloat(receivedCash) || 0;
+      if (cashVal < total) {
+        setErrorMsg(`El efectivo recibido ($${cashVal}) debe ser igual o mayor al total ($${total}).`);
+        return;
+      }
+    } else if (paymentMethod === "Fiado / Cta Cte") {
+      if (!selectedClientAccountId) {
+        setErrorMsg("Por favor, selecciona un cliente para registrar el fiado.");
+        return;
+      }
+      const client = clientAccounts.find(c => c.id === selectedClientAccountId);
+      if (client) {
+        const potentialBalance = client.balance - total;
+        if (Math.abs(potentialBalance) > client.creditLimit) {
+          setErrorMsg(`Límite de crédito excedido. El límite es de $${client.creditLimit} y el saldo estimado sería -$${Math.abs(potentialBalance).toFixed(2)}.`);
+          return;
+        }
+      }
     }
 
     if (orderType === "Mesa" && !selectedTableId && !customTableNumber) {
@@ -151,10 +177,13 @@ export default function CartDrawer({
         ? (selectedTableId ? activeBookings.find(b => b.id === selectedTableId)?.tableName : `Mesa ${customTableNumber}`)
         : undefined;
 
+      const clientObj = paymentMethod === "Fiado / Cta Cte"
+        ? clientAccounts.find(c => c.id === selectedClientAccountId)
+        : undefined;
+
       const order: Order = {
         id: "order-" + Date.now(),
         items: cartItems.map(item => {
-          // Construct text customization string
           const parts: string[] = [];
           if (item.customization.size) parts.push(`Tam: ${item.customization.size}`);
           if (item.customization.milk) parts.push(item.customization.milk);
@@ -180,7 +209,10 @@ export default function CartDrawer({
         status: "Recibido",
         createdAt: new Date().toISOString(),
         estimatedMinutes: 8,
-        tipAmount
+        tipAmount,
+        paymentMethod,
+        couponNumber: paymentMethod === "Tarjeta" ? "CUP-" + Math.floor(Math.random() * 900000 + 100000) : undefined,
+        clientAccountName: clientObj?.name
       };
 
       // Add to digital tip pool in Supabase
@@ -200,6 +232,13 @@ export default function CartDrawer({
       onCheckout(order);
       // Reset State
       setCheckoutMode("view_cart");
+      setPaymentMethod("Tarjeta");
+      setCardName("");
+      setCardNumber("");
+      setCardExpiry("");
+      setCardCVV("");
+      setReceivedCash("");
+      setSelectedClientAccountId("");
       onClose();
     }, 1800);
   };
@@ -512,72 +551,202 @@ export default function CartDrawer({
                       )}
                     </div>
 
-                    {/* Payment credit card details */}
-                    <div className="border border-coffee rounded-xl bg-white p-4 space-y-3 shadow-xs">
-                      <div className="flex items-center justify-between border-b border-coffee/30 pb-2.5">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-espresso/50 flex items-center gap-1.5 font-semibold">
-                          <CreditCard className="h-3.5 w-3.5 text-caramel" /> Pago de Pruebas Seguro
-                        </span>
-                        <div className="flex gap-1 text-[9px] font-bold bg-emerald-700 text-white px-2.5 py-0.5 rounded shadow-xs uppercase tracking-wider font-mono">
-                          Sandbox
-                        </div>
-                      </div>
-
-                      {/* Card Holder Name */}
-                      <div>
-                        <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Nombre en Tarjeta</label>
-                        <input
-                          type="text"
-                          id="checkout-card-name"
-                          value={cardName}
-                          onChange={(e) => setCardName(e.target.value)}
-                          placeholder="Juan Pérez"
-                          className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs outline-none focus:border-caramel focus:bg-white text-espresso font-medium"
-                        />
-                      </div>
-
-                      {/* Card Number */}
-                      <div>
-                        <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Número de Tarjeta</label>
-                        <input
-                          type="text"
-                          id="checkout-card-number"
-                          value={cardNumber}
-                          onChange={handleCardNumberChange}
-                          placeholder="4000 1234 5678 9010"
-                          maxLength={19}
-                          className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono outline-none focus:border-caramel focus:bg-white text-espresso"
-                        />
-                      </div>
-
-                      {/* Expiry and CVV */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Caducidad</label>
-                          <input
-                            type="text"
-                            id="checkout-card-expiry"
-                            value={cardExpiry}
-                            onChange={handleExpiryChange}
-                            placeholder="MM/AA"
-                            maxLength={5}
-                            className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono text-center outline-none focus:border-caramel focus:bg-white text-espresso"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">CVV / Firma</label>
-                          <input
-                            type="password"
-                            id="checkout-card-cvv"
-                            value={cardCVV}
-                            onChange={(e) => setCardCVV(e.target.value.replace(/[^0-9]/g, "").substring(0, 3))}
-                            placeholder="***"
-                            maxLength={3}
-                            className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono text-center outline-none focus:border-caramel focus:bg-white text-espresso"
-                          />
-                        </div>
+                    {/* Payment Selector Option Buttons */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Medio de Pago</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: "Tarjeta", label: "💳 Tarjeta", desc: "Crédito o Débito" },
+                          { id: "Efectivo", label: "💵 Efectivo", desc: "Pago en caja" },
+                          { id: "MercadoPago", label: "📱 Mercado Pago", desc: "Transferencia / QR" },
+                          { id: "Fiado / Cta Cte", label: "👤 Cuenta Corriente", desc: "Fiado Puglia" }
+                        ].map((pm) => (
+                          <button
+                            key={pm.id}
+                            type="button"
+                            onClick={() => {
+                              setPaymentMethod(pm.id as any);
+                              setErrorMsg("");
+                            }}
+                            className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                              paymentMethod === pm.id
+                                ? "bg-espresso text-paper border-espresso shadow-xs"
+                                : "bg-white text-espresso/80 border-stone-200 hover:bg-stone-50"
+                            }`}
+                          >
+                            <span className="text-xs font-bold block">{pm.label}</span>
+                            <span className={`text-[9px] block ${paymentMethod === pm.id ? "text-paper/60" : "text-espresso/50"}`}>{pm.desc}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
+
+                    {/* Tarjeta Card form */}
+                    {paymentMethod === "Tarjeta" && (
+                      <div className="border border-coffee rounded-xl bg-white p-4 space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between border-b border-coffee/30 pb-2.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-espresso/50 flex items-center gap-1.5 font-semibold">
+                            <CreditCard className="h-3.5 w-3.5 text-caramel" /> Pago de Pruebas Seguro
+                          </span>
+                          <div className="flex gap-1 text-[9px] font-bold bg-emerald-700 text-white px-2.5 py-0.5 rounded shadow-xs uppercase tracking-wider font-mono">
+                            Sandbox
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Nombre en Tarjeta</label>
+                          <input
+                            type="text"
+                            value={cardName}
+                            onChange={(e) => setCardName(e.target.value)}
+                            placeholder="Juan Pérez"
+                            className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs outline-none focus:border-caramel focus:bg-white text-espresso font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Número de Tarjeta</label>
+                          <input
+                            type="text"
+                            value={cardNumber}
+                            onChange={handleCardNumberChange}
+                            placeholder="4000 1234 5678 9010"
+                            maxLength={19}
+                            className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono outline-none focus:border-caramel focus:bg-white text-espresso"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Caducidad</label>
+                            <input
+                              type="text"
+                              value={cardExpiry}
+                              onChange={handleExpiryChange}
+                              placeholder="MM/AA"
+                              maxLength={5}
+                              className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono text-center outline-none focus:border-caramel focus:bg-white text-espresso"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">CVV</label>
+                            <input
+                              type="password"
+                              value={cardCVV}
+                              onChange={(e) => setCardCVV(e.target.value.replace(/[^0-9]/g, "").substring(0, 3))}
+                              placeholder="***"
+                              maxLength={3}
+                              className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono text-center outline-none focus:border-caramel focus:bg-white text-espresso"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Efectivo cash form */}
+                    {paymentMethod === "Efectivo" && (
+                      <div className="border border-coffee rounded-xl bg-white p-4 space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between border-b border-coffee/30 pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-espresso/50 flex items-center gap-1.5 font-semibold">
+                            💵 Registro de Pago en Efectivo
+                          </span>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Monto Recibido</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-espresso/50">$</span>
+                            <input
+                              type="number"
+                              value={receivedCash}
+                              onChange={(e) => setReceivedCash(e.target.value)}
+                              placeholder="0.00"
+                              className="w-full pl-7 pr-3 py-2 border border-coffee bg-paper/30 rounded-lg text-xs font-bold focus:ring-1 focus:ring-caramel focus:outline-hidden text-espresso"
+                            />
+                          </div>
+                        </div>
+                        {parseFloat(receivedCash) >= total && (
+                          <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-2.5 rounded-lg text-xs flex justify-between font-bold">
+                            <span>Vuelto a devolver:</span>
+                            <span className="font-mono">${(parseFloat(receivedCash) - total).toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Mercado Pago QR form */}
+                    {paymentMethod === "MercadoPago" && (
+                      <div className="border border-coffee rounded-xl bg-white p-4 space-y-3 shadow-xs flex flex-col items-center">
+                        <div className="w-full flex items-center justify-between border-b border-coffee/30 pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-espresso/50 flex items-center gap-1.5 font-semibold">
+                            📱 Pago Digital por QR
+                          </span>
+                        </div>
+                        
+                        {/* Beautiful QR Code Mockup */}
+                        <div className="p-3 bg-white border border-stone-200 rounded-2xl my-2 shadow-xs">
+                          <svg className="w-32 h-32 text-espresso" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="2" width="6" height="6" rx="1" />
+                            <rect x="16" y="2" width="6" height="6" rx="1" />
+                            <rect x="2" y="16" width="6" height="6" rx="1" />
+                            <path d="M16 16h2v2h-2zm2 2h2v2h-2zm-2 2h2v-2h-2zm4-4h2v2h-2zm0 4h2v-2h-2zm-4-4h-2v2h2zm2-2h-2v2h2zm2 2v2M9 5h1v1H9zm1 4V8h1v2h-2zm4-5h1v1h-1zm1 4v-1h1v2h-2zm-6 7H9v1h1zm-1 3v-2H8v2h1zm4-1h1v1h-1zm1 3v-2h-1v2h1zm2-7h1v1h-1zm-6 2h1v1H9zm1 3v-1h1v2h-2zm-3-3H6v1h2zm2 4H8v1h2zm6-4h2v1h-2z" />
+                          </svg>
+                        </div>
+                        
+                        <p className="text-[10px] text-espresso/60 text-center leading-normal italic font-medium">
+                          Escanee el código QR desde la app de Mercado Pago o realice transferencia directa. Al presionar "Confirmar" se registrará la operación.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Cuenta Corriente (Fiado) form */}
+                    {paymentMethod === "Fiado / Cta Cte" && (
+                      <div className="border border-coffee rounded-xl bg-white p-4 space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between border-b border-coffee/30 pb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-espresso/50 flex items-center gap-1.5 font-semibold">
+                            👤 Cuenta de Confianza (Fiado)
+                          </span>
+                        </div>
+                        
+                        <div>
+                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Seleccionar Cliente</label>
+                          <select
+                            value={selectedClientAccountId}
+                            onChange={(e) => setSelectedClientAccountId(e.target.value)}
+                            className="w-full rounded-lg border border-coffee bg-white py-2 px-3 text-xs font-semibold text-espresso focus:outline-none focus:border-caramel"
+                          >
+                            <option value="">-- Seleccionar Cuenta Corriente --</option>
+                            {clientAccounts.map((c) => {
+                              const remainingLimit = c.creditLimit - Math.abs(c.balance);
+                              return (
+                                <option key={c.id} value={c.id}>
+                                  {c.name} (Saldo: ${c.balance.toFixed(2)} | Límite: ${c.creditLimit})
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+
+                        {selectedClientAccountId && (() => {
+                          const client = clientAccounts.find(c => c.id === selectedClientAccountId);
+                          if (!client) return null;
+                          const potBal = client.balance - total;
+                          const isOver = Math.abs(potBal) > client.creditLimit;
+                          
+                          return (
+                            <div className={`p-2.5 rounded-lg text-xs space-y-1 ${isOver ? "bg-rose-50 border border-rose-200 text-rose-950 font-bold" : "bg-caramel/5 border border-caramel/20 text-espresso font-semibold"}`}>
+                              <div className="flex justify-between">
+                                <span>Saldo Estimado:</span>
+                                <span className="font-mono">${potBal.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-[10px] text-espresso/60">
+                                <span>Límite disponible:</span>
+                                <span className="font-mono">${(client.creditLimit - Math.abs(client.balance)).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
 
                     {errorMsg && (
                       <p className="text-[11px] font-bold text-rose-800 bg-rose-50 border border-rose-200 p-2 rounded-lg">{errorMsg}</p>

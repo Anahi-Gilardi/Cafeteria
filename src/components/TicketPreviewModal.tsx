@@ -88,6 +88,23 @@ export default function TicketPreviewModal({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen && order) {
+      if (order.paymentMethod) {
+        setPaymentMethod(order.paymentMethod);
+      }
+      if (order.couponNumber) {
+        setPosCoupon(order.couponNumber);
+      }
+      if (order.clientAccountName) {
+        const client = clientAccounts.find(c => c.name === order.clientAccountName);
+        if (client) {
+          setSelectedClientAccountId(client.id);
+        }
+      }
+    }
+  }, [isOpen, order, clientAccounts]);
+
   const hasCoffee = useMemo(() => {
     if (!order) return false;
     return order.items.some(it => 

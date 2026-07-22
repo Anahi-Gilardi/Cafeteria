@@ -683,6 +683,7 @@ export default function App() {
             onRemoveItem={handleRemoveItem}
             onCheckout={handleCheckoutComplete}
             activeBookings={bookings}
+            clientAccounts={clientAccounts}
           />
 
           {/* Content routing based on activeTab */}
