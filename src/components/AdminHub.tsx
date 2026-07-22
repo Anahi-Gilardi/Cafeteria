@@ -67,7 +67,16 @@ export default function AdminHub({
       ? "salon" 
       : "dashboard"
   );
-  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas">("barista");
+  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("barista");
+  const [pinInput, setPinInput] = useState<string>("");
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_attendance_logs");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // User Accounts Management state
   const [users, setUsers] = useState<any[]>([]);
@@ -239,7 +248,7 @@ export default function AdminHub({
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
 
-  const [inventarioSubTab, setInventarioSubTab] = useState<"general" | "ciegas" | "comparador">("general");
+  const [inventarioSubTab, setInventarioSubTab] = useState<"general" | "ciegas" | "comparador" | "analitica">("general");
   const [blindCounts, setBlindCounts] = useState<Record<string, string>>({});
   const [auditHistory, setAuditHistory] = useState<any[]>(() => {
     try {
@@ -1998,6 +2007,217 @@ export default function AdminHub({
     );
   };
 
+  const renderStockAnalytics = () => {
+    const consumptionMap: Record<string, { name: string; amount: number; unit: string; totalCost: number }> = {};
+
+    orders.forEach(ord => {
+      if (ord.status === "Completado") {
+        ord.items.forEach(it => {
+          const menuItem = menuItems.find(m => m.name === it.name);
+          if (menuItem && menuItem.recipe) {
+            menuItem.recipe.forEach(rec => {
+              const insKey = rec.ingredientId;
+              const ins = insumos.find(i => i.id === insKey);
+              const ingName = ins ? ins.name : rec.ingredientId;
+              const unit = ins ? ins.unit : "unidades";
+              const unitCost = INSUMO_UNIT_COSTS[rec.ingredientId]?.price || 1500;
+              const totalAmount = rec.amount * it.quantity;
+              const cost = totalAmount * unitCost;
+
+              if (!consumptionMap[insKey]) {
+                consumptionMap[insKey] = { name: ingName, amount: 0, unit, totalCost: 0 };
+              }
+              consumptionMap[insKey].amount += totalAmount;
+              consumptionMap[insKey].totalCost += cost;
+            });
+          }
+        });
+      }
+    });
+
+    const consumptionList = Object.values(consumptionMap).sort((a, b) => b.totalCost - a.totalCost);
+    const maxCost = Math.max(...consumptionList.map(c => c.totalCost), 1);
+
+    return (
+      <div className="space-y-6 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+        <div>
+          <h3 className="font-serif text-lg font-bold text-[#2C1810]">📈 Analítica de Consumo Real de Insumos</h3>
+          <p className="text-xs text-[#2C1810]/50 mt-0.5">
+            Deducción automatizada de materias primas basada en las comandas finalizadas y las dosificaciones de recetas.
+          </p>
+        </div>
+
+        {consumptionList.length === 0 ? (
+          <div className="p-8 text-center border border-dashed border-[#2C1810]/15 rounded-2xl text-xs text-[#2C1810]/50 italic">
+            No hay comandas completadas registradas para computar consumo de recetas aún.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {consumptionList.map((item, idx) => {
+              const widthPct = `${Math.max(10, Math.round((item.totalCost / maxCost) * 100))}%`;
+              return (
+                <div key={idx} className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-[#2C1810]">
+                    <span>{item.name}</span>
+                    <span className="font-mono text-[#C2956E]">
+                      {item.amount.toFixed(2)} {item.unit} (${item.totalCost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
+                    </span>
+                  </div>
+                  <div className="w-full h-3 bg-stone-200 rounded-full overflow-hidden">
+                    <div
+                      style={{ width: widthPct }}
+                      className="h-full bg-[#2C1810] rounded-full transition-all duration-500"
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleClockInWithPin = () => {
+    if (pinInput.length !== 4) {
+      onShowNotification("⚠️ Ingrese un PIN de 4 dígitos.", "warning");
+      return;
+    }
+    const matchedUser = users.find(u => u.pin === pinInput) || (usersMetadata[pinInput] ? { name: usersMetadata[pinInput].name, id: pinInput } : null);
+    if (!matchedUser) {
+      onShowNotification("❌ PIN no registrado para ningún colaborador.", "warning");
+      setPinInput("");
+      return;
+    }
+
+    const userName = matchedUser.name || "Colaborador";
+    const userId = matchedUser.id || pinInput;
+
+    const openLogIndex = attendanceLogs.findIndex(l => l.userId === userId && !l.clockOut);
+    if (openLogIndex >= 0) {
+      const clockInTime = new Date(attendanceLogs[openLogIndex].clockIn).getTime();
+      const now = Date.now();
+      const diffHours = parseFloat(((now - clockInTime) / 3600000).toFixed(2));
+      const updatedLogs = [...attendanceLogs];
+      updatedLogs[openLogIndex] = {
+        ...updatedLogs[openLogIndex],
+        clockOut: new Date().toISOString(),
+        hours: diffHours
+      };
+      setAttendanceLogs(updatedLogs);
+      localStorage.setItem("puglia_attendance_logs", JSON.stringify(updatedLogs));
+
+      onShowNotification(`👋 Salida registrada para ${userName}. Turno finalizado: ${diffHours} hs computadas.`, "success");
+    } else {
+      const newLog = {
+        id: "att-" + Date.now(),
+        userId,
+        userName,
+        clockIn: new Date().toISOString(),
+        clockOut: null,
+        hours: 0
+      };
+      const updatedLogs = [newLog, ...attendanceLogs];
+      setAttendanceLogs(updatedLogs);
+      localStorage.setItem("puglia_attendance_logs", JSON.stringify(updatedLogs));
+      onShowNotification(`⏱️ ¡Bienvenido/a ${userName}! Inicio de turno registrado a las ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`, "success");
+    }
+
+    setPinInput("");
+  };
+
+  const renderAttendance = () => {
+    return (
+      <motion.div
+        key="asistencia-view"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0 }}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+      >
+        <div className="lg:col-span-5 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="mb-4 border-b border-[#2C1810]/15 pb-2">
+              <span className="text-[10px] font-black uppercase text-[#C2956E] tracking-widest">Fichaje por PIN</span>
+              <h3 className="font-serif text-lg font-bold text-[#2C1810]">⏱️ Registro de Entrada / Salida</h3>
+              <p className="text-xs text-[#2C1810]/50 mt-0.5">Ingrese su PIN de 4 dígitos para marcar inicio o fin de turno.</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-[#2C1810] text-[#FDFBF7] p-4 rounded-2xl text-center space-y-1">
+                <span className="text-[9px] uppercase tracking-widest text-[#C2956E] font-bold">Código PIN Ingresado</span>
+                <div className="text-3xl font-mono tracking-widest font-black h-10 flex items-center justify-center">
+                  {pinInput.padEnd(4, "•").replace(/./g, (ch, idx) => idx < pinInput.length ? "•" : ch)}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "✓"].map((btn) => (
+                  <button
+                    key={btn}
+                    type="button"
+                    onClick={() => {
+                      if (btn === "C") {
+                        setPinInput("");
+                      } else if (btn === "✓") {
+                        handleClockInWithPin();
+                      } else {
+                        if (pinInput.length < 4) {
+                          setPinInput(prev => prev + btn);
+                        }
+                      }
+                    }}
+                    className={`py-3.5 rounded-2xl text-base font-bold transition-all cursor-pointer ${
+                      btn === "✓" 
+                        ? "bg-[#C2956E] text-[#2C1810] font-black hover:bg-[#a67c57]" 
+                        : btn === "C" 
+                        ? "bg-rose-100 text-rose-800 hover:bg-rose-200" 
+                        : "bg-stone-100 hover:bg-stone-200 text-[#2C1810]"
+                    }`}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-7 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+          <div className="mb-4">
+            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Historial de Asistencia de Turnos</h3>
+            <p className="text-xs text-[#2C1810]/50">Registro auditado de fichajes en tiempo real.</p>
+          </div>
+
+          <div className="space-y-3 text-xs max-h-[420px] overflow-y-auto pr-1">
+            {attendanceLogs.length === 0 ? (
+              <div className="text-center py-10 text-stone-400 font-medium italic border border-dashed border-[#2C1810]/10 rounded-2xl">
+                No hay registros de fichaje de asistencia guardados aún.
+              </div>
+            ) : (
+              attendanceLogs.map((log, idx) => (
+                <div key={idx} className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <strong className="text-xs font-bold text-[#2C1810] block">{log.userName}</strong>
+                    <span className="text-[10px] text-[#2C1810]/50 block">Entrada: {new Date(log.clockIn).toLocaleString("es-AR")}</span>
+                    {log.clockOut && (
+                      <span className="text-[10px] text-emerald-700 font-bold block">Salida: {new Date(log.clockOut).toLocaleString("es-AR")}</span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase ${log.clockOut ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}>
+                      {log.clockOut ? `Turno: ${log.hours} hs` : "En Turno Activo"}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   const renderInventario = () => {
     const totalInsumosCount = insumos.length;
     const criticalInsumosCount = insumos.filter(i => i.quantity <= i.minLimit / 2).length;
@@ -2050,7 +2270,8 @@ export default function AdminHub({
           {[
             { id: "general", label: "📋 Vista General" },
             { id: "ciegas", label: "👁️ Auditoría a Ciegas (US-2.1)" },
-            { id: "comparador", label: "📊 Comparador de Presupuestos (US-2.2)" }
+            { id: "comparador", label: "📊 Comparador de Presupuestos (US-2.2)" },
+            { id: "analitica", label: "📈 Analítica de Consumo Real" }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2180,6 +2401,10 @@ export default function AdminHub({
 
         {inventarioSubTab === "comparador" && (
           <div className="animate-fade-in">{renderBudgetComparator()}</div>
+        )}
+
+        {inventarioSubTab === "analitica" && (
+          <div className="animate-fade-in">{renderStockAnalytics()}</div>
         )}
       </motion.div>
     );
@@ -4431,6 +4656,7 @@ export default function AdminHub({
           <div className="flex gap-1.5 bg-[#2C1810]/5 p-1 rounded-xl">
             {[
               { id: "barista", label: "Calibración" },
+              { id: "asistencia", label: "⏱️ Fichajes" },
               { id: "consumo", label: "Mesa Colaborador" },
               { id: "profit", label: "Profit-Sharing" },
               { id: "cuentas", label: "Cuentas y Accesos" }
@@ -5214,6 +5440,8 @@ export default function AdminHub({
               </div>
             </motion.div>
           )}
+
+          {personalSubTab === "asistencia" && renderAttendance()}
           </AnimatePresence>
         </motion.div>
       );

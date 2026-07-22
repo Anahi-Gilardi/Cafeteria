@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "./lib/supabase";
 import LoginScreen from "./components/LoginScreen";
 import KitchenDisplay from "./components/KitchenDisplay";
+import SalonMap from "./components/SalonMap";
 
 interface ToastNotification {
   id: string;
@@ -696,6 +697,18 @@ export default function App() {
                 onShowNotification={showNotification}
                 orders={orders}
                 menuItems={menuItems}
+              />
+            )}
+
+            {activeTab === "salon" && (
+              <SalonMap
+                orders={orders}
+                activeBookings={bookings}
+                onSelectTableForOrder={(tableNumber) => {
+                  setActiveTab("menu");
+                  setIsCartOpen(true);
+                }}
+                onShowNotification={showNotification}
               />
             )}
 
