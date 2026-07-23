@@ -491,6 +491,234 @@ export const MENU_ITEMS: MenuItem[] = [
     stock: 20,
     isOffer: true,
     offerPrice: 8.50
+  },
+
+  // RESTAURANT STARTERS (Entradas & Tapeos)
+  {
+    id: "rest-empanada-carne",
+    name: "Empanada Criolla Cortada a Cuchillo",
+    price: 3.50,
+    takeawayPrice: 3.10,
+    deliveryPrice: 3.90,
+    description: "Receta tradicional salteña. Carne de lomo cortada a cuchillo, cebolla de verdeo, huevo duro y aceitunas, frita en grasa de pella crocante.",
+    category: "starters",
+    tags: ["Recomendado", "Artesanal"],
+    image: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 240, allergens: ["Gluten"] },
+    stock: 50,
+    station: "cocina_caliente",
+    recipe: [
+      { ingredientId: "ins-carne-lomo", amount: 0.12 },
+      { ingredientId: "ins-harina", amount: 0.05 }
+    ]
+  },
+  {
+    id: "rest-provolone-chapa",
+    name: "Provolone Crocante a la Chapa",
+    price: 7.90,
+    takeawayPrice: 7.00,
+    deliveryPrice: 8.90,
+    description: "Queso provolone estacionado dorado a la chapa de hierro con ají molido, orégano de montaña y un hilo de aceite de oliva de girasoles.",
+    category: "starters",
+    tags: ["Especial", "Parrilla"],
+    image: "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 380, allergens: ["Lácteos"] },
+    stock: 30,
+    station: "parrilla"
+  },
+  {
+    id: "rest-rabas-mar",
+    name: "Rabas Crocantes con Alioli de Limón",
+    price: 11.50,
+    takeawayPrice: 10.30,
+    deliveryPrice: 12.90,
+    description: "Anillos de calamar fresco rebozados en tempura de panko, servidos crujientes con alioli casero de ajos asados y gajos de limón criollo.",
+    category: "starters",
+    tags: ["Mar del Plata"],
+    image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 420, allergens: ["Mariscos", "Gluten"] },
+    stock: 20,
+    station: "cocina_caliente"
+  },
+
+  // RESTAURANT MAIN DISHES (Platos Principales)
+  {
+    id: "rest-bife-chorizo",
+    name: "Bife de Chorizo Premium (350g) a las Brasas",
+    price: 18.50,
+    takeawayPrice: 16.50,
+    deliveryPrice: 20.90,
+    description: "Corte noble de ternera patagónica a la parrilla con leña de quebracho. Servido con chimichurri casero, sal marina en escamas y la guarnición a tu elección.",
+    category: "mains",
+    tags: ["Parrilla", "Destacado"],
+    image: "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 650, allergens: [] },
+    stock: 25,
+    station: "parrilla",
+    recipe: [
+      { ingredientId: "ins-bife-chorizo", amount: 0.35 },
+      { ingredientId: "ins-papas", amount: 0.25 }
+    ]
+  },
+  {
+    id: "rest-milanesa-napolitana",
+    name: "Milanesa de Ternera Gigante a la Napolitana",
+    price: 15.90,
+    takeawayPrice: 14.20,
+    deliveryPrice: 17.90,
+    description: "Tradición pura argentina: milanesa dorada cubierta con salsa concassé de tomates frescos, jamón cocido de campo, queso mozzarella gratado y orégano.",
+    category: "mains",
+    tags: ["Minutas", "Favorito"],
+    image: "https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 720, allergens: ["Gluten", "Lácteos"] },
+    stock: 35,
+    station: "cocina_caliente"
+  },
+  {
+    id: "rest-sorrentinos-jamon-queso",
+    name: "Sorrentinos Caseros de Jamón y Queso",
+    price: 14.20,
+    takeawayPrice: 12.80,
+    deliveryPrice: 15.90,
+    description: "Masa fresca elaborada con yemas de huevo de campo. Rellenos con jamón horneado artesanal y reggianito madurado. Servidos con salsa tuco o rosa.",
+    category: "mains",
+    tags: ["Pastas", "Artesanal"],
+    image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 580, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 30,
+    station: "cocina_caliente"
+  },
+  {
+    id: "rest-salmon-vegetales",
+    name: "Salmón Rosado con Manteca de Hierbas y Vegetales",
+    price: 21.00,
+    takeawayPrice: 18.90,
+    deliveryPrice: 23.50,
+    description: "Medallón de salmón rosado sellado a la plancha con emulsión de manteca a las finas hierbas y acompañamiento de vegetales salteados al wok.",
+    category: "mains",
+    tags: ["Pesca", "Gourmet"],
+    image: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 490, allergens: ["Pescado", "Lácteos"] },
+    stock: 15,
+    station: "cocina_caliente"
+  },
+
+  // RESTAURANT DESSERTS (Postres)
+  {
+    id: "rest-flan-mixto",
+    name: "Flan Casero de Yemas con Dulce y Crema",
+    price: 6.20,
+    takeawayPrice: 5.50,
+    deliveryPrice: 6.90,
+    description: "Flan clásico elaborado con 8 yemas, leche entera batida y caramelo rubio. Acompañado de dulce de leche colonial y crema chantilly fresca.",
+    category: "desserts",
+    tags: ["Tradicional", "Postre"],
+    image: "https://images.unsplash.com/photo-1528975604071-b4dc52a2d18c?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 340, allergens: ["Lácteos", "Huevo"] },
+    stock: 40,
+    station: "cocina_fria"
+  },
+  {
+    id: "rest-volcan-chocolate",
+    name: "Volcán de Chocolate con Helado de Crema",
+    price: 7.80,
+    takeawayPrice: 7.00,
+    deliveryPrice: 8.80,
+    description: "Biscocho tibio de chocolate amargo 70% cacao con centro líquido derretido y una bocha de helado de crema americana pura.",
+    category: "desserts",
+    tags: ["Especial", "Chef"],
+    image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 480, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 25,
+    station: "cocina_fria"
+  },
+  {
+    id: "rest-tiramisu-puglia",
+    name: "Tiramisú Puglia al Mascarpone",
+    price: 7.50,
+    takeawayPrice: 6.70,
+    deliveryPrice: 8.40,
+    description: "Vainillas artesanales embebidas en café espresso corto y licor Amaretto, intercaladas con crema suave de mascarpone y espolvoreado de cacao amargo.",
+    category: "desserts",
+    tags: ["Italiano", "Recomendado"],
+    image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 410, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 30,
+    station: "cocina_fria"
+  },
+
+  // RESTAURANT DRINKS (Bebidas, Vinos & Coctelería)
+  {
+    id: "rest-vino-malbec-reserva",
+    name: "Vino Malbec Don Pablo Reserva (750ml)",
+    price: 19.50,
+    takeawayPrice: 17.50,
+    deliveryPrice: 21.90,
+    description: "Malbec de la comarca de Luján de Cuyo con 12 meses de crianza en roble francés. Notas a ciruelas maduras, vainilla y taninos aterciopelados.",
+    category: "drinks",
+    tags: ["Vino", "Reserva"],
+    image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 180, allergens: ["Sulfitos"] },
+    stock: 50,
+    station: "barra_tragos"
+  },
+  {
+    id: "rest-aperol-spritz",
+    name: "Coctel Aperol Spritz de Autor",
+    price: 7.50,
+    takeawayPrice: 6.80,
+    deliveryPrice: 8.50,
+    description: "El icónico aperitivo italiano: Aperol, espumante Prosecco extra dry, soda de sifón artesanal y media rodaja de naranja fresca con hielo de roca.",
+    category: "drinks",
+    tags: ["Coctelería", "Aperitivo"],
+    image: "https://images.unsplash.com/photo-1560512823-829485b8bf24?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 150, allergens: [] },
+    stock: 60,
+    station: "barra_tragos"
+  },
+  {
+    id: "rest-cerveza-patagonia-ipa",
+    name: "Cerveza Tirada Patagonia IPA (Pinta 500ml)",
+    price: 5.50,
+    takeawayPrice: 4.90,
+    deliveryPrice: 6.20,
+    description: "Cerveza tirada fría de barril artesanal con lúpulos patagónicos. Amargor característico con intensas notas cítricas y a frutos tropicales.",
+    category: "drinks",
+    tags: ["Cerveza Tirada"],
+    image: "https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 210, allergens: ["Gluten"] },
+    stock: 100,
+    station: "barra_tragos"
+  },
+
+  // EXECUTIVE MENU PACKAGE ITEM
+  {
+    id: "rest-menu-ejecutivo-combo",
+    name: "⭐ Menú Ejecutivo del Día (Entrada + Principal + Bebida + Postre)",
+    price: 12.50,
+    takeawayPrice: 11.50,
+    deliveryPrice: 13.90,
+    description: "La propuesta de almuerzo completo del día. Incluye Entrada seleccionada, Plato Principal con guarnición, Bebida fría/vino y Postre casero o café.",
+    category: "executive",
+    tags: ["PROMO ALMUERZO", "Menú del Día"],
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 850, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 50,
+    station: "cocina_caliente"
   }
 ];
 

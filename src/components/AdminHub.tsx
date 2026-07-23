@@ -8,6 +8,8 @@ import {
   Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
+import { DailyExecutiveMenu } from "../types";
 import { supabase } from "../lib/supabase";
 
 interface AdminHubProps {
@@ -258,6 +260,21 @@ export default function AdminHub({
       return [];
     }
   });
+
+  const [weeklyMenus, setWeeklyMenus] = useState<DailyExecutiveMenu[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_custom_daily_menus");
+      return saved ? JSON.parse(saved) : DEFAULT_WEEKLY_MENUS;
+    } catch {
+      return DEFAULT_WEEKLY_MENUS;
+    }
+  });
+
+  const [selectedDayTab, setSelectedDayTab] = useState<DailyExecutiveMenu["dayOfWeek"]>("Lunes");
+
+  useEffect(() => {
+    localStorage.setItem("puglia_custom_daily_menus", JSON.stringify(weeklyMenus));
+  }, [weeklyMenus]);
 
   useEffect(() => {
     localStorage.setItem("puglia_audit_history", JSON.stringify(auditHistory));
@@ -2410,6 +2427,129 @@ export default function AdminHub({
     );
   };
 
+  const renderDailyMenuEditor = () => {
+    const activeMenu = weeklyMenus.find(m => m.dayOfWeek === selectedDayTab) || weeklyMenus[0];
+
+    const updateCurrentDayMenu = (updatedFields: Partial<DailyExecutiveMenu>) => {
+      const newList = weeklyMenus.map(m => m.dayOfWeek === selectedDayTab ? { ...m, ...updatedFields } : m);
+      setWeeklyMenus(newList);
+      onShowNotification(`⭐ Menú del ${selectedDayTab} actualizado en vivo.`, "success");
+    };
+
+    return (
+      <div className="space-y-6 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs text-[#2C1810]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+          <div>
+            <span className="text-[10px] font-black uppercase text-[#C2956E] tracking-widest block">Configuración de Rotación Diaria</span>
+            <h3 className="font-serif text-2xl font-bold">⭐ Pizarra & Menú Ejecutivo del Día</h3>
+            <p className="text-xs text-[#2C1810]/60 italic mt-0.5">
+              Personalice las opciones de Entrada, Principal, Bebida y Postre para cada día de la semana.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 bg-[#2C1810] text-white px-4 py-2 rounded-2xl text-xs font-mono font-bold">
+            <span>Precio Combo Cerrado:</span>
+            <input
+              type="number"
+              step="0.50"
+              value={activeMenu.price}
+              onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 12.50 })}
+              className="w-20 p-1 bg-white text-[#2C1810] rounded-lg text-center font-bold text-xs"
+            />
+          </div>
+        </div>
+
+        {/* Day of Week Selector Tabs */}
+        <div className="flex flex-wrap gap-2">
+          {(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] as const).map((day) => (
+            <button
+              key={day}
+              type="button"
+              onClick={() => setSelectedDayTab(day)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedDayTab === day
+                  ? "bg-[#2C1810] text-[#FDFBF7] shadow-sm font-black"
+                  : "bg-stone-100 text-[#2C1810]/70 hover:bg-stone-200"
+              }`}
+            >
+              {day}
+            </button>
+          ))}
+        </div>
+
+        {/* Active Menu Detail Form */}
+        <div className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase text-[#2C1810]/60 block mb-1">Título del Menú ({selectedDayTab})</label>
+              <input
+                type="text"
+                value={activeMenu.title}
+                onChange={(e) => updateCurrentDayMenu({ title: e.target.value })}
+                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs font-bold focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase text-[#2C1810]/60 block mb-1">Descripción Gourmet del Día</label>
+              <input
+                type="text"
+                value={activeMenu.description}
+                onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
+                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs font-semibold focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+            {/* Starters */}
+            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🥟 Entradas (Línea por opción)</span>
+              <textarea
+                rows={4}
+                value={activeMenu.starters.join("\n")}
+                onChange={(e) => updateCurrentDayMenu({ starters: e.target.value.split("\n").filter(s => s.trim() !== "") })}
+                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+              />
+            </div>
+
+            {/* Mains */}
+            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🥩 Platos Principales</span>
+              <textarea
+                rows={4}
+                value={activeMenu.mains.join("\n")}
+                onChange={(e) => updateCurrentDayMenu({ mains: e.target.value.split("\n").filter(s => s.trim() !== "") })}
+                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+              />
+            </div>
+
+            {/* Drinks */}
+            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🍷 Bebidas Incluidas</span>
+              <textarea
+                rows={4}
+                value={activeMenu.drinks.join("\n")}
+                onChange={(e) => updateCurrentDayMenu({ drinks: e.target.value.split("\n").filter(s => s.trim() !== "") })}
+                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+              />
+            </div>
+
+            {/* Desserts */}
+            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🍰 Postres o Café</span>
+              <textarea
+                rows={4}
+                value={activeMenu.desserts.join("\n")}
+                onChange={(e) => updateCurrentDayMenu({ desserts: e.target.value.split("\n").filter(s => s.trim() !== "") })}
+                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrecios = () => {
     const currentItem = selectedMenuProduct || menuItems[0];
     if (!currentItem) return <div>Cargando catálogo...</div>;
@@ -2431,18 +2571,27 @@ export default function AdminHub({
         </div>
 
         <div className="flex border-b border-[#2C1810]/10 gap-2 mb-6">
-          {["todos", "coffee", "pastry"].map((cat) => (
+          {[
+            { id: "todos", label: "Todos" },
+            { id: "menu_diario", label: "⭐ Menú Ejecutivo & Rotación Diaria" },
+            { id: "coffee", label: "☕ Cafetería" },
+            { id: "pastry", label: "🍰 Pastelería" }
+          ].map((cat) => (
             <button 
-              key={cat}
-              onClick={() => setSelectedPosCategory(cat)}
+              key={cat.id}
+              onClick={() => setSelectedPosCategory(cat.id)}
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                selectedPosCategory === cat ? "border-[#C2956E] text-[#2C1810] font-black" : "border-transparent text-[#2C1810]/50 hover:text-[#2C1810]"
+                selectedPosCategory === cat.id ? "border-[#C2956E] text-[#2C1810] font-black" : "border-transparent text-[#2C1810]/50 hover:text-[#2C1810]"
               }`}
             >
-              {cat === "todos" ? "Todos" : cat === "coffee" ? "☕ Cafetería" : "🍰 Pastelería"}
+              {cat.label}
             </button>
           ))}
         </div>
+
+        {selectedPosCategory === "menu_diario" ? (
+          renderDailyMenuEditor()
+        ) : (
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
@@ -2891,6 +3040,7 @@ export default function AdminHub({
             </div>
           </div>
         </div>
+        )}
       </motion.div>
     );
   };

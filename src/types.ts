@@ -5,8 +5,8 @@ export interface MenuItem {
   takeawayPrice?: number; // Discounted for takeaway
   deliveryPrice?: number; // Marked up for third-party apps
   description: string;
-  category: "coffee" | "traditional" | "cold" | "bakery" | "brunch";
-  tags: string[]; // e.g. "Vegano", "Sin Gluten", "Especial"
+  category: "coffee" | "traditional" | "cold" | "bakery" | "brunch" | "starters" | "mains" | "desserts" | "drinks" | "sides" | "executive";
+  tags: string[]; // e.g. "Vegano", "Sin Gluten", "Especial", "Parrilla", "Pastas"
   image: string;
   customizable: boolean;
   nutrition: {
@@ -20,6 +20,7 @@ export interface MenuItem {
     ingredientId: string;
     amount: number; // e.g. grams or ml
   }[];
+  station?: "parrilla" | "cocina_caliente" | "cocina_fria" | "barra_tragos" | "barista";
 }
 
 export interface MenuItemCustomization {
@@ -29,6 +30,28 @@ export interface MenuItemCustomization {
   warmed?: boolean;
   extras?: string[];
   priceList?: "Salon" | "Takeaway" | "Delivery"; // Selected price list channel
+  cookingPoint?: "Jugoso" | "A punto" | "Bien cocido";
+  sideDish?: string;
+  courseStep?: "1° Paso" | "2° Paso" | "3° Paso";
+  specialInstructions?: string;
+  executiveChoices?: {
+    starter?: string;
+    main?: string;
+    drink?: string;
+    dessert?: string;
+  };
+}
+
+export interface DailyExecutiveMenu {
+  dayOfWeek: "Lunes" | "Martes" | "Miércoles" | "Jueves" | "Viernes" | "Sábado" | "Domingo";
+  title: string;
+  description: string;
+  price: number;
+  starters: string[];
+  mains: string[];
+  drinks: string[];
+  desserts: string[];
+  active: boolean;
 }
 
 export interface CartItem {

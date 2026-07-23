@@ -43,6 +43,7 @@ export default function CartDrawer({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [tipPercent, setTipPercent] = useState<number>(10);
   const [customTip, setCustomTip] = useState<string>("");
+  const [splitDinersCount, setSplitDinersCount] = useState<number>(1);
 
   // Helper function to resolve price list channel base price
   const getBaseItemPrice = (menuItem: any, list: "Salon" | "Takeaway" | "Delivery") => {
@@ -185,6 +186,9 @@ export default function CartDrawer({
         id: "order-" + Date.now(),
         items: cartItems.map(item => {
           const parts: string[] = [];
+          if (item.customization.courseStep) parts.push(`📌 ${item.customization.courseStep}`);
+          if (item.customization.cookingPoint) parts.push(`🔥 Punto: ${item.customization.cookingPoint}`);
+          if (item.customization.sideDish) parts.push(`🥔 Guarnición: ${item.customization.sideDish}`);
           if (item.customization.size) parts.push(`Tam: ${item.customization.size}`);
           if (item.customization.milk) parts.push(item.customization.milk);
           if (item.customization.sweetness) parts.push(`Dulce: ${item.customization.sweetness}`);
@@ -192,10 +196,17 @@ export default function CartDrawer({
           if (item.customization.extras) {
             parts.push(...item.customization.extras);
           }
+          if (item.customization.specialInstructions) {
+            parts.push(`📝 Note: ${item.customization.specialInstructions}`);
+          }
+          if (item.customization.executiveChoices) {
+            const ex = item.customization.executiveChoices;
+            parts.push(`1° Entrada: ${ex.starter || '-'} | 2° Principal: ${ex.main || '-'} | 3° Bebida: ${ex.drink || '-'} | 4° Postre: ${ex.dessert || '-'}`);
+          }
           return {
             name: item.menuItem.name,
             quantity: item.quantity,
-            customizationSummary: parts.join(", "),
+            customizationSummary: parts.join(" • "),
             price: getItemPriceWithCustomizations(item, activePriceList)
           };
         }),

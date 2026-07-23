@@ -11,11 +11,20 @@ interface KitchenDisplayProps {
 export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate }: KitchenDisplayProps) {
   const [selectedItemForRecipe, setSelectedItemForRecipe] = useState<MenuItem | null>(null);
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
-  const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina">("all");
+  const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos">("all");
   const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
 
-  const getItemDestination = (name: string): "barra" | "cocina" => {
+  const getItemDestination = (name: string): "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos" => {
     const n = name.toLowerCase();
+    if (n.includes("bife") || n.includes("entraña") || n.includes("provolone") || n.includes("parrilla") || n.includes("asado") || n.includes("chorizo") || n.includes("bondiola")) {
+      return "parrilla";
+    }
+    if (n.includes("flan") || n.includes("tiramisú") || n.includes("volcán") || n.includes("ensalada") || n.includes("bruschetta")) {
+      return "cocina_fria";
+    }
+    if (n.includes("vino") || n.includes("aperol") || n.includes("cerveza") || n.includes("trago") || n.includes("coctel") || n.includes("spritz")) {
+      return "barra_tragos";
+    }
     if (
       n.includes("café") || n.includes("cafe") || n.includes("latte") || n.includes("flat") || 
       n.includes("espresso") || n.includes("cappuccino") || n.includes("macchiato") || 
@@ -132,11 +141,14 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         {/* Filter buttons */}
         <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
           {/* Workstation Selector */}
-          <div className="flex bg-[#2C1810] p-1.5 rounded-xl border border-[#D97706]/15">
+          <div className="flex flex-wrap bg-[#2C1810] p-1.5 rounded-xl border border-[#D97706]/15 gap-1">
             {[
               { id: "all", label: "Todos los Puestos" },
-              { id: "barra", label: "☕ Barra" },
-              { id: "cocina", label: "🍰 Cocina" }
+              { id: "parrilla", label: "🔥 Parrilla" },
+              { id: "cocina", label: "🍳 Cocina Caliente" },
+              { id: "cocina_fria", label: "🥗 Cocina Fría & Postres" },
+              { id: "barra_tragos", label: "🍸 Barra Tragos & Vinos" },
+              { id: "barra", label: "☕ Barista & Cafetería" }
             ].map((btn) => (
               <button
                 key={btn.id}

@@ -4,6 +4,8 @@ import { MenuItem, MenuItemCustomization } from "../types";
 import { Search, Info, Plus, ChevronRight, SlidersHorizontal, Check, Coffee, Flame, Leaf } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
+import ExecutiveMenuModal from "./ExecutiveMenuModal";
+
 interface InteractiveMenuProps {
   onAddToBag: (item: MenuItem, customization: MenuItemCustomization) => void;
   menuItems?: MenuItem[];
@@ -13,6 +15,7 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [isExecutiveModalOpen, setIsExecutiveModalOpen] = useState<boolean>(false);
   
   // Customization Modal State
   const [customizingItem, setCustomizingItem] = useState<MenuItem | null>(null);
@@ -24,11 +27,16 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
 
   // Category Configuration
   const categories = [
-    { id: "all", label: "Todo el Menú", emoji: "☕" },
+    { id: "all", label: "Todo el Menú", emoji: "🍽️" },
+    { id: "executive", label: "⭐ Menú Ejecutivo del Día", emoji: "🍷" },
+    { id: "starters", label: "Entradas & Tapeos", emoji: "🥟" },
+    { id: "mains", label: "Platos Principales", emoji: "🥩" },
+    { id: "desserts", label: "Postres del Chef", emoji: "🍰" },
+    { id: "drinks", label: "Bebidas, Vinos & Tragos", emoji: "🍸" },
     { id: "coffee", label: "Especialidades Porteñas", emoji: "✨" },
     { id: "traditional", label: "Cafés de Siempre", emoji: "☕" },
-    { id: "cold", label: "Bebidas Frías", emoji: "❄️" },
-    { id: "bakery", label: "Facturas y Alfajores", emoji: "🥐" },
+    { id: "cold", label: "Cafés e Infusiones Frías", emoji: "❄️" },
+    { id: "bakery", label: "Facturas y Dulces", emoji: "🥐" },
     { id: "brunch", label: "Tostados y Desayunos", emoji: "🥪" },
   ];
 
@@ -68,6 +76,10 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
 
   // Open customization modal
   const handleOpenCustomization = (item: MenuItem) => {
+    if (item.category === "executive") {
+      setIsExecutiveModalOpen(true);
+      return;
+    }
     setCustomizingItem(item);
     setCustomSize("M");
     setCustomMilk("Regular");
@@ -520,6 +532,25 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
           </div>
         )}
       </AnimatePresence>
+
+      <ExecutiveMenuModal
+        isOpen={isExecutiveModalOpen}
+        onClose={() => setIsExecutiveModalOpen(false)}
+        onConfirm={(cust, totalComboPrice) => {
+          const execItem = menuItems.find(m => m.category === "executive") || MENU_ITEMS.find(m => m.category === "executive") || {
+            id: "rest-menu-ejecutivo-combo",
+            name: "⭐ Menú Ejecutivo del Día (Entrada + Principal + Bebida + Postre)",
+            price: totalComboPrice,
+            description: "Combo Ejecutivo del Día desglosado.",
+            category: "executive" as any,
+            tags: ["PROMO ALMUERZO"],
+            image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
+            customizable: true,
+            nutrition: { calories: 850, allergens: ["Gluten"] }
+          };
+          onAddToBag(execItem, cust);
+        }}
+      />
     </div>
   );
 }
