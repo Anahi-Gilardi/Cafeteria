@@ -375,10 +375,12 @@ export default function TicketPreviewModal({
   // Generate plain-text file download simulating a high fidelity virtual PDF/Ticket download
   const handleDownloadPDF = () => {
     let text = `================================================\n`;
-    text += `                CAFÉ PUGLIA\n`;
-    text += `       Manual Operativo e Ingeniería de Procesos\n`;
-    text += `       Calle 50 nro 600, La Plata, Buenos Aires\n`;
-    text += `       CUIT: 30-11223344-9 - IVA Resp. Inscripto\n`;
+    text += `           RESTO BAR DEL TEATRO\n`;
+    text += `   Constitución 944 (Frente Teatro Municipal)\n`;
+    text += `      Río Cuarto, Provincia de Córdoba\n`;
+    text += `       Tel: 358 5042311 / 358 4651847\n`;
+    text += `       Instagram: @restobardelteatro_rio4\n`;
+    text += `       CUIT: 30-71234567-8 - IVA Resp. Inscripto\n`;
     text += `================================================\n`;
     text += `FECHA: ${new Date(order.createdAt).toLocaleString("es-AR")}\n`;
     text += `TIENDA: Sucursal Central La Plata\n`;
@@ -814,14 +816,13 @@ export default function TicketPreviewModal({
                 <div className="absolute bottom-0 left-0 right-0 h-2 bg-stone-100" style={{ backgroundImage: "linear-gradient(-45deg, white 4px, transparent 0), linear-gradient(45deg, white 4px, transparent 0)", backgroundSize: "8px 8px" }} />
 
                 <div className="text-center mb-4 leading-normal">
-                  <h5 className="font-bold text-sm tracking-tight m-0">CAFÉ PUGLIA</h5>
+                  <h5 className="font-bold text-sm tracking-tight m-0 uppercase">RESTO BAR DEL TEATRO</h5>
                   <p className="text-[9px] text-stone-600 m-0 leading-tight">
-                    Café de Especialidad y Pastelería<br />
-                    Calle 50 nro 600, La Plata<br />
-                    IVA Responsable Inscripto<br />
-                    CUIT: 30-11223344-9<br />
-                    Ing. Brutos: Convenio Multilateral<br />
-                    Inicio de Actividades: 01/03/2026
+                    Constitución 944 (Frente al Teatro)<br />
+                    Río Cuarto, Córdoba<br />
+                    Tel: 358 5042311 / 4651847<br />
+                    IG: @restobardelteatro_rio4<br />
+                    CUIT: 30-71234567-8 • IVA Resp. Inscripto
                   </p>
                 </div>
 
@@ -934,8 +935,8 @@ export default function TicketPreviewModal({
 
                 <div className="text-center text-[8px] text-stone-500 mt-4 pt-3 border-t border-dashed border-stone-400">
                   ¡Gracias por su visita!<br />
-                  Café Puglia - La Plata<br />
-                  Hospitalidad & Excelencia
+                  Resto Bar Del Teatro • Río Cuarto<br />
+                  Constitución 944 (Frente al Teatro Municipal)
                 </div>
               </div>
 

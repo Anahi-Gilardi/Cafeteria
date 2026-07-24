@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import RestoBarLogo from "./RestoBarLogo";
 import { MenuItem, Table } from "../types";
 import { TABLES_DATA } from "../data/menu";
 import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils } from "lucide-react";
@@ -213,16 +214,18 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
             </div>
 
             {/* Simulated App Header inside Phone */}
-            <div className="bg-espresso text-white pt-9 pb-5 px-5 text-center relative z-20 border-b border-coffee">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-mono tracking-wider text-caramel">PUGLIA DIGITAL</span>
+            <div className="bg-[#2C1810] text-white pt-9 pb-5 px-5 text-center relative z-20 border-b border-[#C2956E]/20">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[9px] font-mono tracking-wider text-[#F59E0B]">CARTA DIGITAL</span>
                 <span className="text-[9px] bg-emerald-600 px-2 py-0.5 rounded-full text-white font-bold animate-pulse">
                   CONEXIÓN MESA
                 </span>
               </div>
-              <h2 className="font-serif text-xl font-bold tracking-tight italic">Café Puglia</h2>
-              <p className="text-[10px] text-paper/60 mt-1">
-                Atendido con calidez • Sentado en: <strong className="text-caramel">{tableDetails?.name}</strong>
+              <div className="flex justify-center mb-2">
+                <RestoBarLogo size="md" />
+              </div>
+              <p className="text-[10px] text-white/70 mt-1">
+                Constitución 944 (Frente al Teatro) • Sentado en: <strong className="text-[#F59E0B] font-bold">{tableDetails?.name}</strong>
               </p>
             </div>
 

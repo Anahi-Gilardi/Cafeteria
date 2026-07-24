@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
+import RestoBarLogo from "./RestoBarLogo";
 import { Coffee, Key, User, ShieldAlert, Eye, EyeOff } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
@@ -241,12 +242,11 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
       <div className="w-full max-w-md bg-white border border-[#2C1810]/10 rounded-3xl p-8 shadow-2xl relative z-10 transition-all flex flex-col justify-between min-h-[580px]">
         
         {/* Logo and title */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#2C1810] text-[#FDFBF7] mb-3 shadow-md">
-            <Coffee className="h-7 w-7" />
+        <div className="flex flex-col items-center justify-center text-center mb-6">
+          <RestoBarLogo size="xl" />
+          <div className="mt-3 text-[10px] text-[#2C1810]/70 uppercase tracking-widest font-bold bg-amber-50 border border-amber-200/60 px-3 py-1 rounded-full">
+            📍 CONSTITUCIÓN 944 • Río Cuarto | 📞 358 5042311
           </div>
-          <h1 className="font-serif text-2xl font-black tracking-tight text-[#2C1810]">Café Puglia</h1>
-          <p className="text-[10px] text-[#2C1810]/50 uppercase tracking-widest font-bold mt-1">Plataforma SaaS de Gestión</p>
         </div>
 
         {/* Tab Selector */}

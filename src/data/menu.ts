@@ -708,9 +708,9 @@ export const MENU_ITEMS: MenuItem[] = [
   {
     id: "rest-menu-ejecutivo-combo",
     name: "⭐ Menú Ejecutivo del Día (Entrada + Principal + Bebida + Postre)",
-    price: 12.50,
-    takeawayPrice: 11.50,
-    deliveryPrice: 13.90,
+    price: 8000,
+    takeawayPrice: 7500,
+    deliveryPrice: 8500,
     description: "La propuesta de almuerzo completo del día. Incluye Entrada seleccionada, Plato Principal con guarnición, Bebida fría/vino y Postre casero o café.",
     category: "executive",
     tags: ["PROMO ALMUERZO", "Menú del Día"],

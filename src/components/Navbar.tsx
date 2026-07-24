@@ -1,5 +1,6 @@
 import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll, LogOut, ChevronLeft, LayoutDashboard, Table } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import RestoBarLogo from "./RestoBarLogo";
 
 interface NavbarProps {
   activeTab: string;
@@ -64,8 +65,7 @@ export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick
                     className="cursor-pointer" 
                     onClick={() => { setActiveTab("inicio"); }}
                   >
-                    <span className="font-serif text-2xl font-bold tracking-tight text-white block">Café Puglia</span>
-                    <span className="text-[9px] uppercase tracking-widest text-[#C2956E] font-semibold block mt-0.5">SPECIALTY COFFEE • MAR DEL PLATA</span>
+                    <RestoBarLogo size="md" />
                   </div>
 
                   <button
