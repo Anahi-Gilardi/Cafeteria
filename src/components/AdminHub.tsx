@@ -227,6 +227,23 @@ export default function AdminHub({
     ivaCondition: "Consumidor Final"
   });
 
+  // Standalone Manual ARCA Invoicing State
+  const [isManualArcaModalOpen, setIsManualArcaModalOpen] = useState<boolean>(false);
+  const [manualInvoiceType, setManualInvoiceType] = useState<"Factura A" | "Factura B" | "Factura C" | "Comprobante M">("Factura B");
+  const [manualCustomerInfo, setManualCustomerInfo] = useState<FiscalCustomerInfo>({
+    cuitOrDni: "20345678901",
+    nameOrReason: "Cliente Ejemplo S.A.",
+    ivaCondition: "Consumidor Final"
+  });
+  const [manualPaymentMethod, setManualPaymentMethod] = useState<string>("Efectivo");
+  const [manualItems, setManualItems] = useState<{ description: string; qty: number; unitPrice: number; ivaPct: number }[]>([
+    { description: "Servicio Gastronómico / Consumo General", qty: 1, unitPrice: 12500, ivaPct: 21 }
+  ]);
+
+  // Mixed Payment Amounts State
+  const [mixedCashAmount, setMixedCashAmount] = useState<string>("");
+  const [mixedDigitalAmount, setMixedDigitalAmount] = useState<string>("");
+
   useEffect(() => {
     const handleUpdate = () => {
       setPendingWaiterCalls(WaiterCallService.getPendingCalls());
@@ -1567,6 +1584,87 @@ export default function AdminHub({
 
     onShowNotification(
       `✅ Factura ARCA (${fiscalDetails.invoiceType}) emitida con éxito. CAE: ${fiscalDetails.cae}.`,
+      "success"
+    );
+  };
+
+  const handleEmitManualArcaInvoice = async () => {
+    const val = ArcaBillingService.validateCuitOrDni(manualCustomerInfo.cuitOrDni);
+    if (!val.isValid) {
+      onShowNotification(`⚠️ ${val.message}`, "warning");
+      return;
+    }
+
+    if (manualItems.length === 0) {
+      onShowNotification("⚠️ Debe agregar al menos un concepto a facturar.", "warning");
+      return;
+    }
+
+    const totalSub = manualItems.reduce((acc, it) => acc + (it.unitPrice * it.qty), 0);
+    if (totalSub <= 0) {
+      onShowNotification("⚠️ El importe total a facturar debe ser mayor a $0.", "warning");
+      return;
+    }
+
+    const dummyId = `FAC-MAN-${Math.floor(100000 + Math.random() * 900000)}`;
+    const dummyOrder: Order = {
+      id: dummyId,
+      items: manualItems.map(it => ({
+        name: it.description,
+        quantity: it.qty,
+        price: it.unitPrice,
+        customizationSummary: ""
+      })),
+      subtotal: totalSub,
+      tax: parseFloat((totalSub - totalSub / 1.21).toFixed(2)),
+      total: totalSub,
+      type: "Mesa",
+      priceList: "Salon",
+      status: "Completado",
+      createdAt: new Date().toISOString(),
+      estimatedMinutes: 0,
+      paymentMethod: manualPaymentMethod as any
+    };
+
+    const fiscalDetails = ArcaBillingService.generateArcaInvoice(dummyOrder, manualCustomerInfo);
+    fiscalDetails.invoiceType = (manualInvoiceType.split(" ")[1] || "B") as any;
+
+    const updatedOrder: Order = {
+      ...dummyOrder,
+      fiscal: fiscalDetails
+    };
+
+    ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
+
+    const itemsRows = manualItems.map(it => 
+      `<tr><td>${it.qty}x</td><td>${it.description.slice(0, 20)}</td><td class="right">$${(it.unitPrice * it.qty).toLocaleString("es-AR")}</td></tr>`
+    ).join("");
+
+    const thermalHtml = `
+      <h2>RESTO BAR DEL TEATRO</h2>
+      <div class="center">Constitución 944 • Río Cuarto</div>
+      <div class="center">FACTURA MANUAL ${fiscalDetails.invoiceType} - N° ${fiscalDetails.invoiceNumber}</div>
+      <div class="center">CAE: ${fiscalDetails.cae} (Vto: ${fiscalDetails.caeExpiration})</div>
+      <div class="line"></div>
+      <div>Cliente: ${fiscalDetails.customerName}</div>
+      <div>CUIT/DNI: ${fiscalDetails.customerCuit}</div>
+      <div>Pago: ${manualPaymentMethod}</div>
+      <div class="line"></div>
+      <table>
+        <tr><th>Cant</th><th>Concepto</th><th class="right">Total</th></tr>
+        ${itemsRows}
+      </table>
+      <div class="double-line"></div>
+      <h3 class="right">TOTAL FACTURADO: $${totalSub.toLocaleString("es-AR")}</h3>
+      <div class="line"></div>
+      <div class="center italic">Comprobante Autorizado por ARCA (ex-AFIP)</div>
+    `;
+
+    ThermalPrinterService.printRawText(thermalHtml, `Factura_Manual_ARCA_${fiscalDetails.invoiceType}`);
+
+    setIsManualArcaModalOpen(false);
+    onShowNotification(
+      `✅ Factura Manual ARCA (${fiscalDetails.invoiceType}) emitida con éxito. CAE: ${fiscalDetails.cae}.`,
       "success"
     );
   };
@@ -3666,7 +3764,13 @@ export default function AdminHub({
               <p className="text-[10px] text-[#FDFBF7]/70 font-semibold mt-0.5">Gestor de comprobantes de salón • Resto Bar Del Teatro</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={() => setIsManualArcaModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider gold-glow shadow-md"
+            >
+              <Plus className="h-3.5 w-3.5" /> ➕ FACTURACIÓN MANUAL ARCA
+            </button>
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37] hover:text-white hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
@@ -4044,8 +4148,10 @@ export default function AdminHub({
                       <div className="grid grid-cols-2 gap-2.5">
                         {[
                           { id: "Efectivo", label: "💵 Efectivo" },
-                          { id: "Tarjeta", label: "💳 Tarjeta (Cupón)" },
-                          { id: "MercadoPago", label: "📱 MercadoPago" },
+                          { id: "MercadoPago", label: "📱 Mercado Pago / QR" },
+                          { id: "Tarjeta Débito", label: "💳 Tarjeta Débito" },
+                          { id: "Tarjeta Crédito", label: "💳 Tarjeta Crédito" },
+                          { id: "Pago Mixto", label: "🔀 Pago Mixto" },
                           { id: "Fiado / Cta Cte", label: "🤝 Cta Cte / Fiado" }
                         ].map(m => (
                           <button
@@ -4085,7 +4191,32 @@ export default function AdminHub({
                         </div>
                       )}
 
-                      {paymentMethod === "Tarjeta" && (
+                      {paymentMethod === "Pago Mixto" && (
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                          <div>
+                            <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Monto en Efectivo ($)</label>
+                            <input 
+                              type="number" 
+                              placeholder="ej: 5000" 
+                              value={mixedCashAmount}
+                              onChange={(e) => setMixedCashAmount(e.target.value)}
+                              className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FFDF00] font-bold font-mono outline-none" 
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Monto Digital / QR ($)</label>
+                            <input 
+                              type="number" 
+                              placeholder="ej: 7500" 
+                              value={mixedDigitalAmount}
+                              onChange={(e) => setMixedDigitalAmount(e.target.value)}
+                              className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FFDF00] font-bold font-mono outline-none" 
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(paymentMethod === "Tarjeta Débito" || paymentMethod === "Tarjeta Crédito" || paymentMethod === "Tarjeta") && (
                         <div className="pt-1">
                           <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">POSNET Cupón Nro</label>
                           <input 
@@ -4220,7 +4351,26 @@ export default function AdminHub({
                       <td className="p-3 text-[#FDFBF7]/80 max-w-[200px] truncate">
                         {o.items.map(it => `${it.quantity}x ${it.name}`).join(", ")}
                       </td>
-                      <td className="p-3 font-bold text-[#FFDF00]">{o.paymentMethod || "Efectivo"}</td>
+                      <td className="p-3">
+                        <select
+                          value={o.paymentMethod || "Efectivo"}
+                          onChange={(e) => {
+                            const newMethod = e.target.value as any;
+                            if (onUpdateOrders) {
+                              onUpdateOrders(orders.map(item => item.id === o.id ? { ...item, paymentMethod: newMethod } : item));
+                            }
+                            onShowNotification(`✅ Método de pago de comanda #${o.id.slice(-6)} actualizado a ${newMethod}.`, "success");
+                          }}
+                          className="p-1.5 bg-[#1C120C] border border-[#D4AF37]/40 text-[#FFDF00] rounded-xl text-[10px] font-bold cursor-pointer outline-none hover:border-[#FFDF00]"
+                        >
+                          <option value="Efectivo">💵 Efectivo</option>
+                          <option value="MercadoPago">📱 MercadoPago / QR</option>
+                          <option value="Tarjeta Débito">💳 Tarjeta Débito</option>
+                          <option value="Tarjeta Crédito">💳 Tarjeta Crédito</option>
+                          <option value="Pago Mixto">🔀 Pago Mixto</option>
+                          <option value="Fiado / Cta Cte">🤝 Cta Cte / Fiado</option>
+                        </select>
+                      </td>
                       <td className="p-3 text-right font-mono font-bold text-[#D4AF37]">${o.total.toLocaleString()}</td>
                       <td className="p-3 text-center">
                         <button
@@ -7579,6 +7729,177 @@ export default function AdminHub({
                 className="w-full py-4 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:brightness-110 transition-all cursor-pointer gold-glow flex items-center justify-center gap-2"
               >
                 📋 EMITIR FACTURA ELECTRÓNICA & DESCARGAR PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Manual ARCA Invoicing Modal */}
+      {isManualArcaModalOpen && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/40 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col space-y-5 gold-glow custom-gold-scrollbar">
+            <button 
+              onClick={() => setIsManualArcaModalOpen(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="border-b border-[#D4AF37]/20 pb-3">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Facturación Electrónica Independiente</span>
+              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">➕ Generación Manual de Facturas ARCA</h4>
+            </div>
+
+            <div className="space-y-4">
+              {/* Sección 1: Tipo de Comprobante & Método de Pago */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                    Tipo de Comprobante *
+                  </label>
+                  <select
+                    value={manualInvoiceType}
+                    onChange={(e) => setManualInvoiceType(e.target.value as any)}
+                    className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FFDF00] font-bold outline-none cursor-pointer text-xs"
+                  >
+                    <option value="Factura B">Factura B (Consumidor Final / Exento)</option>
+                    <option value="Factura A">Factura A (Responsable Inscripto)</option>
+                    <option value="Factura C">Factura C (Régimen Monotributo)</option>
+                    <option value="Comprobante M">Comprobante M (Resp. Inscripto en Evaluación)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                    Método de Pago Asociado *
+                  </label>
+                  <select
+                    value={manualPaymentMethod}
+                    onChange={(e) => setManualPaymentMethod(e.target.value)}
+                    className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FFDF00] font-bold outline-none cursor-pointer text-xs"
+                  >
+                    <option value="Efectivo">💵 Efectivo</option>
+                    <option value="MercadoPago">📱 Mercado Pago / QR</option>
+                    <option value="Tarjeta Débito">💳 Tarjeta Débito</option>
+                    <option value="Tarjeta Crédito">💳 Tarjeta Crédito</option>
+                    <option value="Transferencia">🏦 Transferencia Bancaria</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Sección 2: Datos del Cliente */}
+              <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3">
+                <h5 className="text-[10px] font-black uppercase text-[#D4AF37] tracking-wider">Datos Fiscales del Cliente</h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[9px] font-bold text-[#FDFBF7]/70 block mb-1">CUIT / CUIL / DNI *</label>
+                    <input
+                      type="text"
+                      value={manualCustomerInfo.cuitOrDni}
+                      onChange={(e) => setManualCustomerInfo(prev => ({ ...prev, cuitOrDni: e.target.value }))}
+                      placeholder="Ej: 20345678901"
+                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FFDF00] font-mono font-bold text-xs outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold text-[#FDFBF7]/70 block mb-1">Razón Social / Nombre Completo *</label>
+                    <input
+                      type="text"
+                      value={manualCustomerInfo.nameOrReason}
+                      onChange={(e) => setManualCustomerInfo(prev => ({ ...prev, nameOrReason: e.target.value }))}
+                      placeholder="Nombre o Empresa"
+                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] font-bold text-xs outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-[#FDFBF7]/70 block mb-1">Condición Frente al IVA *</label>
+                  <select
+                    value={manualCustomerInfo.ivaCondition}
+                    onChange={(e) => setManualCustomerInfo(prev => ({ ...prev, ivaCondition: e.target.value as any }))}
+                    className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FFDF00] font-bold text-xs outline-none cursor-pointer"
+                  >
+                    <option value="Consumidor Final">Consumidor Final</option>
+                    <option value="Responsable Inscripto">Responsable Inscripto</option>
+                    <option value="Monotributo">Monotributo</option>
+                    <option value="Exento">Exento</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Sección 3: Conceptos a Facturar (Ítems Dinámicos) */}
+              <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-2">
+                  <h5 className="text-[10px] font-black uppercase text-[#D4AF37] tracking-wider">Conceptos / Ítems a Facturar</h5>
+                  <button
+                    type="button"
+                    onClick={() => setManualItems(prev => [...prev, { description: "Servicio / Consumo", qty: 1, unitPrice: 1000, ivaPct: 21 }])}
+                    className="px-2.5 py-1 bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#FFDF00] rounded-lg text-[9px] font-bold hover:bg-[#D4AF37]/30 cursor-pointer"
+                  >
+                    ➕ Añadir Ítem
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {manualItems.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-[#1C120C] p-2 rounded-xl border border-[#D4AF37]/20">
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setManualItems(prev => prev.map((it, i) => i === idx ? { ...it, description: val } : it));
+                        }}
+                        placeholder="Descripción"
+                        className="col-span-5 p-1.5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] text-xs rounded-lg outline-none font-bold"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.qty}
+                        onChange={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value) || 1);
+                          setManualItems(prev => prev.map((it, i) => i === idx ? { ...it, qty: val } : it));
+                        }}
+                        className="col-span-2 p-1.5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FFDF00] font-mono text-xs rounded-lg text-center outline-none font-bold"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.unitPrice}
+                        onChange={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0);
+                          setManualItems(prev => prev.map((it, i) => i === idx ? { ...it, unitPrice: val } : it));
+                        }}
+                        className="col-span-3 p-1.5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FFDF00] font-mono text-xs rounded-lg text-right outline-none font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setManualItems(prev => prev.filter((_, i) => i !== idx))}
+                        className="col-span-2 p-1.5 bg-red-950/60 border border-red-500/40 text-red-400 rounded-lg text-[9px] font-bold hover:bg-red-900/80 cursor-pointer text-center"
+                      >
+                        🗑️ Borrar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2 border-t border-[#D4AF37]/20 flex justify-between items-center text-xs font-mono">
+                  <span className="text-[10px] font-bold text-[#D4AF37]">Total Neto: ${ (manualItems.reduce((acc, it) => acc + (it.unitPrice * it.qty), 0) / 1.21).toFixed(0) }</span>
+                  <strong className="text-sm font-black text-[#FFDF00]">Total Factura: ${ manualItems.reduce((acc, it) => acc + (it.unitPrice * it.qty), 0).toLocaleString("es-AR") }</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#D4AF37]/20">
+              <button
+                type="button"
+                onClick={handleEmitManualArcaInvoice}
+                className="w-full py-4 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:brightness-110 transition-all cursor-pointer gold-glow flex items-center justify-center gap-2"
+              >
+                📋 EMITIR & DESCARGAR FACTURA ARCA
               </button>
             </div>
           </div>

@@ -151,7 +151,7 @@ export interface Order {
   status: OrderStatusType;
   createdAt: string;
   estimatedMinutes: number;
-  paymentMethod?: "Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte";
+  paymentMethod?: "Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte" | "Tarjeta Débito" | "Tarjeta Crédito" | "Pago Mixto";
   couponNumber?: string; // POS Coupon ID if card
   clientAccountName?: string;
   tipAmount?: number;
