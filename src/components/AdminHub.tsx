@@ -6728,7 +6728,7 @@ export default function AdminHub({
               { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] },
               { id: "reservas", label: "Reservas", icon: Calendar, badge: adminBookings.length, roles: ["administrador", "mesero"] },
               { id: "pedidos_mozo", label: "Módulo Mozo", icon: ClipboardList, roles: ["administrador", "mesero"] },
-              { id: "kds_cocina", label: "KDS Cocina & Chef", icon: Flame, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
+              { id: "kds_cocina", label: "Cocina & Chef", icon: Flame, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
               { id: "caja", label: "Caja & Comandas", icon: Coins, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
               { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: Users, roles: ["administrador", "barista"] },

@@ -131,7 +131,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         <div>
           <div className="flex items-center gap-2">
             <Coffee className="h-6 w-6 text-[#FFDF00] animate-pulse" />
-            <h1 className="font-serif text-2xl font-black uppercase tracking-wider text-[#FFDF00]">👨‍🍳 KDS - Comandero Profesional de Cocina & Chef</h1>
+            <h1 className="font-serif text-2xl font-black uppercase tracking-wider text-[#FFDF00]">👨‍🍳 Cocina & Chef</h1>
           </div>
           <p className="text-[10px] text-[#D4AF37] uppercase tracking-widest font-bold mt-1">
             Visualización y despacho de comandas en tiempo real para Resto Bar Del Teatro
