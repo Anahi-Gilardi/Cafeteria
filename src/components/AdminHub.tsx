@@ -15,6 +15,7 @@ import RestoBarLogo from "./RestoBarLogo";
 import { TimeSlotService } from "../services/TimeSlotService";
 import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
+import { AuditPDFService } from "../services/AuditPDFService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -6188,6 +6189,16 @@ export default function AdminHub({
     );
   };
 
+  const handleExportPDF = () => {
+    try {
+      AuditPDFService.generateAuditPDF(orders, cashLedger.transactions, mermaLogs);
+      onShowNotification("📄 Reporte de Auditoría PDF generado y descargado con éxito.", "success");
+    } catch (e) {
+      console.error("Error generating PDF audit:", e);
+      onShowNotification("⚠️ Error al generar el PDF de auditoría.", "warning");
+    }
+  };
+
   const handleExportCSV = () => {
     // Generate CSV for transactions
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
@@ -6255,12 +6266,20 @@ export default function AdminHub({
             <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Reportes e Informes Ejecutivos</h2>
             <p className="text-xs text-[#FDFBF7]/70 mt-1">Estadísticas reales de facturación, desglose por canal de pago, mermas y auditoría de comandas.</p>
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
-          >
-            <Download className="h-4 w-4" /> Exportar Auditoría (.csv)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+            >
+              <FileText className="h-4 w-4" /> Exportar Auditoría (.PDF)
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+            >
+              <Download className="h-4 w-4" /> Exportar Auditoría (.csv)
+            </button>
+          </div>
         </div>
 
         {/* Top 4 KPI Metrics Summary Cards */}
