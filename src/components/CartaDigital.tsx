@@ -71,6 +71,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
 
   const categories = [
     { id: "all", label: "Todo", emoji: "🍽️" },
+    { id: "executive", label: "⭐ Menú Diario", emoji: "⭐" },
     { id: "desayunos_meriendas", label: "Desayunos, Almuerzos & Meriendas", emoji: "☕" },
     { id: "pizzas_focaccias", label: "Pizzas & Focaccias", emoji: "🍕" },
     { id: "minutas_carnes", label: "Minutas & Carnes", emoji: "🥩" },
@@ -79,7 +80,6 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
     { id: "bebidas_sa", label: "Bebidas S/A", emoji: "🥤" },
     { id: "bebidas_alcohol", label: "Bebidas c/Alcohol", emoji: "🍸" },
     { id: "postres", label: "Postres", emoji: "🍰" },
-    { id: "executive", label: "Menú Diario", emoji: "⭐" },
   ];
 
   return (

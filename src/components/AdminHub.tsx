@@ -2631,6 +2631,7 @@ export default function AdminHub({
         <div className="flex flex-wrap border-b border-[#D4AF37]/20 gap-1.5 mb-6">
           {[
             { id: "todos", label: "Todos" },
+            { id: "menu_diario", label: "⭐ Menú Diario Ejecutivo" },
             { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
@@ -2639,7 +2640,6 @@ export default function AdminHub({
             { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
             { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
             { id: "postres", label: "🍰 Postres" },
-            { id: "menu_diario", label: "⭐ Menú Diario" },
             { id: "delivery_config", label: "🛵 Configuración Delivery & Tarifas" }
           ].map((cat) => (
             <button 
@@ -4564,6 +4564,7 @@ export default function AdminHub({
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
               {[
                 { id: "todos", label: "Todos 🍽️" },
+                { id: "executive", label: "⭐ Menú Diario" },
                 { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
                 { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
                 { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
@@ -4571,8 +4572,7 @@ export default function AdminHub({
                 { id: "empanadas", label: "🥟 Empanadas" },
                 { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
                 { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
-                { id: "postres", label: "🍰 Postres" },
-                { id: "executive", label: "⭐ Menú Diario" }
+                { id: "postres", label: "🍰 Postres" }
               ].map(cat => (
                 <button
                   key={cat.id}

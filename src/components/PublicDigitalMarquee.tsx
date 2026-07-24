@@ -82,8 +82,11 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
     addToCart(comboItem);
   };
 
-  // Featured promo carousel items
-  const featuredDishes = menuItems.filter(i => i.isOffer || i.category === "executive" || i.category === "mains").slice(0, 4);
+  // Featured promo carousel items - Menú Ejecutivo always FIRST
+  const featuredDishes = menuItems
+    .filter(i => i.isOffer || i.category === "executive" || i.category === "mains")
+    .sort((a, b) => (a.category === "executive" ? -1 : b.category === "executive" ? 1 : 0))
+    .slice(0, 4);
 
   const filteredItems = menuItems.filter(item => 
     selectedCategory === "all" || item.category === selectedCategory
@@ -249,6 +252,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         <div className="flex border-b border-[#E2D4C3] pb-3 gap-3 overflow-x-auto text-xs font-bold">
           {[
             { id: "all", label: "🍽️ Ver Todo" },
+            { id: "executive", label: "⭐ Menú Diario ($8.000)" },
             { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
@@ -256,8 +260,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             { id: "empanadas", label: "🥟 Empanadas" },
             { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
             { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
-            { id: "postres", label: "🍰 Postres" },
-            { id: "executive", label: "⭐ Menú Diario ($8.000)" }
+            { id: "postres", label: "🍰 Postres" }
           ].map((cat) => (
             <button
               key={cat.id}
