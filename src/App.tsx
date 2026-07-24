@@ -115,7 +115,14 @@ export default function App() {
     }
   });
   const [bookings, setBookings] = useState<Reservation[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem("resto_bar_orders");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [activeTrackedOrder, setActiveTrackedOrder] = useState<Order | null>(null);
   const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -518,7 +525,7 @@ export default function App() {
     } catch (err) {
       console.error("Error updating order status on Supabase:", err);
     }
-    setOrders((prev) => {
+    handleUpdateOrdersWithPersist((prev) => {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
       const targetOrder = updated.find((o) => o.id === orderId);
       if (targetOrder && status === "Listo") {
@@ -527,6 +534,44 @@ export default function App() {
       return updated;
     });
     showNotification(`📋 Pedido #${orderId} actualizado a estado: '${status}'.`, "info");
+  };
+
+  const handleUpdateOrdersWithPersist = (newOrdersOrUpdater: Order[] | ((prev: Order[]) => Order[])) => {
+    setOrders((prev) => {
+      const nextOrders = typeof newOrdersOrUpdater === "function" ? newOrdersOrUpdater(prev) : newOrdersOrUpdater;
+      try {
+        localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
+      } catch (e) {}
+      
+      // Async sync to Supabase
+      nextOrders.forEach(async (order) => {
+        try {
+          await supabase.from("orders").upsert({
+            id: order.id,
+            created_at: order.createdAt || new Date().toISOString(),
+            order_type: order.priceList === "Delivery" || order.fulfillmentType === "delivery" ? "delivery" : order.priceList === "Takeaway" || order.type === "Llevar" ? "takeaway" : "salon",
+            table_number: order.tableNumber || null,
+            client_name: order.clientAccountName || order.customerName || "Consumidor Final",
+            client_phone: order.customerPhone || order.clientPhone || null,
+            client_address: order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number || ""}`.trim() : null,
+            waiter_name: order.tableNumber ? "Enzo" : null,
+            items: order.items,
+            status: order.status,
+            payment_method: order.paymentMethod || null,
+            subtotal: order.subtotal || order.total,
+            discount: 0,
+            total: order.total,
+            price_list: order.priceList || "Salon",
+            type: order.type || "Mesa",
+            fiscal: order.fiscal || null
+          });
+        } catch (e) {
+          console.warn("Supabase order sync warning:", e);
+        }
+      });
+
+      return nextOrders;
+    });
   };
 
   const handleLogout = () => {
@@ -796,7 +841,7 @@ export default function App() {
                 <AdminHub
                   orders={orders}
                   onOrderStatusUpdate={handleOrderStatusUpdate}
-                  onUpdateOrders={setOrders}
+                  onUpdateOrders={handleUpdateOrdersWithPersist}
                   menuItems={menuItems}
                   onUpdateMenu={setMenuItems}
                   onShowNotification={showNotification}

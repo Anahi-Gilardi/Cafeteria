@@ -117,11 +117,15 @@ export default function ProfessionalOrderTicket({
 
             <div className="flex items-center gap-2 mt-1.5">
               <MapPin className="h-4 w-4 text-[#D4AF37]" />
-              <h3 className="font-serif text-lg font-bold text-[#F5E6DA]">
-                {order.tableNumber ? order.tableNumber : `${order.type}`}
+              <h3 className="font-serif text-lg font-bold text-[#FFDF00]">
+                {order.priceList === "Takeaway" || order.type === "Llevar"
+                  ? `🛍️ RETIRO EN LOCAL`
+                  : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
+                  ? `🛵 DELIVERY A DOMICILIO`
+                  : `🪑 ${order.tableNumber || "Mesa 1"}`}
               </h3>
-              <span className="text-[10px] text-[#F5E6DA]/60 font-semibold italic">
-                ({order.type})
+              <span className="text-[10px] text-[#F5E6DA]/70 font-bold block mt-0.5">
+                👤 {order.clientAccountName || order.customerName || `Atiende: ${waiterName}`}
               </span>
             </div>
           </div>
@@ -139,9 +143,9 @@ export default function ProfessionalOrderTicket({
               <span>⏱️ {elapsedMinutes} min</span>
             </div>
 
-            <div className="text-[9px] text-[#F5E6DA]/70 font-semibold flex items-center justify-end gap-1">
-              <User className="h-3 w-3 text-[#D4AF37]" />
-              <span>Mozo: <strong>{waiterName}</strong></span>
+            <div className="text-[9.5px] text-[#FFDF00] font-bold flex items-center justify-end gap-1 bg-[#2A1B12] px-2.5 py-1 rounded-xl border border-[#D4AF37]/30 shadow-xs">
+              <User className="h-3.5 w-3.5 text-[#D4AF37]" />
+              <span>Resp: <strong className="text-white font-mono">{order.clientAccountName || order.customerName || waiterName}</strong></span>
             </div>
           </div>
         </div>

@@ -244,15 +244,13 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
                 <div>
                   <div className="flex items-start justify-between border-b border-[#D4AF37]/20 pb-3 mb-3">
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#FFDF00]/10 text-[#FFDF00] border border-[#FFDF00]/30 font-mono">
-                          {order.type}
+                          {order.priceList === "Takeaway" || order.type === "Llevar" ? "🛍️ RETIRO" : order.priceList === "Delivery" || order.fulfillmentType === "delivery" ? "🛵 DELIVERY" : `🪑 ${order.tableNumber || "SALÓN"}`}
                         </span>
-                        {order.tableNumber && (
-                          <span className="text-xs font-serif font-black text-white bg-espresso/80 px-2 py-0.5 rounded-md border border-[#D97706]/20">
-                            Mesa {order.tableNumber}
-                          </span>
-                        )}
+                        <span className="text-xs font-serif font-black text-[#FFDF00] bg-[#2A1B12] px-2.5 py-1 rounded-xl border border-[#D4AF37]/40 shadow-xs flex items-center gap-1">
+                          👤 {order.clientAccountName || order.customerName || (order.tableNumber ? `Mozo: Enzo` : "Cliente")}
+                        </span>
                       </div>
                       <h3 className="text-sm font-serif font-black mt-2 text-white">ID: #{order.id.slice(-6).toUpperCase()}</h3>
                     </div>
