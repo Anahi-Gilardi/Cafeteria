@@ -1726,8 +1726,8 @@ export default function AdminHub({
     };
 
     return (
-      <div className="space-y-6 text-[#2C1810]">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-xs text-amber-900 font-semibold leading-relaxed">
+      <div className="space-y-6 text-[#FDFBF7]">
+        <div className="bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl p-4 flex gap-3 text-xs text-[#FDFBF7] font-semibold leading-relaxed gold-glow">
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-800">Instrucciones de Auditoría a Ciegas</span>
@@ -1872,15 +1872,15 @@ export default function AdminHub({
     const sortedQuotes = [...validQuotes].sort((a, b) => a.numericPrice - b.numericPrice);
 
     return (
-      <div className="space-y-6 text-[#2C1810]">
+      <div className="space-y-6 text-[#FDFBF7]">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#2C1810]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
-          <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
+          <h3 className="font-serif text-lg font-bold text-[#FFDF00]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
+          <p className="text-[10px] text-[#FDFBF7]/70 mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-2 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl">
-            <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Seleccione el Insumo a Comparar</label>
+          <div className="space-y-2 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl gold-glow">
+            <label className="text-[9px] font-black uppercase text-[#D4AF37] block">Seleccione el Insumo a Comparar</label>
             <select
               value={compareInsumoId}
               onChange={(e) => {
@@ -2057,16 +2057,16 @@ export default function AdminHub({
     const maxCost = Math.max(...consumptionList.map(c => c.totalCost), 1);
 
     return (
-      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
+      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl gold-glow">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#2C1810]">📈 Analítica de Consumo Real de Insumos</h3>
-          <p className="text-xs text-[#2C1810]/50 mt-0.5">
+          <h3 className="font-serif text-lg font-bold text-[#FFDF00]">📈 Analítica de Consumo Real de Insumos</h3>
+          <p className="text-xs text-[#FDFBF7]/70 mt-0.5">
             Deducción automatizada de materias primas basada en las comandas finalizadas y las dosificaciones de recetas.
           </p>
         </div>
 
         {consumptionList.length === 0 ? (
-          <div className="p-8 text-center border border-dashed border-[#2C1810]/15 rounded-2xl text-xs text-[#2C1810]/50 italic">
+          <div className="p-8 text-center border border-dashed border-[#D4AF37]/30 rounded-2xl text-xs text-[#D4AF37] italic">
             No hay comandas completadas registradas para computar consumo de recetas aún.
           </div>
         ) : (
@@ -2074,17 +2074,17 @@ export default function AdminHub({
             {consumptionList.map((item, idx) => {
               const widthPct = `${Math.max(10, Math.round((item.totalCost / maxCost) * 100))}%`;
               return (
-                <div key={idx} className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
-                  <div className="flex justify-between items-center text-xs font-bold text-[#2C1810]">
-                    <span>{item.name}</span>
-                    <span className="font-mono text-[#C2956E]">
+                <div key={idx} className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2 text-[#FDFBF7]">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-[#FDFBF7]">{item.name}</span>
+                    <span className="font-mono text-[#FFDF00]">
                       {item.amount.toFixed(2)} {item.unit} (${item.totalCost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
                     </span>
                   </div>
-                  <div className="w-full h-3 bg-stone-200 rounded-full overflow-hidden">
+                  <div className="w-full h-3 bg-[#1C120C] rounded-full overflow-hidden">
                     <div
                       style={{ width: widthPct }}
-                      className="h-full bg-[#2C1810] rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-[#996515] via-[#D4AF37] to-[#FFDF00] rounded-full transition-all duration-500"
                     ></div>
                   </div>
                 </div>
@@ -2253,18 +2253,18 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 text-[#FDFBF7]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Módulo de Inventario</span>
-            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Stock & Materias Primas</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Módulo de Inventario</span>
+            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Stock & Materias Primas</h2>
           </div>
           {inventarioSubTab === "general" && (
             <div className="flex flex-wrap gap-3">
               <button 
                 onClick={handleGenerateAutoOrders}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-caramel text-white text-xs font-bold shadow-md hover:bg-[#B45309] transition-all cursor-pointer animate-fade-in border-none"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer animate-fade-in border-none gold-glow uppercase tracking-wider"
               >
                 <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos (US-2.3)
               </button>
@@ -2275,7 +2275,7 @@ export default function AdminHub({
                   setMovQty("");
                   setIsMovementModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-xs font-bold shadow-md hover:bg-[#3d2217] transition-all cursor-pointer animate-fade-in"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#D4AF37] hover:text-white transition-all cursor-pointer animate-fade-in uppercase tracking-wider"
               >
                 <Plus className="h-4 w-4" /> Registrar Movimiento
               </button>
@@ -2284,7 +2284,7 @@ export default function AdminHub({
         </div>
 
         {/* Sub-tabs header for stock submodules */}
-        <div className="flex border-b border-[#2C1810]/10 pb-3 gap-6 text-xs font-bold text-[#2C1810]/50">
+        <div className="flex border-b border-[#D4AF37]/20 pb-3 gap-6 text-xs font-bold text-[#FDFBF7]/60">
           {[
             { id: "general", label: "📋 Vista General" },
             { id: "ciegas", label: "👁️ Auditoría a Ciegas (US-2.1)" },
@@ -2296,14 +2296,14 @@ export default function AdminHub({
               type="button"
               onClick={() => setInventarioSubTab(tab.id as any)}
               className={`pb-3 relative transition-colors cursor-pointer border-none bg-transparent ${
-                inventarioSubTab === tab.id ? "text-caramel font-black" : "hover:text-[#2C1810]"
+                inventarioSubTab === tab.id ? "text-[#FFDF00] font-black" : "hover:text-[#FDFBF7]"
               }`}
             >
               {tab.label}
               {inventarioSubTab === tab.id && (
                 <motion.div
                   layoutId="inventario-active-pill"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-caramel rounded-full"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37] rounded-full"
                 />
               )}
             </button>
@@ -2313,50 +2313,50 @@ export default function AdminHub({
         {inventarioSubTab === "general" && (
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Total Insumos</span>
-                <div className="text-2xl font-serif font-black text-[#2C1810] mt-1">{totalInsumosCount}</div>
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
+                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Total Insumos</span>
+                <div className="text-2xl font-serif font-black text-[#FFDF00] mt-1 font-mono">{totalInsumosCount}</div>
               </div>
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
+                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span> Críticos
                 </span>
-                <div className="text-2xl font-serif font-black text-red-600 mt-1">{criticalInsumosCount}</div>
+                <div className="text-2xl font-serif font-black text-red-400 mt-1 font-mono">{criticalInsumosCount}</div>
               </div>
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
+                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Stock Bajo
                 </span>
-                <div className="text-2xl font-serif font-black text-amber-600 mt-1">{lowStockInsumosCount}</div>
+                <div className="text-2xl font-serif font-black text-amber-400 mt-1 font-mono">{lowStockInsumosCount}</div>
               </div>
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
+                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Stock Saludable
                 </span>
-                <div className="text-2xl font-serif font-black text-emerald-600 mt-1">{healthyInsumosCount}</div>
+                <div className="text-2xl font-serif font-black text-emerald-400 mt-1 font-mono">{healthyInsumosCount}</div>
               </div>
             </div>
 
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-96">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#2C1810]/40" />
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#D4AF37]" />
                 <input 
                   type="text"
                   placeholder="Buscar insumo, proveedor..."
                   value={searchInsumoQuery}
                   onChange={(e) => setSearchInsumoQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-[#2C1810]/20 rounded-xl text-xs bg-stone-50/50 text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold"
+                  className="w-full pl-10 pr-4 py-2 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 focus:ring-1 focus:ring-[#D4AF37] focus:outline-none font-bold"
                 />
               </div>
-              <div className="text-xs font-semibold text-[#2C1810]/60 uppercase tracking-wider">
+              <div className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider font-mono">
                 Mostrando {filteredInsumos.length} productos
               </div>
             </div>
 
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xl gold-glow">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                  <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-wider text-[#D4AF37]">
                     <th className="p-4">Producto</th>
                     <th className="p-4">Proveedor</th>
                     <th className="p-4 text-center">Mínimo</th>
@@ -2367,38 +2367,38 @@ export default function AdminHub({
                     <th className="p-4 text-center">Ajuste</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#2C1810]/10 text-xs">
+                <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
                   {filteredInsumos.map((ins, idx) => {
                     const isCritical = ins.quantity <= ins.minLimit / 2;
                     const isLow = ins.quantity <= ins.minLimit && !isCritical;
                     const statusBadge = isCritical ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-red-50 border border-red-200 text-red-700 rounded-full tracking-wider">CRÍTICO</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-red-950/80 border border-red-500/50 text-red-300 rounded-full tracking-wider">CRÍTICO</span>
                     ) : isLow ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-amber-50 border border-amber-200 text-amber-700 rounded-full tracking-wider">BAJO</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-amber-950/80 border border-amber-500/50 text-amber-300 rounded-full tracking-wider">BAJO</span>
                     ) : (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full tracking-wider">OK</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 rounded-full tracking-wider">OK</span>
                     );
 
                     return (
-                      <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                        <td className="p-4 font-bold text-[#2C1810]">{ins.name}</td>
-                        <td className="p-4 text-[#2C1810]/70 font-semibold">{ins.provider || "Sin designar"}</td>
-                        <td className="p-4 text-center font-mono font-bold text-[#2C1810]/60">{ins.minLimit}</td>
-                        <td className="p-4 text-center font-mono font-black text-[#2C1810]">{ins.quantity}</td>
-                        <td className="p-4 text-center text-[#2C1810]/60 uppercase font-bold">{ins.unit}</td>
-                        <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{ins.expirationDate || "-"}</td>
+                      <tr key={idx} className="hover:bg-[#2A1B12]/60 transition-colors">
+                        <td className="p-4 font-bold text-[#FDFBF7]">{ins.name}</td>
+                        <td className="p-4 text-[#D4AF37] font-semibold">{ins.provider || "Sin designar"}</td>
+                        <td className="p-4 text-center font-mono font-bold text-[#FDFBF7]/70">{ins.minLimit}</td>
+                        <td className="p-4 text-center font-mono font-black text-[#FFDF00]">{ins.quantity}</td>
+                        <td className="p-4 text-center text-[#FDFBF7]/80 uppercase font-bold">{ins.unit}</td>
+                        <td className="p-4 font-mono font-semibold text-[#FDFBF7]/70">{ins.expirationDate || "-"}</td>
                         <td className="p-4 text-center">{statusBadge}</td>
                         <td className="p-4 text-center flex items-center justify-center gap-1.5">
                           <button 
                             onClick={() => handleAdjustInsumo(ins.id, -1)}
-                            className="h-7 w-7 rounded-lg bg-stone-100 text-espresso hover:bg-stone-200 flex items-center justify-center font-bold text-base cursor-pointer"
+                            className="h-7 w-7 rounded-lg bg-[#2A1B12] border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#3D281A] hover:text-white flex items-center justify-center font-bold text-base cursor-pointer transition-colors"
                             title="Descontar 1 unidad"
                           >
                             -
                           </button>
                           <button 
                             onClick={() => handleAdjustInsumo(ins.id, 1)}
-                            className="h-7 w-7 rounded-lg bg-stone-100 text-espresso hover:bg-stone-200 flex items-center justify-center font-bold text-base cursor-pointer"
+                            className="h-7 w-7 rounded-lg bg-[#2A1B12] border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#3D281A] hover:text-white flex items-center justify-center font-bold text-base cursor-pointer transition-colors"
                             title="Aumentar 1 unidad"
                           >
                             +
@@ -2620,14 +2620,14 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 text-[#FDFBF7]"
       >
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Ficha Técnica & Rentabilidad</span>
-          <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Carta & Recetas</h2>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Ficha Técnica & Rentabilidad</span>
+          <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Carta & Recetas</h2>
         </div>
 
-        <div className="flex border-b border-[#2C1810]/10 gap-2 mb-6">
+        <div className="flex border-b border-[#D4AF37]/20 gap-2 mb-6">
           {[
             { id: "todos", label: "Todos" },
             { id: "menu_diario", label: "⭐ Menú Ejecutivo & Rotación Diaria" },
@@ -2639,7 +2639,7 @@ export default function AdminHub({
               key={cat.id}
               onClick={() => setSelectedPosCategory(cat.id)}
               className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                selectedPosCategory === cat.id ? "border-[#C2956E] text-[#2C1810] font-black" : "border-transparent text-[#2C1810]/50 hover:text-[#2C1810]"
+                selectedPosCategory === cat.id ? "border-[#D4AF37] text-[#FFDF00] font-black" : "border-transparent text-[#FDFBF7]/60 hover:text-[#FDFBF7]"
               }`}
             >
               {cat.label}
@@ -3319,29 +3319,29 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#2C1810]"
+        className="space-y-8 text-[#FDFBF7]"
       >
         {/* Header Terminal */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-6 rounded-3xl shadow-xs">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-6 rounded-3xl shadow-xl gold-glow">
           <div className="flex items-center gap-3.5">
-            <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-[#C2956E]/20 text-[#C2956E] flex items-center justify-center shadow-xs">
+            <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] flex items-center justify-center shadow-xs">
               <Receipt className="h-6 w-6 stroke-1.5" />
             </div>
             <div>
-              <h2 className="font-serif text-xl font-bold tracking-tight">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
-              <p className="text-[10px] text-[#2C1810]/60 font-semibold mt-0.5">Gestor de comprobantes de salón • Resto Bar Del Teatro</p>
+              <h2 className="font-serif text-xl font-bold tracking-tight text-[#FFDF00]">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
+              <p className="text-[10px] text-[#FDFBF7]/70 font-semibold mt-0.5">Gestor de comprobantes de salón • Resto Bar Del Teatro</p>
             </div>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37] hover:text-white hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
               <Settings className="h-3.5 w-3.5" /> CONFIGURAR RESTAURANT
             </button>
             <button 
               onClick={() => setIsConfigTicketerisOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37] hover:text-white hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
               <Printer className="h-3.5 w-3.5" /> CONFIGURACIÓN TICKETERA
             </button>
@@ -3354,16 +3354,16 @@ export default function AdminHub({
           <div className="lg:col-span-4 space-y-6">
             
             {/* Box 1: Flujo Contable Diario */}
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs space-y-4">
-              <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
+              <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
                 <div>
-                  <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Flujo Contable Diario</span>
-                  <h3 className="font-serif text-sm font-bold mt-0.5">Estado de Caja Diaria</h3>
+                  <span className="text-[8px] font-black uppercase tracking-wider text-[#D4AF37] block">Flujo Contable Diario</span>
+                  <h3 className="font-serif text-sm font-bold mt-0.5 text-[#FDFBF7]">Estado de Caja Diaria</h3>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider flex items-center gap-1 ${
                   isShiftOpen 
-                    ? "bg-emerald-50 border-emerald-250 text-emerald-800" 
-                    : "bg-stone-50 border-stone-250 text-stone-600"
+                    ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300" 
+                    : "bg-stone-900/80 border-stone-700/50 text-stone-300"
                 }`}>
                   {isShiftOpen ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
                   {isShiftOpen ? "Abierta" : "Cerrada"}
@@ -3373,25 +3373,25 @@ export default function AdminHub({
               {!isShiftOpen ? (
                 <div className="space-y-4">
                   <div className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-xl text-center">
-                    <p className="text-[10px] text-[#2C1810]/60 font-semibold">No se registran turnos fiscales abiertos</p>
-                    <p className="text-[9px] text-[#2C1810]/40 mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
+                    <p className="text-[10px] text-[#FDFBF7]/70 font-semibold">No se registran turnos fiscales abiertos</p>
+                    <p className="text-[9px] text-[#D4AF37] mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
                   </div>
                   <button 
                     onClick={handleOpenShift}
-                    className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white text-xs font-black shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
                   >
                     <Unlock className="h-4 w-4" /> ABRIR CAJA DIARIA
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-3.5 bg-stone-50 border border-stone-150 rounded-xl space-y-2">
-                    <p className="text-[10px] text-[#2C1810]/50 font-bold uppercase tracking-wider">Turno en curso</p>
+                  <div className="p-3.5 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-xl space-y-2 text-[#FDFBF7]">
+                    <p className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-wider">Turno en curso</p>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div>Efectivo: <span className="font-mono font-bold">${cashLedger.cash.toLocaleString()}</span></div>
-                      <div>Tarjeta: <span className="font-mono font-bold">${cashLedger.card.toLocaleString()}</span></div>
-                      <div>MP: <span className="font-mono font-bold">${cashLedger.mercadopago.toLocaleString()}</span></div>
-                      <div className="border-t border-[#2C1810]/10 pt-1 font-bold">Total: <span className="font-mono text-emerald-800">${cashLedger.totalCollected.toLocaleString()}</span></div>
+                      <div>Efectivo: <span className="font-mono font-bold text-[#FFDF00]">${cashLedger.cash.toLocaleString()}</span></div>
+                      <div>Tarjeta: <span className="font-mono font-bold text-[#FFDF00]">${cashLedger.card.toLocaleString()}</span></div>
+                      <div>MP: <span className="font-mono font-bold text-[#FFDF00]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+                      <div className="border-t border-[#D4AF37]/20 pt-1 font-bold">Total: <span className="font-mono text-emerald-400">${cashLedger.totalCollected.toLocaleString()}</span></div>
                     </div>
                   </div>
                   <button 
@@ -3400,7 +3400,7 @@ export default function AdminHub({
                       setCloseShiftNotes("");
                       setIsCloseShiftModalOpen(true);
                     }}
-                    className="w-full py-3 rounded-2xl bg-red-950 text-red-200 border border-red-900/50 text-xs font-bold hover:bg-red-900 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-2xl bg-red-950 text-red-200 border border-red-800/60 text-xs font-bold hover:bg-red-900 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
                   >
                     <Lock className="h-4 w-4" /> CERRAR CAJA DIARIA (Arqueo)
                   </button>
@@ -3409,29 +3409,29 @@ export default function AdminHub({
             </div>
 
             {/* Box 2: Comandas en Salón */}
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs space-y-4">
-              <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
-                <h3 className="font-serif text-sm font-bold flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-[#C2956E]" /> COMANDAS EN SALÓN
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
+              <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
+                <h3 className="font-serif text-sm font-bold flex items-center gap-2 text-[#FDFBF7]">
+                  <ClipboardList className="h-4 w-4 text-[#D4AF37]" /> COMANDAS EN SALÓN
                 </h3>
                 {isShiftOpen && (
-                  <span className="px-2 py-0.5 rounded bg-[#C2956E]/10 text-[#C2956E] text-[9px] font-black uppercase">
+                  <span className="px-2 py-0.5 rounded bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#FFDF00] text-[9px] font-black uppercase font-mono">
                     {pendingOrders.length} pendientes
                   </span>
                 )}
               </div>
 
               {!isShiftOpen ? (
-                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center text-stone-400">
-                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-stone-300" />
-                  <p className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest">Caja Cerrada</p>
-                  <p className="text-[9px] text-[#2C1810]/30 mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
+                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center">
+                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-[#D4AF37]" />
+                  <p className="text-[10px] font-bold text-[#FFDF00] uppercase tracking-widest">Caja Cerrada</p>
+                  <p className="text-[9px] text-[#FDFBF7]/60 mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
                 </div>
               ) : pendingOrders.length === 0 ? (
-                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center text-stone-400">
-                  <CheckCircle className="h-8 w-8 text-emerald-600 mb-2 stroke-1.5" />
-                  <p className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest">Sin Pendientes</p>
-                  <p className="text-[9px] text-[#2C1810]/30 mt-1">Todas las mesas han cobrado.</p>
+                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-emerald-400 mb-2 stroke-1.5" />
+                  <p className="text-[10px] font-bold text-[#FFDF00] uppercase tracking-widest">Sin Pendientes</p>
+                  <p className="text-[9px] text-[#FDFBF7]/60 mt-1">Todas las mesas han cobrado.</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -3439,10 +3439,10 @@ export default function AdminHub({
                     const active = posCheckoutOrder?.id === order.id;
                     const statusText = order.status === "Listo" ? "Listo" : order.status === "Preparando" ? "En Cocina" : "Pendiente";
                     const statusColor = order.status === "Listo" 
-                      ? "bg-amber-50 border-amber-250 text-amber-800" 
+                      ? "bg-amber-950/80 border-amber-500/50 text-amber-300" 
                       : order.status === "Preparando"
-                      ? "bg-blue-50 border-blue-250 text-blue-800"
-                      : "bg-stone-50 border-stone-250 text-stone-600";
+                      ? "bg-blue-950/80 border-blue-500/50 text-blue-300"
+                      : "bg-stone-900/80 border-stone-700/50 text-stone-300";
 
                     return (
                       <div 
@@ -4008,17 +4008,17 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 text-[#FDFBF7]"
       >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Control de Clientes</span>
-            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Reservas de Mesas</h2>
-            <p className="text-xs text-[#2C1810]/60 mt-1">Gestione y agende reservas de clientes para el salón en tiempo real.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control de Clientes</span>
+            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Reservas de Mesas</h2>
+            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione y agende reservas de clientes para el salón en tiempo real.</p>
           </div>
           <button
             onClick={() => setIsAddingBooking(!isAddingBooking)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer uppercase tracking-wider"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
           >
             <Plus className="h-4 w-4" /> Nueva Reserva
           </button>
@@ -4340,19 +4340,19 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2C1810]"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#FDFBF7]"
       >
         {/* Left Column: Waiter & Tables */}
         <div className="lg:col-span-3 space-y-6">
           {/* Waiter Card */}
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-amber-50 border border-[#C2956E]/20 text-[#C2956E] flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] flex items-center justify-center">
                 <Users className="h-5 w-5" />
               </div>
               <div>
-                <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Mozo en Turno Activo</span>
-                <strong className="text-xs font-serif block">Terminal Registrada</strong>
+                <span className="text-[8px] font-black uppercase tracking-wider text-[#D4AF37] block">Mozo en Turno Activo</span>
+                <strong className="text-xs font-serif block text-[#FDFBF7]">Terminal Registrada</strong>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -4362,8 +4362,8 @@ export default function AdminHub({
                   onClick={() => setSelectedWaiter(waiter)}
                   className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
                     selectedWaiter === waiter 
-                      ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810] shadow-xs" 
-                      : "bg-white border-stone-250 text-[#2C1810]/75 hover:bg-stone-50"
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] shadow-md font-black" 
+                      : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
                   }`}
                 >
                   {waiter}
@@ -4373,13 +4373,13 @@ export default function AdminHub({
           </div>
 
           {/* Tables Card */}
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
-            <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
+            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
               <div>
-                <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Distribución de Mesas</span>
-                <h3 className="font-serif text-sm font-bold mt-0.5">Mapa de Comensales</h3>
+                <span className="text-[8px] font-black uppercase tracking-wider text-[#D4AF37] block">Distribución de Mesas</span>
+                <h3 className="font-serif text-sm font-bold mt-0.5 text-[#FDFBF7]">Mapa de Comensales</h3>
               </div>
-              <span className="px-2 py-0.5 rounded bg-[#2C1810] text-[#FDFBF7] text-[8px] font-black uppercase tracking-wider">
+              <span className="px-2 py-0.5 rounded bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#FFDF00] text-[8px] font-black uppercase tracking-wider font-mono">
                 {occupiedTablesCount} Ocupadas
               </span>
             </div>
@@ -4671,17 +4671,17 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 animate-fade-in"
+        className="space-y-8 animate-fade-in text-[#FDFBF7]"
       >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Abastecimiento y Logística</span>
-            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Directorio de Proveedores</h2>
-            <p className="text-xs text-[#2C1810]/60 mt-1">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Abastecimiento y Logística</span>
+            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Directorio de Proveedores</h2>
+            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp.</p>
           </div>
           <button
             onClick={() => setIsAddingProv(!isAddingProv)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer uppercase tracking-wider"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
           >
             <Plus className="h-4 w-4" /> Agregar Proveedor
           </button>
@@ -4831,14 +4831,14 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 text-[#FDFBF7]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Equipo y Colaboradores</span>
-            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Gestión de Personal</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Equipo y Colaboradores</span>
+            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Gestión de Personal</h2>
           </div>
-          <div className="flex gap-1.5 bg-[#2C1810]/5 p-1 rounded-xl">
+          <div className="flex gap-1.5 bg-[#1A110B] p-1.5 border border-[#D4AF37]/25 rounded-xl gold-glow">
             {[
               { id: "barista", label: "Calibración" },
               { id: "asistencia", label: "⏱️ Fichajes" },
@@ -4851,8 +4851,8 @@ export default function AdminHub({
                 onClick={() => setPersonalSubTab(tab.id as any)}
                 className={`px-3 py-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
                   personalSubTab === tab.id
-                    ? "bg-[#2C1810] text-[#FDFBF7] shadow-sm"
-                    : "text-[#2C1810]/60 hover:text-[#2C1810]"
+                    ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-md gold-glow"
+                    : "text-[#FDFBF7]/60 hover:text-[#FFDF00]"
                 }`}
               >
                 {tab.label}
@@ -5682,27 +5682,27 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8"
+        className="space-y-8 text-[#FDFBF7]"
       >
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Control en Vivo</span>
-          <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Plano del Salón</h2>
-          <p className="text-xs text-[#2C1810]/60 mt-1">Gestione el estado de las mesas y agilice el cobro en tiempo real.</p>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control en Vivo</span>
+          <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Plano del Salón</h2>
+          <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione el estado de las mesas y agilice el cobro en tiempo real.</p>
         </div>
 
         {/* Legend */}
-        <div className="flex gap-4 text-xs font-bold text-[#2C1810]/70 bg-white p-4 border border-[#2C1810]/10 rounded-2xl">
+        <div className="flex gap-4 text-xs font-bold text-[#FDFBF7] bg-[#1A110B] p-4 border border-[#D4AF37]/25 rounded-2xl gold-glow">
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-600/20"></span>
-            <span>Libre</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-400"></span>
+            <span className="text-emerald-300">Libre</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#2C1810] border border-[#2C1810]/20"></span>
-            <span>Ocupada</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#FFDF00] border border-[#D4AF37]"></span>
+            <span className="text-[#FFDF00]">Ocupada</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 border border-amber-600/20"></span>
-            <span>Reservada</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 border border-amber-400"></span>
+            <span className="text-amber-300">Reservada</span>
           </div>
         </div>
 
@@ -5716,27 +5716,27 @@ export default function AdminHub({
             const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
 
             let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
-            let colorClasses = "border-emerald-200 bg-emerald-50/20 text-emerald-900";
+            let colorClasses = "border-emerald-500/40 bg-[#1A110B] text-emerald-300 gold-glow";
             if (table.status === "Mantenimiento") {
               status = "Mantenimiento";
-              colorClasses = "border-red-200 bg-red-50/20 text-red-900";
+              colorClasses = "border-red-500/40 bg-[#1A110B] text-red-300 gold-glow";
             } else if (activeOrder) {
               status = "Ocupada";
-              colorClasses = "border-[#2C1810]/30 bg-[#2C1810]/5 text-[#2C1810]";
+              colorClasses = "border-[#D4AF37] bg-[#1A110B] text-[#FFDF00] gold-glow";
             } else if (reservation) {
               status = "Reservada";
-              colorClasses = "border-amber-200 bg-amber-50/20 text-amber-900";
+              colorClasses = "border-amber-500/40 bg-[#1A110B] text-amber-300 gold-glow";
             }
 
             return (
               <div
                 key={table.id}
-                className={`border rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
+                className={`border rounded-3xl p-6 shadow-xl flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
               >
                 <div>
-                  <div className="flex items-center justify-between border-b border-[#2C1810]/10 pb-3 mb-3">
-                    <span className="font-serif text-lg font-black">{table.name}</span>
-                    <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-white/60 border border-[#2C1810]/5 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-[#D4AF37]/20 pb-3 mb-3">
+                    <span className="font-serif text-lg font-black text-[#FDFBF7]">{table.name}</span>
+                    <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37]">
                       {table.capacity} Personas
                     </span>
                   </div>
@@ -5963,17 +5963,17 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 animate-fade-in"
+        className="space-y-8 animate-fade-in text-[#FDFBF7]"
       >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Análisis de Negocio</span>
-            <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Reportes e Informes</h2>
-            <p className="text-xs text-[#2C1810]/60 mt-1">Estadísticas reales de facturación, mermas y métodos de pago.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Análisis de Negocio</span>
+            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Reportes e Informes</h2>
+            <p className="text-xs text-[#FDFBF7]/70 mt-1">Estadísticas reales de facturación, mermas y métodos de pago.</p>
           </div>
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#C2956E] hover:bg-[#a37956] text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
           >
             <Download className="h-4 w-4" /> Exportar Auditoría (.csv)
           </button>
@@ -5983,11 +5983,11 @@ export default function AdminHub({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Sales performance chart */}
-          <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
-            <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">📈 Facturación Mensual Histórica</h3>
+          <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
+            <h3 className="font-serif text-base font-bold text-[#FFDF00] uppercase tracking-wider border-b border-[#D4AF37]/20 pb-2">📈 Facturación Mensual Histórica</h3>
             
             {/* CSS Chart */}
-            <div className="flex justify-between items-end h-48 px-4 border-b border-[#2C1810]/10 pb-2 pt-6">
+            <div className="flex justify-between items-end h-48 px-4 border-b border-[#D4AF37]/20 pb-2 pt-6">
               {[
                 { label: "Ene", val: "$1.2M", pct: "65%" },
                 { label: "Feb", val: "$1.4M", pct: "75%" },

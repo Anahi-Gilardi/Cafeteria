@@ -330,29 +330,29 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
             <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
               {alerts.length > 0 ? (
                 alerts.map((alert, idx) => (
-                  <div key={idx} className="p-3 bg-[#FDFBF7] border border-[#2C1810]/5 rounded-2xl flex items-center justify-between">
+                  <div key={idx} className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl flex items-center justify-between text-[#FDFBF7]">
                     <div className="flex items-center gap-3">
                       <span className="h-2.5 w-2.5 rounded-full bg-red-500 shrink-0"></span>
                       <div>
-                        <strong className="text-xs font-bold text-[#2C1810] block leading-tight">{alert.name}</strong>
-                        <span className="text-[9px] text-[#2C1810]/40">Proveedor: {alert.provider}</span>
+                        <strong className="text-xs font-bold text-[#FDFBF7] block leading-tight">{alert.name}</strong>
+                        <span className="text-[9px] text-[#D4AF37]">Proveedor: {alert.provider}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-[#2C1810] block">{alert.quantity} {alert.unit}</span>
-                      <span className="text-[9px] text-red-600 font-bold block">Bajo Límite ({alert.minLimit})</span>
+                      <span className="text-xs font-bold text-[#FFDF00] block font-mono">{alert.quantity} {alert.unit}</span>
+                      <span className="text-[9px] text-red-400 font-bold block">Bajo Límite ({alert.minLimit})</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-[#2C1810]/50 italic text-center py-4 font-semibold">✨ Todos los insumos están en niveles saludables.</p>
+                <p className="text-xs text-[#D4AF37] italic text-center py-4 font-semibold">✨ Todos los insumos están en niveles saludables.</p>
               )}
             </div>
           </div>
 
           <button 
             onClick={onGoToInventario}
-            className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2C1810]/5 hover:bg-[#2C1810]/10 text-xs font-bold text-[#2C1810] transition-all cursor-pointer border border-[#2C1810]/5"
+            className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#D4AF37] hover:text-white transition-all cursor-pointer border border-[#D4AF37]/30 uppercase tracking-wider"
           >
             Gestionar Inventario Completo ↗
           </button>
