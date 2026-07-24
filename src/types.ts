@@ -151,4 +151,4 @@ export interface MermaLog {
   reason: string;
   timestamp: string;
 }
-
+export type UserRole = "administrador" | "dueño" | "cajero" | "mesero" | "barista";
