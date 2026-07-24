@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import RestoBarLogo from "./RestoBarLogo";
 import { MenuItem, Table } from "../types";
 import { TABLES_DATA } from "../data/menu";
-import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils } from "lucide-react";
+import { MenuPDFService } from "../services/MenuPDFService";
+import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface CartaDigitalProps {
@@ -85,13 +86,20 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Header and Hero explaining the Carta Digital */}
-      <div className="mb-8 text-center">
+      <div className="mb-8 text-center flex flex-col items-center">
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-espresso text-paper shadow-md">
           <Smartphone className="h-7 w-7 text-caramel" />
         </div>
         <p className="mx-auto mt-2 max-w-xl text-espresso/70 text-sm leading-relaxed italic font-medium">
           El servicio de siempre en su celular. Escanee, realice su pedido desde la mesa y llame al mozo sin esperas. ¡Viva la experiencia Puglia!
         </p>
+
+        <button
+          onClick={() => MenuPDFService.generateMenuPDF(menuItems)}
+          className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer gold-glow uppercase tracking-wider"
+        >
+          <FileText className="h-4 w-4" /> Descargar Carta PDF Oficial
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

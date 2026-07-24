@@ -1,4 +1,4 @@
-import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll, LogOut, ChevronLeft, LayoutDashboard, Table } from "lucide-react";
+import { ShoppingBag, Menu, X, Coffee, Calendar, Bot, ListOrdered, BookOpen, Settings, Scroll, LogOut, ChevronLeft, LayoutDashboard, Table, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import RestoBarLogo from "./RestoBarLogo";
 
@@ -17,6 +17,7 @@ export default function Navbar({ activeTab, setActiveTab, cartCount, onCartClick
   // Restrict navigation based on role (Dueños and Administradores see all tabs)
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador", "barista", "mesero", "dueño"] },
+    { id: "public_menu", label: "Menú Publicitario / QR", icon: Sparkles, roles: ["administrador", "barista", "mesero", "dueño"] },
     { id: "salon", label: "Plano del Salón", icon: Table, roles: ["administrador", "mesero", "dueño"] },
     { id: "menu", label: "Menú", icon: Coffee, roles: ["administrador", "mesero", "dueño"] },
     { id: "carta-digital", label: "Carta Digital", icon: BookOpen, roles: ["administrador", "mesero", "dueño"] },

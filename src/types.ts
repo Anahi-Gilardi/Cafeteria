@@ -131,6 +131,9 @@ export interface Order {
   deliveryFee?: number;
   customerName?: string;
   customerPhone?: string;
+  clientPhone?: string;
+  whatsappMessageId?: string;
+  source?: "qr_mesa" | "public_menu" | "mozo" | "takeaway" | "delivery";
 }
 
 export interface ClientAccount {
@@ -151,4 +154,5 @@ export interface MermaLog {
   reason: string;
   timestamp: string;
 }
+
 export type UserRole = "administrador" | "dueño" | "cajero" | "mesero" | "barista";

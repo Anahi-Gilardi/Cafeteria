@@ -13,6 +13,8 @@ import Dashboard from "./components/Dashboard";
 import CartaDigital from "./components/CartaDigital";
 import TicketPreviewModal from "./components/TicketPreviewModal";
 import ManualPuglia from "./components/ManualPuglia";
+import { PublicDigitalMarquee } from "./components/PublicDigitalMarquee";
+import WhatsAppOrderService from "./services/WhatsAppOrderService";
 import { Coffee, ArrowRight, Sparkles, BookOpen, Clock, Heart, Star, Phone, MapPin, X, CheckCircle, Info, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "./lib/supabase";
@@ -508,17 +510,22 @@ export default function App() {
     showNotification("☕ ¡Su pedido ya fue entregado y disfrutado!", "success");
   };
 
-  // Direct backend comanda status modifier for Admin Panel
+  // Direct backend comanda status modifier for Admin Panel & KDS
   const handleOrderStatusUpdate = async (orderId: string, status: OrderStatusType) => {
     try {
       await supabase.from("orders").update({ status }).eq("id", orderId);
     } catch (err) {
       console.error("Error updating order status on Supabase:", err);
     }
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status } : o))
-    );
-    showNotification(`📋 Pedido actualizado a estado: '${status}'.`, "info");
+    setOrders((prev) => {
+      const updated = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
+      const targetOrder = updated.find((o) => o.id === orderId);
+      if (targetOrder && status === "Listo") {
+        WhatsAppOrderService.notifyOrderReady(targetOrder);
+      }
+      return updated;
+    });
+    showNotification(`📋 Pedido #${orderId} actualizado a estado: '${status}'.`, "info");
   };
 
   const handleLogout = () => {
@@ -582,6 +589,15 @@ export default function App() {
           </AnimatePresence>
         </div>
       </div>
+    );
+  }
+
+  if (activeTab === "public_menu") {
+    return (
+      <PublicDigitalMarquee
+        menuItems={menuItems}
+        onShowNotification={showNotification}
+      />
     );
   }
 
