@@ -2610,11 +2610,10 @@ export default function AdminHub({
   };
 
   const renderPrecios = () => {
-    const currentItem = selectedMenuProduct || menuItems[0];
-    if (!currentItem) return <div>Cargando catálogo...</div>;
-    const directCost = getRecipeCost(currentItem);
-    const utility = simulatedPrice - directCost;
-    const margin = simulatedPrice > 0 ? (utility / simulatedPrice) * 100 : 0;
+    const currentItem = selectedMenuProduct || (menuItems && menuItems.length > 0 ? menuItems[0] : null);
+    const directCost = currentItem ? getRecipeCost(currentItem) : 0;
+    const utility = currentItem ? simulatedPrice - directCost : 0;
+    const margin = (currentItem && simulatedPrice > 0) ? (utility / simulatedPrice) * 100 : 0;
 
     return (
       <motion.div
@@ -2765,9 +2764,9 @@ export default function AdminHub({
             )}
             <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
               {menuItems
-                .filter(item => selectedPosCategory === "todos" || item.category === selectedPosCategory)
+                .filter(item => selectedPosCategory === "todos" || item.category === selectedPosCategory || (selectedPosCategory === "pastry" && item.category === "bakery"))
                 .map((item, idx) => {
-                  const active = currentItem.id === item.id;
+                  const active = currentItem ? currentItem.id === item.id : false;
                   const itemCost = getRecipeCost(item);
                   const itemMargin = item.price > 0 ? ((item.price - itemCost) / item.price) * 100 : 0;
 
@@ -2954,6 +2953,10 @@ export default function AdminHub({
                     </button>
                   </div>
                 </form>
+              ) : !currentItem ? (
+                <div className="p-8 text-center text-[#FDFBF7]/60 italic font-medium">
+                  Seleccione un producto de la lista izquierda para visualizar su ficha técnica de recetas y simulador de margen.
+                </div>
               ) : (
                 <>
                   <div className="flex justify-between items-start">
