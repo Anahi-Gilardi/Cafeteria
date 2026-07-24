@@ -1,21 +1,24 @@
 import { Order } from "../types";
 
-export type StationType = "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos";
+export type StationType = "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos" | "horno_pizzeria";
 
 export class KDSManager {
   /**
-   * Determina la estación de trabajo de cocina o barra según las palabras clave del producto.
+   * Determina la estación de trabajo de cocina, horno o barra según el producto.
    */
   static getItemDestination(name: string): StationType {
     const n = name.toLowerCase();
     
+    if (n.includes("pizza") || n.includes("focaccia") || n.includes("empanada") || n.includes("fugazzeta") || n.includes("muzzarella") || n.includes("calzone")) {
+      return "horno_pizzeria";
+    }
     if (n.includes("bife") || n.includes("entraña") || n.includes("provolone") || n.includes("parrilla") || n.includes("asado") || n.includes("chorizo") || n.includes("bondiola")) {
       return "parrilla";
     }
-    if (n.includes("flan") || n.includes("tiramisú") || n.includes("volcán") || n.includes("ensalada") || n.includes("bruschetta")) {
+    if (n.includes("flan") || n.includes("tiramisú") || n.includes("volcán") || n.includes("ensalada") || n.includes("bruschetta") || n.includes("tarta") || n.includes("chocotorta")) {
       return "cocina_fria";
     }
-    if (n.includes("vino") || n.includes("aperol") || n.includes("cerveza") || n.includes("trago") || n.includes("coctel") || n.includes("spritz")) {
+    if (n.includes("vino") || n.includes("aperol") || n.includes("cerveza") || n.includes("trago") || n.includes("coctel") || n.includes("spritz") || n.includes("fernet")) {
       return "barra_tragos";
     }
     if (
@@ -40,7 +43,8 @@ export class KDSManager {
       cocina: [],
       parrilla: [],
       cocina_fria: [],
-      barra_tragos: []
+      barra_tragos: [],
+      horno_pizzeria: []
     };
 
     order.items.forEach(item => {

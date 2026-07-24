@@ -98,7 +98,7 @@ export interface Table {
   description: string;
   coordX: number; // For rendering physical layout
   coordY: number; // For rendering physical layout
-  status: "Libre" | "Ocupada" | "Esperando" | "Cuenta"; // State in salon
+  status: "Libre" | "Ocupada" | "Esperando" | "Servida" | "Cuenta" | "Limpieza"; // State in salon
   activeOrderId?: string;
 }
 

@@ -12,6 +12,7 @@ import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
 import { DailyExecutiveMenu } from "../types";
 import { supabase } from "../lib/supabase";
 import RestoBarLogo from "./RestoBarLogo";
+import { TimeSlotService } from "../services/TimeSlotService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -4546,7 +4547,12 @@ export default function AdminHub({
           <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 rounded-3xl p-5 shadow-2xl space-y-4 gold-glow">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">Carta & Menú Digital POS</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">Carta & Menú Digital POS</span>
+                  <span className="text-[9px] font-mono font-bold bg-[#FFDF00]/10 border border-[#FFDF00]/30 text-[#FFDF00] px-2 py-0.5 rounded-full">
+                    {TimeSlotService.getCurrentTimeSlot().emoji} {TimeSlotService.getCurrentTimeSlot().name.split(":")[0]}
+                  </span>
+                </div>
                 <h3 className="font-serif text-lg font-bold text-[#FFDF00] mt-0.5">Catálogo de Productos</h3>
               </div>
               <div className="relative w-full sm:w-52">
