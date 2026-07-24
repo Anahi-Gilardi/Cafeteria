@@ -1,13 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Marcellus", ui-serif, Georgia, serif;
+  --font-serif: "Cinzel", "Marcellus", ui-serif, Georgia, serif;
   --color-paper: #FDFBF7;
   --color-espresso: #2C1810;
-  --color-caramel: #C2956E;
-  --color-coffee: rgba(44, 24, 16, 0.1);
+  --color-caramel: #D4AF37;
+  --color-coffee: rgba(212, 175, 55, 0.15);
+  
+  /* Teatro Premium Color Palette */
+  --color-gold-lux: #D4AF37;
+  --color-gold-bright: #FFDF00;
+  --color-gold-dark: #996515;
+  --color-choco-dark: #1C120C;
+  --color-choco-medium: #2A1B12;
+  --color-theater-black: #0F0A07;
+  --color-card-surface: #1A110B;
+}
+
+/* Teatro Premium Design System Utilities */
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #FFDF00 0%, #D4AF37 50%, #996515 100%);
+}
+
+.bg-theater-black {
+  background-color: #0F0A07;
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, #FFF099 0%, #D4AF37 50%, #AA7A1E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-glow {
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.28);
+}
+
+.gold-glow-lg {
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.45);
+}
+
+.gold-border {
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.gold-border-focus:focus {
+  border-color: #D4AF37;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+}
+
+/* GPU Accelerated Anti-Lag Utilities */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 /* Premium Scrollbars */
