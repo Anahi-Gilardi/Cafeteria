@@ -2438,24 +2438,24 @@ export default function AdminHub({
     };
 
     return (
-      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs text-[#2C1810]">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
+      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl gold-glow">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase text-[#C2956E] tracking-widest block">Configuración de Rotación Diaria</span>
-            <h3 className="font-serif text-2xl font-bold">⭐ Pizarra & Menú Ejecutivo del Día</h3>
-            <p className="text-xs text-[#2C1810]/60 italic mt-0.5">
+            <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest block">Configuración de Rotación Diaria</span>
+            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú Ejecutivo del Día</h3>
+            <p className="text-xs text-[#FDFBF7]/70 italic mt-0.5">
               Personalice las opciones de Entrada, Principal, Bebida y Postre para cada día de la semana.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#2C1810] text-white px-4 py-2 rounded-2xl text-xs font-mono font-bold">
-            <span>Precio Combo Cerrado:</span>
+          <div className="flex items-center gap-2 bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FFDF00] px-4 py-2 rounded-2xl text-xs font-mono font-bold">
+            <span>Precio Combo Cerrado ($):</span>
             <input
               type="number"
-              step="0.50"
+              step="100"
               value={activeMenu.price}
-              onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 12.50 })}
-              className="w-20 p-1 bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 rounded-lg text-center font-bold text-xs"
+              onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 8000 })}
+              className="w-24 p-1 bg-[#1C120C] text-[#FFDF00] border border-[#D4AF37]/40 rounded-lg text-center font-bold text-xs"
             />
           </div>
         </div>
@@ -2562,43 +2562,43 @@ export default function AdminHub({
     };
 
     return (
-      <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
+      <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Logística & Despacho</span>
-          <h3 className="font-serif text-2xl font-bold mt-0.5">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
-          <p className="text-xs text-[#2C1810]/60 italic mt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Logística & Despacho</span>
+          <h3 className="font-serif text-2xl font-bold mt-0.5 text-[#FFDF00]">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
+          <p className="text-xs text-[#FDFBF7]/70 italic mt-1">
             Configure la tarifa base de envío para la ciudad de Río Cuarto y el monto de pedido para envío bonificado gratis.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div className="p-5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">Costo Base de Delivery ($)</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">Costo Base de Delivery ($)</label>
             <input
               type="number"
               value={fee}
               onChange={(e) => setFee(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30"
+              className="w-full p-3 border border-[#D4AF37]/30 rounded-xl text-lg font-mono font-bold bg-[#1C120C] text-[#FFDF00]"
             />
-            <span className="text-[10px] text-stone-500 block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
+            <span className="text-[10px] text-[#FDFBF7]/60 block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
           </div>
 
           <div className="p-5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">Envío Gratis a partir de ($)</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">Envío Gratis a partir de ($)</label>
             <input
               type="number"
               value={freeMin}
               onChange={(e) => setFreeMin(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30"
+              className="w-full p-3 border border-[#D4AF37]/30 rounded-xl text-lg font-mono font-bold bg-[#1C120C] text-[#FFDF00]"
             />
-            <span className="text-[10px] text-stone-500 block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
+            <span className="text-[10px] text-[#FDFBF7]/60 block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
           </div>
         </div>
 
         <div className="flex justify-end">
           <button
             onClick={saveDeliverySettings}
-            className="px-6 py-3 bg-[#2C1810] hover:bg-[#3d2217] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all uppercase tracking-wider"
+            className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs rounded-xl shadow-md cursor-pointer transition-all uppercase tracking-wider gold-glow"
           >
             Guardar Configuración de Envíos
           </button>
@@ -2804,42 +2804,42 @@ export default function AdminHub({
           </div>
 
           <div className="lg:col-span-7 space-y-6">
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow">
               {isEditingProduct ? (
-                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#2C1810]/70">
-                  <div className="border-b border-[#2C1810]/10 pb-2 flex justify-between items-center">
-                    <h3 className="font-serif text-base font-bold text-[#2C1810]">Editar Ficha de Producto</h3>
-                    <span className="text-[9px] bg-[#2C1810]/5 text-[#2C1810] px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
+                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#FDFBF7]">
+                  <div className="border-b border-[#D4AF37]/20 pb-2 flex justify-between items-center">
+                    <h3 className="font-serif text-base font-bold text-[#FFDF00]">Editar Ficha de Producto</h3>
+                    <span className="text-[9px] bg-[#2A1B12] text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
                   </div>
                   
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Nombre del Producto *</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Producto *</label>
                     <input 
                       type="text" 
                       value={editProdName} 
                       onChange={(e) => setEditProdName(e.target.value)} 
-                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none text-xs"
+                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-xs"
                       required 
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Comercial ($) *</label>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Comercial ($) *</label>
                       <input 
                         type="number" 
                         value={editProdPrice} 
                         onChange={(e) => setEditProdPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs"
+                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs"
                         required 
                       />
                     </div>
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1">Categoría</label>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Categoría</label>
                       <select 
                         value={editProdCategory} 
                         onChange={(e) => setEditProdCategory(e.target.value)} 
-                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer text-xs"
+                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer text-xs"
                       >
                         <option value="coffee">☕ Cafetería</option>
                         <option value="bakery">🍰 Pastelería</option>
@@ -2852,42 +2852,42 @@ export default function AdminHub({
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Takeaway ($)</label>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Takeaway ($)</label>
                       <input 
                         type="number" 
                         value={editProdTakeawayPrice} 
                         onChange={(e) => setEditProdTakeawayPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs"
+                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Delivery ($)</label>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Delivery ($)</label>
                       <input 
                         type="number" 
                         value={editProdDeliveryPrice} 
                         onChange={(e) => setEditProdDeliveryPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs"
+                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs"
                       />
                     </div>
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1">Stock Actual</label>
+                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Stock Actual</label>
                       <input 
                         type="number" 
                         value={editProdStock} 
                         onChange={(e) => setEditProdStock(e.target.value)} 
-                        className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-mono text-xs" 
+                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs" 
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Foto (URL o Subir Local) *</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir Local) *</label>
                     <input 
                       type="text" 
                       value={editProdImage.startsWith("data:image") ? "Foto subida localmente" : editProdImage} 
                       onChange={(e) => setEditProdImage(e.target.value)} 
                       placeholder="Url de Unsplash..." 
-                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none text-[10px]" 
+                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-[10px]" 
                       disabled={editProdImage.startsWith("data:image")}
                     />
                     <div className="mt-1 flex items-center justify-between">
@@ -2904,13 +2904,13 @@ export default function AdminHub({
                             reader.readAsDataURL(file);
                           }
                         }}
-                        className="w-full text-[9px] text-[#2C1810]/60 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-semibold file:bg-[#2C1810]/10 file:text-[#2C1810] hover:file:bg-[#2C1810]/20 cursor-pointer" 
+                        className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-semibold file:bg-[#2A1B12] file:text-[#D4AF37] hover:file:bg-[#3D281A] cursor-pointer" 
                       />
                       {editProdImage.startsWith("data:image") && (
                         <button
                           type="button"
                           onClick={() => setEditProdImage("")}
-                          className="text-[9px] text-red-600 underline font-bold bg-transparent border-none cursor-pointer"
+                          className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer"
                         >
                           Eliminar
                         </button>
@@ -2919,34 +2919,34 @@ export default function AdminHub({
                   </div>
 
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Descripción</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción</label>
                     <textarea 
                       value={editProdDescription} 
                       onChange={(e) => setEditProdDescription(e.target.value)} 
                       placeholder="Descripción de la especialidad..." 
                       rows={3} 
-                      className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none font-normal resize-none text-xs" 
+                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-normal resize-none text-xs" 
                     />
                   </div>
 
                   {editProdImage && (
                     <div className="mt-2 text-center">
-                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#2C1810]/40">Vista Previa de la Imagen</span>
-                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#2C1810]/15 mx-auto object-cover shadow-sm" />
+                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Imagen</span>
+                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#D4AF37]/30 mx-auto object-cover shadow-sm" />
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-[#2C1810]/10">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
                     <button 
                       type="button" 
                       onClick={() => setIsEditingProduct(false)} 
-                      className="px-4 py-2 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer"
+                      className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7]/70 rounded-xl hover:bg-stone-800 cursor-pointer"
                     >
                       Cancelar
                     </button>
                     <button 
                       type="submit" 
-                      className="px-5 py-2 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer"
+                      className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black rounded-xl shadow-md cursor-pointer uppercase tracking-wider gold-glow"
                     >
                       Guardar Ficha
                     </button>
@@ -2956,34 +2956,34 @@ export default function AdminHub({
                 <>
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
-                      <h3 className="font-serif text-2xl font-bold text-[#2C1810] mt-1">{currentItem.name}</h3>
-                      <p className="text-xs text-[#2C1810]/60 mt-1 leading-relaxed">{currentItem.description}</p>
+                      <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
+                      <h3 className="font-serif text-2xl font-bold text-[#FDFBF7] mt-1">{currentItem.name}</h3>
+                      <p className="text-xs text-[#FDFBF7]/70 mt-1 leading-relaxed">{currentItem.description}</p>
                     </div>
                     <button
                       onClick={() => handleStartEditingProduct(currentItem)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#C2956E] hover:bg-[#a37956] text-white text-[10px] font-bold rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-md border-none gold-glow"
                     >
                       ✏️ Editar Ficha
                     </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Costo Materia Prima</span>
-                      <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
-                      <span className="text-[7px] text-[#2C1810]/40 block font-semibold mt-1">Calculado por gramo/mL</span>
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Costo Materia Prima</span>
+                      <div className="text-xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#FDFBF7]/60 block font-semibold mt-1">Calculado por gramo/mL</span>
                     </div>
-                    <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Utilidad Bruta</span>
-                      <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">${utility.toFixed(0)}</div>
-                      <span className="text-[7px] text-[#2C1810]/40 block font-semibold mt-1">Sugerido menos costos fijos</span>
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Utilidad Bruta</span>
+                      <div className="text-xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">${utility.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#FDFBF7]/60 block font-semibold mt-1">Sugerido menos costos fijos</span>
                     </div>
-                    <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Margen de Contribución</span>
-                      <div className="text-xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Margen de Contribución</span>
+                      <div className="text-xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
                       <span className={`text-[7px] font-bold block mt-1 uppercase text-center ${
-                        margin >= 60 ? "text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.5 rounded" : "text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded"
+                        margin >= 60 ? "text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded" : "text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1 py-0.5 rounded"
                       }`}>
                         {margin >= 60 ? "EXCELENTE" : "BAJO"}
                       </span>
@@ -2991,35 +2991,35 @@ export default function AdminHub({
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-[#2C1810] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
-                    <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
+                    <h4 className="text-[10px] font-black text-[#FFDF00] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
+                    <div className="border border-[#D4AF37]/20 rounded-2xl overflow-hidden text-xs bg-[#2A1B12]">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-stone-50 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                          <tr className="bg-[#1C120C] border-b border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-wider text-[#D4AF37]">
                             <th className="p-3">Insumo</th>
                             <th className="p-3 text-center">Cantidad Receta</th>
                             <th className="p-3 text-center">Costo Unitario</th>
                             <th className="p-3 text-right">Inversión</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#2C1810]/5">
+                        <tbody className="divide-y divide-[#D4AF37]/15">
                           {currentItem.recipe && currentItem.recipe.length > 0 ? (
                             currentItem.recipe.map((r, idx) => {
                               const ins = insumos.find(i => i.id === r.ingredientId);
                               const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || 0;
                               const totalCost = r.amount * unitCost;
                               return (
-                                <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                                  <td className="p-3 font-bold text-[#2C1810]">{ins?.name || r.ingredientId}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#2C1810]/80">{r.amount} {ins?.unit}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#2C1810]/50">${unitCost.toLocaleString("es-AR")} / {ins?.unit}</td>
-                                  <td className="p-3 text-right font-mono font-bold text-[#2C1810]">${totalCost.toFixed(0)}</td>
+                                <tr key={idx} className="hover:bg-[#1C120C]/60 transition-colors">
+                                  <td className="p-3 font-bold text-[#FDFBF7]">{ins?.name || r.ingredientId}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#FDFBF7]">{r.amount} {ins?.unit}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#D4AF37]">${unitCost.toLocaleString("es-AR")} / {ins?.unit}</td>
+                                  <td className="p-3 text-right font-mono font-bold text-[#FFDF00]">${totalCost.toFixed(0)}</td>
                                 </tr>
                               );
                             })
                           ) : (
                             <tr>
-                              <td colSpan={4} className="p-4 text-center text-xs text-[#2C1810]/40 font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
+                              <td colSpan={4} className="p-4 text-center text-xs text-[#D4AF37] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
                             </tr>
                           )}
                         </tbody>
@@ -3030,30 +3030,30 @@ export default function AdminHub({
               )}
             </div>
 
-            <div className="bg-amber-50/40 border border-[#C2956E]/20 rounded-3xl p-6 shadow-xs space-y-4">
-              <h4 className="font-serif text-sm font-bold text-[#2C1810] flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-[#C2956E]" /> Simulador de Estrategia para el Cliente
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
+              <h4 className="font-serif text-sm font-bold text-[#FFDF00] flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-[#D4AF37]" /> SIMULADOR DE ESTRATEGIA PARA EL CLIENTE
               </h4>
-              <p className="text-[10px] text-[#2C1810]/60 leading-relaxed font-semibold">
+              <p className="text-[10px] text-[#FDFBF7]/70 leading-relaxed font-semibold">
                 Edite el precio sugerido de venta (ingresando un valor alternativo debajo) para evaluar la rentabilidad del producto.
               </p>
               <div className="flex gap-4 items-center">
                 <div className="w-1/2">
-                  <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Precio de Venta Sugerido ($)</label>
+                  <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">PRECIO DE VENTA SUGERIDO ($)</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-[#2C1810]/40 text-xs font-bold">$</span>
+                    <span className="absolute left-3 top-2.5 text-[#D4AF37] text-xs font-bold">$</span>
                     <input 
                       type="number"
                       value={simulatedPrice}
                       onChange={(e) => setSimulatedPrice(Math.max(1, parseFloat(e.target.value) || 0))}
-                      className="w-full pl-6 pr-3 py-2 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:outline-none focus:ring-1 focus:ring-[#C2956E] font-bold font-mono"
+                      className="w-full pl-6 pr-3 py-2 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] focus:outline-none focus:ring-1 focus:ring-[#D4AF37] font-bold font-mono"
                     />
                   </div>
                 </div>
-                <div className="w-1/2 p-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl flex justify-between items-center text-xs">
+                <div className="w-1/2 p-3 bg-[#2A1B12] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl flex justify-between items-center text-xs">
                   <div>
-                    <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Margen Sim.</span>
-                    <span className="text-base font-black text-[#2C1810] block font-mono">{margin.toFixed(1)}%</span>
+                    <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Margen Sim.</span>
+                    <span className="text-base font-black text-[#FFDF00] block font-mono">{margin.toFixed(1)}%</span>
                   </div>
                   <button 
                     onClick={() => {
@@ -3066,7 +3066,7 @@ export default function AdminHub({
                       onUpdateMenu(updated);
                       onShowNotification(`💰 Precio comercial actualizado para '${currentItem.name}' a $${simulatedPrice.toFixed(0)}`, "success");
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-[10px] font-bold text-white transition-all cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-[10px] font-black transition-all cursor-pointer uppercase tracking-wider shadow-md gold-glow"
                   >
                     Guardar Precio 
                   </button>
@@ -6172,7 +6172,7 @@ export default function AdminHub({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-8 lg:p-10 bg-[#FDFBF7]">
+      <div className="flex-1 overflow-y-auto p-8 lg:p-10 bg-[#0F0A07] text-[#FDFBF7]">
         <AnimatePresence mode="wait">
           {activeSubTab === "dashboard" && renderDashboard()}
           {activeSubTab === "inventario" && renderInventario()}
@@ -6190,22 +6190,22 @@ export default function AdminHub({
 
       {/* Automated Purchase Orders (US-2.3) Modal */}
       {isAutoOrderModalOpen && (
-        <div className="fixed inset-0 bg-[#2C1810]/85 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FDFBF7] border border-[#C2956E]/30 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative text-xs font-semibold text-[#2C1810] flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col max-h-[90vh] gold-glow">
             <button 
               onClick={() => setIsAutoOrderModalOpen(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810] cursor-pointer border-none bg-transparent"
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="border-b border-[#2C1810]/10 pb-3 mb-4">
-              <span className="text-[9px] font-black uppercase text-[#C2956E] tracking-widest block">Reabastecimiento Inteligente</span>
-              <h4 className="font-serif text-lg font-bold text-[#2C1810]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
+            <div className="border-b border-[#D4AF37]/20 pb-3 mb-4">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Reabastecimiento Inteligente</span>
+              <h4 className="font-serif text-lg font-bold text-[#FFDF00]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
             </div>
 
             <div className="overflow-y-auto space-y-6 flex-1 pr-1">
-              <p className="text-xs text-[#2C1810]/70 italic leading-relaxed">
+              <p className="text-xs text-[#FDFBF7]/70 italic leading-relaxed">
                 El sistema detectó insumos en nivel de seguridad crítico y agrupó las cantidades necesarias de reposición por proveedor. Puede copiar el mensaje directo para enviarlo por WhatsApp o Correo Electrónico.
               </p>
 
@@ -6279,20 +6279,20 @@ export default function AdminHub({
 
       {/* Unified Movement Registration Modal */}
       {isMovementModalOpen && (
-        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#FDFBF7] gold-glow">
             <button 
               onClick={() => setIsMovementModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-4">Registrar Movimiento de Stock</h4>
+            <h4 className="font-serif text-lg font-bold text-[#FFDF00] mb-4">Registrar Movimiento de Stock</h4>
 
             <div className="space-y-4">
               <div>
-                <span className="text-[9px] font-bold text-[#2C1810]/50 uppercase tracking-wider block mb-1.5">Tipo de Ajuste</span>
+                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block mb-1.5">Tipo de Ajuste</span>
                 <div className="grid grid-cols-2 gap-3">
                   {["Ingreso", "Egreso"].map((t) => (
                     <button
@@ -6301,8 +6301,8 @@ export default function AdminHub({
                       onClick={() => setMovType(t as any)}
                       className={`p-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
                         movType === t 
-                          ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]" 
-                          : "bg-white border-stone-200 text-[#2C1810] hover:bg-stone-50"
+                          ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] font-black shadow-md gold-glow" 
+                          : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7] hover:bg-[#3D281A]"
                       }`}
                     >
                       {t === "Ingreso" ? "📥 Ingreso (Recibo)" : "📤 Egreso (Merma/Ajuste)"}
