@@ -5225,7 +5225,7 @@ export default function AdminHub({
         {/* Right Column: Draft Comanda */}
         <div className="lg:col-span-3">
           <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-5 shadow-2xl flex flex-col justify-between h-[620px] gold-glow">
-            {!mozoSelectedTable ? (
+            {!mozoSelectedTable && mozoServiceType === "salon" ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-[#FDFBF7]/60 p-6 space-y-3">
                 <div className="h-16 w-16 rounded-3xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] flex items-center justify-center">
                   <Coffee className="h-8 w-8 animate-pulse" />
@@ -5236,7 +5236,7 @@ export default function AdminHub({
                 </p>
               </div>
             ) : (() => {
-                const activeOrder = getActiveOrderForTable(mozoSelectedTable);
+                const activeOrder = mozoSelectedTable ? getActiveOrderForTable(mozoSelectedTable) : undefined;
                 if (activeOrder && mozoCart.length === 0) {
                   return (
                     <ProfessionalOrderTicket
@@ -5252,16 +5252,31 @@ export default function AdminHub({
                   );
                 }
 
+                const deliveryFeeExtra = mozoServiceType === "delivery" ? mozoDeliveryForm.deliveryFee : 0;
+                const currentTotal = subtotal + deliveryFeeExtra;
+
                 return (
                   <div className="flex-1 flex flex-col justify-between h-full">
                     <div className="space-y-4 flex-1 flex flex-col">
                       <div className="border-b border-[#D4AF37]/20 pb-3 flex justify-between items-center">
                         <div>
-                          <h4 className="font-serif text-base font-bold text-[#FFDF00]">Comanda {mozoSelectedTable}</h4>
-                          <span className="text-[10px] font-bold text-[#D4AF37] block mt-0.5">Mozo: {selectedWaiter}</span>
+                          <h4 className="font-serif text-base font-bold text-[#FFDF00]">
+                            {mozoServiceType === "takeaway"
+                              ? `🛍️ RETIRO EN LOCAL`
+                              : mozoServiceType === "delivery"
+                              ? `🛵 DELIVERY A DOMICILIO`
+                              : `Comanda ${mozoSelectedTable}`}
+                          </h4>
+                          <span className="text-[10px] font-bold text-[#D4AF37] block mt-0.5">
+                            {mozoServiceType === "takeaway"
+                              ? `Cliente: ${mozoTakeawayForm.customerName || "Consumidor Final"}`
+                              : mozoServiceType === "delivery"
+                              ? `Cliente: ${mozoDeliveryForm.customerName || "Consumidor Final"}`
+                              : `Mozo: ${selectedWaiter}`}
+                          </span>
                         </div>
                         <span className="px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] text-[9px] font-mono font-black uppercase tracking-wider">
-                          {activeOrder ? "Edición" : "Nueva"}
+                          {mozoServiceType === "takeaway" ? "RETIRO" : mozoServiceType === "delivery" ? "DELIVERY" : activeOrder ? "Edición" : "Nueva"}
                         </span>
                       </div>
 
@@ -5323,16 +5338,22 @@ export default function AdminHub({
                     <div className="border-t border-[#D4AF37]/20 pt-4 space-y-4">
                       <div className="space-y-1.5 text-xs font-bold text-[#FDFBF7]/80">
                         <div className="flex justify-between">
-                          <span>Subtotal</span>
+                          <span>Subtotal Consumos</span>
                           <span className="font-mono text-[#FDFBF7]">${subtotal.toLocaleString("es-AR")}</span>
                         </div>
+                        {mozoServiceType === "delivery" && (
+                          <div className="flex justify-between text-amber-300">
+                            <span>Envío Cadete</span>
+                            <span className="font-mono">${deliveryFeeExtra.toLocaleString("es-AR")}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
-                          <span>IVA (21% Incluido)</span>
-                          <span className="font-mono text-[#FDFBF7]">${tax.toLocaleString("es-AR")}</span>
+                          <span>IVA (21% Estimado)</span>
+                          <span className="font-mono text-[#FDFBF7]">${(currentTotal - currentTotal / 1.21).toFixed(0)}</span>
                         </div>
                         <div className="flex justify-between border-t border-[#D4AF37]/20 pt-2 text-sm font-black text-[#FFDF00]">
                           <span>TOTAL COMANDA</span>
-                          <span className="font-mono text-xl text-[#FFDF00]">${total.toLocaleString("es-AR")}</span>
+                          <span className="font-mono text-xl text-[#FFDF00]">${currentTotal.toLocaleString("es-AR")}</span>
                         </div>
                       </div>
 
