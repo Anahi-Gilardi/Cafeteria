@@ -8,6 +8,8 @@ interface LoginScreenProps {
 }
 
 const DEFAULT_USERS = [
+  { id: "usr-admin", name: "Admin (Administrador)", email: "admin", password: "1998", role: "administrador", pin: "1998" },
+  { id: "usr-admin-full", name: "Admin (Administrador)", email: "admin@cafepuglia.com", password: "1998", role: "administrador", pin: "1998" },
   { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@cafepuglia.com", password: "pablo123", role: "administrador", pin: "1111" },
   { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@cafepuglia.com", password: "barista123", role: "barista", pin: "2222" },
   { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@cafepuglia.com", password: "mesero123", role: "mesero", pin: "3333" }
@@ -50,7 +52,7 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         console.error("Error reading local users:", e);
       }
 
-      // Merge and remove duplicates by email/pin/id
+      // Merge default users (including admin)
       const merged = [...dbUsers];
       if (Array.isArray(localUsers)) {
         localUsers.forEach(l => {
@@ -59,6 +61,11 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
           }
         });
       }
+      DEFAULT_USERS.forEach(def => {
+        if (!merged.some(m => m.email === def.email || m.id === def.id)) {
+          merged.push(def);
+        }
+      });
 
       if (merged.length > 0) {
         setEmployees(merged);
@@ -106,7 +113,13 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         }
       } catch (e) {}
 
-      const matchedLocal = localUsers.find(u => u.email === emailInput.trim().toLowerCase());
+      const cleanInput = emailInput.trim().toLowerCase();
+      const matchUserEmail = (uEmail: string) => {
+        const e = uEmail.toLowerCase();
+        return e === cleanInput || (cleanInput === "admin" && (e === "admin@cafepuglia.com" || e === "admin"));
+      };
+
+      const matchedLocal = localUsers.find(u => matchUserEmail(u.email));
       if (matchedLocal) {
         if (matchedLocal.password === passwordInput) {
           onShowNotification(`☕ ¡Bienvenido, ${matchedLocal.name}! Sesión iniciada como ${matchedLocal.role}.`, "success");
@@ -130,12 +143,12 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
       const { data, error } = await supabase
         .from("users_accounts")
         .select("*")
-        .eq("email", emailInput.trim().toLowerCase())
+        .eq("email", cleanInput)
         .single();
 
       let user = data;
       if (error || !data) {
-        const fallbackUser = DEFAULT_USERS.find(u => u.email === emailInput.trim().toLowerCase());
+        const fallbackUser = DEFAULT_USERS.find(u => matchUserEmail(u.email));
         if (fallbackUser) {
           user = fallbackUser;
         } else {
@@ -160,7 +173,8 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         pin: user.pin
       });
     } catch (err) {
-      const fallbackUser = DEFAULT_USERS.find(u => u.email === emailInput.trim().toLowerCase());
+      const cleanInput = emailInput.trim().toLowerCase();
+      const fallbackUser = DEFAULT_USERS.find(u => u.email.toLowerCase() === cleanInput || (cleanInput === "admin" && (u.email === "admin" || u.email === "admin@cafepuglia.com")));
       if (fallbackUser && fallbackUser.password === passwordInput) {
         onShowNotification(`☕ ¡Bienvenido, ${fallbackUser.name}! Sesión iniciada como ${fallbackUser.role}.`, "success");
         onLoginSuccess({
