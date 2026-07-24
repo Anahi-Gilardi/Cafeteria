@@ -140,6 +140,78 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               <FileText className="h-5 w-5 text-[#B8860B]" /> Descargar Carta PDF Oficial
             </button>
           </div>
+
+          {/* HIGH-IMPACT MARKETING SHOWCASE: MENÚ EJECUTIVO DIARIO ($8.000) */}
+          <div className="mt-8 max-w-4xl mx-auto bg-gradient-to-br from-[#1C120C] via-[#2A1B12] to-[#1C120C] text-[#FDFBF7] border-2 border-[#D4AF37] rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden text-left gold-glow">
+            {/* Top Scarcity & Social Proof Bar */}
+            <div className="flex flex-wrap justify-between items-center gap-3 border-b border-[#D4AF37]/30 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#FFDF00] bg-[#FFDF00]/10 px-3 py-1 rounded-full border border-[#FFDF00]/30 font-mono">
+                  🔥 OFERTA DEL MEDIODÍA • {todayMenu.dayOfWeek.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[#D4AF37] font-bold">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span>4 Pasos Incluidos • <strong>${todayMenu.price.toLocaleString("es-AR")} ARS</strong></span>
+              </div>
+            </div>
+
+            {/* Menu Title & Headline */}
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-serif text-2xl md:text-3xl font-extrabold text-[#FFDF00] tracking-tight">
+                  ⭐ {todayMenu.title}
+                </h3>
+                <span className="text-xl md:text-2xl font-black font-mono text-[#FFDF00] bg-[#2A1B12] px-4 py-1.5 rounded-2xl border border-[#D4AF37]/50 shadow-md">
+                  ${todayMenu.price.toLocaleString("es-AR")}
+                </span>
+              </div>
+              <p className="text-xs text-[#FDFBF7]/70 italic">
+                "{todayMenu.subtitle || "Selección fresca elaborada en el día por nuestro Chef."}"
+              </p>
+            </div>
+
+            {/* 4 Steps Value Proposition Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-[#130B07]/80 p-4 rounded-2xl border border-[#D4AF37]/20">
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🥖 1. ENTRADA</span>
+                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.starters.join(" • ")}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🥩 2. PLATO PRINCIPAL</span>
+                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.mains.join(" • ")}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🥤 3. BEBIDA INCLUIDA</span>
+                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.drinks.join(" • ")}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🍰 4. POSTRE / CAFÉ</span>
+                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.desserts.join(" • ")}</p>
+              </div>
+            </div>
+
+            {/* High Converting Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                onClick={() => {
+                  const message = `Hola Resto Bar Del Teatro, quiero hacer un pedido/reserva para el Menú Ejecutivo del Día (${todayMenu.dayOfWeek}) por $${todayMenu.price.toLocaleString("es-AR")}.`;
+                  window.open(`https://wa.me/543585042311?text=${encodeURIComponent(message)}`, "_blank");
+                  onShowNotification("📱 Abriendo chat de WhatsApp para pedir el Menú Diario...", "success");
+                }}
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+              >
+                💬 Pedir Menú Diario por WhatsApp ($8.000)
+              </button>
+              <button
+                onClick={() => setViewMode("digital_menu")}
+                className="py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 cursor-pointer gold-glow flex items-center justify-center gap-2"
+              >
+                🍽️ Personalizar Mi Combo
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
