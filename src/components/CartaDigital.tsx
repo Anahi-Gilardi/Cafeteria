@@ -3,7 +3,8 @@ import RestoBarLogo from "./RestoBarLogo";
 import { MenuItem, Table } from "../types";
 import { TABLES_DATA } from "../data/menu";
 import { MenuPDFService } from "../services/MenuPDFService";
-import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils, FileText } from "lucide-react";
+import WaiterCallService from "../services/WaiterCallService";
+import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils, FileText, CreditCard } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface CartaDigitalProps {
@@ -93,12 +94,38 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
           El servicio de siempre en su celular. Escanee, realice su pedido desde la mesa y llame al mozo sin esperas. ¡Viva la experiencia Puglia!
         </p>
 
-        <button
-          onClick={() => MenuPDFService.generateMenuPDF(menuItems)}
-          className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer gold-glow uppercase tracking-wider"
-        >
-          <FileText className="h-4 w-4" /> Descargar Carta PDF Oficial
-        </button>
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
+          <button
+            onClick={() => MenuPDFService.generateMenuPDF(menuItems)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer gold-glow uppercase tracking-wider"
+          >
+            <FileText className="h-4 w-4" /> Descargar Carta PDF Oficial
+          </button>
+
+          <button
+            onClick={() => {
+              const currentTableObj = TABLES_DATA.find(t => t.id === selectedTable);
+              const tNum = currentTableObj ? currentTableObj.name : "1";
+              WaiterCallService.requestAttention(tNum, "call_waiter");
+              onShowNotification(`🔔 Solicitud enviada al mozo para ${tNum}.`, "success");
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
+          >
+            <Bell className="h-4 w-4" /> 🔔 Llamar al Mozo
+          </button>
+
+          <button
+            onClick={() => {
+              const currentTableObj = TABLES_DATA.find(t => t.id === selectedTable);
+              const tNum = currentTableObj ? currentTableObj.name : "1";
+              WaiterCallService.requestAttention(tNum, "request_bill");
+              onShowNotification(`💳 Pedido de cuenta enviado para ${tNum}.`, "info");
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#2A1B12] border border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider gold-glow"
+          >
+            <CreditCard className="h-4 w-4" /> 💳 Pedir la Cuenta
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

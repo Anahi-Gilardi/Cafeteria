@@ -13,6 +13,8 @@ import { DailyExecutiveMenu } from "../types";
 import { supabase } from "../lib/supabase";
 import RestoBarLogo from "./RestoBarLogo";
 import { TimeSlotService } from "../services/TimeSlotService";
+import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
+import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -196,6 +198,23 @@ export default function AdminHub({
     mercadopago: 0,
     transactions: []
   });
+
+  // Real-time Waiter Calls state
+  const [pendingWaiterCalls, setPendingWaiterCalls] = useState<WaiterCall[]>(() => WaiterCallService.getPendingCalls());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setPendingWaiterCalls(WaiterCallService.getPendingCalls());
+    };
+    window.addEventListener("waiter_call_event", handleUpdate);
+    window.addEventListener("waiter_calls_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("waiter_call_event", handleUpdate);
+      window.removeEventListener("waiter_calls_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
 
   const [isShiftOpen, setIsShiftOpen] = useState<boolean>(() => {
     return localStorage.getItem("puglia_shift_open") === "true";
@@ -2598,7 +2617,41 @@ export default function AdminHub({
           </div>
         </div>
 
-        <div className="flex justify-end">
+        {/* Río Cuarto Zones Table & WhatsApp Dispatcher */}
+        <div className="border-t border-[#D4AF37]/20 pt-4 space-y-4">
+          <h4 className="font-serif text-lg font-bold text-[#FFDF00]">🗺️ Tarifas por Zona en Río Cuarto & Despacho a Cadete</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {RIO_CUARTO_ZONES.map((zone) => (
+              <div key={zone.id} className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-2">
+                <strong className="text-xs font-bold text-[#FFDF00] block">{zone.name}</strong>
+                <div className="flex justify-between items-center font-mono text-xs">
+                  <span className="text-[#D4AF37]">Tarifa: <strong>${zone.fee} ARS</strong></span>
+                  <span className="text-[#FDFBF7]/60">⏱️ {zone.estimatedMinutes} min</span>
+                </div>
+                <button
+                  onClick={() => {
+                    const link = DeliveryZoneService.generateDriverWhatsAppLink(
+                      "PED-" + Math.floor(1000 + Math.random() * 9000),
+                      "Cliente Río Cuarto",
+                      "358 5042311",
+                      "Constitución",
+                      "944",
+                      `Entrega en ${zone.name}`,
+                      "543585042311"
+                    );
+                    window.open(link, "_blank");
+                    onShowNotification(`🛵 Abriendo WhatsApp de cadetería para envío a ${zone.name}...`, "info");
+                  }}
+                  className="w-full mt-2 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  💬 Despachar Cadete WhatsApp
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
           <button
             onClick={saveDeliverySettings}
             className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs rounded-xl shadow-md cursor-pointer transition-all uppercase tracking-wider gold-glow"
@@ -4462,6 +4515,43 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#FDFBF7]"
       >
+        {/* Real-time Waiter Attention Calls Bar */}
+        {pendingWaiterCalls.length > 0 && (
+          <div className="lg:col-span-12 bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-2 border-[#FFDF00] rounded-3xl p-4 shadow-2xl space-y-3 gold-glow">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-[#FFDF00] animate-ping"></span>
+                <h4 className="font-serif text-sm font-black text-[#FFDF00] uppercase tracking-wider">
+                  🔔 Solicitudes de Atención en Mesa ({pendingWaiterCalls.length})
+                </h4>
+              </div>
+              <span className="text-[10px] text-[#FDFBF7]/70 font-mono">Responda para atenuar la alerta</span>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {pendingWaiterCalls.map((call) => (
+                <div key={call.id} className="bg-[#1A110B] border border-[#D4AF37] p-3 rounded-2xl flex items-center justify-between gap-4 shadow-md">
+                  <div>
+                    <strong className="text-xs font-serif font-black text-[#FFDF00] block">{call.tableNumber}</strong>
+                    <span className="text-[10px] text-[#FDFBF7] font-semibold">
+                      {call.type === "call_waiter" ? "🔔 Solicita Mozo" : "💳 Pide la Cuenta"} ({call.timestamp})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      WaiterCallService.markAttended(call.id);
+                      onShowNotification(`✅ Solicitud de ${call.tableNumber} marcada como atendida.`, "success");
+                    }}
+                    className="px-3 py-1.5 bg-[#FFDF00] hover:bg-amber-400 text-[#1C120C] rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm"
+                  >
+                    Atendido
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Left Column: Waiter & Tables */}
         <div className="lg:col-span-3 space-y-6">
           {/* Waiter Card */}
@@ -5048,11 +5138,11 @@ export default function AdminHub({
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
-              <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+              <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
                 <div>
-                  <div className="mb-4 border-b border-[#2C1810]/15 pb-2">
-                    <h3 className="font-serif text-base font-bold text-[#2C1810]">Ficha de Calibración Diaria</h3>
-                    <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Control de extracción obligatorio para Baristas (Sec. III.1).</p>
+                  <div className="mb-4 border-b border-[#D4AF37]/20 pb-2">
+                    <h3 className="font-serif text-base font-bold text-[#FFDF00]">Ficha de Calibración Diaria</h3>
+                    <p className="text-[10px] text-[#FDFBF7]/60 mt-0.5">Control de extracción obligatorio para Baristas de Resto Bar Del Teatro.</p>
                   </div>
 
                   <form
@@ -5074,58 +5164,57 @@ export default function AdminHub({
                         onShowNotification("⚠️ Error al guardar calibración en la nube.", "warning");
                       }
                     }}
-                    className="space-y-4 text-xs font-semibold text-[#2C1810]/70"
+                    className="space-y-4 text-xs font-semibold text-[#FDFBF7]"
                   >
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Entrada (Gramos)</label>
+                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Dosis (In)</label>
                         <input
                           type="number"
                           step="0.1"
                           value={calibrationData.gramosIn}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, gramosIn: parseFloat(e.target.value) || 18 })}
-                          className="w-full p-2 border border-[#2C1810]/20 rounded-lg font-mono font-bold focus:outline-none"
+                          onChange={(e) => setCalibrationData({ ...calibrationData, gramosIn: parseFloat(e.target.value) || 0 })}
+                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Salida (mL)</label>
+                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Rendimiento (Out)</label>
                         <input
                           type="number"
                           value={calibrationData.mililitrosOut}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, mililitrosOut: parseInt(e.target.value) || 36 })}
-                          className="w-full p-2 border border-[#2C1810]/20 rounded-lg font-mono font-bold focus:outline-none"
+                          onChange={(e) => setCalibrationData({ ...calibrationData, mililitrosOut: parseFloat(e.target.value) || 0 })}
+                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Tiempo (Seg)</label>
+                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Tiempo (seg)</label>
                         <input
                           type="number"
                           value={calibrationData.tiempo}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, tiempo: parseInt(e.target.value) || 27 })}
-                          className="w-full p-2 border border-[#2C1810]/20 rounded-lg font-mono font-bold focus:outline-none"
+                          onChange={(e) => setCalibrationData({ ...calibrationData, tiempo: parseFloat(e.target.value) || 0 })}
+                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Temp (°C)</label>
+                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Temperatura (°C)</label>
                         <input
                           type="number"
-                          step="0.5"
                           value={calibrationData.temperatura}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, temperatura: parseFloat(e.target.value) || 92 })}
-                          className="w-full p-2 border border-[#2C1810]/20 rounded-lg font-mono font-bold focus:outline-none"
+                          onChange={(e) => setCalibrationData({ ...calibrationData, temperatura: parseFloat(e.target.value) || 0 })}
+                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Clima / Humedad</label>
+                      <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Clima / Humedad</label>
                       <select
                         value={calibrationData.clima}
                         onChange={(e) => setCalibrationData({ ...calibrationData, clima: e.target.value })}
-                        className="w-full p-2 border border-[#2C1810]/20 rounded-lg font-bold focus:outline-none bg-stone-50 cursor-pointer"
+                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer"
                       >
                         <option value="Despejado y Seco">Despejado y Seco (Estable)</option>
                         <option value="Lluvioso y Húmedo">Lluvioso y Húmedo (Ajustar Molienda)</option>
@@ -5136,7 +5225,7 @@ export default function AdminHub({
 
                     <button
                       type="submit"
-                      className="w-full py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold uppercase transition-all cursor-pointer tracking-wider"
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black uppercase transition-all cursor-pointer tracking-wider shadow-md gold-glow"
                     >
                       ✓ Guardar & Calibrar
                     </button>
