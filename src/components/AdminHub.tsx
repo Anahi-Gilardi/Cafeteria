@@ -1520,7 +1520,7 @@ export default function AdminHub({
 
         {/* 3 Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
             <div>
               <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Caja Turno Actual</span>
               <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">${isShiftOpen ? cashLedger.totalCollected.toLocaleString() : (closuresHistory[0]?.ventasTurno || 0).toLocaleString()}</div>
@@ -1537,7 +1537,7 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
             <div>
               <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Auditoría (Diferencias)</span>
               <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">
@@ -1556,7 +1556,7 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
             <div>
               <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Arqueos Homologados</span>
               <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5">{closuresHistory.length}</div>
@@ -1574,7 +1574,7 @@ export default function AdminHub({
 
         {/* Chart + Reposición split */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+          <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -1621,7 +1621,7 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <div>
@@ -1736,7 +1736,7 @@ export default function AdminHub({
         </div>
 
         <form onSubmit={handleSubmitBlindAudit} className="space-y-4">
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
@@ -1790,7 +1790,7 @@ export default function AdminHub({
           ) : (
             <div className="space-y-6">
               {auditHistory.map((audit) => (
-                <div key={audit.id} className="bg-white border border-[#2C1810]/15 rounded-3xl p-5 shadow-xs space-y-4">
+                <div key={audit.id} className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs space-y-4">
                   <div className="flex justify-between items-center border-b border-[#2C1810]/15 pb-2.5 text-xs">
                     <div>
                       <span className="font-bold text-[#2C1810]">Auditor: {audit.auditor}</span>
@@ -1879,7 +1879,7 @@ export default function AdminHub({
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-2 bg-white border border-[#2C1810]/10 p-5 rounded-2xl">
+          <div className="space-y-2 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl">
             <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Seleccione el Insumo a Comparar</label>
             <select
               value={compareInsumoId}
@@ -1908,7 +1908,7 @@ export default function AdminHub({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {compareQuotes.map((q, idx) => (
-                <div key={idx} className="space-y-3 bg-white border border-[#2C1810]/10 p-5 rounded-2xl">
+                <div key={idx} className="space-y-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl">
                   <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-1">
                     <span className="text-[9px] font-black uppercase text-[#C2956E]">Oferta Proveedor #{idx + 1}</span>
                   </div>
@@ -1937,7 +1937,7 @@ export default function AdminHub({
                         updated[idx].price = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-white text-[#2C1810] font-mono font-bold"
+                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -1958,7 +1958,7 @@ export default function AdminHub({
                     const priceVal = parseFloat(q.price) || 0;
                     if (!q.supplier.trim() || priceVal <= 0) {
                       return (
-                        <div key={idx} className="bg-stone-50 border border-stone-200/40 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
+                        <div key={idx} className="bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7]/40 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
                           <p className="text-xs text-stone-400 font-bold italic">Sin cotización ingresada</p>
                         </div>
                       );
@@ -2057,7 +2057,7 @@ export default function AdminHub({
     const maxCost = Math.max(...consumptionList.map(c => c.totalCost), 1);
 
     return (
-      <div className="space-y-6 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
         <div>
           <h3 className="font-serif text-lg font-bold text-[#2C1810]">📈 Analítica de Consumo Real de Insumos</h3>
           <p className="text-xs text-[#2C1810]/50 mt-0.5">
@@ -2153,7 +2153,7 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="grid grid-cols-1 lg:grid-cols-12 gap-8"
       >
-        <div className="lg:col-span-5 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
           <div>
             <div className="mb-4 border-b border-[#2C1810]/15 pb-2">
               <span className="text-[10px] font-black uppercase text-[#C2956E] tracking-widest">Fichaje por PIN</span>
@@ -2201,7 +2201,7 @@ export default function AdminHub({
           </div>
         </div>
 
-        <div className="lg:col-span-7 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+        <div className="lg:col-span-7 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
           <div className="mb-4">
             <h3 className="font-serif text-lg font-bold text-[#2C1810]">Historial de Asistencia de Turnos</h3>
             <p className="text-xs text-[#2C1810]/50">Registro auditado de fichajes en tiempo real.</p>
@@ -2313,23 +2313,23 @@ export default function AdminHub({
         {inventarioSubTab === "general" && (
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
                 <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Total Insumos</span>
                 <div className="text-2xl font-serif font-black text-[#2C1810] mt-1">{totalInsumosCount}</div>
               </div>
-              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
                 <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span> Críticos
                 </span>
                 <div className="text-2xl font-serif font-black text-red-600 mt-1">{criticalInsumosCount}</div>
               </div>
-              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
                 <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Stock Bajo
                 </span>
                 <div className="text-2xl font-serif font-black text-amber-600 mt-1">{lowStockInsumosCount}</div>
               </div>
-              <div className="bg-white border border-[#2C1810]/10 rounded-2xl p-4 shadow-xs">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xs">
                 <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Stock Saludable
                 </span>
@@ -2337,7 +2337,7 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#2C1810]/40" />
                 <input 
@@ -2353,7 +2353,7 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
@@ -2438,7 +2438,7 @@ export default function AdminHub({
     };
 
     return (
-      <div className="space-y-6 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs text-[#2C1810]">
+      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs text-[#2C1810]">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#2C1810]/10 pb-4">
           <div>
             <span className="text-[10px] font-black uppercase text-[#C2956E] tracking-widest block">Configuración de Rotación Diaria</span>
@@ -2455,7 +2455,7 @@ export default function AdminHub({
               step="0.50"
               value={activeMenu.price}
               onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 12.50 })}
-              className="w-20 p-1 bg-white text-[#2C1810] rounded-lg text-center font-bold text-xs"
+              className="w-20 p-1 bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 rounded-lg text-center font-bold text-xs"
             />
           </div>
         </div>
@@ -2562,7 +2562,7 @@ export default function AdminHub({
     };
 
     return (
-      <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
+      <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
         <div>
           <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Logística & Despacho</span>
           <h3 className="font-serif text-2xl font-bold mt-0.5">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
@@ -2572,24 +2572,24 @@ export default function AdminHub({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
+          <div className="p-5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">Costo Base de Delivery ($)</label>
             <input
               type="number"
               value={fee}
               onChange={(e) => setFee(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-white text-[#2C1810]"
+              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30"
             />
             <span className="text-[10px] text-stone-500 block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
           </div>
 
-          <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
+          <div className="p-5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">Envío Gratis a partir de ($)</label>
             <input
               type="number"
               value={freeMin}
               onChange={(e) => setFreeMin(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-white text-[#2C1810]"
+              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30"
             />
             <span className="text-[10px] text-stone-500 block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
           </div>
@@ -2654,118 +2654,93 @@ export default function AdminHub({
         ) : (
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-5 bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
-            <div className="flex justify-between items-center border-b border-[#2C1810]/15 pb-2">
-              <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider">Menú Disponible</h3>
+          <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4">
+            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-2">
+              <h3 className="font-serif text-base font-bold text-[#FDFBF7] uppercase tracking-wider">Menú Disponible</h3>
               <button 
                 onClick={() => setIsAddingProduct(!isAddingProduct)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#C2956E] hover:bg-[#a37956] text-white text-[10px] font-bold rounded-xl shadow-md transition-all cursor-pointer uppercase"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] text-[10px] font-black rounded-xl shadow-md transition-all cursor-pointer uppercase tracking-wider"
               >
                 <Plus className="h-3.5 w-3.5" /> Agregar Producto
               </button>
             </div>
 
             {isAddingProduct && (
-              <form onSubmit={handleAddNewProduct} className="p-4 bg-stone-50 border border-[#2C1810]/15 rounded-2xl space-y-3.5 text-xs font-bold text-[#2C1810]/70">
-                <h4 className="font-serif text-sm font-bold text-[#2C1810]">Agregar Nuevo Producto</h4>
+              <form onSubmit={handleAddNewProduct} className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3.5 text-xs font-bold text-[#FDFBF7]">
+                <h4 className="font-serif text-sm font-bold text-[#D4AF37]">Agregar Nuevo Producto</h4>
                 
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1">Nombre del Producto *</label>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Producto *</label>
                   <input 
                     type="text" 
                     value={newProdName} 
                     onChange={(e) => setNewProdName(e.target.value)} 
-                    placeholder="Ej: Flat White de Vainilla" 
-                    className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none"
+                    placeholder="Ej: Bife de Chorizo a las Brasas" 
+                    className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none"
                     required 
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Precio Sugerido ($) *</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Sugerido ($) *</label>
                     <input 
                       type="number" 
                       value={newProdPrice} 
                       onChange={(e) => setNewProdPrice(e.target.value)} 
-                      placeholder="Ej: 3200" 
-                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none font-mono"
+                      placeholder="Ej: 8000" 
+                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-mono"
                       required 
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Categoría</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Categoría</label>
                     <select 
                       value={newProdCategory} 
                       onChange={(e) => setNewProdCategory(e.target.value)} 
-                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer"
+                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer"
                     >
+                      <option value="executive">⭐ Menú Ejecutivo</option>
+                      <option value="mains">🥩 Platos Principales</option>
+                      <option value="starters">🥟 Entradas</option>
+                      <option value="desserts">🍰 Postres</option>
+                      <option value="drinks">🍸 Bebidas & Vinos</option>
                       <option value="coffee">☕ Cafetería</option>
-                      <option value="bakery">🍰 Pastelería</option>
-                      <option value="brunch">🥪 Tostados / Cocina</option>
-                      <option value="cold">❄️ Bebida Fría</option>
-                      <option value="traditional">☕ Clásico</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Stock Inicial</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Stock Inicial</label>
                     <input 
                       type="number" 
                       value={newProdStock} 
                       onChange={(e) => setNewProdStock(e.target.value)} 
-                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none font-mono" 
+                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-mono" 
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1">Foto (URL o Subir Local) *</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir Local) *</label>
                     <input 
                       type="text" 
                       value={newProdImage.startsWith("data:image") ? "Foto subida localmente" : newProdImage} 
                       onChange={(e) => setNewProdImage(e.target.value)} 
                       placeholder="Url de Unsplash..." 
-                      className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none text-[10px]" 
+                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none text-[10px]" 
                       disabled={newProdImage.startsWith("data:image")}
                     />
-                    <div className="mt-1 flex items-center justify-between">
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setNewProdImage(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="w-full text-[9px] text-[#2C1810]/60 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-semibold file:bg-[#2C1810]/10 file:text-[#2C1810] hover:file:bg-[#2C1810]/20 cursor-pointer" 
-                      />
-                      {newProdImage.startsWith("data:image") && (
-                        <button
-                          type="button"
-                          onClick={() => setNewProdImage("")}
-                          className="text-[8px] text-red-600 underline font-bold bg-transparent border-none cursor-pointer"
-                        >
-                          Eliminar
-                        </button>
-                      )}
-                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1">Descripción</label>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción</label>
                   <textarea 
                     value={newProdDescription} 
                     onChange={(e) => setNewProdDescription(e.target.value)} 
                     placeholder="Descripción corta de la especialidad..." 
                     rows={2} 
-                    className="w-full p-2 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] outline-none font-normal resize-none" 
+                    className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-normal resize-none" 
                   />
                 </div>
 
@@ -2773,13 +2748,13 @@ export default function AdminHub({
                   <button 
                     type="button" 
                     onClick={() => setIsAddingProduct(false)} 
-                    className="px-3.5 py-1.5 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer"
+                    className="px-3.5 py-1.5 border border-[#D4AF37]/40 text-[#FDFBF7]/70 rounded-xl hover:bg-stone-800 cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit" 
-                    className="px-4 py-1.5 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer"
+                    className="px-4 py-1.5 bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-extrabold rounded-xl shadow-md cursor-pointer uppercase tracking-wider"
                   >
                     Crear Producto
                   </button>
@@ -2804,20 +2779,20 @@ export default function AdminHub({
                       }}
                       className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border transition-all ${
                         active 
-                          ? "bg-[#2C1810] border-[#2C1810] text-white shadow-md"
-                          : "bg-stone-50 hover:bg-stone-100/50 border-[#2C1810]/5 text-[#2C1810]"
+                          ? "bg-[#2A1B12] border-[#D4AF37] text-[#FDFBF7] shadow-lg ring-1 ring-[#D4AF37]/50"
+                          : "bg-[#1C120C]/80 hover:bg-[#1C120C] border-[#D4AF37]/15 text-[#FDFBF7]/80 hover:text-[#FDFBF7]"
                       }`}
                     >
                       <div className="space-y-1">
-                        <strong className="text-xs font-bold block">{item.name}</strong>
-                        <span className={`text-[9px] font-semibold block ${active ? "text-white/60" : "text-[#2C1810]/40"}`}>
+                        <strong className={`text-xs font-bold block ${active ? "text-[#FFDF00]" : "text-[#FDFBF7]"}`}>{item.name}</strong>
+                        <span className="text-[9px] text-[#FDFBF7]/50 block">
                           {item.description ? item.description.substring(0, 50) + "..." : "Sin descripción disponible."}
                         </span>
                       </div>
                       <div className="text-right shrink-0 ml-3 font-mono">
-                        <span className="text-xs font-bold block">${item.price.toFixed(0)}</span>
+                        <span className="text-xs font-bold block text-[#D4AF37]">${item.price.toFixed(0)}</span>
                         <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
-                          active ? "bg-white/10 text-white" : "bg-[#2C1810]/5 text-[#2C1810]/60"
+                          itemMargin >= 60 ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30" : "bg-amber-950/80 text-amber-300 border border-amber-500/30"
                         }`}>
                           {itemMargin.toFixed(0)}% mrg.
                         </span>
@@ -2829,7 +2804,7 @@ export default function AdminHub({
           </div>
 
           <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6">
               {isEditingProduct ? (
                 <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#2C1810]/70">
                   <div className="border-b border-[#2C1810]/10 pb-2 flex justify-between items-center">
@@ -3071,11 +3046,11 @@ export default function AdminHub({
                       type="number"
                       value={simulatedPrice}
                       onChange={(e) => setSimulatedPrice(Math.max(1, parseFloat(e.target.value) || 0))}
-                      className="w-full pl-6 pr-3 py-2 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:outline-none focus:ring-1 focus:ring-[#C2956E] font-bold font-mono"
+                      className="w-full pl-6 pr-3 py-2 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:outline-none focus:ring-1 focus:ring-[#C2956E] font-bold font-mono"
                     />
                   </div>
                 </div>
-                <div className="w-1/2 p-3 bg-white border border-[#2C1810]/15 rounded-2xl flex justify-between items-center text-xs">
+                <div className="w-1/2 p-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl flex justify-between items-center text-xs">
                   <div>
                     <span className="text-[8px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Margen Sim.</span>
                     <span className="text-base font-black text-[#2C1810] block font-mono">{margin.toFixed(1)}%</span>
@@ -3347,7 +3322,7 @@ export default function AdminHub({
         className="space-y-8 text-[#2C1810]"
       >
         {/* Header Terminal */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white border border-[#2C1810]/10 p-6 rounded-3xl shadow-xs">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-6 rounded-3xl shadow-xs">
           <div className="flex items-center gap-3.5">
             <div className="h-12 w-12 rounded-2xl bg-amber-50 border border-[#C2956E]/20 text-[#C2956E] flex items-center justify-center shadow-xs">
               <Receipt className="h-6 w-6 stroke-1.5" />
@@ -3360,13 +3335,13 @@ export default function AdminHub({
           <div className="flex gap-2">
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#2C1810]/15 hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Settings className="h-3.5 w-3.5" /> CONFIGURAR RESTAURANT
             </button>
             <button 
               onClick={() => setIsConfigTicketerisOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-white border border-[#2C1810]/15 hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] hover:bg-[#2C1810]/5 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5"
             >
               <Printer className="h-3.5 w-3.5" /> CONFIGURACIÓN TICKETERA
             </button>
@@ -3379,7 +3354,7 @@ export default function AdminHub({
           <div className="lg:col-span-4 space-y-6">
             
             {/* Box 1: Flujo Contable Diario */}
-            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs space-y-4">
               <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
                 <div>
                   <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Flujo Contable Diario</span>
@@ -3397,7 +3372,7 @@ export default function AdminHub({
 
               {!isShiftOpen ? (
                 <div className="space-y-4">
-                  <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl text-center">
+                  <div className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-xl text-center">
                     <p className="text-[10px] text-[#2C1810]/60 font-semibold">No se registran turnos fiscales abiertos</p>
                     <p className="text-[9px] text-[#2C1810]/40 mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
                   </div>
@@ -3434,7 +3409,7 @@ export default function AdminHub({
             </div>
 
             {/* Box 2: Comandas en Salón */}
-            <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs space-y-4">
               <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-3">
                 <h3 className="font-serif text-sm font-bold flex items-center gap-2">
                   <ClipboardList className="h-4 w-4 text-[#C2956E]" /> COMANDAS EN SALÓN
@@ -3447,13 +3422,13 @@ export default function AdminHub({
               </div>
 
               {!isShiftOpen ? (
-                <div className="text-center py-12 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col items-center justify-center text-stone-400">
+                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center text-stone-400">
                   <Lock className="h-8 w-8 stroke-1.5 mb-2 text-stone-300" />
                   <p className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest">Caja Cerrada</p>
                   <p className="text-[9px] text-[#2C1810]/30 mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
                 </div>
               ) : pendingOrders.length === 0 ? (
-                <div className="text-center py-12 bg-stone-50 border border-stone-200 rounded-2xl flex flex-col items-center justify-center text-stone-400">
+                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center text-stone-400">
                   <CheckCircle className="h-8 w-8 text-emerald-600 mb-2 stroke-1.5" />
                   <p className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest">Sin Pendientes</p>
                   <p className="text-[9px] text-[#2C1810]/30 mt-1">Todas las mesas han cobrado.</p>
@@ -3503,7 +3478,7 @@ export default function AdminHub({
           {/* Right panel: POS Checkout Panel or Empty State (col-span-8) */}
           <div className="lg:col-span-8">
             {!isShiftOpen || !posCheckoutOrder ? (
-              <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-10 shadow-xs flex flex-col items-center justify-center text-center h-[560px]">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-10 shadow-xs flex flex-col items-center justify-center text-center h-[560px]">
                 <div className="h-16 w-16 bg-[#2C1810]/5 border border-[#2C1810]/10 rounded-2xl flex items-center justify-center text-[#2C1810]/60 mb-6">
                   <Receipt className="h-8 w-8 stroke-1" />
                 </div>
@@ -3531,7 +3506,7 @@ export default function AdminHub({
               </div>
             ) : (
               // Active POS Checkout Interactive Panel
-              <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 lg:p-8 shadow-xs space-y-6">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 lg:p-8 shadow-xs space-y-6">
                 
                 {/* Header panel */}
                 <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-4">
@@ -3605,7 +3580,7 @@ export default function AdminHub({
                       </div>
 
                       {splitPaymentType === "comensales" && (
-                        <div className="p-3 bg-white border border-stone-200 rounded-xl space-y-3">
+                        <div className="p-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-xl space-y-3">
                           <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-[#2C1810]/60">Número de Comensales:</span>
                             <div className="flex items-center gap-2">
@@ -3622,7 +3597,7 @@ export default function AdminHub({
                       )}
 
                       {splitPaymentType === "articulos" && (
-                        <div className="p-3 bg-white border border-stone-200 rounded-xl space-y-2.5">
+                        <div className="p-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-xl space-y-2.5">
                           <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
                           <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
                             {posCheckoutOrder.items.map((it, idx) => {
@@ -3762,10 +3737,10 @@ export default function AdminHub({
                               placeholder="Monto entregado" 
                               value={receivedCashInput}
                               onChange={(e) => setReceivedCashInput(e.target.value)}
-                              className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
+                              className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
                             />
                           </div>
-                          <div className="p-2.5 bg-white border border-stone-200 rounded-xl flex flex-col justify-center font-mono">
+                          <div className="p-2.5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-xl flex flex-col justify-center font-mono">
                             <span className="text-[8px] font-bold text-[#2C1810]/45 uppercase block font-sans">Vuelto Cambio</span>
                             <strong className="text-xs text-emerald-850 mt-0.5">
                               ${receivedCashInput && parseFloat(receivedCashInput) >= activeCheckoutTotal
@@ -3784,7 +3759,7 @@ export default function AdminHub({
                             placeholder="Ingrese código de cupón de pago" 
                             value={posCouponInput}
                             onChange={(e) => setPosCouponInput(e.target.value)}
-                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold font-mono" 
+                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold font-mono" 
                           />
                         </div>
                       )}
@@ -3795,7 +3770,7 @@ export default function AdminHub({
                           <select 
                             value={selectedCtaCteClient}
                             onChange={(e) => setSelectedCtaCteClient(e.target.value)}
-                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer"
+                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer"
                           >
                             <option value="">-- Elija Cuenta Corriente --</option>
                             {clientAccounts.map(c => (
@@ -3842,7 +3817,7 @@ export default function AdminHub({
         </div>
 
         {/* Historial de Comandas Facturadas */}
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
           <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
             <Receipt className="h-4 w-4 text-[#C2956E]" /> Historial de Comandas Cobradas
           </h3>
@@ -3856,7 +3831,7 @@ export default function AdminHub({
                 placeholder="ej: Mesa 3"
                 value={historySearchTable}
                 onChange={(e) => setHistorySearchTable(e.target.value)}
-                className="w-full p-2 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold"
+                className="w-full p-2 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold"
               />
             </div>
             <div>
@@ -3864,7 +3839,7 @@ export default function AdminHub({
               <select
                 value={historyFilterWaiter}
                 onChange={(e) => setHistoryFilterWaiter(e.target.value)}
-                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer outline-none"
+                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer outline-none"
               >
                 <option value="todos">Todos los Mozos</option>
                 <option value="Enzo">Enzo</option>
@@ -3877,7 +3852,7 @@ export default function AdminHub({
               <select
                 value={historyFilterPayment}
                 onChange={(e) => setHistoryFilterPayment(e.target.value)}
-                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer outline-none"
+                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer outline-none"
               >
                 <option value="todos">Todos los Métodos</option>
                 <option value="Efectivo">Efectivo</option>
@@ -3950,7 +3925,7 @@ export default function AdminHub({
         </div>
 
         {/* Bottom panel: closures history list */}
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
           <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
             <Calendar className="h-4 w-4 text-[#C2956E]" /> REGISTRO DE AUDITORÍA DE CIERRES DE CAJA HOMOLOGADOS ({closuresHistory.length})
           </h3>
@@ -4054,7 +4029,7 @@ export default function AdminHub({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-white border border-[#2C1810]/15 rounded-3xl p-6 shadow-xs space-y-4"
+            className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4"
           >
             <h3 className="font-serif text-lg font-bold text-[#2C1810]">Agendar Nueva Reserva</h3>
             <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2C1810]/70">
@@ -4170,7 +4145,7 @@ export default function AdminHub({
         </div>
 
         {/* List of Bookings */}
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs font-semibold text-[#2C1810]/80">
               <thead>
@@ -4496,7 +4471,7 @@ export default function AdminHub({
               return (
                 <div
                   key={item.id}
-                  className="bg-white border border-[#2C1810]/10 rounded-2xl overflow-hidden flex flex-col justify-between h-44 shadow-xs relative"
+                  className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl overflow-hidden flex flex-col justify-between h-44 shadow-xs relative"
                 >
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="h-20 w-full object-cover" />
@@ -4546,7 +4521,7 @@ export default function AdminHub({
 
         {/* Right Column: Draft Comanda */}
         <div className="lg:col-span-3">
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs flex flex-col justify-between h-[580px]">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs flex flex-col justify-between h-[580px]">
             {!mozoSelectedTable ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-300 p-6">
                 <Coffee className="h-12 w-12 stroke-1 animate-pulse" />
@@ -4717,7 +4692,7 @@ export default function AdminHub({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-white border border-[#2C1810]/15 rounded-3xl p-6 shadow-xs space-y-4"
+            className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4"
           >
             <h3 className="font-serif text-lg font-bold text-[#2C1810]">Nuevo Proveedor de Compra</h3>
             <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2C1810]/70">
@@ -4799,7 +4774,7 @@ export default function AdminHub({
         )}
 
         {/* Suppliers Table */}
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl overflow-hidden shadow-xs">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -4895,7 +4870,7 @@ export default function AdminHub({
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
-              <div className="lg:col-span-5 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+              <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs flex flex-col justify-between">
                 <div>
                   <div className="mb-4 border-b border-[#2C1810]/15 pb-2">
                     <h3 className="font-serif text-base font-bold text-[#2C1810]">Ficha de Calibración Diaria</h3>
@@ -4991,7 +4966,7 @@ export default function AdminHub({
                 </div>
               </div>
 
-              <div className="lg:col-span-7 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+              <div className="lg:col-span-7 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
                 <div className="mb-4">
                   <h3 className="font-serif text-base font-bold text-[#2C1810]">Historial de Calibraciones Recientes</h3>
                   <p className="text-[10px] text-[#2C1810]/50">Monitoreo de molienda y estabilidad de caldera.</p>
@@ -5039,7 +5014,7 @@ export default function AdminHub({
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6"
+              className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6"
             >
               <div>
                 <h3 className="font-serif text-base font-bold text-[#2C1810]">💳 Mesa Colaborador (Consumos de Empleados)</h3>
@@ -5088,7 +5063,7 @@ export default function AdminHub({
             >
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-5 space-y-6">
-                  <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+                  <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
                     <div className="mb-4 border-b border-[#2C1810]/15 pb-2 flex items-center justify-between">
                       <div>
                         <h3 className="font-serif text-base font-bold text-[#2C1810]">Billetera de Propinas</h3>
@@ -5165,7 +5140,7 @@ export default function AdminHub({
                   </div>
                 </div>
 
-                <div className="lg:col-span-7 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="lg:col-span-7 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
                   <div className="mb-2 border-b border-[#2C1810]/15 pb-2 flex items-center justify-between">
                     <div>
                       <h3 className="font-serif text-base font-bold text-[#2C1810]">Profit-Sharing Semestral</h3>
@@ -5339,7 +5314,7 @@ export default function AdminHub({
             >
               {/* Form to add user: only visible to owner/administrator */}
               {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
                   <form onSubmit={handleAddUser} className="space-y-4">
                     <div className="border-b border-[#2C1810]/15 pb-2">
                       <h3 className="font-serif text-base font-bold text-[#2C1810]">Crear Nueva Cuenta</h3>
@@ -5483,7 +5458,7 @@ export default function AdminHub({
               )}
 
               {/* Users list */}
-              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6" : "lg:col-span-12 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6"}>
+              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6" : "lg:col-span-12 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6"}>
                 <div className="border-b border-[#2C1810]/15 pb-2">
                   <h3 className="font-serif text-base font-bold text-[#2C1810]">Cuentas Registradas</h3>
                   <p className="text-[10px] text-[#2C1810]/50 mt-0.5">
@@ -5860,7 +5835,7 @@ export default function AdminHub({
         </div>
 
         {/* Table Editor Panel */}
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
           <div className="border-b border-[#2C1810]/10 pb-4">
             <h3 className="font-serif text-lg font-bold text-[#2C1810]">Configuración y Distribución del Salón</h3>
             <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
@@ -5879,7 +5854,7 @@ export default function AdminHub({
                   placeholder="Nombre de mesa"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-white text-[#2C1810] font-bold outline-none"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold outline-none"
                 />
               </div>
               <div>
@@ -5887,7 +5862,7 @@ export default function AdminHub({
                 <select
                   value={newTableCapacity}
                   onChange={(e) => setNewTableCapacity(Number(e.target.value))}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-white text-[#2C1810] font-bold cursor-pointer outline-none"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer outline-none"
                 >
                   <option value="2">2 Personas</option>
                   <option value="4">4 Personas</option>
@@ -6008,7 +5983,7 @@ export default function AdminHub({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Sales performance chart */}
-          <div className="lg:col-span-8 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+          <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
             <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">📈 Facturación Mensual Histórica</h3>
             
             {/* CSS Chart */}
@@ -6036,7 +6011,7 @@ export default function AdminHub({
           </div>
 
           {/* Payment method distribution */}
-          <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+          <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
             <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">💳 Métodos de Pago</h3>
             
             <div className="space-y-4 py-3">
@@ -6061,7 +6036,7 @@ export default function AdminHub({
 
         {/* Existing reports (Merma logs) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
             <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">📊 Historial de Mermas de Materia Prima</h3>
             <p className="text-[10px] text-[#2C1810]/60 leading-relaxed font-semibold">
               El manual obliga a un desecho menor al 2% mensual. Registro descartes:
@@ -6085,7 +6060,7 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-4">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
             <h3 className="font-serif text-base font-bold text-[#2C1810] uppercase tracking-wider border-b border-[#2C1810]/15 pb-2">📋 Historial de Transacciones de Caja</h3>
             <div className="space-y-2 text-xs">
               {cashLedger.transactions.slice(0, 5).map((tx: any, idx: number) => (
@@ -6280,7 +6255,7 @@ export default function AdminHub({
                             readOnly
                             value={order.message}
                             rows={6}
-                            className="w-full text-xs font-mono p-3 bg-stone-50 border border-stone-200 rounded-xl resize-none outline-none text-stone-700 font-medium"
+                            className="w-full text-xs font-mono p-3 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-xl resize-none outline-none text-stone-700 font-medium"
                           />
                         </div>
                       </div>
@@ -6341,7 +6316,7 @@ export default function AdminHub({
                 <select 
                   value={movInsumoId}
                   onChange={(e) => setMovInsumoId(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] font-bold cursor-pointer"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer"
                 >
                   {insumos.map(i => (
                     <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
@@ -6356,7 +6331,7 @@ export default function AdminHub({
                   placeholder="Ingrese el valor numérico"
                   value={movQty}
                   onChange={(e) => setMovQty(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold"
                 />
               </div>
 
@@ -6368,7 +6343,7 @@ export default function AdminHub({
                     value={movReason}
                     onChange={(e) => setMovReason(e.target.value)}
                     rows={2}
-                    className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold resize-none"
+                    className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold resize-none"
                   />
                 </div>
               )}
@@ -6530,7 +6505,7 @@ export default function AdminHub({
                   placeholder="Ingrese el monto físico contado" 
                   value={closeShiftRealCash} 
                   onChange={(e) => setCloseShiftRealCash(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
                 />
               </div>
               <div>
@@ -6540,7 +6515,7 @@ export default function AdminHub({
                   value={closeShiftNotes} 
                   onChange={(e) => setCloseShiftNotes(e.target.value)}
                   rows={3}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white text-[#2C1810] focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold resize-none"
+                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-3">
