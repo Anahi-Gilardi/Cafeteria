@@ -145,9 +145,10 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-10 text-center">
-        <h1 className="font-serif text-4xl font-extrabold tracking-tight text-espresso sm:text-5xl italic">Reserve su Mesa</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-espresso/70">
-          Elija el ambiente ideal para su café, reunión o almuerzo relajado. Reserva de forma gratuita e instantánea.
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] block mb-1">Experiencia Gastronómica & Salón</span>
+        <h1 className="font-serif text-4xl font-extrabold tracking-tight text-[#FDFBF7] sm:text-5xl italic">Reserve su Mesa</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-[#FDFBF7]/70 font-medium text-xs">
+          Elija el ambiente ideal para su menú ejecutivo, cena de autor o reunión. Reserva gratuita e instantánea.
         </p>
       </div>
 
@@ -156,8 +157,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 items-start">
             {/* Step 1: Filters & Details (Left Sidebar) */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="rounded-2xl border border-coffee bg-white p-6 shadow-xs">
-                <h3 className="font-serif text-xl font-bold text-espresso mb-5 flex items-center gap-2">
+              <div className="rounded-3xl border border-[#D4AF37]/25 bg-[#1A110B] p-6 shadow-xl text-[#FDFBF7] gold-glow">
+                <h3 className="font-serif text-xl font-bold text-[#FFDF00] mb-5 flex items-center gap-2">
                   <Clock className="h-5 w-5 text-caramel" /> 1. Cuándo y Quiénes
                 </h3>
 

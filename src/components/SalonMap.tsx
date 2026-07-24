@@ -99,42 +99,42 @@ export default function SalonMap({
       className="space-y-6 max-w-7xl mx-auto"
     >
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl gold-glow">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Control Operativo de Salón</span>
-          <h2 className="font-serif text-2xl font-bold text-[#2C1810] mt-0.5">📌 Plano de Mesas y Estado en Vivo</h2>
-          <p className="text-xs text-[#2C1810]/60 italic mt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control Operativo de Salón</span>
+          <h2 className="font-serif text-2xl font-bold text-[#FDFBF7] mt-0.5">📌 Plano de Mesas y Estado en Vivo</h2>
+          <p className="text-xs text-[#FDFBF7]/60 italic mt-1">
             Gestión táctil de mesas para meseros y recepción. Seleccione una mesa para abrir comanda o consultar consumo.
           </p>
         </div>
 
         {/* Legend pills */}
         <div className="flex items-center gap-3 text-xs font-bold">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
             <span>Libre</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2C1810] text-[#FDFBF7]">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#C2956E]"></span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-950/80 text-[#FFDF00] border border-[#D4AF37]/50 gold-glow">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FFDF00]"></span>
             <span>Ocupada</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-950/60 text-amber-300 border border-amber-500/40">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
             <span>Reservada</span>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-[#2C1810]/10 pb-3">
+      <div className="flex gap-2 border-b border-[#D4AF37]/20 pb-3">
         {["Todos", "Salon Principal", "Barra Alta", "Terraza Exterior"].map((sec) => (
           <button
             key={sec}
             onClick={() => setSelectedSection(sec)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               selectedSection === sec
-                ? "bg-[#2C1810] text-white shadow-xs"
-                : "bg-white text-[#2C1810]/70 hover:bg-[#2C1810]/5 border border-[#2C1810]/10"
+                ? "bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-black shadow-md gold-glow"
+                : "bg-[#1C120C] text-[#FDFBF7]/70 hover:text-white border border-[#D4AF37]/20"
             }`}
           >
             {sec === "Todos" ? "🏬 Todas las Áreas" : sec}
