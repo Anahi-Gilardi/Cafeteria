@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 1. Front-End POS/ERP Web App (Nginx)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resto_bar_web
+    ports:
+      - "80:80"
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+
+  # 2. Base de Datos PostgreSQL con Volúmenes Persistentes
+  postgres:
+    image: postgres:15-alpine
+    container_name: resto_bar_db
+    environment:
+      POSTGRES_DB: resto_bar_db
+      POSTGRES_USER: resto_bar_user
+      POSTGRES_PASSWORD: resto_bar_password_1998
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./supabase/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    restart: always
+
+  # 3. Servidor de Redis para Eventos en Tiempo Real
+  redis:
+    image: redis:7-alpine
+    container_name: resto_bar_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  pgdata:
+    driver: local
