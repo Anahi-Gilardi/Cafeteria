@@ -57,11 +57,11 @@ export default function ManualPuglia() {
       {/* Title Header */}
       <div className="mb-10 text-center">
         <span className="text-[10px] font-bold tracking-widest text-caramel uppercase block mb-2">Documento de Referencia Operativa</span>
-        <h1 className="font-serif text-3xl font-extrabold tracking-tight text-espresso sm:text-5xl italic">Café Puglia</h1>
-        <p className="mx-auto mt-2 max-w-2xl text-espresso/70 text-sm leading-relaxed italic font-medium">
+        <h1 className="font-serif text-3xl font-extrabold tracking-tight text-[#FDFBF7] sm:text-5xl italic">Resto Bar Del Teatro</h1>
+        <p className="mx-auto mt-2 max-w-2xl text-[#FDFBF7]/70 text-sm leading-relaxed italic font-medium">
           Manual Operativo y Protocolos Institucionales de Ingeniería de Procesos.
-          <span className="block font-bold text-caramel not-italic text-xs mt-1">Uso Interno y Obligatorio para todos los Miembros del Equipo</span>
-          <span className="block text-[10px] text-espresso/50 mt-0.5">La Plata, Provincia de Buenos Aires, Argentina</span>
+          <span className="block font-bold text-[#D4AF37] not-italic text-xs mt-1">Uso Interno y Obligatorio para todos los Miembros del Equipo</span>
+          <span className="block text-[10px] text-[#FDFBF7]/50 mt-0.5">Constitución 944, Río Cuarto, Provincia de Córdoba, Argentina</span>
         </p>
       </div>
 

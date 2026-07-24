@@ -180,8 +180,8 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
       {/* Title Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Resumen Diario</span>
-          <h2 className="font-serif text-3xl font-bold text-[#2C1810] mt-0.5">Control de Operaciones</h2>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Resumen Diario</span>
+          <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Control de Operaciones</h2>
         </div>
         <div className="flex gap-3">
           <button 
@@ -193,13 +193,13 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
               setMovQty("");
               setIsMovementModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-xs font-bold shadow-md hover:bg-[#3d2217] transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 active:scale-98 transition-all cursor-pointer gold-glow uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Registrar Movimiento
           </button>
           <button 
             onClick={onGoToCaja}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#2C1810]/20 hover:bg-[#2C1810]/5 text-xs font-bold text-[#2C1810] transition-all cursor-pointer bg-white"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#D4AF37] hover:text-white transition-all cursor-pointer uppercase tracking-wider"
           >
             <Receipt className="h-4 w-4" /> Terminal de Caja
           </button>
@@ -208,47 +208,47 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
 
       {/* 3 Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between gold-glow">
           <div>
-            <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Venta Neta Hoy</span>
-            <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">
+            <span className="text-[10px] text-[#D4AF37] block font-bold uppercase tracking-wider">Venta Neta Hoy</span>
+            <div className="text-3xl font-serif font-black text-[#FDFBF7] mt-1.5 font-mono">
               ${displaySalesToday.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </div>
-            <span className="text-[10px] text-emerald-600 font-semibold block mt-1.5 flex items-center gap-0.5">
+            <span className="text-[10px] text-emerald-400 font-semibold block mt-1.5 flex items-center gap-0.5">
               <ArrowUp className="h-3 w-3" /> {displaySalesCount} comandas finalizadas
             </span>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-[#C2956E]/10 flex items-center justify-center text-[#C2956E]">
+          <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
             <Coins className="h-6 w-6" />
           </div>
         </div>
 
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between gold-glow">
           <div>
-            <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Costo de Insumos</span>
-            <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">
+            <span className="text-[10px] text-[#D4AF37] block font-bold uppercase tracking-wider">Costo de Insumos</span>
+            <div className="text-3xl font-serif font-black text-[#FDFBF7] mt-1.5 font-mono">
               ${displayCostToday.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </div>
-            <span className="text-[10px] text-[#2C1810]/60 font-semibold block mt-1.5">
+            <span className="text-[10px] text-[#FDFBF7]/60 font-semibold block mt-1.5">
               Ratio de Costo: {((displayCostToday / displaySalesToday) * 100).toFixed(1)}%
             </span>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-[#C2956E]/10 flex items-center justify-center text-[#C2956E]">
+          <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
             <Coffee className="h-6 w-6" />
           </div>
         </div>
 
-        <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs relative overflow-hidden flex items-center justify-between">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between gold-glow">
           <div>
-            <span className="text-[10px] text-[#2C1810]/50 block font-bold uppercase tracking-wider">Margen Bruto</span>
-            <div className="text-3xl font-serif font-black text-[#2C1810] mt-1.5 font-mono">
+            <span className="text-[10px] text-[#D4AF37] block font-bold uppercase tracking-wider">Margen Bruto</span>
+            <div className="text-3xl font-serif font-black text-[#FDFBF7] mt-1.5 font-mono">
               {displayMarginToday.toFixed(1)}%
             </div>
-            <span className="text-[10px] text-[#2C1810]/60 font-semibold block mt-1.5">
+            <span className="text-[10px] text-[#FDFBF7]/60 font-semibold block mt-1.5">
               Utilidad neta hoy: ${(displaySalesToday - displayCostToday).toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
           </div>
-          <div className="h-12 w-12 rounded-2xl bg-[#C2956E]/10 flex items-center justify-center text-[#C2956E]">
+          <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
             <TrendingUp className="h-6 w-6" />
           </div>
         </div>
@@ -256,39 +256,39 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
 
       {/* Chart + Reposición split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between min-h-[350px]">
+        <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl flex flex-col justify-between min-h-[350px]">
           <div>
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="font-serif text-lg font-bold text-[#2C1810]">Desempeño de Ventas</h3>
-                <p className="text-[10px] text-[#2C1810]/50 font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
+                <h3 className="font-serif text-lg font-bold text-[#FDFBF7]">Desempeño de Ventas</h3>
+                <p className="text-[10px] text-[#FDFBF7]/60 font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
               </div>
-              <span className="text-[9px] font-bold text-[#2C1810]/60 bg-[#2C1810]/5 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+              <span className="text-[9px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
                 {hasSalesHistory ? "Datos Reales en Vivo" : "Datos Históricos Estimados"}
               </span>
             </div>
 
             {/* Custom CSS Bars */}
-            <div className="flex justify-between items-end h-64 px-4 border-b border-[#2C1810]/10 pb-2">
+            <div className="flex justify-between items-end h-64 px-4 border-b border-[#D4AF37]/20 pb-2">
               {finalChartDays.map((bar, idx) => {
                 const heightPct = `${Math.max(8, Math.round((bar.value / maxVal) * 100))}%`;
                 const formattedVal = bar.value >= 1000 ? `$${(bar.value / 1000).toFixed(0)}k` : `$${bar.value}`;
 
                 return (
                   <div key={idx} className="flex flex-col items-center group w-10">
-                    <span className="text-[9px] font-bold text-[#2C1810] opacity-0 group-hover:opacity-100 transition-opacity mb-1 font-mono">
+                    <span className="text-[9px] font-bold text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity mb-1 font-mono">
                       {formattedVal}
                     </span>
                     <div 
                       style={{ height: heightPct }}
-                      className="w-8 bg-[#2C1810] hover:bg-[#C2956E] transition-all rounded-t-md duration-300"
+                      className="w-8 bg-gradient-to-t from-[#996515] to-[#D4AF37] hover:to-[#FFDF00] transition-all rounded-t-md duration-300 shadow-md"
                     ></div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="flex justify-between px-4 pt-3 text-[10px] font-bold text-[#2C1810]/60">
+            <div className="flex justify-between px-4 pt-3 text-[10px] font-bold text-[#FDFBF7]/70">
               <span>Lunes</span>
               <span>Martes</span>
               <span>Miércoles</span>
@@ -300,12 +300,12 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
           <div className="space-y-5">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-serif text-lg font-bold text-[#2C1810]">Semáforo de Reposición</h3>
-                <p className="text-[10px] text-[#2C1810]/50 font-medium">Insumos críticos e alertas potenciales</p>
+                <h3 className="font-serif text-lg font-bold text-[#FDFBF7]">Semáforo de Reposición</h3>
+                <p className="text-[10px] text-[#FDFBF7]/60 font-medium">Insumos críticos e alertas potenciales</p>
               </div>
               <span className={`h-5 px-2 flex items-center justify-center rounded-full text-white text-[9px] font-bold ${
                 alerts.length > 0 ? "bg-red-600" : "bg-emerald-600"
@@ -314,10 +314,10 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
               </span>
             </div>
 
-            <div className="p-3 bg-[#FDFBF7] border border-[#2C1810]/5 rounded-2xl">
-              <div className="flex justify-between text-[10px] font-bold text-[#2C1810]/80 mb-1.5">
+            <div className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
+              <div className="flex justify-between text-[10px] font-bold text-[#FDFBF7]/80 mb-1.5">
                 <span>Cobertura General de Stock</span>
-                <span>{coveragePercent}% óptimo</span>
+                <span className="text-[#D4AF37]">{coveragePercent}% óptimo</span>
               </div>
               <div className="w-full h-2 bg-[#2C1810]/10 rounded-full overflow-hidden">
                 <div 

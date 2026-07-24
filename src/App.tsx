@@ -646,7 +646,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] font-sans text-espresso selection:bg-caramel selection:text-white">
+    <div className="min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] selection:bg-[#D4AF37] selection:text-[#1C120C]">
       <AdminHub
         orders={orders}
         onOrderStatusUpdate={handleOrderStatusUpdate}

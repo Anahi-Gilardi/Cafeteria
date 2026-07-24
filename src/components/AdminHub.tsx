@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
 import { DailyExecutiveMenu } from "../types";
 import { supabase } from "../lib/supabase";
+import RestoBarLogo from "./RestoBarLogo";
 
 interface AdminHubProps {
   orders: Order[];
@@ -792,7 +793,7 @@ export default function AdminHub({
       price: priceNum,
       takeaway_price: Number((priceNum * 0.9).toFixed(2)),
       delivery_price: Number((priceNum * 1.15).toFixed(2)),
-      description: newProdDescription.trim() || "Delicioso producto de especialidad Café Puglia.",
+      description: newProdDescription.trim() || "Delicioso producto de especialidad Resto Bar Del Teatro.",
       category: newProdCategory,
       tags: ["Artesanal"],
       image: defaultImage,
@@ -891,7 +892,7 @@ export default function AdminHub({
       deliveryPrice: deliveryVal,
       stock: stockVal,
       category: editProdCategory as any,
-      description: editProdDescription.trim() || "Delicioso producto de especialidad Café Puglia.",
+      description: editProdDescription.trim() || "Delicioso producto de especialidad Resto Bar Del Teatro.",
       image: editProdImage.trim() || original.image
     };
 
@@ -1338,11 +1339,11 @@ export default function AdminHub({
 
     Object.keys(groups).forEach(prov => {
       const g = groups[prov];
-      let msg = `Hola ${prov},\n\nNecesitamos realizar el siguiente pedido de reposición para Café Puglia:\n`;
+      let msg = `Hola ${prov},\n\nNecesitamos realizar el siguiente pedido de reposición para Resto Bar Del Teatro:\n`;
       g.itemsList.forEach(item => {
         msg += `• ${item.qty} ${item.unit} de ${item.name}\n`;
       });
-      msg += `\nPor favor, confírmennos disponibilidad y costo estimado de entrega.\nMuchas gracias.\n--\nCafé Puglia Specialty Coffee`;
+      msg += `\nPor favor, confírmennos disponibilidad y costo estimado de entrega.\nMuchas gracias.\n--\nResto Bar Del Teatro Specialty Coffee`;
       g.message = msg;
     });
 
@@ -3353,7 +3354,7 @@ export default function AdminHub({
             </div>
             <div>
               <h2 className="font-serif text-xl font-bold tracking-tight">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
-              <p className="text-[10px] text-[#2C1810]/60 font-semibold mt-0.5">Gestor de comprobantes de salón • Café Puglia</p>
+              <p className="text-[10px] text-[#2C1810]/60 font-semibold mt-0.5">Gestor de comprobantes de salón • Resto Bar Del Teatro</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -4683,7 +4684,7 @@ export default function AdminHub({
     const handleWhatsAppOrder = (phone: string, name: string) => {
       const cleanPhone = phone.replace(/\D/g, "");
       const targetPhone = cleanPhone.startsWith("54") ? cleanPhone : "54" + cleanPhone;
-      const text = `Hola ${name}, les escribo desde Café Puglia para realizar un pedido de insumos.`;
+      const text = `Hola ${name}, les escribo desde Resto Bar Del Teatro para realizar un pedido de insumos.`;
       const url = `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
       window.open(url, "_blank");
       onShowNotification(`📱 Abriendo chat de WhatsApp con ${name}...`, "info");
@@ -5043,7 +5044,7 @@ export default function AdminHub({
               <div>
                 <h3 className="font-serif text-base font-bold text-[#2C1810]">💳 Mesa Colaborador (Consumos de Empleados)</h3>
                 <p className="text-[10px] text-[#2C1810]/50 mt-0.5 leading-relaxed">
-                  El manual operativo de <strong>Café Puglia</strong> otorga un subsidio diario de consumo de hasta $12,00 por colaborador de turno para alimentación o refrigerio (Art. 9).
+                  El manual operativo de <strong>Resto Bar Del Teatro</strong> otorga un subsidio diario de consumo de hasta $12,00 por colaborador de turno para alimentación o refrigerio (Art. 9).
                 </p>
               </div>
 
@@ -6107,14 +6108,13 @@ export default function AdminHub({
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FDFBF7] font-sans text-espresso select-none">
+    <div className="flex min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] select-none">
       {/* Sidebar Navigation */}
-      <div className="w-64 bg-[#2C1810] text-[#FDFBF7] flex flex-col justify-between p-6 shrink-0 border-r border-[#C2956E]/20">
+      <div className="w-64 bg-[#1C120C] text-[#FDFBF7] flex flex-col justify-between p-6 shrink-0 border-r border-[#D4AF37]/25">
         <div>
           {/* Logo brand */}
           <div className="mb-8 cursor-pointer animate-fade-in" onClick={onClosePanel}>
-            <span className="font-serif text-2xl font-bold tracking-tight text-white block">Café Puglia</span>
-            <span className="text-[9px] uppercase tracking-widest text-[#C2956E] font-semibold block mt-0.5">SPECIALTY COFFEE • MAR DEL PLATA</span>
+            <RestoBarLogo size="md" />
           </div>
 
           {/* Navigation Links */}
@@ -6191,7 +6191,7 @@ export default function AdminHub({
           </button>
           
           <div className="text-[8px] text-white/30 text-center font-bold tracking-wider uppercase">
-            Diseño para Café Puglia SL<br />Arg: Mar del Plata (Prov. Bs As)
+            Diseño para Resto Bar Del Teatro SL<br />Arg: Mar del Plata (Prov. Bs As)
           </div>
         </div>
       </div>
@@ -6439,7 +6439,7 @@ export default function AdminHub({
             <div className="space-y-4">
               <div>
                 <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Nombre Comercial</label>
-                <input type="text" defaultValue="Café Puglia" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+                <input type="text" defaultValue="Resto Bar Del Teatro" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
               </div>
               <div>
                 <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Dirección Física</label>
@@ -6577,7 +6577,7 @@ export default function AdminHub({
               <X className="h-4 w-4" />
             </button>
             <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Auditoría de Cierre de Caja</h4>
-            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Arqueo fiscal homologado por el personal de Café Puglia.</p>
+            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Arqueo fiscal homologado por el personal de Resto Bar Del Teatro.</p>
             
             <div className="grid grid-cols-2 gap-4 mb-4 text-[10px] text-[#2C1810]/70 border-b border-[#2C1810]/10 pb-4">
               <div>
