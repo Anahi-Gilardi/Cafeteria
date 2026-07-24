@@ -6439,7 +6439,7 @@ export default function AdminHub({
   const handleExportCSV = () => {
     // Generate CSV for transactions
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-    csvContent += "=== REPORTES DE AUDITORIA - CAFE PUGLIA ===\n\n";
+    csvContent += "=== REPORTES DE AUDITORIA - RESTO BAR DEL TEATRO ===\n\n";
     
     // Section 1: Transacciones de Caja
     csvContent += "=== TRANSACCIONES DE CAJA ===\n";
@@ -6458,7 +6458,7 @@ export default function AdminHub({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Reporte_Auditoria_Cafe_Puglia_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("download", `Reporte_Auditoria_Resto_Bar_Del_Teatro_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -7311,11 +7311,11 @@ export default function AdminHub({
 
             {/* Thermal Ticket Monospace Layout */}
             <div className="text-center space-y-1 mb-4">
-              <span className="font-bold text-sm block">*** CAFÉ PUGLIA ***</span>
-              <span className="text-[10px] block">Mar del Plata, Argentina</span>
-              <span className="text-[9px] block">C.U.I.T.: 30-71122334-9</span>
+              <span className="font-bold text-sm block">*** RESTO BAR DEL TEATRO ***</span>
+              <span className="text-[10px] block">Río Cuarto, Córdoba, Argentina</span>
+              <span className="text-[9px] block">C.U.I.T.: 30-71234567-8</span>
               <span className="text-[9px] block">IIBB: Convenio Multilateral</span>
-              <span className="text-[9px] block">Dirección: Av. Colón 1234</span>
+              <span className="text-[9px] block">Dirección: Constitución 944</span>
             </div>
 
             <div className="border-t border-dashed border-stone-800 py-2 space-y-1 text-[10px]">

@@ -351,7 +351,7 @@ export default function TicketPreviewModal({
 
   const handleShareWhatsApp = () => {
     if (!order) return;
-    let msg = `☕ *COMPROBANTE CAFÉ PUGLIA*\n`;
+    let msg = `☕ *COMPROBANTE RESTO BAR DEL TEATRO*\n`;
     msg += `-----------------------------------\n`;
     msg += `Ticket: #0001-${order.id.substring(order.id.length - 6).toUpperCase()}\n`;
     msg += `Fecha: ${new Date(order.createdAt).toLocaleString("es-AR")}\n`;
@@ -366,7 +366,7 @@ export default function TicketPreviewModal({
     if (invoiceType !== "No Fiscal") {
       msg += `CAE ARCA: ${simulatedCae} (Vto: ${simulatedCaeVto})\n`;
     }
-    msg += `\n¡Gracias por elegir Café Puglia! ☕`;
+    msg += `\n¡Gracias por elegir Resto Bar Del Teatro! 🍷`;
 
     const encoded = encodeURIComponent(msg);
     window.open(`https://wa.me/?text=${encoded}`, "_blank");
