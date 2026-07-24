@@ -3,6 +3,7 @@ import { Order, FiscalDetails, ClientAccount } from "../types";
 import { X, Printer, Download, QrCode, CreditCard, DollarSign, Users, AlertTriangle, CheckCircle, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
+import { arcaAdapter, ARCAResponse } from "../services/ARCAAdapter";
 
 interface TicketPreviewModalProps {
   order: Order | null;
