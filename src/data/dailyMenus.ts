@@ -3,7 +3,7 @@ import { DailyExecutiveMenu } from "../types";
 export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   {
     dayOfWeek: "Lunes",
-    title: "Menú Tradicional de Cuchara & Bodegón",
+    title: "Menú del Día - Tradicional de Cuchara",
     description: "Iniciá la semana con sabores reconfortantes de nuestra cocina criolla casera.",
     price: 8000,
     starters: ["Sopa Crema de Calabaza y Crutones", "Empanada de Carne Cortada a Cuchillo", "Ensalada Verde de la Huerta"],
@@ -14,7 +14,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   },
   {
     dayOfWeek: "Martes",
-    title: "Menú Minutas Porteñas Gourmet",
+    title: "Menú del Día - Minutas Gourmet",
     description: "Clásicos inoxidables de las mejores minutas de Buenos Aires elaboradas al momento.",
     price: 8000,
     starters: ["Provolone a la Chapa con Oreganato", "Empanada de Jamón y Queso Glaseada", "Bruschetta de Tomate Concasse y Albahaca"],
@@ -25,7 +25,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   },
   {
     dayOfWeek: "Miércoles",
-    title: "Menú Especialidad Pastas Caseras",
+    title: "Menú del Día - Pastas Caseras",
     description: "Pastas amasaditas al huevo por nuestros maestros fideos con salsas italianas.",
     price: 8000,
     starters: ["Caprese con Muzzarella de Búfala y Pesto", "Sopa Minestrone de Vegetales", "Focaccia Artesanal con Romero"],
@@ -36,7 +36,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   },
   {
     dayOfWeek: "Jueves",
-    title: "Menú Especial Parrilla & Cortes de Autor",
+    title: "Menú del Día - Parrilla & Cortes",
     description: "Nuestra selección de carnes a la parrilla con leña de quebracho y guarniciones de fuego.",
     price: 8000,
     starters: ["Choripán de Campo con Chimichurri", "Empanada Salteña de Carne Picante", "Ensalada de Rúcula y Parmesano"],
@@ -47,8 +47,8 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   },
   {
     dayOfWeek: "Viernes",
-    title: "Menú Pesca Fresca & Mar del Plata",
-    description: "Platos frescos del mar seleccionados por nuestro chef para cerrar la semana hábil.",
+    title: "Menú del Día - Especial del Chef",
+    description: "Platos frescos seleccionados por nuestro chef para cerrar la semana hábil.",
     price: 8000,
     starters: ["Rabitas Crocantes con Salsa Tartara", "Sopa de Mariscos al Vino Blanco", "Empanada de Humita y Queso"],
     mains: ["Filet de Merluza a la Romana con Puré Mixto", "Cazuela de Mariscos con Arroz Azafranado", "Salmon de Criadero al Horno con Vegetales Asados"],
@@ -58,7 +58,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   },
   {
     dayOfWeek: "Sábado",
-    title: "Menú Bistró & Brunch de Fin de Semana",
+    title: "Menú del Día - Bistró & Brunch",
     description: "Una experiencia gastronómica relajada para disfrutar el fin de semana en familia o amigos.",
     price: 8000,
     starters: ["Tabla de Quesos y Fiambres Artesanales", "Empanada de Carne a la Leña", "Bruschetta de Salmón Ahumado"],
@@ -69,8 +69,8 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
   },
   {
     dayOfWeek: "Domingo",
-    title: "Menú Familiar Dominical & Asado Puglia",
-    description: "La mesa de domingo servida con abundancia y cariño como en las casas pugliesas.",
+    title: "Menú del Día - Asado Familiar",
+    description: "La mesa de domingo servida con abundancia y cariño como en las mejores casas.",
     price: 8000,
     starters: ["Chorizo y Morcilla de Campo", "Empanada de Carne Cortada a Cuchillo", "Provolone Fundido"],
     mains: ["Asado de Tira a la Parrilla con Ensalada Rusa", "Ñoquis de Papa Caseros con Estofado de Peceto", "Milanesa de Ternera Gigante a la Napolitana"],
@@ -98,7 +98,12 @@ export function getTodayExecutiveMenu(): DailyExecutiveMenu {
     if (savedCustom) {
       const parsed: DailyExecutiveMenu[] = JSON.parse(savedCustom);
       const found = parsed.find((m) => m.dayOfWeek === dayName);
-      if (found) return found;
+      if (found) {
+        if (found.title.includes("Pesca Fresca") || found.title.includes("Mar del Plata")) {
+          found.title = "Menú del Día - Especial del Chef";
+        }
+        return found;
+      }
     }
   } catch (e) {
     console.error("Error reading custom daily menus:", e);
