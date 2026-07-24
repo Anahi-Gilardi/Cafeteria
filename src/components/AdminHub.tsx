@@ -3506,22 +3506,22 @@ export default function AdminHub({
                         onClick={() => openCheckoutPanel(order)}
                         className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between gap-3 ${
                           active 
-                            ? "bg-[#C2956E]/10 border-[#C2956E] shadow-sm" 
-                            : "bg-[#FDFBF7] hover:bg-stone-50 border-[#2C1810]/10"
+                            ? "bg-[#2A1B12] border-2 border-[#FFDF00] text-[#FDFBF7] shadow-lg gold-glow" 
+                            : "bg-[#2A1B12]/70 hover:bg-[#2A1B12] border-[#D4AF37]/20 text-[#FDFBF7]"
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <strong className="text-xs font-serif text-[#2C1810] block">Mesa {order.tableNumber?.replace("Mesa ", "") || "1"}</strong>
-                            <span className="text-[9px] font-bold text-[#2C1810]/40 block mt-0.5">Mozo: {getMozoName(order.id)} • {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</span>
+                            <strong className="text-xs font-serif text-[#FFDF00] block">Mesa {order.tableNumber?.replace("Mesa ", "") || "1"}</strong>
+                            <span className="text-[9px] font-bold text-[#FDFBF7]/60 block mt-0.5">Mozo: {getMozoName(order.id)} • {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</span>
                           </div>
-                          <span className="text-xs font-mono font-black text-[#2C1810]">${order.total.toLocaleString()}</span>
+                          <span className="text-xs font-mono font-black text-[#D4AF37]">${order.total.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${statusColor}`}>
                             {statusText}
                           </span>
-                          <span className="font-mono text-[8px] font-black text-[#2C1810]/30">#{order.id.replace("PED-", "")}</span>
+                          <span className="font-mono text-[8px] font-black text-[#D4AF37]/40">#{order.id.replace("PED-", "")}</span>
                         </div>
                       </div>
                     );
@@ -3534,50 +3534,50 @@ export default function AdminHub({
           {/* Right panel: POS Checkout Panel or Empty State (col-span-8) */}
           <div className="lg:col-span-8">
             {!isShiftOpen || !posCheckoutOrder ? (
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-10 shadow-xs flex flex-col items-center justify-center text-center h-[560px]">
-                <div className="h-16 w-16 bg-[#2C1810]/5 border border-[#2C1810]/10 rounded-2xl flex items-center justify-center text-[#2C1810]/60 mb-6">
-                  <Receipt className="h-8 w-8 stroke-1" />
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-10 shadow-xl flex flex-col items-center justify-center text-center h-[560px] gold-glow">
+                <div className="h-16 w-16 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-2xl flex items-center justify-center text-[#FFDF00] mb-6 shadow-md">
+                  <Receipt className="h-8 w-8 stroke-1.5" />
                 </div>
-                <h3 className="font-serif text-lg font-bold">TERMINAL DE COBRO CAFÉ PUGLIA PRO</h3>
-                <p className="text-xs text-[#2C1810]/60 max-w-md mt-2.5 leading-relaxed">
-                  Seleccione una mesa ocupada desde la lista lateral. Se iniciará el panel interactivo de check-out, permitiéndole coordinar pagos mixtos, aplicar deducciones manuales, configurar datos de CUIT, fraccionar saldos por comensales u artículos indivisos, y emitir comprobantes en PDF y thermal roll.
+                <h3 className="font-serif text-xl font-bold text-[#FFDF00]">TERMINAL DE COBRO RESTO BAR DEL TEATRO</h3>
+                <p className="text-xs text-[#FDFBF7]/70 max-w-md mt-2.5 leading-relaxed">
+                  Seleccione una mesa ocupada desde la lista lateral. Se iniciará el panel interactivo de check-out, permitiéndole coordinar pagos mixtos, aplicar deducciones manuales, configurar datos de CUIT, fraccionar saldos por comensales u artículos indivisos, y emitir comprobantes con CAE y QR de ARCA.
                 </p>
                 {!isShiftOpen ? (
-                  <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-left max-w-sm">
-                    <Info className="h-5 w-5 text-amber-700 shrink-0" />
+                  <div className="mt-8 p-4 bg-[#2A1B12] border-2 border-[#D4AF37]/40 rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-[#FFDF00] shrink-0" />
                     <div>
-                      <strong className="text-[10px] font-bold uppercase tracking-wider text-amber-850 block">Caja Cerrada</strong>
-                      <span className="text-[9px] text-amber-900 mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
+                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#FFDF00] block">Caja Cerrada</strong>
+                      <span className="text-[9px] text-[#FDFBF7]/80 mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-left max-w-sm">
-                    <Info className="h-5 w-5 text-blue-700 shrink-0" />
+                  <div className="mt-8 p-4 bg-[#2A1B12] border-2 border-blue-500/40 rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-blue-400 shrink-0" />
                     <div>
-                      <strong className="text-[10px] font-bold uppercase tracking-wider text-blue-850 block">Turno Activo</strong>
-                      <span className="text-[9px] text-blue-900 mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
+                      <strong className="text-[10px] font-black uppercase tracking-wider text-blue-300 block">Turno Activo</strong>
+                      <span className="text-[9px] text-[#FDFBF7]/80 mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
               // Active POS Checkout Interactive Panel
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 lg:p-8 shadow-xs space-y-6">
+              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 lg:p-8 shadow-2xl space-y-6 gold-glow">
                 
                 {/* Header panel */}
-                <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-4">
+                <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-4">
                   <div>
                     <button 
                       onClick={() => setPosCheckoutOrder(null)}
-                      className="text-[9px] font-bold uppercase tracking-wider text-[#C2956E] hover:text-[#2C1810] flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
+                      className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] hover:text-[#FFDF00] flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
                     >
                       <ArrowUp className="-rotate-90 h-3.5 w-3.5" /> VOLVER AL TERMINAL
                     </button>
-                    <h3 className="font-serif text-lg font-bold">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
+                    <h3 className="font-serif text-lg font-bold text-[#FFDF00]">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black uppercase text-[#2C1810]/40 font-mono">Orden #{posCheckoutOrder.id}</span>
-                    <div className="text-xl font-serif font-black text-emerald-805 font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
+                    <span className="text-[9px] font-black uppercase text-[#D4AF37] font-mono block">Orden #{posCheckoutOrder.id}</span>
+                    <div className="text-2xl font-serif font-black text-[#FFDF00] font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
                   </div>
                 </div>
 
@@ -3587,28 +3587,28 @@ export default function AdminHub({
                   {/* Left subcolumn: Consumo & Fraccionar */}
                   <div className="space-y-5">
                     {/* Resumen de Consumo */}
-                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-3">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
-                        <Coffee className="h-3.5 w-3.5 text-[#C2956E]" /> Resumen de Consumo
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
+                        <Coffee className="h-3.5 w-3.5 text-[#FFDF00]" /> Resumen de Consumo
                       </h4>
                       <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                         {posCheckoutOrder.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#2C1810]/80">
+                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#FDFBF7]">
                             <span className="italic">{item.quantity}x {item.name}</span>
-                            <span className="font-mono">${(item.price * item.quantity).toLocaleString()}</span>
+                            <span className="font-mono text-[#D4AF37]">${(item.price * item.quantity).toLocaleString()}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="border-t border-[#2C1810]/10 pt-2.5 flex justify-between text-[10px] font-bold">
-                        <span>Total Comanda</span>
-                        <span className="font-mono text-[#2C1810]">${orderTotalOriginal.toLocaleString()}</span>
+                      <div className="border-t border-[#D4AF37]/20 pt-2.5 flex justify-between text-[10px] font-bold">
+                        <span className="text-[#FDFBF7]">Total Comanda</span>
+                        <span className="font-mono text-[#FFDF00]">${orderTotalOriginal.toLocaleString()}</span>
                       </div>
                     </div>
 
                     {/* Fraccionar Cuenta */}
-                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-4">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
-                        <Scissors className="h-3.5 w-3.5 text-[#C2956E]" /> Fraccionar Saldo
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
+                        <Scissors className="h-3.5 w-3.5 text-[#FFDF00]" /> Fraccionar Saldo
                       </h4>
                       
                       <div className="grid grid-cols-3 gap-2">
@@ -3625,8 +3625,8 @@ export default function AdminHub({
                             }}
                             className={`p-2 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer flex flex-col items-center gap-1 justify-center ${
                               splitPaymentType === t.id
-                                ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810] shadow-xs"
-                                : "bg-white border-stone-250 text-[#2C1810]/60 hover:bg-stone-50"
+                                ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-md gold-glow"
+                                : "bg-[#1C120C] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
                             }`}
                           >
                             <t.icon className="h-3.5 w-3.5" />
@@ -3636,48 +3636,48 @@ export default function AdminHub({
                       </div>
 
                       {splitPaymentType === "comensales" && (
-                        <div className="p-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-xl space-y-3">
+                        <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl space-y-3">
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-[#2C1810]/60">Número de Comensales:</span>
+                            <span className="text-[10px] font-bold text-[#D4AF37]">Número de Comensales:</span>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-stone-150 hover:bg-stone-200 rounded text-xs font-bold cursor-pointer">-</button>
-                              <strong className="font-mono text-sm w-4 text-center">{dinersCount}</strong>
-                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-stone-150 hover:bg-stone-200 rounded text-xs font-bold cursor-pointer">+</button>
+                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/30 rounded text-xs font-bold text-[#FFDF00] cursor-pointer">-</button>
+                              <strong className="font-mono text-sm w-4 text-center text-[#FDFBF7]">{dinersCount}</strong>
+                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/30 rounded text-xs font-bold text-[#FFDF00] cursor-pointer">+</button>
                             </div>
                           </div>
-                          <div className="text-[10px] border-t border-[#2C1810]/5 pt-2 flex justify-between font-bold">
+                          <div className="text-[10px] border-t border-[#D4AF37]/20 pt-2 flex justify-between font-bold">
                             <span>Monto por Comensal</span>
-                            <span className="font-mono text-emerald-805">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
+                            <span className="font-mono text-[#FFDF00]">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
                           </div>
                         </div>
                       )}
 
                       {splitPaymentType === "articulos" && (
-                        <div className="p-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-xl space-y-2.5">
-                          <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
+                        <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl space-y-2.5">
+                          <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
                           <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
                             {posCheckoutOrder.items.map((it, idx) => {
                               const selectedQty = selectedSplitItems[it.name] || 0;
                               return (
-                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-stone-100 pb-1.5">
-                                  <span className="truncate">{it.name} (${it.price.toFixed(0)})</span>
+                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-[#D4AF37]/10 pb-1.5">
+                                  <span className="truncate text-[#FDFBF7]">{it.name} (${it.price.toFixed(0)})</span>
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <button 
                                       onClick={() => setSelectedSplitItems(prev => ({
                                         ...prev,
                                         [it.name]: Math.max(0, (prev[it.name] || 0) - 1)
                                       }))}
-                                      className="h-5 w-5 bg-stone-100 hover:bg-stone-200 rounded text-[10px] font-bold cursor-pointer"
+                                      className="h-5 w-5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#FFDF00] cursor-pointer"
                                     >
                                       -
                                     </button>
-                                    <strong className="font-mono w-4 text-center">{selectedQty}</strong>
+                                    <strong className="font-mono w-4 text-center text-[#FDFBF7]">{selectedQty}</strong>
                                     <button 
                                       onClick={() => setSelectedSplitItems(prev => ({
                                         ...prev,
                                         [it.name]: Math.min(it.quantity, (prev[it.name] || 0) + 1)
                                       }))}
-                                      className="h-5 w-5 bg-stone-100 hover:bg-stone-200 rounded text-[10px] font-bold cursor-pointer"
+                                      className="h-5 w-5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#FFDF00] cursor-pointer"
                                     >
                                       +
                                     </button>
@@ -3694,9 +3694,9 @@ export default function AdminHub({
                   {/* Right subcolumn: Discounts, Fiscal data, Payment Method */}
                   <div className="space-y-5">
                     {/* Deducciones Manuales (Discounts) */}
-                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-3.5">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
-                        <Percent className="h-3.5 w-3.5 text-[#C2956E]" /> Deducciones Manuales (Descuento)
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3.5">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
+                        <Percent className="h-3.5 w-3.5 text-[#FFDF00]" /> Deducciones Manuales (Descuento)
                       </h4>
                       <div className="flex gap-2">
                         {[0, 5, 10, 15, 20].map(p => (
@@ -3705,8 +3705,8 @@ export default function AdminHub({
                             onClick={() => setDiscountPercentage(p)}
                             className={`px-3 py-1.5 rounded-lg text-[9px] font-black border transition-all cursor-pointer flex-1 text-center ${
                               discountPercentage === p
-                                ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]"
-                                : "bg-white border-stone-250 text-[#2C1810]/60 hover:bg-stone-50"
+                                ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00]"
+                                : "bg-[#1C120C] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
                             }`}
                           >
                             {p === 0 ? "Sin Dto" : `${p}%`}
@@ -3716,38 +3716,38 @@ export default function AdminHub({
                     </div>
 
                     {/* Datos de CUIT / Facturación */}
-                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-3.5">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5 text-[#C2956E]" /> Datos de CUIT / Razón Social
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3.5">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-[#FFDF00]" /> Datos de CUIT / Razón Social (ARCA)
                       </h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">CUIT/CUIL</label>
+                          <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">CUIT/CUIL</label>
                           <input 
                             type="text" 
                             placeholder="Ingrese CUIT" 
                             value={cuitNumber}
                             onChange={(e) => setCuitNumber(e.target.value)}
-                            className="w-full p-2 border border-[#2C1810]/20 rounded-lg text-[10px] bg-white font-bold" 
+                            className="w-full p-2 border border-[#D4AF37]/30 rounded-lg text-[10px] bg-[#1C120C] text-[#FDFBF7] font-bold outline-none" 
                           />
                         </div>
                         <div>
-                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Razón Social</label>
+                          <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Razón Social</label>
                           <input 
                             type="text" 
                             placeholder="Nombre del Cliente" 
                             value={cuitName}
                             onChange={(e) => setCuitName(e.target.value)}
-                            className="w-full p-2 border border-[#2C1810]/20 rounded-lg text-[10px] bg-white font-bold" 
+                            className="w-full p-2 border border-[#D4AF37]/30 rounded-lg text-[10px] bg-[#1C120C] text-[#FDFBF7] font-bold outline-none" 
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Condición Frente al IVA</label>
+                        <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Condición Frente al IVA</label>
                         <select 
                           value={ivaCondition}
                           onChange={(e) => setIvaCondition(e.target.value)}
-                          className="w-full p-2 border border-[#2C1810]/20 rounded-lg text-[10px] bg-white font-bold cursor-pointer"
+                          className="w-full p-2 border border-[#D4AF37]/30 rounded-lg text-[10px] bg-[#1C120C] text-[#FDFBF7] font-bold cursor-pointer outline-none"
                         >
                           <option>Consumidor Final</option>
                           <option>Responsable Inscripto</option>
@@ -3758,9 +3758,9 @@ export default function AdminHub({
                     </div>
 
                     {/* Método de Cobro */}
-                    <div className="p-4 bg-stone-50 border border-stone-150 rounded-2xl space-y-4">
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/50 border-b border-[#2C1810]/10 pb-1.5 flex items-center gap-1.5">
-                        <Coins className="h-3.5 w-3.5 text-[#C2956E]" /> Método de Cobro
+                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
+                        <Coins className="h-3.5 w-3.5 text-[#FFDF00]" /> Método de Cobro
                       </h4>
                       
                       <div className="grid grid-cols-2 gap-2.5">
@@ -3773,10 +3773,10 @@ export default function AdminHub({
                           <button
                             key={m.id}
                             onClick={() => setPaymentMethod(m.id as any)}
-                            className={`p-2.5 text-[10px] font-bold rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                            className={`p-2.5 text-[10px] font-black rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                               paymentMethod === m.id
-                                ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810] shadow-xs"
-                                : "bg-white border-stone-250 text-[#2C1810] hover:bg-stone-50"
+                                ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-md gold-glow"
+                                : "bg-[#1C120C] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
                             }`}
                           >
                             {m.label}
@@ -3787,18 +3787,18 @@ export default function AdminHub({
                       {paymentMethod === "Efectivo" && (
                         <div className="grid grid-cols-2 gap-3 pt-1">
                           <div>
-                            <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Efectivo Entregado</label>
+                            <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Efectivo Entregado</label>
                             <input 
                               type="number" 
                               placeholder="Monto entregado" 
                               value={receivedCashInput}
                               onChange={(e) => setReceivedCashInput(e.target.value)}
-                              className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
+                              className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FFDF00] font-bold font-mono outline-none" 
                             />
                           </div>
-                          <div className="p-2.5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-xl flex flex-col justify-center font-mono">
-                            <span className="text-[8px] font-bold text-[#2C1810]/45 uppercase block font-sans">Vuelto Cambio</span>
-                            <strong className="text-xs text-emerald-850 mt-0.5">
+                          <div className="p-2.5 bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl flex flex-col justify-center font-mono">
+                            <span className="text-[8px] font-bold text-[#D4AF37] uppercase block font-sans">Vuelto Cambio</span>
+                            <strong className="text-xs text-[#FFDF00] mt-0.5">
                               ${receivedCashInput && parseFloat(receivedCashInput) >= activeCheckoutTotal
                                 ? (parseFloat(receivedCashInput) - activeCheckoutTotal).toFixed(0)
                                 : "0"}
@@ -3809,30 +3809,14 @@ export default function AdminHub({
 
                       {paymentMethod === "Tarjeta" && (
                         <div className="pt-1">
-                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">POSNET Cupón Nro</label>
+                          <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">POSNET Cupón Nro</label>
                           <input 
                             type="text" 
                             placeholder="Ingrese código de cupón de pago" 
                             value={posCouponInput}
                             onChange={(e) => setPosCouponInput(e.target.value)}
-                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold font-mono" 
+                            className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FDFBF7] font-bold font-mono outline-none" 
                           />
-                        </div>
-                      )}
-
-                      {paymentMethod === "Fiado / Cta Cte" && (
-                        <div className="pt-1">
-                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Seleccionar Cuenta de Cliente</label>
-                          <select 
-                            value={selectedCtaCteClient}
-                            onChange={(e) => setSelectedCtaCteClient(e.target.value)}
-                            className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer"
-                          >
-                            <option value="">-- Elija Cuenta Corriente --</option>
-                            {clientAccounts.map(c => (
-                              <option key={c.id} value={c.name}>{c.name} (${c.cuit ? parseFloat(c.cuit).toLocaleString() : '0'} acumulado)</option>
-                            ))}
-                          </select>
                         </div>
                       )}
                     </div>
@@ -3840,12 +3824,12 @@ export default function AdminHub({
                 </div>
 
                 {/* Final receipt emission actions */}
-                <div className="border-t border-[#2C1810]/10 pt-5 space-y-3">
+                <div className="border-t border-[#D4AF37]/20 pt-5 space-y-3">
                   <button 
                     onClick={handleProcessPosCheckout}
-                    className="w-full py-3 rounded-2xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-lg cursor-pointer uppercase tracking-wider gold-glow flex items-center justify-center gap-2"
                   >
-                    🧾 Confirmar Venta & Emitir Factura Fiscal (AFIP)
+                    🧾 Confirmar Venta & Emitir Factura Fiscal (ARCA / AFIP)
                   </button>
                   <div className="grid grid-cols-2 gap-3">
                     <button 
@@ -3853,17 +3837,17 @@ export default function AdminHub({
                         handleProcessPosCheckout();
                         onShowNotification("🖨️ Imprimiendo ticket no fiscal en ticketera térmica...", "success");
                       }}
-                      className="py-2.5 rounded-xl border border-[#2C1810]/20 hover:bg-[#2C1810]/5 text-xs font-bold text-[#2C1810] transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent"
+                      className="py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#FFDF00] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Printer className="h-3.5 w-3.5" /> Ticket No Fiscal
+                      <Printer className="h-3.5 w-3.5 text-[#D4AF37]" /> Ticket No Fiscal
                     </button>
                     <button 
                       onClick={() => {
                         onShowNotification("📥 Descargando comprobante fiscal en formato PDF...", "success");
                       }}
-                      className="py-2.5 rounded-xl border border-[#2C1810]/20 hover:bg-[#2C1810]/5 text-xs font-bold text-[#2C1810] transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-transparent"
+                      className="py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#FFDF00] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <FileText className="h-3.5 w-3.5" /> Descargar PDF
+                      <FileText className="h-3.5 w-3.5 text-[#D4AF37]" /> Descargar PDF ARCA
                     </button>
                   </div>
                 </div>
@@ -3873,29 +3857,29 @@ export default function AdminHub({
         </div>
 
         {/* Historial de Comandas Facturadas */}
-        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
-          <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
-            <Receipt className="h-4 w-4 text-[#C2956E]" /> Historial de Comandas Cobradas
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
+          <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#FFDF00]">
+            <Receipt className="h-4 w-4 text-[#D4AF37]" /> Historial de Comandas Cobradas
           </h3>
 
           {/* Filters bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-stone-50 border border-stone-150 rounded-2xl text-[#2C1810] text-xs font-semibold">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl text-[#FDFBF7] text-xs font-semibold">
             <div>
-              <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Buscar por Mesa</label>
+              <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Buscar por Mesa</label>
               <input
                 type="text"
                 placeholder="ej: Mesa 3"
                 value={historySearchTable}
                 onChange={(e) => setHistorySearchTable(e.target.value)}
-                className="w-full p-2 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold"
+                className="w-full p-2 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FDFBF7] font-semibold outline-none"
               />
             </div>
             <div>
-              <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Filtrar por Mozo</label>
+              <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Filtrar por Mozo</label>
               <select
                 value={historyFilterWaiter}
                 onChange={(e) => setHistoryFilterWaiter(e.target.value)}
-                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer outline-none"
+                className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FDFBF7] font-bold cursor-pointer outline-none"
               >
                 <option value="todos">Todos los Mozos</option>
                 <option value="Enzo">Enzo</option>
@@ -3904,11 +3888,11 @@ export default function AdminHub({
               </select>
             </div>
             <div>
-              <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Filtrar por Método de Pago</label>
+              <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Filtrar por Método de Pago</label>
               <select
                 value={historyFilterPayment}
                 onChange={(e) => setHistoryFilterPayment(e.target.value)}
-                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer outline-none"
+                className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#1C120C] text-[#FDFBF7] font-bold cursor-pointer outline-none"
               >
                 <option value="todos">Todos los Métodos</option>
                 <option value="Efectivo">Efectivo</option>
@@ -3920,9 +3904,9 @@ export default function AdminHub({
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs font-semibold text-[#2C1810]/80">
+            <table className="w-full text-left border-collapse text-xs font-semibold text-[#FDFBF7]">
               <thead>
-                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] uppercase tracking-wider text-[#2C1810]/60">
+                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/30 text-[9px] uppercase tracking-wider text-[#FFDF00]">
                   <th className="p-3">Comanda ID</th>
                   <th className="p-3">Mesa / Tipo</th>
                   <th className="p-3">Productos</th>
@@ -3931,7 +3915,7 @@ export default function AdminHub({
                   <th className="p-3 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C1810]/5">
+              <tbody className="divide-y divide-[#D4AF37]/15">
                 {(() => {
                   const filteredCompletedOrders = orders.filter(o => {
                     if (o.status !== "Completado") return false;
@@ -3944,7 +3928,7 @@ export default function AdminHub({
                   if (filteredCompletedOrders.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={6} className="p-6 text-center text-stone-400 font-medium italic">
+                        <td colSpan={6} className="p-6 text-center text-[#FDFBF7]/50 font-medium italic">
                           No se encontraron comandas cobradas con los filtros seleccionados.
                         </td>
                       </tr>
@@ -3952,22 +3936,22 @@ export default function AdminHub({
                   }
 
                   return filteredCompletedOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-stone-50/50 transition-colors">
-                      <td className="p-3 font-mono font-bold text-[#2C1810]">{o.id}</td>
+                    <tr key={o.id} className="hover:bg-[#2A1B12]/60 transition-colors">
+                      <td className="p-3 font-mono font-bold text-[#FFDF00]">{o.id}</td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-md bg-[#2C1810]/5 text-[#2C1810] text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] font-bold">
                           {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
                         </span>
                       </td>
-                      <td className="p-3 text-[#2C1810]/70 max-w-[200px] truncate">
+                      <td className="p-3 text-[#FDFBF7]/80 max-w-[200px] truncate">
                         {o.items.map(it => `${it.quantity}x ${it.name}`).join(", ")}
                       </td>
-                      <td className="p-3 font-bold text-caramel">{o.paymentMethod || "Efectivo"}</td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-800">${o.total.toLocaleString()}</td>
+                      <td className="p-3 font-bold text-[#FFDF00]">{o.paymentMethod || "Efectivo"}</td>
+                      <td className="p-3 text-right font-mono font-bold text-[#D4AF37]">${o.total.toLocaleString()}</td>
                       <td className="p-3 text-center">
                         <button
                           onClick={() => setSelectedOrderForTicket(o)}
-                          className="px-3 py-1 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1 mx-auto border-none"
+                          className="px-3 py-1 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/40 text-[#FFDF00] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1 mx-auto"
                         >
                           <Printer className="h-3 w-3" /> Ver Ticket
                         </button>
