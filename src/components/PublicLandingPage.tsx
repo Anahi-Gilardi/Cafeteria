@@ -14,13 +14,15 @@ import {
   Wine, 
   ArrowRight,
   ShieldCheck,
-  Award
+  Award,
+  Calendar
 } from "lucide-react";
 import { MenuItem } from "../types";
 import { MenuPDFService } from "../services/MenuPDFService";
 import { getTodayExecutiveMenu } from "../data/dailyMenus";
 import RestoBarLogo from "./RestoBarLogo";
 import LoginScreen from "./LoginScreen";
+import TableReservation from "./TableReservation";
 import { PublicDigitalMarquee } from "./PublicDigitalMarquee";
 import { useEffect } from "react";
 
@@ -36,6 +38,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   onShowNotification
 }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"landing" | "digital_menu">("landing");
   const [todayMenu, setTodayMenu] = useState(() => getTodayExecutiveMenu());
 
@@ -377,6 +380,39 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         <p className="font-serif text-sm font-bold text-[#D4AF37]">RESTO BAR DEL TEATRO</p>
         <p className="text-[#A59585]">Constitución 944, Río Cuarto, Córdoba • Todos los derechos reservados.</p>
       </footer>
+
+      {/* Floating High-Converting Table Reservation Widget */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => setIsReservationModalOpen(true)}
+          className="flex items-center gap-2.5 px-6 py-4 rounded-full bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-white gold-glow"
+        >
+          <Calendar className="h-5 w-5" />
+          <span>🎟️ Reservar Mesa Frente al Teatro</span>
+        </button>
+      </div>
+
+      {/* Public Table Reservation Modal */}
+      {isReservationModalOpen && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl my-auto bg-[#1A110B] border-2 border-[#D4AF37] rounded-3xl p-6 shadow-2xl gold-glow">
+            <button
+              onClick={() => setIsReservationModalOpen(false)}
+              className="absolute -top-3 -right-3 z-50 h-10 w-10 rounded-full bg-[#2A1B12] border-2 border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] flex items-center justify-center text-sm font-black cursor-pointer shadow-2xl gold-glow"
+              title="Cerrar Ventana"
+            >
+              ✕
+            </button>
+            <TableReservation
+              bookings={[]}
+              onConfirmReservation={(res) => {
+                setIsReservationModalOpen(false);
+                onShowNotification(`🎟️ ¡Reserva confirmada para ${res.customerName}! Te esperamos el ${res.date} (${res.timeSlot}).`, "success");
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Staff Login Modal */}
       {isLoginModalOpen && (

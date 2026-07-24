@@ -38,4 +38,29 @@ export class StockService {
 
     return { updatedInsumos, deductedSummary };
   }
+
+  /**
+   * Filters insumos that are below or at critical minimum limits.
+   */
+  public static getLowStockAlerts(insumos: Insumo[] = []): Insumo[] {
+    return insumos.filter((i) => i.currentStock <= (i.minStock || 5));
+  }
+
+  /**
+   * Generates a WhatsApp order link for restocking a critical insumo from its supplier.
+   */
+  public static generateSupplierOrderWhatsAppLink(insumo: Insumo, phone: string = "543585042311"): string {
+    const cleanPhone = phone.replace(/\D/g, "");
+    const targetPhone = cleanPhone.startsWith("54") ? cleanPhone : "54" + cleanPhone;
+    const minLimit = insumo.minStock || 5;
+    const requiredQty = Math.max(10, minLimit * 2 - insumo.currentStock);
+    const message = `Hola ${insumo.supplier || "Proveedor"}, les escribo desde *Resto Bar Del Teatro* (Constitución 944, Río Cuarto).\n\n` +
+      `📦 *PEDIDO DE REPOSICIÓN DE INSUMO EN STOCK CRÍTICO*\n` +
+      `• *Producto:* ${insumo.name}\n` +
+      `• *Stock Actual:* ${insumo.currentStock} ${insumo.unit}\n` +
+      `• *Cantidad Solicitada:* ${requiredQty} ${insumo.unit}\n\n` +
+      `Agradecemos coordinar la entrega a la brevedad. ¡Muchas gracias!`;
+
+    return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
+  }
 }

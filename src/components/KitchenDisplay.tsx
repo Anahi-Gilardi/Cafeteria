@@ -230,13 +230,22 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
                     </div>
 
                     <div className="text-right">
-                      {/* Time Elapsed Badge */}
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
-                        isLate ? "bg-red-600 text-white animate-pulse" : "bg-espresso text-caramel"
-                      }`}>
-                        <Clock className="h-3 w-3" />
-                        {getElapsedTimeStr(order.createdAt)}
-                      </span>
+                      {/* Time Elapsed Badge with Traffic Light Colors */}
+                      {(() => {
+                        const mins = parseInt(getElapsedTimeStr(order.createdAt)) || 0;
+                        const badgeColor = mins > 20 
+                          ? "bg-red-950 border border-red-500/80 text-red-300 animate-pulse font-black shadow-md" 
+                          : mins > 10 
+                          ? "bg-amber-950 border border-amber-500/60 text-amber-300 font-bold"
+                          : "bg-emerald-950 border border-emerald-500/60 text-emerald-300 font-bold";
+                        
+                        return (
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-mono uppercase px-2.5 py-1 rounded-full ${badgeColor}`}>
+                            <Clock className="h-3 w-3" />
+                            {mins} min
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
 
