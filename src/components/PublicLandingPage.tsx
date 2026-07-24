@@ -144,9 +144,9 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             </button>
           </div>
 
-          {/* HIGH-IMPACT MARKETING SHOWCASE: MENÚ EJECUTIVO DIARIO ($8.000) */}
+          {/* HIGH-IMPACT MARKETING SHOWCASE: MENÚ DEL DÍA ($8.000) - UNA SOLA VIANDA */}
           <div className="mt-8 max-w-4xl mx-auto bg-gradient-to-br from-[#1C120C] via-[#2A1B12] to-[#1C120C] text-[#FDFBF7] border-2 border-[#D4AF37] rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden text-left gold-glow">
-            {/* Top Scarcity & Social Proof Bar */}
+            {/* Top Scarcity & Price Badge */}
             <div className="flex flex-wrap justify-between items-center gap-3 border-b border-[#D4AF37]/30 pb-4">
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
@@ -156,7 +156,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               </div>
               <div className="flex items-center gap-2 text-xs text-[#D4AF37] font-bold">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>4 Pasos Incluidos • <strong>${todayMenu.price.toLocaleString("es-AR")} ARS</strong></span>
+                <span>Vianda del Día • <strong>$8.000 ARS</strong></span>
               </div>
             </div>
 
@@ -164,54 +164,42 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             <div className="space-y-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-serif text-2xl md:text-3xl font-extrabold text-[#FFDF00] tracking-tight">
-                  ⭐ {todayMenu.title}
+                  ⭐ MENÚ DEL DÍA
                 </h3>
-                <span className="text-xl md:text-2xl font-black font-mono text-[#FFDF00] bg-[#2A1B12] px-4 py-1.5 rounded-2xl border border-[#D4AF37]/50 shadow-md">
-                  ${todayMenu.price.toLocaleString("es-AR")}
+                <span className="text-2xl md:text-3xl font-black font-mono text-[#FFDF00] bg-[#2A1B12] px-5 py-2 rounded-2xl border-2 border-[#D4AF37] shadow-xl gold-glow">
+                  $8.000
                 </span>
               </div>
-              <p className="text-xs text-[#FDFBF7]/70 italic">
-                "{todayMenu.subtitle || "Selección fresca elaborada en el día por nuestro Chef."}"
+              <p className="text-xs text-[#FDFBF7]/80 italic font-medium">
+                Plato fresco y abundante elaborado en el día por nuestro Chef. Listo para consumir en el local o llevar en vianda.
               </p>
             </div>
 
-            {/* 4 Steps Value Proposition Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-[#130B07]/80 p-4 rounded-2xl border border-[#D4AF37]/20">
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🥖 1. ENTRADA</span>
-                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.starters.join(" • ")}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🥩 2. PLATO PRINCIPAL</span>
-                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.mains.join(" • ")}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🥤 3. BEBIDA INCLUIDA</span>
-                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.drinks.join(" • ")}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">🍰 4. POSTRE / CAFÉ</span>
-                <p className="text-xs text-[#FDFBF7] font-semibold leading-snug">{todayMenu.desserts.join(" • ")}</p>
-              </div>
+            {/* Vianda del Día Single Plate Highlight */}
+            <div className="bg-[#130B07]/90 p-5 rounded-2xl border border-[#D4AF37]/30 space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] block">🍱 OPICIONES DE VIANDA / PLATO PRINCIPAL DEL DÍA ($8.000)</span>
+              <p className="text-sm text-[#FDFBF7] font-serif font-bold leading-relaxed">
+                {todayMenu.mains.join(" • ")}
+              </p>
             </div>
 
             {/* High Converting Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 onClick={() => {
-                  const message = `Hola Resto Bar Del Teatro, quiero hacer un pedido/reserva para el Menú Ejecutivo del Día (${todayMenu.dayOfWeek}) por $${todayMenu.price.toLocaleString("es-AR")}.`;
+                  const message = `Hola Resto Bar Del Teatro, quiero encargar el Menú del Día (${todayMenu.dayOfWeek}) por $8.000.`;
                   window.open(`https://wa.me/543585042311?text=${encodeURIComponent(message)}`, "_blank");
-                  onShowNotification("📱 Abriendo chat de WhatsApp para pedir el Menú Diario...", "success");
+                  onShowNotification("📱 Abriendo chat de WhatsApp para pedir el Menú del Día ($8.000)...", "success");
                 }}
-                className="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
-                💬 Pedir Menú Diario por WhatsApp ($8.000)
+                💬 Pedir Menú del Día por WhatsApp ($8.000)
               </button>
               <button
                 onClick={() => setViewMode("digital_menu")}
-                className="py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 cursor-pointer gold-glow flex items-center justify-center gap-2"
+                className="py-4 px-6 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 cursor-pointer gold-glow flex items-center justify-center gap-2"
               >
-                🍽️ Personalizar Mi Combo
+                🍽️ Ver Menú Digital & Pedir
               </button>
             </div>
           </div>

@@ -99,7 +99,8 @@ export function getTodayExecutiveMenu(): DailyExecutiveMenu {
       const parsed: DailyExecutiveMenu[] = JSON.parse(savedCustom);
       const found = parsed.find((m) => m.dayOfWeek === dayName);
       if (found) {
-        if (found.title.includes("Pesca Fresca") || found.title.includes("Mar del Plata")) {
+        found.price = 8000;
+        if (!found.title.startsWith("Menú del Día")) {
           found.title = "Menú del Día - Especial del Chef";
         }
         return found;
@@ -109,5 +110,7 @@ export function getTodayExecutiveMenu(): DailyExecutiveMenu {
     console.error("Error reading custom daily menus:", e);
   }
 
-  return DEFAULT_WEEKLY_MENUS.find((m) => m.dayOfWeek === dayName) || DEFAULT_WEEKLY_MENUS[1];
+  const defaultFound = DEFAULT_WEEKLY_MENUS.find((m) => m.dayOfWeek === dayName) || DEFAULT_WEEKLY_MENUS[1];
+  defaultFound.price = 8000;
+  return defaultFound;
 }
