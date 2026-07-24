@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Order, FiscalDetails, ClientAccount } from "../types";
-import { X, Printer, Download, QrCode, CreditCard, DollarSign, Users, AlertTriangle, CheckCircle, Plus } from "lucide-react";
+import { X, Printer, Download, QrCode, CreditCard, DollarSign, Users, AlertTriangle, CheckCircle, Plus, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
 import { arcaAdapter, ARCAResponse } from "../services/ARCAAdapter";
@@ -347,6 +347,29 @@ export default function TicketPreviewModal({
     `);
     printWindow.document.close();
     onShowNotification("🖨️ Enviando comanda / ticket de compra a la impresora térmica...", "success");
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!order) return;
+    let msg = `☕ *COMPROBANTE CAFÉ PUGLIA*\n`;
+    msg += `-----------------------------------\n`;
+    msg += `Ticket: #0001-${order.id.substring(order.id.length - 6).toUpperCase()}\n`;
+    msg += `Fecha: ${new Date(order.createdAt).toLocaleString("es-AR")}\n`;
+    if (order.tableNumber) msg += `Ubicación: ${order.tableNumber}\n`;
+    msg += `Medio de Pago: ${paymentMethod}\n`;
+    msg += `-----------------------------------\n`;
+    order.items.forEach(it => {
+      msg += `• ${it.quantity}x ${it.name} ($${(it.price * it.quantity).toFixed(2)})\n`;
+    });
+    msg += `-----------------------------------\n`;
+    msg += `*TOTAL FISCAL: $${activeBillTotal.toFixed(2)}*\n`;
+    if (invoiceType !== "No Fiscal") {
+      msg += `CAE ARCA: ${simulatedCae} (Vto: ${simulatedCaeVto})\n`;
+    }
+    msg += `\n¡Gracias por elegir Café Puglia! ☕`;
+
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
   };
 
   // Generate plain-text file download simulating a high fidelity virtual PDF/Ticket download
@@ -945,7 +968,7 @@ export default function TicketPreviewModal({
               )}
 
               {/* ACTION BUTTONS */}
-              <div className="flex gap-2 w-full max-w-[280px]">
+              <div className="flex gap-2 w-full max-w-[320px]">
                 <button
                   onClick={handlePrint}
                   className="flex-1 py-3 text-xs font-bold text-espresso bg-white hover:bg-stone-50 border border-coffee/30 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
@@ -956,7 +979,14 @@ export default function TicketPreviewModal({
                   onClick={handleDownloadPDF}
                   className="flex-1 py-3 text-xs font-bold text-white bg-espresso hover:bg-caramel rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  <Download className="h-4 w-4" /> PDF Ticket
+                  <Download className="h-4 w-4" /> PDF
+                </button>
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="py-3 px-3 text-xs font-bold text-emerald-950 bg-emerald-100 border border-emerald-300 hover:bg-emerald-200 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  title="Compartir por WhatsApp"
+                >
+                  <Share2 className="h-4 w-4 text-emerald-700" /> WhatsApp
                 </button>
               </div>
             </div>
