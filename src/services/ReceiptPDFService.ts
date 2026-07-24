@@ -3,83 +3,152 @@ import { Order, FiscalDetails } from "../types";
 
 export class ReceiptPDFService {
   /**
-   * Generates downloadable PDF for TICKET NO FISCAL (Roll format 80mm)
+   * Generates downloadable PDF for TICKET NO FISCAL (Roll format 80mm) with clean multi-line wrapping and no text overlap.
    */
   public static generateTicketNoFiscalPDF(order: Order): void {
+    // Calculate dynamic roll height so ticket never cuts off
+    const itemCount = order.items.length;
+    const calculatedHeight = Math.max(160, 110 + itemCount * 12);
+
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
-      format: [80, 180] // Thermal roll format 80mm
+      format: [80, calculatedHeight]
     });
 
-    let currentY = 10;
+    let currentY = 8;
     const centerX = 40;
+    const leftX = 6;
+    const rightX = 74;
 
-    // Header
+    // 1. Header & Branding
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.text("RESTO BAR DEL TEATRO", centerX, currentY, { align: "center" });
 
-    currentY += 5;
+    currentY += 4.5;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text("Constitución 944 • Río Cuarto", centerX, currentY, { align: "center" });
-    doc.text("Tel: 358 5042311 / 358 4651847", centerX, currentY + 4, { align: "center" });
+    doc.setFontSize(7.5);
+    doc.text("Constitución 944 • Río Cuarto, Córdoba", centerX, currentY, { align: "center" });
+    doc.text("Tel: 358 5042311 / 358 4651847", centerX, currentY + 3.5, { align: "center" });
+    doc.text("CUIT: 30-71234567-8", centerX, currentY + 7, { align: "center" });
 
-    currentY += 10;
+    currentY += 12;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.text("DOCUMENTO NO FISCAL", centerX, currentY, { align: "center" });
-    doc.text(`Comanda #${order.id.slice(-6).toUpperCase()}`, centerX, currentY + 4, { align: "center" });
-
-    currentY += 10;
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Ubicación: ${order.tableNumber || order.type}`, 5, currentY);
-    doc.text(`Fecha: ${new Date(order.createdAt).toLocaleString("es-AR")}`, 5, currentY + 4);
+    doc.setFontSize(9.5);
+    doc.text(`Comanda #${order.id.slice(-6).toUpperCase()}`, centerX, currentY + 4.5, { align: "center" });
 
     currentY += 8;
-    doc.line(5, currentY, 75, currentY);
+    doc.setLineWidth(0.3);
+    doc.line(leftX, currentY, rightX, currentY);
 
-    // Items table
-    currentY += 5;
+    // 2. Metadata (Order Type, Customer, Date, Payment)
+    currentY += 4.5;
+    doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
-    doc.text("Cant", 5, currentY);
-    doc.text("Descripción", 18, currentY);
-    doc.text("Total", 65, currentY);
 
-    currentY += 4;
-    doc.line(5, currentY, 75, currentY);
-    currentY += 4;
+    const orderChannel = order.priceList === "Takeaway" || order.type === "Llevar"
+      ? "RETIRO EN LOCAL"
+      : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
+      ? "DELIVERY A DOMICILIO"
+      : `SALÓN (${order.tableNumber || "Mesa 1"})`;
 
+    doc.text(`Modalidad: ${orderChannel}`, leftX, currentY);
+
+    currentY += 3.8;
     doc.setFont("helvetica", "normal");
+    if (order.clientAccountName) {
+      doc.text(`Cliente: ${order.clientAccountName}`, leftX, currentY);
+      currentY += 3.8;
+    }
+
+    doc.text(`Fecha: ${new Date(order.createdAt).toLocaleString("es-AR")}`, leftX, currentY);
+    currentY += 3.8;
+    doc.text(`Pago: ${order.paymentMethod || "Efectivo"}`, leftX, currentY);
+
+    currentY += 3;
+    doc.line(leftX, currentY, rightX, currentY);
+
+    // 3. Table Headers
+    currentY += 4;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text("Cant", leftX, currentY);
+    doc.text("Descripción", leftX + 10, currentY);
+    doc.text("Total", rightX, currentY, { align: "right" });
+
+    currentY += 2.5;
+    doc.line(leftX, currentY, rightX, currentY);
+    currentY += 4;
+
+    // 4. Item Rows with Text Wrapping to avoid overlapping!
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+
     order.items.forEach((it) => {
-      if (currentY > 165) {
-        doc.addPage();
-        currentY = 10;
+      const itemTotalStr = `$${(it.price * it.quantity).toLocaleString("es-AR")}`;
+      doc.text(`${it.quantity}x`, leftX, currentY);
+
+      // Wrap item name in max width 40mm to prevent collision with right-aligned price at 74mm
+      const wrappedName = doc.splitTextToSize(it.name, 40);
+      doc.text(wrappedName, leftX + 10, currentY);
+      doc.text(itemTotalStr, rightX, currentY, { align: "right" });
+
+      const lineCount = Array.isArray(wrappedName) ? wrappedName.length : 1;
+      currentY += lineCount * 3.8 + 1;
+
+      if (it.customizationSummary) {
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "italic");
+        doc.text(`* (${it.customizationSummary})`, leftX + 10, currentY);
+        currentY += 3.5;
+        doc.setFontSize(7.5);
+        doc.setFont("helvetica", "normal");
       }
-      doc.text(`${it.quantity}x`, 5, currentY);
-      doc.text(it.name.slice(0, 22), 18, currentY);
-      doc.text(`$${(it.price * it.quantity).toLocaleString("es-AR")}`, 65, currentY);
-      currentY += 5;
     });
 
-    currentY += 2;
-    doc.line(5, currentY, 75, currentY);
-    currentY += 6;
+    currentY += 1;
+    doc.line(leftX, currentY, rightX, currentY);
+    currentY += 4.5;
 
-    // Totals
+    // 5. Totals & Tax Breakdown
+    const subtotalCalc = order.subtotal || order.total;
+    const taxCalc = order.tax || parseFloat((order.total - order.total / 1.21).toFixed(2));
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.text("Subtotal:", leftX, currentY);
+    doc.text(`$${subtotalCalc.toLocaleString("es-AR")}`, rightX, currentY, { align: "right" });
+
+    currentY += 3.8;
+    doc.text("IVA (21% Est.):", leftX, currentY);
+    doc.text(`$${taxCalc.toLocaleString("es-AR")}`, rightX, currentY, { align: "right" });
+
+    currentY += 4;
+    doc.setLineWidth(0.5);
+    doc.line(leftX, currentY, rightX, currentY);
+    currentY += 5;
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text(`TOTAL: $${order.total.toLocaleString("es-AR")}`, 75, currentY, { align: "right" });
+    doc.text("TOTAL ARS:", leftX, currentY);
+    doc.text(`$${order.total.toLocaleString("es-AR")}`, rightX, currentY, { align: "right" });
 
-    currentY += 10;
+    // 6. Footer message & barcode simulation
+    currentY += 8;
     doc.setFontSize(7);
     doc.setFont("helvetica", "italic");
     doc.text("Comprobante de consumo interno.", centerX, currentY, { align: "center" });
-    doc.text("¡Muchas gracias por su visita!", centerX, currentY + 4, { align: "center" });
+    doc.text("¡Muchas gracias por su visita!", centerX, currentY + 3.5, { align: "center" });
 
-    doc.save(`Ticket_NoFiscal_${order.id.slice(-6)}.pdf`);
+    currentY += 7;
+    doc.setFont("helvetica", "mono");
+    doc.setFontSize(6);
+    doc.text(`||| ||||||| |||| |||||||| ||||| || ${order.id}`, centerX, currentY, { align: "center" });
+
+    doc.save(`Ticket_NoFiscal_${order.id.slice(-6).toUpperCase()}.pdf`);
   }
 
   /**
@@ -176,10 +245,13 @@ export class ReceiptPDFService {
         doc.rect(10, currentY - 4, pageWidth - 20, 7, "F");
       }
       doc.text(`${it.quantity}x`, 15, currentY);
-      doc.text(it.name.slice(0, 45), 35, currentY);
+      const wrappedDesc = doc.splitTextToSize(it.name, 85);
+      doc.text(wrappedDesc, 35, currentY);
       doc.text(`$${it.price.toLocaleString("es-AR")}`, 130, currentY);
       doc.text(`$${(it.price * it.quantity).toLocaleString("es-AR")}`, 170, currentY);
-      currentY += 7;
+      
+      const lines = Array.isArray(wrappedDesc) ? wrappedDesc.length : 1;
+      currentY += lines * 5 + 2;
     });
 
     currentY = 220;

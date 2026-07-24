@@ -7609,17 +7609,17 @@ export default function AdminHub({
             </div>
 
             <div className="border-t border-dashed border-stone-800 py-3 text-[10px]">
-              <div className="grid grid-cols-12 gap-1 font-bold mb-1">
+              <div className="grid grid-cols-12 gap-1 font-bold mb-1 border-b border-dashed border-stone-400 pb-1">
                 <span className="col-span-2">Cant</span>
-                <span className="col-span-7">Detalle</span>
-                <span className="col-span-3 text-right">Monto</span>
+                <span className="col-span-6">Detalle / Producto</span>
+                <span className="col-span-4 text-right">Monto</span>
               </div>
-              <div className="space-y-1 border-b border-dashed border-stone-300 pb-2">
+              <div className="space-y-1.5 border-b border-dashed border-stone-400 pb-2">
                 {selectedOrderForTicket.items.map((it: any, idx: number) => (
-                  <div key={idx} className="grid grid-cols-12 gap-1">
-                    <span className="col-span-2">{it.quantity}x</span>
-                    <span className="col-span-7 truncate">{it.name}</span>
-                    <span className="col-span-3 text-right">${(it.price * it.quantity).toLocaleString()}</span>
+                  <div key={idx} className="grid grid-cols-12 gap-1 items-start">
+                    <span className="col-span-2 font-bold">{it.quantity}x</span>
+                    <span className="col-span-6 pr-1 font-medium leading-tight text-left">{it.name}</span>
+                    <span className="col-span-4 text-right font-mono font-bold">${(it.price * it.quantity).toLocaleString("es-AR")}</span>
                   </div>
                 ))}
               </div>
