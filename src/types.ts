@@ -100,6 +100,7 @@ export interface FiscalDetails {
   iva105: number;
   customerCuit?: string;
   customerName?: string;
+  qrCodeUrl?: string;
 }
 
 export interface Order {
