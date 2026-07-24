@@ -143,42 +143,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         </div>
       </header>
 
-      {/* Marketing Badges Highlights */}
-      <section className="max-w-7xl mx-auto py-12 px-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-6 bg-white border border-[#E2D4C3] rounded-3xl shadow-sm text-center space-y-2 hover:shadow-md transition-shadow">
-            <div className="h-12 w-12 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto">
-              <ChefHat className="h-6 w-6" />
-            </div>
-            <strong className="text-sm font-extrabold text-[#1C120C] block">Menú Ejecutivo $8.000</strong>
-            <p className="text-xs text-[#5C4A3E]">Entrada + Principal + Bebida + Postre de Lunes a Viernes.</p>
-          </div>
 
-          <div className="p-6 bg-white border border-[#E2D4C3] rounded-3xl shadow-sm text-center space-y-2 hover:shadow-md transition-shadow">
-            <div className="h-12 w-12 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto">
-              <Coffee className="h-6 w-6" />
-            </div>
-            <strong className="text-sm font-extrabold text-[#1C120C] block">Cafetería de Especialidad</strong>
-            <p className="text-xs text-[#5C4A3E]">Submarino Bariloche & Repostería artesanal recién horneada.</p>
-          </div>
-
-          <div className="p-6 bg-white border border-[#E2D4C3] rounded-3xl shadow-sm text-center space-y-2 hover:shadow-md transition-shadow">
-            <div className="h-12 w-12 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto">
-              <Wine className="h-6 w-6" />
-            </div>
-            <strong className="text-sm font-extrabold text-[#1C120C] block">Parrilla & Vinos</strong>
-            <p className="text-xs text-[#5C4A3E]">Cortes de carne madurados y selecta bodega nacional.</p>
-          </div>
-
-          <div className="p-6 bg-white border border-[#E2D4C3] rounded-3xl shadow-sm text-center space-y-2 hover:shadow-md transition-shadow">
-            <div className="h-12 w-12 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto">
-              <Award className="h-6 w-6" />
-            </div>
-            <strong className="text-sm font-extrabold text-[#1C120C] block">Ubicación Privilege</strong>
-            <p className="text-xs text-[#5C4A3E]">Constitución 944, justo frente al Teatro Municipal.</p>
-          </div>
-        </div>
-      </section>
 
       {/* Featured Promo Cards Section */}
       <section id="promos" className="max-w-7xl mx-auto py-12 px-6 space-y-8">
