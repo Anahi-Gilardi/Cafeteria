@@ -5,7 +5,26 @@ export interface MenuItem {
   takeawayPrice?: number; // Discounted for takeaway
   deliveryPrice?: number; // Marked up for third-party apps
   description: string;
-  category: "coffee" | "traditional" | "cold" | "bakery" | "brunch" | "starters" | "mains" | "desserts" | "drinks" | "sides" | "executive";
+  category: 
+    | "desayunos_meriendas" 
+    | "pizzas_focaccias" 
+    | "minutas_carnes" 
+    | "pastas_caseras" 
+    | "empanadas" 
+    | "bebidas_sa" 
+    | "bebidas_alcohol" 
+    | "postres" 
+    | "executive"
+    | "coffee" 
+    | "traditional" 
+    | "cold" 
+    | "bakery" 
+    | "brunch" 
+    | "starters" 
+    | "mains" 
+    | "desserts" 
+    | "drinks" 
+    | "sides";
   tags: string[]; // e.g. "Vegano", "Sin Gluten", "Especial", "Parrilla", "Pastas"
   image: string;
   customizable: boolean;
@@ -59,6 +78,16 @@ export interface CartItem {
   menuItem: MenuItem;
   customization: MenuItemCustomization;
   quantity: number;
+}
+
+export interface Insumo {
+  id: string;
+  name: string;
+  unit: string;
+  currentStock: number;
+  minStock: number;
+  costPerUnit: number;
+  supplier?: string;
 }
 
 export interface Table {
@@ -153,6 +182,39 @@ export interface MermaLog {
   unit: string;
   reason: string;
   timestamp: string;
+}
+
+export interface ARCAPayload {
+  ptoVta: number;
+  cbteTipo: number; // 1: Factura A, 6: Factura B, 11: Factura C
+  docTipo: number; // 80: CUIT, 96: DNI, 99: Consumidor Final
+  docNro: number;
+  cbteFch: string; // AAAAMMDD
+  impTotal: number;
+  impTotConc: number;
+  impNeto: number;
+  impOpEx: number;
+  impIVA: number;
+  impTrib: number;
+  monId: "PES";
+  monCotiz: 1;
+}
+
+export interface Invoice {
+  id: string;
+  orderId: string;
+  voucherType: "Factura A" | "Factura B" | "Factura C" | "Ticket Consumidor Final";
+  ptoVta: string;
+  nroComprobante: string;
+  cae: string;
+  caeExpiration: string;
+  qrCodeUrl: string;
+  cuitDni: string;
+  clientName: string;
+  totalAmount: number;
+  netAmount: number;
+  vatAmount: number;
+  createdAt: string;
 }
 
 export type UserRole = "administrador" | "dueño" | "cajero" | "mesero" | "barista";

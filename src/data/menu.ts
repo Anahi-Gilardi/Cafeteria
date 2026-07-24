@@ -1,27 +1,41 @@
 import { MenuItem, Table } from "../types";
 
 export const MENU_ITEMS: MenuItem[] = [
-  // COFFEE & SPECIALTIES (Especialidades Porteñas)
+  // 🥐 1. DESAYUNOS & MERIENDAS ARGENTINAS
   {
     id: "arg-submarino",
     name: "Submarino de Chocolate Bariloche",
     price: 4500,
     takeawayPrice: 4050,
     deliveryPrice: 5200,
-    description: "Una de las tradiciones más queridas de Argentina: una jarrita de leche entera de campo bien caliente, servida con una barra entera de chocolate artesanal de Bariloche para sumergir y derretir pacientemente.",
-    category: "coffee",
-    tags: ["Especial", "Artesanal"],
+    description: "Una jarrita de leche entera de campo bien caliente, servida con una barra entera de chocolate artesanal de Bariloche para sumergir y derretir pacientemente.",
+    category: "desayunos_meriendas",
+    tags: ["Especial", "Tradicional"],
     image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: {
-      calories: 290,
-      allergens: ["Lácteos"]
-    },
-    stock: 25,
+    nutrition: { calories: 290, allergens: ["Lácteos"] },
+    stock: 35,
     recipe: [
       { ingredientId: "ins-leche", amount: 0.25 },
       { ingredientId: "ins-chocolate", amount: 0.05 }
-    ]
+    ],
+    station: "barista"
+  },
+  {
+    id: "arg-cafecito-jarrito",
+    name: "Café Doble en Jarrito",
+    price: 2900,
+    takeawayPrice: 2600,
+    deliveryPrice: 3350,
+    description: "Espresso doble corto de nuestra selección de granos tostados artesanalmente, servido en el tradicional jarrito de vidrio templado porteño.",
+    category: "desayunos_meriendas",
+    tags: ["Especial"],
+    image: "https://images.unsplash.com/photo-1510972527409-cef6e4a4d64e?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 10, allergens: [] },
+    stock: 60,
+    recipe: [{ ingredientId: "ins-cafe", amount: 0.015 }],
+    station: "barista"
   },
   {
     id: "arg-lagrima-portena",
@@ -29,768 +43,452 @@ export const MENU_ITEMS: MenuItem[] = [
     price: 3800,
     takeawayPrice: 3400,
     deliveryPrice: 4400,
-    description: "Un clásico porteño para los amantes de la leche cremosa: jarrito lleno de leche vaporizada de textura aterciopelada con apenas unas gotitas (una 'lágrima') de nuestro espresso de especialidad.",
-    category: "coffee",
-    tags: ["Recomendado"],
+    description: "Jarrito lleno de leche vaporizada de textura aterciopelada con apenas unas gotitas (una 'lágrima') de nuestro espresso de especialidad.",
+    category: "desayunos_meriendas",
+    tags: ["Clásico"],
     image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: {
-      calories: 120,
-      allergens: ["Lácteos"]
-    },
-    stock: 35,
+    nutrition: { calories: 120, allergens: ["Lácteos"] },
+    stock: 45,
     recipe: [
       { ingredientId: "ins-leche", amount: 0.20 },
       { ingredientId: "ins-cafe", amount: 0.005 }
-    ]
+    ],
+    station: "barista"
   },
   {
-    id: "arg-cafecito-jarrito",
-    name: "Café en Jarrito Doble",
-    price: 2900,
-    takeawayPrice: 2600,
-    deliveryPrice: 3350,
-    description: "El alma de Buenos Aires. Espresso doble corto de nuestra selección de granos tostados artesanalmente, servido en el tradicional jarrito de vidrio templado porteño, con una crema dorada impecable.",
-    category: "coffee",
-    tags: ["Especial"],
-    image: "https://images.unsplash.com/photo-1510972527409-cef6e4a4d64e?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 10,
-      allergens: []
-    },
-    stock: 50,
-    recipe: [
-      { ingredientId: "ins-cafe", amount: 0.015 }
-    ]
+    id: "arg-medialuna-manteca",
+    name: "Medialuna de Manteca Artesanal",
+    price: 1200,
+    takeawayPrice: 1100,
+    deliveryPrice: 1400,
+    description: "Medialuna hojaldrada a mano con manteca de primera calidad, dorada al horno de barro con almíbar de azahar.",
+    category: "desayunos_meriendas",
+    tags: ["Recién Horneado"],
+    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 180, allergens: ["Gluten", "Lácteos"] },
+    stock: 80,
+    station: "barista"
   },
   {
-    id: "arg-capuchino-italiano",
-    name: "Capuchino con Cacao y Canela",
-    price: 3900,
-    takeawayPrice: 3500,
-    deliveryPrice: 4500,
-    description: "La receta porteña del tradicional capuchino: espresso doble, leche vaporizada muy espumosa, espolvoreado con canela molida fina y ralladura de chocolate amargo.",
-    category: "coffee",
+    id: "arg-tostado-mixto",
+    name: "Tostado de Miga Jamón y Queso",
+    price: 5500,
+    takeawayPrice: 4900,
+    deliveryPrice: 6300,
+    description: "Tres capas de pan de miga blanco artesanal con manteca, jamón cocido seleccionado y doble queso Tybo fundido a la plancha.",
+    category: "desayunos_meriendas",
     tags: ["Clásico"],
-    image: "https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&q=80&w=600",
+    image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: {
-      calories: 160,
-      allergens: ["Lácteos"]
-    },
-    stock: 30,
-    recipe: [
-      { ingredientId: "ins-leche", amount: 0.15 },
-      { ingredientId: "ins-cafe", amount: 0.015 },
-      { ingredientId: "ins-chocolate", amount: 0.03 }
-    ]
+    nutrition: { calories: 420, allergens: ["Gluten", "Lácteos"] },
+    stock: 40,
+    station: "cocina_caliente"
   },
   {
-    id: "arg-cafe-crema",
-    name: "Café Vienés Porteño (con Crema)",
-    price: 4100,
-    takeawayPrice: 3700,
-    deliveryPrice: 4700,
-    description: "Café de filtro doble intenso coronado con una generosa copa de crema chantilly batida artesanalmente a mano y decorado con hilos de dulce de leche.",
-    category: "coffee",
-    tags: ["Especial"],
-    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 220,
-      allergens: ["Lácteos"]
-    },
-    stock: 20,
-    recipe: [
-      { ingredientId: "ins-cafe", amount: 0.015 },
-      { ingredientId: "ins-leche", amount: 0.05 }
-    ]
-  },
- 
-  // TRADITIONAL COFFEE (Clásicos)
-  {
-    id: "arg-cortado",
-    name: "Café Cortado en Jarrito",
+    id: "arg-mate-cocido",
+    name: "Servicio de Mate Cocido con Tortas Fritas",
     price: 3200,
     takeawayPrice: 2900,
     deliveryPrice: 3700,
-    description: "Un espresso doble 'cortado' con un chorrito fino de leche caliente vaporizada, servido en vasito de vidrio. Acompañado con soda fría de cortesía, tal como se sirve en nuestra casa.",
-    category: "traditional",
-    tags: ["Recomendado"],
-    image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 60,
-      allergens: ["Lácteos"]
-    },
-    stock: 45,
-    recipe: [
-      { ingredientId: "ins-cafe", amount: 0.015 },
-      { ingredientId: "ins-leche", amount: 0.05 }
-    ]
-  },
-  {
-    id: "arg-cafe-leche",
-    name: "Café con Leche Clásico",
-    price: 3500,
-    takeawayPrice: 3150,
-    deliveryPrice: 4050,
-    description: "El compañero ineludible de la merienda nacional. Espresso doble estirado combinado en partes iguales con leche vaporizada bien caliente, servido en taza de loza clásica de café notable.",
-    category: "traditional",
-    tags: [],
-    image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 140,
-      allergens: ["Lácteos"]
-    },
-    stock: 40,
-    recipe: [
-      { ingredientId: "ins-cafe", amount: 0.015 },
-      { ingredientId: "ins-leche", amount: 0.15 }
-    ]
-  },
-  {
-    id: "arg-mate-mesa",
-    name: "Mate Tradicional en Mesa",
-    price: 4800,
-    takeawayPrice: 4300,
-    deliveryPrice: 5500,
-    description: "Servicio completo para vivir el ritual: termo de agua caliente con temperatura exacta, mate de calabaza forrado en cuero, bombilla de alpaca y yerba mate orgánica premium a elección (suave o con notas de campo).",
-    category: "traditional",
-    tags: ["Especial", "Vegano"],
-    image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&q=80&w=600",
+    description: "Servicio criollo con jarro de mate cocido quemado con azúcar y dos tortas fritas criollas calentitas recién hechas.",
+    category: "desayunos_meriendas",
+    tags: ["Criollo"],
+    image: "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&q=80&w=600",
     customizable: false,
-    nutrition: {
-      calories: 10,
-      allergens: []
-    },
-    stock: 12,
-    recipe: [
-      { ingredientId: "ins-yerba", amount: 0.05 }
-    ]
-  },
- 
-  // COLD DRINKS (Bebidas Frías)
-  {
-    id: "arg-iced-dulce-leche",
-    name: "Iced Latte de Dulce de Leche",
-    price: 4500,
-    takeawayPrice: 4050,
-    deliveryPrice: 5200,
-    description: "Espresso doble de especialidad vertido sobre leche cremosa bien fría con abundante hielo, fusionado con dulce de leche repostero artesanal de primera calidad.",
-    category: "cold",
-    tags: ["Recomendado", "Especial"],
-    image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 240,
-      allergens: ["Lácteos"]
-    },
-    stock: 25,
-    recipe: [
-      { ingredientId: "ins-cafe", amount: 0.015 },
-      { ingredientId: "ins-leche", amount: 0.20 },
-      { ingredientId: "ins-ddl", amount: 0.03 }
-    ]
-  },
-  {
-    id: "arg-pomelo-tonica",
-    name: "Espresso Tónica de Pomelo Pampeano",
-    price: 4200,
-    description: "La frescura del campo argentino: café extraído en frío mezclado con agua tónica premium, almíbar artesanal de pomelo rosado pampeano y una rodaja fresca.",
-    category: "cold",
-    tags: ["Vegano", "Sin Gluten"],
-    image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 85,
-      allergens: []
-    },
-    stock: 15
-  },
-  {
-    id: "arg-mate-cocido-helado",
-    name: "Mate Cocido Helado con Limón y Menta",
-    price: 3800,
-    description: "Infusión helada de yerba mate orgánica premium seleccionada, endulzada ligeramente con miel de San Luis, rodajas de limón y menta fresca del huerto.",
-    category: "cold",
-    tags: ["Vegano", "Sin Gluten", "Artesanal"],
-    image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 50,
-      allergens: []
-    },
-    stock: 20
-  },
-
-  // BAKERY (Facturas, Alfajores y Tortas)
-  {
-    id: "arg-medialuna-manteca",
-    name: "Trío de Medialunas de Manteca",
-    price: 3600,
-    description: "Hojaldre artesanal premium elaborado con manteca de primera calidad, horneadas cada mañana hasta quedar doradas y pintadas generosamente con almíbar de cítricos secretos.",
-    category: "bakery",
-    tags: ["Artesanal", "Recomendado"],
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 320,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 60
-  },
-  {
-    id: "arg-medialuna-grasa",
-    name: "Trío de Medialunas de Grasa",
-    price: 3600,
-    description: "La versión salada y crocante del clásico rioplatense. Masa hojaldrada fina con grasa vacuna refinada, de sabor suavemente salado y textura increíblemente crujiente.",
-    category: "bakery",
-    tags: ["Artesanal"],
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 290,
-      allergens: ["Gluten"]
-    },
-    stock: 45
-  },
-  {
-    id: "arg-alfajor-maicena",
-    name: "Alfajor de Maicena Tradicional",
-    price: 2800,
-    description: "Auténtico alfajor artesanal de almidón de maíz que se desarma en la boca, relleno de abundante dulce de leche repostero y rebozado suavemente en coco rallado.",
-    category: "bakery",
-    tags: ["Artesanal", "Recomendado"],
-    image: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 260,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 30
-  },
-  {
-    id: "arg-alfajor-marplatense",
-    name: "Alfajor Marplatense de Chocolate",
-    price: 3200,
-    description: "Inspirado en los famosos alfajores de la Costa Atlántica. Dos tapitas húmedas de cacao rellenas con dulce de leche artesanal, bañadas en chocolate semiamargo belga.",
-    category: "bakery",
-    tags: ["Especial"],
-    image: "https://images.unsplash.com/photo-1581798459219-318e76aeec7b?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 310,
-      allergens: ["Gluten", "Lácteos", "Huevo", "Soja"]
-    },
-    stock: 25
-  },
-  {
-    id: "arg-pastafrola",
-    name: "Porción de Pastafrola de Membrillo",
-    price: 3400,
-    description: "Tarta tradicional argentina de masa quebrada dulce, perfumada con vainilla y ralladura de limón, rellena de dulce de membrillo derretido y decorada con el clásico enrejado.",
-    category: "bakery",
-    tags: ["Artesanal"],
-    image: "https://images.unsplash.com/photo-1519869325930-281384150729?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 340,
-      allergens: ["Gluten", "Huevo"]
-    },
-    stock: 15
-  },
-  {
-    id: "arg-chocotorta",
-    name: "Chocotorta Porteña del Barrio",
-    price: 4500,
-    description: "El postre favorito de los cumpleaños y meriendas argentinas. Capas de galletitas Chocolinas remojadas en café expreso intenso, intercaladas con una crema adictiva de dulce de leche y queso crema batido.",
-    category: "bakery",
-    tags: ["Especial", "Recomendado"],
-    image: "https://images.unsplash.com/photo-1508737027454-e6454ef45afd?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 420,
-      allergens: ["Gluten", "Lácteos", "Soja"]
-    },
-    stock: 12
-  },
-  {
-    id: "arg-torta-rogel",
-    name: "Milhojas Rogel de Autor",
-    price: 4800,
-    description: "La cumbre de la repostería criolla. Ocho capas finas e increíblemente crocantes de masa de yemas unidas por dulce de leche repostero puro, cubiertas con un suntuoso merengue italiano flameado.",
-    category: "bakery",
-    tags: ["Artesanal"],
-    image: "https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 460,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 10
-  },
-  {
-    id: "arg-torta-balcarce",
-    name: "Torta Balcarce Tradicional",
-    price: 4600,
-    description: "Porción de la clásica torta bonaerense: bizcochuelo húmedo relleno de dulce de leche, crema de vainilla chantilly, castañas en almíbar, merenguitos secos crocantes y espolvoreado con coco rallado.",
-    category: "bakery",
-    tags: ["Clásico"],
-    image: "https://images.unsplash.com/photo-1535141192574-5d4897c13636?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 440,
-      allergens: ["Gluten", "Lácteos", "Huevo", "Frutos Secos"]
-    },
-    stock: 8
-  },
-
-  // BRUNCH & BREAKFAST (Tostados, Salados y Desayunos)
-  {
-    id: "arg-tostado-mixto",
-    name: "Tostado Mixto en Pan de Miga",
-    price: 6900,
-    description: "El inconfundible 'tostado' argentino de las cafeterías notables. Finas capas de pan de miga untadas con manteca, rellenas de abundante jamón cocido natural y queso dambo derretido a la plancha.",
-    category: "brunch",
-    tags: ["Recomendado"],
-    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 450,
-      allergens: ["Gluten", "Lácteos"]
-    },
-    stock: 30
-  },
-  {
-    id: "arg-tostado-carlitos",
-    name: "Tostado 'Carlitos' con Salsa Golf",
-    price: 7200,
-    description: "Homenaje al rey de la noche porteña: tostado de jamón y queso dambo en pan de miga doble, aderezado con un toque sutil de manteca y salsa golf criolla casera antes de pasar por la plancha caliente.",
-    category: "brunch",
-    tags: ["Especial"],
-    image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 490,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 20
-  },
-  {
-    id: "arg-empanada-carne",
-    name: "Dúo de Empanadas de Carne Cortada a Cuchillo",
-    price: 4800,
-    description: "Dos empanadas tradicionales jugosas rellenas de bola de lomo cortada a cuchillo, salteada con cebolla de verdeo, huevo duro picado, aceituna verde y el toque justo de pimentón dulce y comino.",
-    category: "brunch",
-    tags: ["Especial", "Artesanal"],
-    image: "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&q=80&w=600",
-    customizable: true, // option to heat up
-    nutrition: {
-      calories: 380,
-      allergens: ["Gluten", "Huevo"]
-    },
-    stock: 40
-  },
-  {
-    id: "arg-empanada-jyq",
-    name: "Dúo de Empanadas de Jamón y Queso Hojaldradas",
-    price: 4600,
-    description: "Dos empanadas de masa de hojaldre casera rellenas con cubos de jamón cocido seleccionado y mezcla cremosa de quesos derretidos dambo y mozzarella.",
-    category: "brunch",
-    tags: ["Artesanal"],
-    image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 360,
-      allergens: ["Gluten", "Lácteos"]
-    },
-    stock: 35
-  },
-  {
-    id: "arg-pascualina",
-    name: "Pascualina de Espinaca Notable",
-    price: 5500,
-    description: "Porción de la clásica tarta alta hogareña, rellena de abundante espinaca fresca salteada con nuez moscada, ligada con queso parmesano y crema, con rodajas de huevo duro incrustadas en su interior.",
-    category: "brunch",
-    tags: ["Clásico"],
-    image: "https://images.unsplash.com/photo-1519869325930-281384150729?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 390,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 15
-  },
-  {
-    id: "arg-tostadas-campo",
-    name: "Tostadas de Campo con Queso y Dulce",
-    price: 4500,
-    description: "Dos rebanadas gruesas de pan de campo casero de masa madre, tostadas a la leña, servidas con queso crema batido de campo y abundante dulce de leche repostero o mermelada patagónica.",
-    category: "brunch",
-    tags: ["Recomendado"],
-    image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 360,
-      allergens: ["Gluten", "Lácteos"]
-    },
-    stock: 25
-  },
-
-  // SPECIAL OFFERS & OFFERS DISPLAYED ON PAGE
-  {
-    id: "offer-promo-portena",
-    name: "PROMO: Café con Leche + 3 Medialunas",
-    price: 6200,
-    description: "El ritual porteño absoluto con precio promocional especial. Un tazón de café con leche clásico caliente acompañado de tres medialunas de manteca recién horneadas y pintadas con almíbar.",
-    category: "coffee",
-    tags: ["OFERTA", "Recomendado"],
-    image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 460,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 50,
-    isOffer: true,
-    offerPrice: 5.20 // Extra promo discount
-  },
-  {
-    id: "offer-merienda-puglia",
-    name: "OFERTA MERIENDA: Submarino + Alfajor de Maicena",
-    price: 6800,
-    description: "El combo perfecto para entibiar el alma. Una taza de leche bien caliente con barra de chocolate Bariloche y un auténtico alfajor de maicena relleno de dulce de leche con coco.",
-    category: "coffee",
-    tags: ["OFERTA", "Especial"],
-    image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: {
-      calories: 550,
-      allergens: ["Gluten", "Lácteos", "Huevo"]
-    },
-    stock: 25,
-    isOffer: true,
-    offerPrice: 5.90
-  },
-  {
-    id: "offer-almuerzo-ejecutivo",
-    name: "PROMO MEDIODÍA: Tostado Mixto + Mate Cocido Helado",
-    price: 9800,
-    description: "Almuerzo rápido, clásico y porteño. Tostado de jamón y queso caliente en pan de miga extra fino de manteca acompañado de un refrescante vaso de mate cocido helado de menta y limón.",
-    category: "brunch",
-    tags: ["OFERTA"],
-    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: {
-      calories: 500,
-      allergens: ["Gluten", "Lácteos"]
-    },
-    stock: 20,
-    isOffer: true,
-    offerPrice: 8.50
-  },
-
-  // RESTAURANT STARTERS (Entradas & Tapeos)
-  {
-    id: "rest-empanada-carne",
-    name: "Empanada Criolla Cortada a Cuchillo",
-    price: 3500,
-    takeawayPrice: 3100,
-    deliveryPrice: 3900,
-    description: "Receta tradicional salteña. Carne de lomo cortada a cuchillo, cebolla de verdeo, huevo duro y aceitunas, frita en grasa de pella crocante.",
-    category: "starters",
-    tags: ["Recomendado", "Artesanal"],
-    image: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: { calories: 240, allergens: ["Gluten"] },
-    stock: 50,
-    station: "cocina_caliente",
-    recipe: [
-      { ingredientId: "ins-carne-lomo", amount: 0.12 },
-      { ingredientId: "ins-harina", amount: 0.05 }
-    ]
-  },
-  {
-    id: "rest-provolone-chapa",
-    name: "Provolone Crocante a la Chapa",
-    price: 7900,
-    takeawayPrice: 7000,
-    deliveryPrice: 8900,
-    description: "Queso provolone estacionado dorado a la chapa de hierro con ají molido, orégano de montaña y un hilo de aceite de oliva de girasoles.",
-    category: "starters",
-    tags: ["Especial", "Parrilla"],
-    image: "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: { calories: 380, allergens: ["Lácteos"] },
+    nutrition: { calories: 310, allergens: ["Gluten"] },
     stock: 30,
+    station: "barista"
+  },
+
+  // 🍕 2. PIZZAS & FOCACCIAS
+  {
+    id: "piz-muzza-grande",
+    name: "Pizza Muzzarella Grande (8 Porc.)",
+    price: 12500,
+    takeawayPrice: 11200,
+    deliveryPrice: 14000,
+    description: "Masa madre de fermentación lenta de 48hs. Salsa de tomates perita seleccionados, 200g de muzzarella derretida, aceitunas verdes y orégano.",
+    category: "pizzas_focaccias",
+    tags: ["Masa Madre", "Tradicional"],
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 850, allergens: ["Gluten", "Lácteos"] },
+    stock: 30,
+    recipe: [
+      { ingredientId: "ins-masa-pizza-440", amount: 1 },
+      { ingredientId: "ins-salsa-tomate-130", amount: 1 },
+      { ingredientId: "ins-muzzarella-200", amount: 1 }
+    ],
     station: "parrilla"
   },
   {
-    id: "rest-rabas-mar",
-    name: "Rabas Crocantes con Alioli de Limón",
-    price: 11500,
-    takeawayPrice: 10300,
-    deliveryPrice: 12900,
-    description: "Anillos de calamar fresco rebozados en tempura de panko, servidos crujientes con alioli casero de ajos asados y gajos de limón criollo.",
-    category: "starters",
-    tags: ["Mar del Plata"],
-    image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&q=80&w=600",
+    id: "piz-muzza-indiv",
+    name: "Pizza Muzzarella Individual",
+    price: 7500,
+    takeawayPrice: 6750,
+    deliveryPrice: 8500,
+    description: "Tamaño personal de masa madre. Salsa casera, 100g de muzzarella de primera calidad y especias.",
+    category: "pizzas_focaccias",
+    tags: ["Individual"],
+    image: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: { calories: 420, allergens: ["Mariscos", "Gluten"] },
+    nutrition: { calories: 450, allergens: ["Gluten", "Lácteos"] },
+    stock: 40,
+    recipe: [
+      { ingredientId: "ins-masa-pizza-230", amount: 1 },
+      { ingredientId: "ins-salsa-tomate-90", amount: 1 },
+      { ingredientId: "ins-muzzarella-100", amount: 1 }
+    ],
+    station: "parrilla"
+  },
+  {
+    id: "piz-margarita-grande",
+    name: "Pizza Margarita Grande",
+    price: 14000,
+    takeawayPrice: 12600,
+    deliveryPrice: 15800,
+    description: "Masa madre, salsa de tomate italiana, 200g de muzzarella, hojas de albahaca fresca y pesto concentrado de la casa.",
+    category: "pizzas_focaccias",
+    tags: ["Gourmet"],
+    image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 880, allergens: ["Gluten", "Lácteos"] },
+    stock: 25,
+    recipe: [
+      { ingredientId: "ins-masa-pizza-440", amount: 1 },
+      { ingredientId: "ins-salsa-tomate-130", amount: 1 },
+      { ingredientId: "ins-muzzarella-200", amount: 1 },
+      { ingredientId: "ins-pesto-albahaca-35", amount: 1 }
+    ],
+    station: "parrilla"
+  },
+  {
+    id: "piz-especial-grande",
+    name: "Pizza Especial de Jamón y Morrones",
+    price: 15500,
+    takeawayPrice: 13950,
+    deliveryPrice: 17500,
+    description: "Masa madre, 200g muzzarella, jamón cocido horneado 85g, morrones asados al horno de barro 90g y aceitunas negras.",
+    category: "pizzas_focaccias",
+    tags: ["Especial"],
+    image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 960, allergens: ["Gluten", "Lácteos"] },
     stock: 20,
+    station: "parrilla"
+  },
+  {
+    id: "piz-cinco-quesos",
+    name: "Pizza Cinco Quesos Teatral",
+    price: 16500,
+    takeawayPrice: 14850,
+    deliveryPrice: 18500,
+    description: "Blend de Muzzarella 200g, Queso Azul 60g, Provolone 60g, Fynbo y Reggianito 20g perfumado con hilos de pesto.",
+    category: "pizzas_focaccias",
+    tags: ["Especialidad"],
+    image: "https://images.unsplash.com/photo-1573821663912-6df460f9c684?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 1050, allergens: ["Gluten", "Lácteos"] },
+    stock: 18,
+    station: "parrilla"
+  },
+  {
+    id: "foc-milanesa-completa",
+    name: "Focaccia de Milanesa Completa",
+    price: 11500,
+    takeawayPrice: 10350,
+    deliveryPrice: 13000,
+    description: "Base de focaccia de masa madre (300g) con milanesa tierna de carne 170g, jamón horneado, muzzarella, papas, tomate, lechuga y huevo frito.",
+    category: "pizzas_focaccias",
+    tags: ["Focaccería", "Abundante"],
+    image: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 920, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 25,
+    station: "parrilla"
+  },
+  {
+    id: "foc-clasica",
+    name: "Focaccia Clásica de Romero y Sal Gruesa",
+    price: 6500,
+    takeawayPrice: 5850,
+    deliveryPrice: 7300,
+    description: "Focaccia artesanal esponjosa de masa madre (300g) horneada con aceite de oliva extra virgen, romero fresco y cristales de sal marina.",
+    category: "pizzas_focaccias",
+    tags: ["Artesanal"],
+    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 480, allergens: ["Gluten"] },
+    stock: 30,
+    station: "parrilla"
+  },
+
+  // 🥩 3. MINUTAS & CARNES (Gastronomía de Río Cuarto)
+  {
+    id: "min-bife-chorizo",
+    name: "Bife de Chorizo a las Brasas con Papas",
+    price: 18500,
+    takeawayPrice: 16650,
+    deliveryPrice: 20800,
+    description: "Corte premium de bife de chorizo de 400g a las brasas, acompañado de papas fritas rústicas con cáscara y dos huevos a la chapa.",
+    category: "minutas_carnes",
+    tags: ["Parrilla", "Recomendado"],
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 950, allergens: ["Huevo"] },
+    stock: 20,
+    station: "parrilla"
+  },
+  {
+    id: "min-mila-napolitana",
+    name: "Milanesa Napolitana Completa XL",
+    price: 14500,
+    takeawayPrice: 13000,
+    deliveryPrice: 16300,
+    description: "Milanesa gigante de bola de lomo empanada a mano, gratina con salsa fileto casera, muzzarella abundante, jamón y orégano. Servida con puré de papas.",
+    category: "minutas_carnes",
+    tags: ["Bodegón", "XL"],
+    image: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 880, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 30,
+    station: "cocina_caliente"
+  },
+  {
+    id: "min-locro-criollo",
+    name: "Locro Criollo Tradicional en Cazuela",
+    price: 12000,
+    takeawayPrice: 10800,
+    deliveryPrice: 13500,
+    description: "Receta patria lenta a leña: maíz blanco, porotos alubia, panceta ahumada, chorizo colorado, pechito de cerdo y zapallo anco con salsa picantita de verdeo.",
+    category: "minutas_carnes",
+    tags: ["Patrio", "Criollo"],
+    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 720, allergens: [] },
+    stock: 25,
     station: "cocina_caliente"
   },
 
-  // RESTAURANT MAIN DISHES (Platos Principales)
+  // 🍝 4. PASTAS CASERAS
   {
-    id: "rest-bife-chorizo",
-    name: "Bife de Chorizo Premium (350g) a las Brasas",
-    price: 18500,
-    takeawayPrice: 16500,
-    deliveryPrice: 20900,
-    description: "Corte noble de ternera patagónica a la parrilla con leña de quebracho. Servido con chimichurri casero, sal marina en escamas y la guarnición a tu elección.",
-    category: "mains",
-    tags: ["Parrilla", "Destacado"],
-    image: "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: { calories: 650, allergens: [] },
-    stock: 25,
-    station: "parrilla",
-    recipe: [
-      { ingredientId: "ins-bife-chorizo", amount: 0.35 },
-      { ingredientId: "ins-papas", amount: 0.25 }
-    ]
-  },
-  {
-    id: "rest-milanesa-napolitana",
-    name: "Milanesa de Ternera Gigante a la Napolitana",
-    price: 15900,
-    takeawayPrice: 14200,
-    deliveryPrice: 17900,
-    description: "Tradición pura argentina: milanesa dorada cubierta con salsa concassé de tomates frescos, jamón cocido de campo, queso mozzarella gratado y orégano.",
-    category: "mains",
-    tags: ["Minutas", "Favorito"],
-    image: "https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&q=80&w=600",
-    customizable: true,
-    nutrition: { calories: 720, allergens: ["Gluten", "Lácteos"] },
-    stock: 35,
-    station: "cocina_caliente"
-  },
-  {
-    id: "rest-sorrentinos-jamon-queso",
-    name: "Sorrentinos Caseros de Jamón y Queso",
-    price: 14200,
-    takeawayPrice: 12800,
-    deliveryPrice: 15900,
-    description: "Masa fresca elaborada con yemas de huevo de campo. Rellenos con jamón horneado artesanal y reggianito madurado. Servidos con salsa tuco o rosa.",
-    category: "mains",
+    id: "pas-sorrentinos",
+    name: "Sorrentinos de Jamón y Queso con Tuco",
+    price: 11500,
+    takeawayPrice: 10350,
+    deliveryPrice: 13000,
+    description: "Sorrentinos artesanales inflados rellenos de jamón cocido y abundante queso mozzarella, servidos con salsa tuco criolla de carne y queso rallado.",
+    category: "pastas_caseras",
     tags: ["Pastas", "Artesanal"],
     image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: { calories: 580, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    nutrition: { calories: 680, allergens: ["Gluten", "Lácteos", "Huevo"] },
     stock: 30,
     station: "cocina_caliente"
   },
   {
-    id: "rest-salmon-vegetales",
-    name: "Salmón Rosado con Manteca de Hierbas y Vegetales",
-    price: 21000,
-    takeawayPrice: 18900,
-    deliveryPrice: 23500,
-    description: "Medallón de salmón rosado sellado a la plancha con emulsión de manteca a las finas hierbas y acompañamiento de vegetales salteados al wok.",
-    category: "mains",
-    tags: ["Pesca", "Gourmet"],
-    image: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=80&w=600",
+    id: "pas-noquis",
+    name: "Ñoquis de Papa Caseros con Estofado",
+    price: 10500,
+    takeawayPrice: 9450,
+    deliveryPrice: 11800,
+    description: "Ñoquis livianos de papa natural amasados a mano el día 29 y todos los días, acompañados de estofado tradicional de ternera.",
+    category: "pastas_caseras",
+    tags: ["Pastas", "Casero"],
+    image: "https://images.unsplash.com/photo-1621996346565-e3d5d6281318?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: { calories: 490, allergens: ["Pescado", "Lácteos"] },
-    stock: 15,
+    nutrition: { calories: 610, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    stock: 35,
     station: "cocina_caliente"
   },
 
-  // RESTAURANT DESSERTS (Postres)
+  // 🥟 5. EMPANADAS CORDOBESAS
   {
-    id: "rest-flan-mixto",
-    name: "Flan Casero de Yemas con Dulce y Crema",
-    price: 6200,
-    takeawayPrice: 5500,
-    deliveryPrice: 6900,
-    description: "Flan clásico elaborado con 8 yemas, leche entera batida y caramelo rubio. Acompañado de dulce de leche colonial y crema chantilly fresca.",
-    category: "desserts",
-    tags: ["Tradicional", "Postre"],
-    image: "https://images.unsplash.com/photo-1528975604071-b4dc52a2d18c?auto=format&fit=crop&q=80&w=600",
+    id: "emp-criolla-carne",
+    name: "Empanada Criolla Cordobesa a Cuchillo",
+    price: 1800,
+    takeawayPrice: 1600,
+    deliveryPrice: 2000,
+    description: "Relleno tradicional de carne cortada a cuchillo, cebolla sofrita, huevo duro, aceitunas y un toque sutil dulce de pasas según la receta cordobesa.",
+    category: "empanadas",
+    tags: ["Córdoba", "Horno"],
+    image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&q=80&w=600",
     customizable: false,
-    nutrition: { calories: 340, allergens: ["Lácteos", "Huevo"] },
-    stock: 40,
-    station: "cocina_fria"
+    nutrition: { calories: 240, allergens: ["Gluten", "Huevo"] },
+    stock: 120,
+    station: "cocina_caliente"
   },
   {
-    id: "rest-volcan-chocolate",
-    name: "Volcán de Chocolate con Helado de Crema",
-    price: 7800,
-    takeawayPrice: 7000,
-    deliveryPrice: 8800,
-    description: "Biscocho tibio de chocolate amargo 70% cacao con centro líquido derretido y una bocha de helado de crema americana pura.",
-    category: "desserts",
-    tags: ["Especial", "Chef"],
-    image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&q=80&w=600",
+    id: "emp-saltena",
+    name: "Empanada Salteña Jugosa",
+    price: 1800,
+    takeawayPrice: 1600,
+    deliveryPrice: 2000,
+    description: "Relleno picantito de carne con papa en cubos, cebollita de verdeo fresca, huevo y caldo jugoso al morder.",
+    category: "empanadas",
+    tags: ["Jugosa"],
+    image: "https://images.unsplash.com/photo-1619860860774-1e2e17343432?auto=format&fit=crop&q=80&w=600",
     customizable: false,
-    nutrition: { calories: 480, allergens: ["Gluten", "Lácteos", "Huevo"] },
-    stock: 25,
-    station: "cocina_fria"
-  },
-  {
-    id: "rest-tiramisu-puglia",
-    name: "Tiramisú Puglia al Mascarpone",
-    price: 7500,
-    takeawayPrice: 6700,
-    deliveryPrice: 8400,
-    description: "Vainillas artesanales embebidas en café espresso corto y licor Amaretto, intercaladas con crema suave de mascarpone y espolvoreado de cacao amargo.",
-    category: "desserts",
-    tags: ["Italiano", "Recomendado"],
-    image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: { calories: 410, allergens: ["Gluten", "Lácteos", "Huevo"] },
-    stock: 30,
-    station: "cocina_fria"
+    nutrition: { calories: 250, allergens: ["Gluten", "Huevo"] },
+    stock: 100,
+    station: "cocina_caliente"
   },
 
-  // RESTAURANT DRINKS (Bebidas, Vinos & Coctelería)
+  // 🥤 6. BEBIDAS SIN ALCOHOL (S/A)
   {
-    id: "rest-vino-malbec-reserva",
-    name: "Vino Malbec Don Pablo Reserva (750ml)",
-    price: 19500,
-    takeawayPrice: 17500,
-    deliveryPrice: 21900,
-    description: "Malbec de la comarca de Luján de Cuyo con 12 meses de crianza en roble francés. Notas a ciruelas maduras, vainilla y taninos aterciopelados.",
-    category: "drinks",
-    tags: ["Vino", "Reserva"],
-    image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=600",
-    customizable: false,
-    nutrition: { calories: 180, allergens: ["Sulfitos"] },
+    id: "beb-limonada",
+    name: "Limonada Fresca con Menta y Jengibre (1L)",
+    price: 4500,
+    takeawayPrice: 4050,
+    deliveryPrice: 5100,
+    description: "Jarra artesanal de limonada exprimida en el momento con hojas de menta fresca del huerto y un toque picantito de jengibre.",
+    category: "bebidas_sa",
+    tags: ["Artesanal", "1 Litro"],
+    image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 110, allergens: [] },
     stock: 50,
     station: "barra_tragos"
   },
   {
-    id: "rest-aperol-spritz",
-    name: "Coctel Aperol Spritz de Autor",
+    id: "beb-gaseosa",
+    name: "Gaseosa Coca-Cola / Sprite (500ml)",
+    price: 2500,
+    takeawayPrice: 2250,
+    deliveryPrice: 2800,
+    description: "Botella individual de 500ml bien helada en envase de vidrio o plástico.",
+    category: "bebidas_sa",
+    tags: ["Línea Coca-Cola"],
+    image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 140, allergens: [] },
+    stock: 150,
+    station: "barra_tragos"
+  },
+
+  // 🍸 7. BEBIDAS CON ALCOHOL & TRAGOS
+  {
+    id: "trg-fernet-branca",
+    name: "Fernet Branca Cordobés (70/30)",
     price: 7500,
-    takeawayPrice: 6800,
+    takeawayPrice: 6750,
     deliveryPrice: 8500,
-    description: "El icónico aperitivo italiano: Aperol, espumante Prosecco extra dry, soda de sifón artesanal y media rodaja de naranja fresca con hielo de roca.",
-    category: "drinks",
-    tags: ["Coctelería", "Aperitivo"],
-    image: "https://images.unsplash.com/photo-1560512823-829485b8bf24?auto=format&fit=crop&q=80&w=600",
+    description: "El trago insignia de Córdoba: 70% Coca-Cola helada y 30% Fernet Branca puro servido en vaso alto con bastante hielo rústico.",
+    category: "bebidas_alcohol",
+    tags: ["Córdoba", "Insignia"],
+    image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: { calories: 150, allergens: [] },
+    nutrition: { calories: 280, allergens: [] },
     stock: 60,
     station: "barra_tragos"
   },
   {
-    id: "rest-cerveza-patagonia-ipa",
-    name: "Cerveza Tirada Patagonia IPA (Pinta 500ml)",
+    id: "trg-vermu-carpano",
+    name: "Vermú Carpano Rosso con Soda",
     price: 5500,
-    takeawayPrice: 4900,
+    takeawayPrice: 4950,
     deliveryPrice: 6200,
-    description: "Cerveza tirada fría de barril artesanal con lúpulos patagónicos. Amargor característico con intensas notas cítricas y a frutos tropicales.",
-    category: "drinks",
-    tags: ["Cerveza Tirada"],
+    description: "Vermú artesanal Carpano servido con sifón de soda de vidrio, rodaja de naranja fresca y aceituna rellena.",
+    category: "bebidas_alcohol",
+    tags: ["Vermuteria"],
+    image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 190, allergens: [] },
+    stock: 45,
+    station: "barra_tragos"
+  },
+  {
+    id: "beb-cerveza-tirada",
+    name: "Chopp Cerveza Tirada Artesanal (500cc)",
+    price: 4800,
+    takeawayPrice: 4300,
+    deliveryPrice: 5500,
+    description: "Pinta helada de cerveza tirada artesanal (Golden / IPA / Honey) con espuma cremosa constante.",
+    category: "bebidas_alcohol",
+    tags: ["Cerveza Artesanal"],
     image: "https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&q=80&w=600",
     customizable: false,
     nutrition: { calories: 210, allergens: ["Gluten"] },
-    stock: 100,
+    stock: 80,
     station: "barra_tragos"
   },
 
-  // EXECUTIVE MENU PACKAGE ITEM
+  // 🍰 8. POSTRES CRIOLLOS
   {
-    id: "rest-menu-ejecutivo-combo",
-    name: "⭐ Menú Ejecutivo del Día (Entrada + Principal + Bebida + Postre)",
+    id: "pos-flan-casero",
+    name: "Flan Casero Mixto (Dulce & Crema)",
+    price: 4200,
+    takeawayPrice: 3800,
+    deliveryPrice: 4800,
+    description: "Flan tradicional horneado a baño maría con huevos de campo y caramelo rubio, servido con una bocha de dulce de leche repostero y crema chantilly.",
+    category: "postres",
+    tags: ["Tradicional", "Mixto"],
+    image: "https://images.unsplash.com/photo-1528975604071-b4dc52a2d18c?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 410, allergens: ["Lácteos", "Huevo"] },
+    stock: 40,
+    station: "barista"
+  },
+  {
+    id: "pos-chocotorta",
+    name: "Chocotorta Porteña del Barrio",
+    price: 4500,
+    takeawayPrice: 4050,
+    deliveryPrice: 5100,
+    description: "Capas intercaladas de galletitas Chocolinas embebidas en café con crema suave de queso blanco mascarpone y dulce de leche colonial.",
+    category: "postres",
+    tags: ["Clásico"],
+    image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=600",
+    customizable: false,
+    nutrition: { calories: 480, allergens: ["Gluten", "Lácteos"] },
+    stock: 35,
+    station: "barista"
+  },
+  {
+    id: "pos-don-pedro",
+    name: "Don Pedro Teatral (Whisky & Helado)",
+    price: 5800,
+    takeawayPrice: 5200,
+    deliveryPrice: 6500,
+    description: "Copa helada de crema americana premium, medida de whisky escocés blend, nueces picadas gruesas y sirope de chocolate.",
+    category: "postres",
+    tags: ["Postre con Alcohol"],
+    image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&q=80&w=600",
+    customizable: true,
+    nutrition: { calories: 390, allergens: ["Lácteos", "Frutos Secos"] },
+    stock: 25,
+    station: "barista"
+  },
+
+  // ⭐ 9. MENÚ EJECUTIVO DEL DÍA
+  {
+    id: "exec-menu-completo",
+    name: "⭐ Menú Ejecutivo Promocional (4 Pasos)",
     price: 8000,
-    takeawayPrice: 7500,
-    deliveryPrice: 8500,
-    description: "La propuesta de almuerzo completo del día. Incluye Entrada seleccionada, Plato Principal con guarnición, Bebida fría/vino y Postre casero o café.",
+    takeawayPrice: 7200,
+    deliveryPrice: 9000,
+    description: "Combo completo del mediodía: 1. Entrada + 2. Plato Principal + 3. Bebida + 4. Postre o Café expreso en jarrito.",
     category: "executive",
-    tags: ["PROMO ALMUERZO", "Menú del Día"],
+    tags: ["Promocional", "Combo Mediodía"],
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
     customizable: true,
-    nutrition: { calories: 850, allergens: ["Gluten", "Lácteos", "Huevo"] },
+    nutrition: { calories: 850, allergens: ["Gluten", "Lácteos"] },
     stock: 50,
     station: "cocina_caliente"
   }
 ];
 
-export const TABLES_DATA: Table[] = [
-  {
-    id: "mesa-1",
-    name: "Mesa Puglia",
-    capacity: 2,
-    type: "window",
-    description: "Ubicada frente al gran ventanal de la Avenida 50, con vista a los tilos platenses. Ideal para parejas o lectores con luz natural abundante.",
-    coordX: 18,
-    coordY: 20,
-    status: "Libre"
-  },
-  {
-    id: "mesa-2",
-    name: "Sofá Borges (Palermo)",
-    capacity: 4,
-    type: "sofa",
-    description: "Cómodos sillones de cuero capitoné oscuro bajo la biblioteca del rincón de Borges. Un oasis literario súper cómodo y relajante.",
-    coordX: 50,
-    coordY: 25,
-    status: "Libre"
-  },
-  {
-    id: "mesa-3",
-    name: "La Gran Recoleta",
-    capacity: 6,
-    type: "sofa",
-    description: "Mesa señorial de roble antiguo recuperado de una casona de Recoleta, rodeada de sillas de pana. Ideal para familias o reuniones de café notables.",
-    coordX: 50,
-    coordY: 65,
-    status: "Libre"
-  },
-  {
-    id: "mesa-4",
-    name: "Barra Caminito - Puesto 1",
-    capacity: 1,
-    type: "bar",
-    description: "Frente a nuestra máquina de espresso de cobre pulido. Disfrutá de la charla con nuestros baristas y el perfume del grano recién molido.",
-    coordX: 85,
-    coordY: 15,
-    status: "Libre"
-  },
-  {
-    id: "mesa-5",
-    name: "Barra Caminito - Puesto 2",
-    capacity: 1,
-    type: "bar",
-    description: "Frente a la barra de filtrado manual. Charlá con nuestros baristas sobre perfiles de tostado patagónicos y cafés de origen único.",
-    coordX: 85,
-    coordY: 35,
-    status: "Libre"
-  },
-  {
-    id: "mesa-6",
-    name: "Rincón de los Poetas",
-    capacity: 2,
-    type: "reading",
-    description: "Espacio de lectura súper silencioso rodeado de estanterías de libros antiguos de literatura argentina, iluminado con una cálida lámpara retro.",
-    coordX: 18,
-    coordY: 70,
-    status: "Libre"
-  },
-  {
-    id: "mesa-7",
-    name: "Patio de La Boca",
-    capacity: 4,
-    type: "terrace",
-    description: "En nuestro patio trasero exterior, rodeado de macetas de barro con geranios coloridos, banderines porteños y guirnaldas de luces para la tarde.",
-    coordX: 18,
-    coordY: 45,
-    status: "Libre"
-  }
+export const TABLES: Table[] = [
+  { id: "mesa-1", name: "Mesa 1", capacity: 2, type: "window", description: "Mesa de salón para 2 personas.", coordX: 20, coordY: 20, status: "Libre" },
+  { id: "mesa-2", name: "Mesa 2", capacity: 4, type: "sofa", description: "Mesa de salón para 4 personas.", coordX: 40, coordY: 20, status: "Libre" },
+  { id: "mesa-3", name: "Mesa 3", capacity: 2, type: "window", description: "Mesa de salón para 2 personas.", coordX: 60, coordY: 20, status: "Libre" },
+  { id: "mesa-4", name: "Mesa 4", capacity: 6, type: "terrace", description: "Mesa de salón para 6 personas.", coordX: 20, coordY: 50, status: "Libre" },
+  { id: "mesa-5", name: "Mesa 5", capacity: 4, type: "reading", description: "Mesa de salón para 4 personas.", coordX: 40, coordY: 50, status: "Libre" },
+  { id: "mesa-6", name: "Mesa 6", capacity: 2, type: "bar", description: "Mesa de salón para 2 personas.", coordX: 60, coordY: 50, status: "Libre" },
+  { id: "mesa-7", name: "Mesa 7", capacity: 4, type: "window", description: "Mesa de salón para 4 personas.", coordX: 20, coordY: 80, status: "Libre" },
+  { id: "mesa-8", name: "Mesa 8", capacity: 8, type: "terrace", description: "Mesa de salón para 8 personas.", coordX: 50, coordY: 80, status: "Libre" }
 ];
+
+export const TABLES_DATA = TABLES;

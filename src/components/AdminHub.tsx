@@ -2628,19 +2628,25 @@ export default function AdminHub({
           <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Carta & Recetas</h2>
         </div>
 
-        <div className="flex border-b border-[#D4AF37]/20 gap-2 mb-6">
+        <div className="flex flex-wrap border-b border-[#D4AF37]/20 gap-1.5 mb-6">
           {[
             { id: "todos", label: "Todos" },
-            { id: "menu_diario", label: "⭐ Menú Ejecutivo & Rotación Diaria" },
-            { id: "delivery_config", label: "🛵 Configuración Delivery & Tarifas" },
-            { id: "coffee", label: "☕ Cafetería" },
-            { id: "pastry", label: "🍰 Pastelería" }
+            { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
+            { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
+            { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
+            { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+            { id: "empanadas", label: "🥟 Empanadas" },
+            { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
+            { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
+            { id: "postres", label: "🍰 Postres" },
+            { id: "menu_diario", label: "⭐ Menú Diario" },
+            { id: "delivery_config", label: "🛵 Configuración Delivery & Tarifas" }
           ].map((cat) => (
             <button 
               key={cat.id}
               onClick={() => setSelectedPosCategory(cat.id)}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                selectedPosCategory === cat.id ? "border-[#D4AF37] text-[#FFDF00] font-black" : "border-transparent text-[#FDFBF7]/60 hover:text-[#FDFBF7]"
+              className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                selectedPosCategory === cat.id ? "border-[#D4AF37] text-[#FFDF00] font-black bg-[#2A1B12] rounded-t-lg" : "border-transparent text-[#FDFBF7]/60 hover:text-[#FDFBF7]"
               }`}
             >
               {cat.label}
@@ -2701,12 +2707,15 @@ export default function AdminHub({
                       onChange={(e) => setNewProdCategory(e.target.value)} 
                       className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer"
                     >
-                      <option value="executive">⭐ Menú Ejecutivo</option>
-                      <option value="mains">🥩 Platos Principales</option>
-                      <option value="starters">🥟 Entradas</option>
-                      <option value="desserts">🍰 Postres</option>
-                      <option value="drinks">🍸 Bebidas & Vinos</option>
-                      <option value="coffee">☕ Cafetería</option>
+                      <option value="desayunos_meriendas">☕ Desayunos, Almuerzos & Meriendas</option>
+                      <option value="pizzas_focaccias">🍕 Pizzas & Focaccias</option>
+                      <option value="minutas_carnes">🥩 Minutas & Carnes</option>
+                      <option value="pastas_caseras">🍝 Pastas Caseras</option>
+                      <option value="empanadas">🥟 Empanadas</option>
+                      <option value="bebidas_sa">🥤 Bebidas S/A</option>
+                      <option value="bebidas_alcohol">🍸 Bebidas c/Alcohol</option>
+                      <option value="postres">🍰 Postres</option>
+                      <option value="executive">⭐ Menú Diario</option>
                     </select>
                   </div>
                 </div>
@@ -2880,11 +2889,15 @@ export default function AdminHub({
                         onChange={(e) => setEditProdCategory(e.target.value)} 
                         className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer text-xs"
                       >
-                        <option value="coffee">☕ Cafetería</option>
-                        <option value="bakery">🍰 Pastelería</option>
-                        <option value="brunch">🥪 Tostados / Cocina</option>
-                        <option value="cold">❄️ Bebida Fría</option>
-                        <option value="traditional">☕ Clásico</option>
+                        <option value="desayunos_meriendas">☕ Desayunos, Almuerzos & Meriendas</option>
+                        <option value="pizzas_focaccias">🍕 Pizzas & Focaccias</option>
+                        <option value="minutas_carnes">🥩 Minutas & Carnes</option>
+                        <option value="pastas_caseras">🍝 Pastas Caseras</option>
+                        <option value="empanadas">🥟 Empanadas</option>
+                        <option value="bebidas_sa">🥤 Bebidas S/A</option>
+                        <option value="bebidas_alcohol">🍸 Bebidas c/Alcohol</option>
+                        <option value="postres">🍰 Postres</option>
+                        <option value="executive">⭐ Menú Diario</option>
                       </select>
                     </div>
                   </div>
@@ -4567,16 +4580,20 @@ export default function AdminHub({
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
               {[
                 { id: "todos", label: "Todos 🍽️" },
-                { id: "coffee", label: "Cafetería ☕" },
-                { id: "pastry", label: "Pastelería 🥐" },
-                { id: "brunch", label: "Brunch 🍳" },
-                { id: "cold", label: "Bebidas 🍷" },
-                { id: "traditional", label: "Cocina 🍝" }
+                { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
+                { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
+                { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
+                { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+                { id: "empanadas", label: "🥟 Empanadas" },
+                { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
+                { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
+                { id: "postres", label: "🍰 Postres" },
+                { id: "executive", label: "⭐ Menú Diario" }
               ].map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setMozoCategory(cat.id)}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border shrink-0 transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border shrink-0 transition-all cursor-pointer ${
                     mozoCategory === cat.id
                       ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-md gold-glow"
                       : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"

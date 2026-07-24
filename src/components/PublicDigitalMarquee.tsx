@@ -249,12 +249,15 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         <div className="flex border-b border-[#E2D4C3] pb-3 gap-3 overflow-x-auto text-xs font-bold">
           {[
             { id: "all", label: "🍽️ Ver Todo" },
-            { id: "executive", label: "⭐ Menú Ejecutivo ($8.000)" },
-            { id: "coffee", label: "☕ Cafetería" },
-            { id: "bakery", label: "🍰 Pastelería" },
-            { id: "starters", label: "🥟 Entradas" },
-            { id: "mains", label: "🥩 Platos Principales" },
-            { id: "drinks", label: "🍸 Bebidas & Vinos" }
+            { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
+            { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
+            { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
+            { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+            { id: "empanadas", label: "🥟 Empanadas" },
+            { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
+            { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
+            { id: "postres", label: "🍰 Postres" },
+            { id: "executive", label: "⭐ Menú Diario ($8.000)" }
           ].map((cat) => (
             <button
               key={cat.id}

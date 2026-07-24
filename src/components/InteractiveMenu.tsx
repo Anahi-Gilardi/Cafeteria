@@ -28,16 +28,15 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
   // Category Configuration
   const categories = [
     { id: "all", label: "Todo el Menú", emoji: "🍽️" },
-    { id: "executive", label: "⭐ Menú Ejecutivo del Día", emoji: "🍷" },
-    { id: "starters", label: "Entradas & Tapeos", emoji: "🥟" },
-    { id: "mains", label: "Platos Principales", emoji: "🥩" },
-    { id: "desserts", label: "Postres del Chef", emoji: "🍰" },
-    { id: "drinks", label: "Bebidas, Vinos & Tragos", emoji: "🍸" },
-    { id: "coffee", label: "Especialidades Porteñas", emoji: "✨" },
-    { id: "traditional", label: "Cafés de Siempre", emoji: "☕" },
-    { id: "cold", label: "Cafés e Infusiones Frías", emoji: "❄️" },
-    { id: "bakery", label: "Facturas y Dulces", emoji: "🥐" },
-    { id: "brunch", label: "Tostados y Desayunos", emoji: "🥪" },
+    { id: "desayunos_meriendas", label: "Desayunos, Almuerzos & Meriendas", emoji: "☕" },
+    { id: "pizzas_focaccias", label: "Pizzas & Focaccias", emoji: "🍕" },
+    { id: "minutas_carnes", label: "Minutas & Carnes", emoji: "🥩" },
+    { id: "pastas_caseras", label: "Pastas Caseras", emoji: "🍝" },
+    { id: "empanadas", label: "Empanadas", emoji: "🥟" },
+    { id: "bebidas_sa", label: "Bebidas S/A", emoji: "🥤" },
+    { id: "bebidas_alcohol", label: "Bebidas c/Alcohol", emoji: "🍸" },
+    { id: "postres", label: "Postres", emoji: "🍰" },
+    { id: "executive", label: "⭐ Menú Diario", emoji: "⭐" },
   ];
 
   // Available tags for quick filter

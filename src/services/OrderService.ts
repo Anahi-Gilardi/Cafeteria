@@ -71,7 +71,7 @@ export class OrderService {
     }
 
     // 3. Descuento automático de insumos vía Ficha Técnica
-    await StockService.deductStockForOrder(payload.items);
+    StockService.deductStockForOrder(newOrder);
 
     // 4. Emisión de Eventos KDS en Tiempo Real
     KDSManager.routeOrderToStations(newOrder);
