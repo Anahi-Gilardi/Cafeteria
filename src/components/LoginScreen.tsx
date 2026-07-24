@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import RestoBarLogo from "./RestoBarLogo";
-import { Coffee, Key, User, ShieldAlert, Eye, EyeOff } from "lucide-react";
+import { Key, User, Eye, EyeOff, ShieldCheck, Lock } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 interface LoginScreenProps {
@@ -30,13 +30,12 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
   
   // Loaded employees list for quick PIN sign-in
   const [employees, setEmployees] = useState<any[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Load active employees list from Supabase
   const loadEmployees = async () => {
     try {
-      const { data, error } = await supabase.from("users_accounts").select("id, name, role, email, pin");
+      const { data } = await supabase.from("users_accounts").select("id, name, role, email, pin");
       let dbUsers = data || [];
 
       // Load local custom users
@@ -68,11 +67,7 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         }
       });
 
-      if (merged.length > 0) {
-        setEmployees(merged);
-      } else {
-        setEmployees(DEFAULT_USERS);
-      }
+      setEmployees(merged.length > 0 ? merged : DEFAULT_USERS);
     } catch (e) {
       console.error(e);
       let localUsers: any[] = [];
@@ -80,14 +75,10 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         const saved = localStorage.getItem("puglia_local_users");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            localUsers = parsed;
-          }
+          if (Array.isArray(parsed)) localUsers = parsed;
         }
       } catch (err) {}
       setEmployees([...DEFAULT_USERS, ...localUsers]);
-    } finally {
-      setIsLoaded(true);
     }
   };
 
@@ -105,13 +96,10 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
 
     setIsLoading(true);
     try {
-      // 1. Check local storage users first
       let localUsers: any[] = [];
       try {
         const saved = localStorage.getItem("puglia_local_users");
-        if (saved) {
-          localUsers = JSON.parse(saved);
-        }
+        if (saved) localUsers = JSON.parse(saved);
       } catch (e) {}
 
       const cleanInput = emailInput.trim().toLowerCase();
@@ -123,7 +111,7 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
       const matchedLocal = localUsers.find(u => matchUserEmail(u.email));
       if (matchedLocal) {
         if (matchedLocal.password === passwordInput) {
-          onShowNotification(`☕ ¡Bienvenido, ${matchedLocal.name}! Sesión iniciada como ${matchedLocal.role}.`, "success");
+          onShowNotification(`🎭 ¡Bienvenido/a, ${matchedLocal.name}! Sesión iniciada como ${matchedLocal.role}.`, "success");
           onLoginSuccess({
             id: matchedLocal.id,
             name: matchedLocal.name,
@@ -140,15 +128,14 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         }
       }
 
-      // 2. Fallback to Supabase
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("users_accounts")
         .select("*")
         .eq("email", cleanInput)
         .single();
 
       let user = data;
-      if (error || !data) {
+      if (!data) {
         const fallbackUser = DEFAULT_USERS.find(u => matchUserEmail(u.email));
         if (fallbackUser) {
           user = fallbackUser;
@@ -165,7 +152,7 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         return;
       }
 
-      onShowNotification(`☕ ¡Bienvenido, ${user.name}! Sesión iniciada como ${user.role}.`, "success");
+      onShowNotification(`🎭 ¡Bienvenido/a, ${user.name}! Sesión iniciada como ${user.role}.`, "success");
       onLoginSuccess({
         id: user.id,
         name: user.name,
@@ -177,7 +164,7 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
       const cleanInput = emailInput.trim().toLowerCase();
       const fallbackUser = DEFAULT_USERS.find(u => u.email.toLowerCase() === cleanInput || (cleanInput === "admin" && (u.email === "admin" || u.email === "admin@cafepuglia.com")));
       if (fallbackUser && fallbackUser.password === passwordInput) {
-        onShowNotification(`☕ ¡Bienvenido, ${fallbackUser.name}! Sesión iniciada como ${fallbackUser.role}.`, "success");
+        onShowNotification(`🎭 ¡Bienvenido/a, ${fallbackUser.name}! Sesión iniciada como ${fallbackUser.role}.`, "success");
         onLoginSuccess({
           id: fallbackUser.id,
           name: fallbackUser.name,
@@ -208,7 +195,7 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
     setIsLoading(true);
     setTimeout(async () => {
       if (user.pin === enteredPin) {
-        onShowNotification(`☕ ¡Hola, ${user.name}! Iniciando sesión rápido.`, "success");
+        onShowNotification(`🎭 ¡Hola, ${user.name}! Acceso concedido al sistema.`, "success");
         onLoginSuccess({
           id: user.id,
           name: user.name,
@@ -221,192 +208,192 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
         setPinDigits([]);
       }
       setIsLoading(false);
-    }, 500);
+    }, 400);
   };
 
-  const handlePinDelete = () => {
-    setPinDigits((prev) => prev.slice(0, -1));
-  };
-
-  const handlePinClear = () => {
-    setPinDigits([]);
-  };
+  const handlePinDelete = () => setPinDigits((prev) => prev.slice(0, -1));
+  const handlePinClear = () => setPinDigits([]);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4 relative overflow-hidden font-sans text-[#2C1810]">
-      {/* Background elegant circles */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-[#2C1810]/5 blur-3xl" />
-      <div className="absolute bottom-[-25%] right-[-25%] w-[70%] h-[70%] rounded-full bg-[#D97706]/5 blur-3xl" />
-
-      {/* Main card */}
-      <div className="w-full max-w-md bg-white border border-[#2C1810]/10 rounded-3xl p-8 shadow-2xl relative z-10 transition-all flex flex-col justify-between min-h-[580px]">
-        
-        {/* Logo and title */}
-        <div className="flex flex-col items-center justify-center text-center mb-6">
-          <RestoBarLogo size="xl" />
-          <div className="mt-3 text-[10px] text-[#2C1810]/70 uppercase tracking-widest font-bold bg-amber-50 border border-amber-200/60 px-3 py-1 rounded-full">
-            📍 CONSTITUCIÓN 944 • Río Cuarto | 📞 358 5042311
-          </div>
+    <div className="w-full bg-[#1A110B] border-2 border-[#D4AF37]/50 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 transition-all flex flex-col justify-between min-h-[580px] text-[#FDFBF7] gold-glow">
+      {/* Logo and title */}
+      <div className="flex flex-col items-center justify-center text-center mb-6">
+        <RestoBarLogo size="xl" />
+        <div className="mt-3 text-[10px] text-[#FFDF00] font-black uppercase tracking-widest bg-[#2A1B12] border border-[#D4AF37]/40 px-4 py-1.5 rounded-full font-mono shadow-md">
+          📍 CONSTITUCIÓN 944 • RÍO CUARTO | 📞 358 5042311
         </div>
+      </div>
 
-        {/* Tab Selector */}
-        <div className="grid grid-cols-2 bg-[#FDFBF7] p-1 rounded-xl border border-[#2C1810]/5 mb-6 text-xs font-bold text-center">
-          <button
-            onClick={() => { setLoginMode("pin"); setPinDigits([]); setSelectedUserForPin(null); }}
-            className={`py-2 rounded-lg transition-all cursor-pointer ${loginMode === "pin" ? "bg-[#2C1810] text-white shadow-xs" : "text-[#2C1810]/60 hover:text-[#2C1810]"}`}
-          >
-            🔑 PIN Rápido
-          </button>
-          <button
-            onClick={() => setLoginMode("credentials")}
-            className={`py-2 rounded-lg transition-all cursor-pointer ${loginMode === "credentials" ? "bg-[#2C1810] text-white shadow-xs" : "text-[#2C1810]/60 hover:text-[#2C1810]"}`}
-          >
-            ✉️ Email y Clave
-          </button>
+      {/* Mode Tab Selector */}
+      <div className="grid grid-cols-2 bg-[#2A1B12] p-1.5 rounded-2xl border border-[#D4AF37]/30 mb-6 text-xs font-bold text-center">
+        <button
+          onClick={() => { setLoginMode("pin"); setPinDigits([]); setSelectedUserForPin(null); }}
+          className={`py-2.5 rounded-xl transition-all cursor-pointer font-black uppercase tracking-wider ${
+            loginMode === "pin" 
+              ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] shadow-md gold-glow" 
+              : "text-[#FDFBF7]/70 hover:text-white"
+          }`}
+        >
+          🔑 PIN Rápido (4 Dígitos)
+        </button>
+        <button
+          onClick={() => setLoginMode("credentials")}
+          className={`py-2.5 rounded-xl transition-all cursor-pointer font-black uppercase tracking-wider ${
+            loginMode === "credentials" 
+              ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] shadow-md gold-glow" 
+              : "text-[#FDFBF7]/70 hover:text-white"
+          }`}
+        >
+          ✉️ Email y Clave
+        </button>
+      </div>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-[#1A110B]/90 backdrop-blur-xs rounded-3xl z-50 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FFDF00] mb-3"></div>
+          <span className="text-xs font-black uppercase tracking-widest text-[#FFDF00]">Autenticando en Sistema...</span>
         </div>
+      )}
 
-        {/* Loading Spinner Overlaid */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-xs rounded-3xl z-50 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#2C1810] mb-3"></div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#2C1810]/60">Verificando...</span>
+      {/* CREDENTIALS MODE */}
+      {loginMode === "credentials" && (
+        <form onSubmit={handleCredentialsLogin} className="space-y-4 flex-1 flex flex-col justify-center">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-[#D4AF37] block tracking-wider">Correo Electrónico / Usuario</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-3.5 h-4 w-4 text-[#D4AF37]" />
+              <input
+                type="text"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="ej: admin"
+                className="w-full pl-11 pr-4 py-3 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-xl text-xs font-bold text-[#FDFBF7] focus:outline-none focus:border-[#FFDF00] placeholder-[#FDFBF7]/40"
+                required
+              />
+            </div>
           </div>
-        )}
 
-        {/* CREDENTIALS MODE */}
-        {loginMode === "credentials" && (
-          <form onSubmit={handleCredentialsLogin} className="space-y-4 flex-1 flex flex-col justify-center">
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Correo Electrónico</label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-[#2C1810]/40" />
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="ejemplo@cafepuglia.com"
-                  className="w-full pl-10 pr-4 py-2.5 border border-[#2C1810]/15 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#2C1810]/50 bg-[#FDFBF7]"
-                  required
-                />
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-[#D4AF37] block tracking-wider">Contraseña de Acceso</label>
+            <div className="relative">
+              <Key className="absolute left-3.5 top-3.5 h-4 w-4 text-[#D4AF37]" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-11 pr-11 py-3 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-xl text-xs font-bold text-[#FDFBF7] focus:outline-none focus:border-[#FFDF00] placeholder-[#FDFBF7]/40"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-3.5 text-[#D4AF37] hover:text-white"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black py-3.5 rounded-xl transition-all shadow-lg uppercase tracking-wider cursor-pointer mt-4 gold-glow"
+          >
+            Ingresar al Sistema POS
+          </button>
+        </form>
+      )}
+
+      {/* PIN MODE */}
+      {loginMode === "pin" && (
+        <div className="flex-1 flex flex-col justify-between">
+          {!selectedUserForPin ? (
+            <div className="space-y-3 flex-1 flex flex-col justify-center">
+              <p className="text-[10px] font-black uppercase text-[#D4AF37] text-center mb-2 tracking-widest">Seleccione su cuenta de personal</p>
+              <div className="grid grid-cols-1 gap-2.5 max-h-[240px] overflow-y-auto pr-1">
+                {employees.map((emp) => (
+                  <button
+                    key={emp.id}
+                    onClick={() => { setSelectedUserForPin(emp); setPinDigits([]); }}
+                    className="flex items-center justify-between p-3.5 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/30 hover:border-[#D4AF37] rounded-2xl text-left transition-all cursor-pointer shadow-md group"
+                  >
+                    <div>
+                      <span className="text-xs font-bold text-[#FDFBF7] group-hover:text-[#FFDF00] block">{emp.name}</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[#FFDF00] font-black font-mono mt-0.5 block">{emp.role}</span>
+                    </div>
+                    <Lock className="h-4 w-4 text-[#D4AF37] group-hover:scale-110 transition-transform" />
+                  </button>
+                ))}
               </div>
             </div>
-
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Contraseña</label>
-              <div className="relative">
-                <Key className="absolute left-3 top-3 h-4 w-4 text-[#2C1810]/40" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 border border-[#2C1810]/15 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#2C1810]/50 bg-[#FDFBF7]"
-                  required
-                />
+          ) : (
+            // PIN Keyboard entry
+            <div className="space-y-4 flex-1 flex flex-col justify-between">
+              <div className="text-center">
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 text-[#2C1810]/40 hover:text-[#2C1810]"
+                  onClick={() => setSelectedUserForPin(null)}
+                  className="text-[10px] uppercase font-bold text-[#D4AF37] hover:text-[#FFDF00] block mb-2 cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  ← Volver a la lista de personal
+                </button>
+                <span className="text-sm font-bold text-[#FFDF00] font-serif block">{selectedUserForPin.name}</span>
+                <span className="text-[9px] uppercase text-[#FDFBF7]/60 font-mono font-bold block mt-0.5">({selectedUserForPin.role})</span>
+
+                <div className="flex justify-center gap-3 mt-4">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div
+                      key={idx}
+                      className={`w-4 h-4 rounded-full border-2 border-[#D4AF37] transition-all ${
+                        pinDigits.length > idx 
+                          ? "bg-[#FFDF00] shadow-md gold-glow scale-110" 
+                          : "bg-transparent"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Keyboard Grid */}
+              <div className="grid grid-cols-3 gap-2.5 max-w-[240px] mx-auto">
+                {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => handlePinDigitClick(num)}
+                    className="w-14 h-14 rounded-2xl bg-[#2A1B12] hover:bg-gradient-to-r hover:from-[#FFDF00] hover:to-[#D4AF37] hover:text-[#1C120C] border border-[#D4AF37]/40 text-[#FFDF00] text-xl font-mono font-black flex items-center justify-center transition-all cursor-pointer shadow-md"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  onClick={handlePinClear}
+                  className="w-14 h-14 rounded-2xl bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/20 text-[10px] font-black text-[#D4AF37] flex items-center justify-center transition-all cursor-pointer uppercase"
+                >
+                  Limpiar
+                </button>
+                <button
+                  onClick={() => handlePinDigitClick("0")}
+                  className="w-14 h-14 rounded-2xl bg-[#2A1B12] hover:bg-gradient-to-r hover:from-[#FFDF00] hover:to-[#D4AF37] hover:text-[#1C120C] border border-[#D4AF37]/40 text-[#FFDF00] text-xl font-mono font-black flex items-center justify-center transition-all cursor-pointer shadow-md"
+                >
+                  0
+                </button>
+                <button
+                  onClick={handlePinDelete}
+                  className="w-14 h-14 rounded-2xl bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/20 text-[10px] font-black text-[#D4AF37] flex items-center justify-center transition-all cursor-pointer uppercase"
+                >
+                  Borrar
                 </button>
               </div>
             </div>
-
-            <button
-              type="submit"
-              className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold py-3 rounded-xl transition-all shadow-md uppercase tracking-wider cursor-pointer mt-4"
-            >
-              Ingresar al Sistema
-            </button>
-          </form>
-        )}
-
-        {/* PIN MODE */}
-        {loginMode === "pin" && (
-          <div className="flex-1 flex flex-col justify-between">
-            {/* User selector */}
-            {!selectedUserForPin ? (
-              <div className="space-y-3 flex-1 flex flex-col justify-center">
-                <p className="text-[10px] font-black uppercase text-[#2C1810]/50 text-center mb-2">Seleccione su cuenta de personal</p>
-                <div className="grid grid-cols-1 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                  {employees.map((emp) => (
-                    <button
-                      key={emp.id}
-                      onClick={() => { setSelectedUserForPin(emp); setPinDigits([]); }}
-                      className="flex items-center justify-between p-3.5 bg-[#FDFBF7] hover:bg-[#2C1810]/5 border border-[#2C1810]/10 rounded-2xl text-left transition-all cursor-pointer"
-                    >
-                      <div>
-                        <span className="text-xs font-bold block">{emp.name}</span>
-                        <span className="text-[9px] uppercase tracking-wider text-caramel font-semibold font-mono">{emp.role}</span>
-                      </div>
-                      <Key className="h-4 w-4 text-[#2C1810]/30" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              // PIN Keyboard entry
-              <div className="space-y-4 flex-1 flex flex-col justify-between">
-                <div className="text-center">
-                  <button
-                    onClick={() => setSelectedUserForPin(null)}
-                    className="text-[9px] uppercase font-bold text-caramel hover:underline block mb-2"
-                  >
-                    ← Volver a la lista
-                  </button>
-                  <span className="text-xs font-bold text-[#2C1810]">{selectedUserForPin.name}</span>
-                  <div className="flex justify-center gap-3 mt-3">
-                    {[0, 1, 2, 3].map((idx) => (
-                      <div
-                        key={idx}
-                        className={`w-3.5 h-3.5 rounded-full border-2 border-[#2C1810] transition-all ${pinDigits.length > idx ? "bg-[#2C1810]" : "bg-transparent"}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Keyboard Grid */}
-                <div className="grid grid-cols-3 gap-2 max-w-[240px] mx-auto">
-                  {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((num) => (
-                    <button
-                      key={num}
-                      onClick={() => handlePinDigitClick(num)}
-                      className="w-14 h-14 rounded-full bg-[#FDFBF7] hover:bg-[#2C1810] hover:text-white border border-[#2C1810]/10 text-base font-serif font-black flex items-center justify-center transition-all cursor-pointer"
-                    >
-                      {num}
-                    </button>
-                  ))}
-                  <button
-                    onClick={handlePinClear}
-                    className="w-14 h-14 rounded-full bg-[#FDFBF7] hover:bg-[#2C1810]/5 text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer uppercase text-espresso/60"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={() => handlePinDigitClick("0")}
-                    className="w-14 h-14 rounded-full bg-[#FDFBF7] hover:bg-[#2C1810] hover:text-white border border-[#2C1810]/10 text-base font-serif font-black flex items-center justify-center transition-all cursor-pointer"
-                  >
-                    0
-                  </button>
-                  <button
-                    onClick={handlePinDelete}
-                    className="w-14 h-14 rounded-full bg-[#FDFBF7] hover:bg-[#2C1810]/5 text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer uppercase text-espresso/60"
-                  >
-                    Del
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Footer info */}
-        <div className="text-center border-t border-[#2C1810]/10 pt-4 mt-4">
-          <p className="text-[8px] text-[#2C1810]/40 font-bold uppercase tracking-wider">
-            La Plata, Argentina • Calle 50 nro 600
-          </p>
+          )}
         </div>
+      )}
+
+      {/* Footer info */}
+      <div className="text-center border-t border-[#D4AF37]/20 pt-4 mt-4">
+        <p className="text-[9px] text-[#FDFBF7]/60 font-bold uppercase tracking-wider">
+          Constitución 944, frente al Teatro Municipal • Río Cuarto, Córdoba
+        </p>
       </div>
     </div>
   );

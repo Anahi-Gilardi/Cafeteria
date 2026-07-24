@@ -337,11 +337,12 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
       {/* Staff Login Modal */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg my-auto">
             <button
               onClick={() => setIsLoginModalOpen(false)}
-              className="absolute -top-4 -right-4 z-50 h-9 w-9 rounded-full bg-[#1C120C] border-2 border-[#D4AF37] text-white hover:bg-[#2D1E17] flex items-center justify-center text-xs font-black cursor-pointer shadow-xl"
+              className="absolute -top-3 -right-3 z-50 h-10 w-10 rounded-full bg-[#2A1B12] border-2 border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] flex items-center justify-center text-sm font-black cursor-pointer shadow-2xl gold-glow"
+              title="Cerrar Ventana"
             >
               ✕
             </button>
