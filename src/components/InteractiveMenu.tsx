@@ -232,44 +232,46 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.3 }}
               key={item.id}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-coffee bg-white transition-all hover:translate-y-[-4px] hover:shadow-xl hover:border-caramel"
+              className="group flex flex-col overflow-hidden rounded-3xl border border-[#D4AF37]/25 bg-white transition-all hover:-translate-y-1.5 hover:shadow-2xl hover:border-[#D4AF37] gold-glow"
             >
               {/* Product Image & Tags overlay */}
-              <div className="relative h-56 overflow-hidden bg-paper">
+              <div className="relative h-56 overflow-hidden bg-stone-100">
                 <img
                   src={item.image}
                   alt={item.name}
                   referrerPolicy="no-referrer"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
                   {item.tags.map(tag => (
                     <span 
                       key={tag} 
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                        tag === "Especial" ? "bg-caramel text-white" :
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
+                        tag === "PROMO ALMUERZO" || tag === "Especial" ? "bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-extrabold shadow-md" :
                         tag === "Vegano" ? "bg-emerald-700 text-white" :
-                        tag === "Sin Gluten" ? "bg-caramel/20 text-espresso" :
-                        tag === "Recomendado" ? "bg-espresso text-paper" :
-                        "bg-paper border border-coffee text-espresso/80"
+                        tag === "Sin Gluten" ? "bg-amber-100 text-amber-900 border border-amber-300" :
+                        tag === "Recomendado" ? "bg-[#2C1810] text-[#FDFBF7]" :
+                        "bg-white/90 border border-stone-200 text-stone-800"
                       }`}
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
-                <div className="absolute bottom-3 right-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-espresso backdrop-blur-sm shadow-md">
+                <div className="absolute bottom-3 right-3 rounded-full bg-[#2C1810]/90 px-3 py-1.5 text-xs font-mono font-bold text-[#F59E0B] backdrop-blur-sm shadow-md border border-[#F59E0B]/30">
                   {item.nutrition.calories} kcal
                 </div>
               </div>
 
               {/* Product Details */}
               <div className="flex flex-1 flex-col p-5">
-                <div className="flex items-start justify-between">
-                  <h3 className="font-serif text-xl font-bold text-espresso group-hover:text-caramel transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-serif text-lg font-bold text-[#2C1810] group-hover:text-[#D4AF37] transition-colors leading-tight">
                     {item.name}
                   </h3>
-                  <span className="text-xl font-extrabold text-espresso">${item.price.toFixed(2)}</span>
+                  <span className="font-serif text-lg font-black text-[#2C1810] font-mono shrink-0">
+                    ${item.price.toFixed(2)}
+                  </span>
                 </div>
                 <p className="mt-2 text-sm text-espresso/70 line-clamp-2 leading-relaxed flex-1">
                   {item.description}
