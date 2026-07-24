@@ -7633,32 +7633,58 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="border-t border-dashed border-stone-800 py-2 text-center text-[9px] space-y-1">
-              <div>PAGO PROCESADO VÍA: {selectedOrderForTicket.paymentMethod?.toUpperCase() || "EFECTIVO"}</div>
-              {selectedOrderForTicket.couponNumber && <div>CUPÓN POSNET NRO: {selectedOrderForTicket.couponNumber}</div>}
-              {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
-              <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
-              <div className="text-[7px] text-[#2C1810]/40 font-sans mt-2">COMPROBANTE HOMOLOGADO POR AFIP EMISIÓN CONTROLADA</div>
-            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button 
+                onClick={() => {
+                  if (selectedOrderForTicket.fiscal) {
+                    ReceiptPDFService.generateArcaInvoicePDF(selectedOrderForTicket, selectedOrderForTicket.fiscal);
+                  } else {
+                    ReceiptPDFService.generateTicketNoFiscalPDF(selectedOrderForTicket);
+                  }
+                  onShowNotification("📥 Ticket descargado en formato PDF correctamente.", "success");
+                }} 
+                className="py-2.5 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/50 text-[#FFDF00] text-[10px] font-black font-sans cursor-pointer hover:bg-[#3D281A] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+              >
+                <Download className="h-3.5 w-3.5 text-[#D4AF37]" /> Descargar PDF
+              </button>
 
-            <div className="mt-4 flex gap-2">
               <button 
                 onClick={() => {
                   window.print();
                 }} 
-                className="w-1/2 py-2 rounded-lg bg-stone-100 border border-stone-300 text-[10px] font-bold font-sans cursor-pointer hover:bg-stone-200 transition-all flex items-center justify-center gap-1 text-[#2C1810]"
+                className="py-2.5 rounded-xl bg-stone-100 border border-stone-300 text-[10px] font-black font-sans cursor-pointer hover:bg-stone-200 transition-all flex items-center justify-center gap-1.5 text-[#2C1810] shadow-xs uppercase tracking-wider"
               >
-                <Printer className="h-3 w-3" /> Imprimir Real
+                <Printer className="h-3.5 w-3.5" /> Imprimir Ticket
               </button>
+
               <button 
                 onClick={() => {
                   setSelectedOrderForTicket(null);
                   onShowNotification("📧 Comprobante enviado al correo del cliente.", "success");
                 }} 
-                className="w-1/2 py-2 rounded-lg bg-[#2C1810] text-white text-[10px] font-bold font-sans cursor-pointer hover:bg-[#3d2217] transition-all flex items-center justify-center gap-1"
+                className="py-2.5 rounded-xl bg-[#2C1810] text-[#FDFBF7] text-[10px] font-black font-sans cursor-pointer hover:bg-[#3d2217] border border-[#D4AF37]/30 transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
               >
-                <FileText className="h-3 w-3" /> Enviar Mail
+                <FileText className="h-3.5 w-3.5 text-[#D4AF37]" /> Enviar Mail
               </button>
+
+              <button 
+                onClick={() => {
+                  const orderNum = selectedOrderForTicket.id.slice(-6).toUpperCase();
+                  const msg = `☕ *COMPROBANTE RESTO BAR DEL TEATRO*\nTicket: #${orderNum}\nTotal: $${selectedOrderForTicket.total.toLocaleString("es-AR")}\n¡Gracias por su compra! 🎭`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                }} 
+                className="py-2.5 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-[10px] font-black font-sans cursor-pointer hover:bg-emerald-900 transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+              >
+                <MessageCircle className="h-3.5 w-3.5 text-emerald-400" /> WhatsApp
+              </button>
+            </div>
+
+            <div className="border-t border-dashed border-stone-800 py-2 mt-4 text-center text-[9px] space-y-1">
+              <div>PAGO PROCESADO VÍA: {selectedOrderForTicket.paymentMethod?.toUpperCase() || "EFECTIVO"}</div>
+              {selectedOrderForTicket.couponNumber && <div>CUPÓN POSNET NRO: {selectedOrderForTicket.couponNumber}</div>}
+              {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
+              <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
+              <div className="text-[7px] text-[#2C1810]/40 font-sans mt-2">COMPROBANTE HOMOLOGADO POR AFIP EMISIÓN CONTROLADA</div>
             </div>
           </div>
         </div>
