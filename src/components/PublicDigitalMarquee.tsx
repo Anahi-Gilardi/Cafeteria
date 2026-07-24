@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { MenuItem } from "../types";
 import { MenuPDFService } from "../services/MenuPDFService";
+import { getTodayExecutiveMenu } from "../data/dailyMenus";
 import WhatsAppOrderService from "../services/WhatsAppOrderService";
 
 interface PublicDigitalMarqueeProps {
@@ -41,6 +42,45 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
   const [submittedOrderId, setSubmittedOrderId] = useState("");
+
+  // Live Executive Menu state synced with Admin
+  const [todayMenu, setTodayMenu] = useState(() => getTodayExecutiveMenu());
+  const [selectedStarter, setSelectedStarter] = useState<string>(todayMenu.starters[0] || "");
+  const [selectedMain, setSelectedMain] = useState<string>(todayMenu.mains[0] || "");
+  const [selectedDrink, setSelectedDrink] = useState<string>(todayMenu.drinks[0] || "");
+  const [selectedDessert, setSelectedDessert] = useState<string>(todayMenu.desserts[0] || "");
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      const updated = getTodayExecutiveMenu();
+      setTodayMenu(updated);
+      if (updated.starters.length > 0) setSelectedStarter(updated.starters[0]);
+      if (updated.mains.length > 0) setSelectedMain(updated.mains[0]);
+      if (updated.drinks.length > 0) setSelectedDrink(updated.drinks[0]);
+      if (updated.desserts.length > 0) setSelectedDessert(updated.desserts[0]);
+    };
+    window.addEventListener("daily_menus_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("daily_menus_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
+
+  const addExecutiveComboToCart = () => {
+    const comboItem: MenuItem = {
+      id: "executive-combo-" + Date.now(),
+      name: `⭐ Menú Ejecutivo (${todayMenu.dayOfWeek})`,
+      price: todayMenu.price,
+      description: `Entrada: ${selectedStarter} | Principal: ${selectedMain} | Bebida: ${selectedDrink} | Postre: ${selectedDessert}`,
+      category: "executive",
+      tags: ["Menú del Día", "Combo"],
+      image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80",
+      customizable: false,
+      nutrition: { calories: 850, allergens: [] }
+    };
+    addToCart(comboItem);
+  };
 
   // Featured promo carousel items
   const featuredDishes = menuItems.filter(i => i.isOffer || i.category === "executive" || i.category === "mains").slice(0, 4);
@@ -229,6 +269,88 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Executive Menu Live Combo Builder Box */}
+        {(selectedCategory === "all" || selectedCategory === "executive") && (
+          <div className="bg-white border-2 border-[#D4AF37] rounded-3xl p-6 shadow-xl space-y-5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-[#E2D4C3] pb-4">
+              <div>
+                <span className="text-[10px] font-black uppercase text-[#B8860B] tracking-widest block">Configurador en Vivo</span>
+                <h3 className="font-serif text-2xl font-bold text-[#1C120C]">⭐ {todayMenu.title} ({todayMenu.dayOfWeek})</h3>
+                <p className="text-xs text-[#5C4A3E] italic mt-0.5">"{todayMenu.description}"</p>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-[#8C7A6B] block font-bold">Precio Combo Cerrado</span>
+                <span className="text-3xl font-black font-mono text-[#B8860B]">${todayMenu.price.toLocaleString("es-AR")}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Starters Selector */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#B8860B] block">1. Entrada</label>
+                <select
+                  value={selectedStarter}
+                  onChange={(e) => setSelectedStarter(e.target.value)}
+                  className="w-full p-2.5 bg-[#FAF8F5] border border-[#E2D4C3] rounded-xl text-xs font-bold text-[#1C120C] outline-none"
+                >
+                  {todayMenu.starters.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Mains Selector */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#B8860B] block">2. Plato Principal</label>
+                <select
+                  value={selectedMain}
+                  onChange={(e) => setSelectedMain(e.target.value)}
+                  className="w-full p-2.5 bg-[#FAF8F5] border border-[#E2D4C3] rounded-xl text-xs font-bold text-[#1C120C] outline-none"
+                >
+                  {todayMenu.mains.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Drinks Selector */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#B8860B] block">3. Bebida</label>
+                <select
+                  value={selectedDrink}
+                  onChange={(e) => setSelectedDrink(e.target.value)}
+                  className="w-full p-2.5 bg-[#FAF8F5] border border-[#E2D4C3] rounded-xl text-xs font-bold text-[#1C120C] outline-none"
+                >
+                  {todayMenu.drinks.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Desserts Selector */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#B8860B] block">4. Postre / Café</label>
+                <select
+                  value={selectedDessert}
+                  onChange={(e) => setSelectedDessert(e.target.value)}
+                  className="w-full p-2.5 bg-[#FAF8F5] border border-[#E2D4C3] rounded-xl text-xs font-bold text-[#1C120C] outline-none"
+                >
+                  {todayMenu.desserts.map((ds) => (
+                    <option key={ds} value={ds}>{ds}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={addExecutiveComboToCart}
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white font-black text-xs uppercase tracking-wider shadow-lg hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> Agregar Combo Menú Ejecutivo al Pedido (${todayMenu.price.toLocaleString("es-AR")})
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => (

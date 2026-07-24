@@ -2434,17 +2434,19 @@ export default function AdminHub({
     const updateCurrentDayMenu = (updatedFields: Partial<DailyExecutiveMenu>) => {
       const newList = weeklyMenus.map(m => m.dayOfWeek === selectedDayTab ? { ...m, ...updatedFields } : m);
       setWeeklyMenus(newList);
-      onShowNotification(`⭐ Menú del ${selectedDayTab} actualizado en vivo.`, "success");
+      localStorage.setItem("puglia_custom_daily_menus", JSON.stringify(newList));
+      window.dispatchEvent(new Event("daily_menus_updated"));
+      onShowNotification(`⭐ Menú del ${selectedDayTab} actualizado en vivo en la página publicitaria.`, "success");
     };
 
     return (
       <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl gold-glow">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest block">Configuración de Rotación Diaria</span>
+            <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
             <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú Ejecutivo del Día</h3>
             <p className="text-xs text-[#FDFBF7]/70 italic mt-0.5">
-              Personalice las opciones de Entrada, Principal, Bebida y Postre para cada día de la semana.
+              Personalice las opciones de Entrada, Principal, Bebida y Postre para cada día. Se sincronizan en vivo con la portada publicitaria.
             </p>
           </div>
 
@@ -2469,8 +2471,8 @@ export default function AdminHub({
               onClick={() => setSelectedDayTab(day)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedDayTab === day
-                  ? "bg-[#2C1810] text-[#FDFBF7] shadow-sm font-black"
-                  : "bg-stone-100 text-[#2C1810]/70 hover:bg-stone-200"
+                  ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] shadow-md font-black gold-glow"
+                  : "bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FDFBF7] hover:bg-[#3D281A]"
               }`}
             >
               {day}
@@ -2482,67 +2484,67 @@ export default function AdminHub({
         <div className="space-y-4 pt-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold uppercase text-[#2C1810]/60 block mb-1">Título del Menú ({selectedDayTab})</label>
+              <label className="text-[10px] font-bold uppercase text-[#D4AF37] block mb-1">Título del Menú ({selectedDayTab})</label>
               <input
                 type="text"
                 value={activeMenu.title}
                 onChange={(e) => updateCurrentDayMenu({ title: e.target.value })}
-                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs font-bold focus:outline-none"
+                className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase text-[#2C1810]/60 block mb-1">Descripción Gourmet del Día</label>
+              <label className="text-[10px] font-bold uppercase text-[#D4AF37] block mb-1">Descripción Gourmet del Día</label>
               <input
                 type="text"
                 value={activeMenu.description}
                 onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
-                className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs font-semibold focus:outline-none"
+                className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-xl text-xs font-semibold text-[#FDFBF7] outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
             {/* Starters */}
-            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🥟 Entradas (Línea por opción)</span>
+            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🥟 Entradas (Línea por opción)</span>
               <textarea
                 rows={4}
                 value={activeMenu.starters.join("\n")}
                 onChange={(e) => updateCurrentDayMenu({ starters: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
               />
             </div>
 
             {/* Mains */}
-            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🥩 Platos Principales</span>
+            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🥩 Platos Principales</span>
               <textarea
                 rows={4}
                 value={activeMenu.mains.join("\n")}
                 onChange={(e) => updateCurrentDayMenu({ mains: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
               />
             </div>
 
             {/* Drinks */}
-            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🍷 Bebidas Incluidas</span>
+            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🍷 Bebidas Incluidas</span>
               <textarea
                 rows={4}
                 value={activeMenu.drinks.join("\n")}
                 onChange={(e) => updateCurrentDayMenu({ drinks: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
               />
             </div>
 
             {/* Desserts */}
-            <div className="p-4 bg-stone-50 border border-[#2C1810]/10 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#C2956E] block">🍰 Postres o Café</span>
+            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🍰 Postres o Café</span>
               <textarea
                 rows={4}
                 value={activeMenu.desserts.join("\n")}
                 onChange={(e) => updateCurrentDayMenu({ desserts: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs border border-[#2C1810]/15 rounded-xl font-medium bg-white focus:outline-none"
+                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
               />
             </div>
           </div>

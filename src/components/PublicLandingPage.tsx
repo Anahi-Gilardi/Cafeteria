@@ -18,9 +18,11 @@ import {
 } from "lucide-react";
 import { MenuItem } from "../types";
 import { MenuPDFService } from "../services/MenuPDFService";
+import { getTodayExecutiveMenu } from "../data/dailyMenus";
 import RestoBarLogo from "./RestoBarLogo";
 import LoginScreen from "./LoginScreen";
 import { PublicDigitalMarquee } from "./PublicDigitalMarquee";
+import { useEffect } from "react";
 
 interface PublicLandingPageProps {
   menuItems: MenuItem[];
@@ -35,6 +37,19 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"landing" | "digital_menu">("landing");
+  const [todayMenu, setTodayMenu] = useState(() => getTodayExecutiveMenu());
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setTodayMenu(getTodayExecutiveMenu());
+    };
+    window.addEventListener("daily_menus_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("daily_menus_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, []);
 
   if (viewMode === "digital_menu") {
     return (
@@ -173,24 +188,43 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Card 1: Menú Ejecutivo */}
-          <div className="bg-white border-2 border-[#E2D4C3] rounded-3xl p-6 space-y-5 shadow-lg flex flex-col justify-between hover:border-[#D4AF37] hover:shadow-2xl transition-all">
-            <div className="space-y-3">
+          {/* Card 1: Menú Ejecutivo (Dynamic Live Connected) */}
+          <div className="bg-white border-2 border-[#D4AF37] rounded-3xl p-6 space-y-5 shadow-xl flex flex-col justify-between hover:shadow-2xl transition-all relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-gradient-to-l from-[#D4AF37] to-[#B8860B] text-white text-[9px] font-black px-4 py-1 rounded-bl-2xl uppercase tracking-widest">
+              Conectado en Vivo
+            </div>
+            <div className="space-y-3 pt-2">
               <div className="flex justify-between items-center">
                 <span className="px-3 py-1 rounded-full bg-[#FFF8E7] border border-[#F3E5C8] text-[#B8860B] text-[10px] font-black uppercase tracking-wider">
-                  Lunes a Viernes (12 a 15hs)
+                  Menú del {todayMenu.dayOfWeek}
                 </span>
-                <span className="text-xs font-black text-[#B8860B]">PROMO</span>
               </div>
-              <h3 className="font-serif text-2xl font-bold text-[#1C120C]">⭐ Menú Ejecutivo Completo</h3>
-              <p className="text-xs text-[#5C4A3E] leading-relaxed">
-                Incluye Entrada de estación, Plato Principal a elección (Carnes, Pastas caseras o Milanesas), Bebida y Postre artesanal.
+              <h3 className="font-serif text-2xl font-bold text-[#1C120C]">⭐ {todayMenu.title}</h3>
+              <p className="text-xs text-[#5C4A3E] leading-relaxed italic">
+                "{todayMenu.description}"
               </p>
+
+              {/* Dynamic live choices from Admin */}
+              <div className="bg-[#FAF8F5] p-3 rounded-2xl border border-[#E2D4C3] space-y-1.5 text-[11px]">
+                <p className="text-[#1C120C] font-semibold">
+                  <strong className="text-[#B8860B]">🥟 Entradas:</strong> {todayMenu.starters.join(" • ")}
+                </p>
+                <p className="text-[#1C120C] font-semibold">
+                  <strong className="text-[#B8860B]">🥩 Principales:</strong> {todayMenu.mains.join(" • ")}
+                </p>
+                <p className="text-[#1C120C] font-semibold">
+                  <strong className="text-[#B8860B]">🍷 Bebidas:</strong> {todayMenu.drinks.join(" • ")}
+                </p>
+                <p className="text-[#1C120C] font-semibold">
+                  <strong className="text-[#B8860B]">🍰 Postres:</strong> {todayMenu.desserts.join(" • ")}
+                </p>
+              </div>
             </div>
+
             <div className="pt-4 border-t border-[#E2D4C3] flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#8C7A6B] block font-bold">Combo Cerrado</span>
-                <span className="text-2xl font-black font-mono text-[#B8860B]">$8.000</span>
+                <span className="text-xs text-[#8C7A6B] block font-bold">Combo Completo</span>
+                <span className="text-2xl font-black font-mono text-[#B8860B]">${todayMenu.price.toLocaleString("es-AR")}</span>
               </div>
               <button
                 onClick={() => setViewMode("digital_menu")}
