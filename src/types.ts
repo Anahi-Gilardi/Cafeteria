@@ -139,6 +139,7 @@ export interface Order {
     quantity: number;
     customizationSummary: string;
     price: number;
+    customization?: MenuItemCustomization;
   }[];
   subtotal: number;
   tax: number;
@@ -158,6 +159,7 @@ export interface Order {
   fulfillmentType?: "salon" | "takeaway" | "delivery";
   deliveryAddress?: { street: string; number: string; floor?: string; notes?: string; zone?: string };
   deliveryFee?: number;
+  notes?: string;
   customerName?: string;
   customerPhone?: string;
   clientPhone?: string;

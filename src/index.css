@@ -58,6 +58,30 @@
   backface-visibility: hidden;
 }
 
+/* Custom Gold Scrollbar for Compact Comanda Digital */
+.custom-gold-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #D4AF37 #1A110B;
+}
+
+.custom-gold-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-gold-scrollbar::-webkit-scrollbar-track {
+  background: #1A110B;
+  border-radius: 8px;
+}
+
+.custom-gold-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FFDF00 0%, #D4AF37 50%, #996515 100%);
+  border-radius: 8px;
+}
+
+.custom-gold-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #FFDF00;
+}
+
 /* Premium Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;

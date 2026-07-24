@@ -18,6 +18,7 @@ import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
+import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 
 interface AdminHubProps {
   orders: Order[];
@@ -4882,104 +4883,122 @@ export default function AdminHub({
                   Seleccione una mesa disponible en el mapa de salón izquierdo para iniciar el pedido.
                 </p>
               </div>
-            ) : (
-              <div className="flex-1 flex flex-col justify-between h-full">
-                <div className="space-y-4 flex-1 flex flex-col">
-                  <div className="border-b border-[#D4AF37]/20 pb-3 flex justify-between items-center">
-                    <div>
-                      <h4 className="font-serif text-base font-bold text-[#FFDF00]">Comanda {mozoSelectedTable}</h4>
-                      <span className="text-[10px] font-bold text-[#D4AF37] block mt-0.5">Mozo: {selectedWaiter}</span>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] text-[9px] font-mono font-black uppercase tracking-wider">
-                      {getActiveOrderForTable(mozoSelectedTable) ? "Edición" : "Nueva"}
-                    </span>
-                  </div>
+            ) : (() => {
+                const activeOrder = getActiveOrderForTable(mozoSelectedTable);
+                if (activeOrder && mozoCart.length === 0) {
+                  return (
+                    <ProfessionalOrderTicket
+                      order={activeOrder}
+                      waiterName={selectedWaiter}
+                      onOrderStatusUpdate={onOrderStatusUpdate}
+                      onRequestBill={(tableNum) => {
+                        WaiterCallService.requestAttention(tableNum, "request_bill");
+                        onShowNotification(`💳 Cuenta solicitada para ${tableNum}.`, "info");
+                      }}
+                      onShowNotification={onShowNotification}
+                    />
+                  );
+                }
 
-                  <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px]">
-                    {mozoCart.length > 0 ? (
-                      mozoCart.map((cart, idx) => (
-                        <div key={idx} className="bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl p-3 space-y-2">
-                          <div className="flex justify-between items-center text-xs font-semibold">
-                            <div className="space-y-0.5 truncate pr-2">
-                              <strong className="text-[#FFDF00] block truncate font-serif">{cart.item.name}</strong>
-                              <span className="text-[10px] text-[#FDFBF7]/70 font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <div className="flex items-center gap-1 bg-[#1A110B] border border-[#D4AF37]/30 rounded-xl p-1">
-                                <button
-                                  onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
-                                  className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] text-[#FFDF00] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
-                                >
-                                  -
-                                </button>
-                                <span className="font-mono font-bold w-5 text-center text-[#FDFBF7]">{cart.qty}</span>
-                                <button
-                                  onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
-                                  className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] text-[#FFDF00] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <button
-                                onClick={() => handleRemoveFromMozoCart(cart.item.id)}
-                                className="p-1.5 text-rose-400 hover:text-rose-300 transition-all cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                          <input 
-                            type="text"
-                            value={cart.notes || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
-                            }}
-                            placeholder="Añadir aclaración (ej: bien cocido, sin hielo...)"
-                            className="w-full text-[10px] p-2 border border-[#D4AF37]/20 rounded-xl bg-[#1A110B] text-[#FDFBF7] placeholder-[#FDFBF7]/40 outline-none font-medium"
-                          />
+                return (
+                  <div className="flex-1 flex flex-col justify-between h-full">
+                    <div className="space-y-4 flex-1 flex flex-col">
+                      <div className="border-b border-[#D4AF37]/20 pb-3 flex justify-between items-center">
+                        <div>
+                          <h4 className="font-serif text-base font-bold text-[#FFDF00]">Comanda {mozoSelectedTable}</h4>
+                          <span className="text-[10px] font-bold text-[#D4AF37] block mt-0.5">Mozo: {selectedWaiter}</span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-16 text-[#FDFBF7]/40 text-center space-y-2">
-                        <ClipboardList className="h-8 w-8 text-[#D4AF37] stroke-1.5" />
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Comanda Vacía</span>
-                        <p className="text-[10px] text-[#FDFBF7]/50 max-w-[140px]">Seleccione productos del catálogo para agregarlos.</p>
+                        <span className="px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] text-[9px] font-mono font-black uppercase tracking-wider">
+                          {activeOrder ? "Edición" : "Nueva"}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="border-t border-[#D4AF37]/20 pt-4 space-y-4">
-                  <div className="space-y-1.5 text-xs font-bold text-[#FDFBF7]/80">
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <span className="font-mono text-[#FDFBF7]">${subtotal.toLocaleString("es-AR")}</span>
+                      <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px] custom-gold-scrollbar">
+                        {mozoCart.length > 0 ? (
+                          mozoCart.map((cart, idx) => (
+                            <div key={idx} className="bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl p-3 space-y-2">
+                              <div className="flex justify-between items-center text-xs font-semibold">
+                                <div className="space-y-0.5 truncate pr-2">
+                                  <strong className="text-[#FFDF00] block truncate font-serif">{cart.item.name}</strong>
+                                  <span className="text-[10px] text-[#FDFBF7]/70 font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div className="flex items-center gap-1 bg-[#1A110B] border border-[#D4AF37]/30 rounded-xl p-1">
+                                    <button
+                                      onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
+                                      className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] text-[#FFDF00] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="font-mono font-bold w-5 text-center text-[#FDFBF7]">{cart.qty}</span>
+                                    <button
+                                      onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
+                                      className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] text-[#FFDF00] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                  <button
+                                    onClick={() => handleRemoveFromMozoCart(cart.item.id)}
+                                    className="p-1.5 text-rose-400 hover:text-rose-300 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              <input 
+                                type="text"
+                                value={cart.notes || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
+                                }}
+                                placeholder="Añadir aclaración (ej: bien cocido, sin hielo...)"
+                                className="w-full text-[10px] p-2 border border-[#D4AF37]/20 rounded-xl bg-[#1A110B] text-[#FDFBF7] placeholder-[#FDFBF7]/40 outline-none font-medium"
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-16 text-[#FDFBF7]/40 text-center space-y-2">
+                            <ClipboardList className="h-8 w-8 text-[#D4AF37] stroke-1.5" />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Comanda Vacía</span>
+                            <p className="text-[10px] text-[#FDFBF7]/50 max-w-[140px]">Seleccione productos del catálogo para agregarlos.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>IVA (21% Incluido)</span>
-                      <span className="font-mono text-[#FDFBF7]">${tax.toLocaleString("es-AR")}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-[#D4AF37]/20 pt-2 text-sm font-black text-[#FFDF00]">
-                      <span>TOTAL COMANDA</span>
-                      <span className="font-mono text-xl text-[#FFDF00]">${total.toLocaleString("es-AR")}</span>
+
+                    <div className="border-t border-[#D4AF37]/20 pt-4 space-y-4">
+                      <div className="space-y-1.5 text-xs font-bold text-[#FDFBF7]/80">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span className="font-mono text-[#FDFBF7]">${subtotal.toLocaleString("es-AR")}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>IVA (21% Incluido)</span>
+                          <span className="font-mono text-[#FDFBF7]">${tax.toLocaleString("es-AR")}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-[#D4AF37]/20 pt-2 text-sm font-black text-[#FFDF00]">
+                          <span>TOTAL COMANDA</span>
+                          <span className="font-mono text-xl text-[#FFDF00]">${total.toLocaleString("es-AR")}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleSubmitMozoOrder}
+                        disabled={mozoCart.length === 0}
+                        className={`w-full py-3.5 rounded-2xl font-black text-xs shadow-xl transition-all cursor-pointer uppercase tracking-wider ${
+                          mozoCart.length > 0
+                            ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] hover:brightness-110 gold-glow"
+                            : "bg-[#2A1B12] text-[#FDFBF7]/30 border border-[#D4AF37]/20 cursor-not-allowed"
+                        }`}
+                      >
+                        🍳 Marchar Comanda a Cocina & KDS
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    onClick={handleSubmitMozoOrder}
-                    disabled={mozoCart.length === 0}
-                    className={`w-full py-3.5 rounded-2xl font-black text-xs shadow-xl transition-all cursor-pointer uppercase tracking-wider ${
-                      mozoCart.length > 0
-                        ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] hover:brightness-110 gold-glow"
-                        : "bg-[#2A1B12] text-[#FDFBF7]/30 border border-[#D4AF37]/20 cursor-not-allowed"
-                    }`}
-                  >
-                    🍳 Marchar Comanda a Cocina & KDS
-                  </button>
-                </div>
-              </div>
-            )}
+                );
+              })()}
           </div>
         </div>
       </motion.div>
