@@ -2711,35 +2711,58 @@ export default function AdminHub({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Stock Inicial</label>
+                <div>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir Local) *</label>
+                  <input 
+                    type="text" 
+                    value={newProdImage.startsWith("data:image") ? "Foto subida localmente" : newProdImage} 
+                    onChange={(e) => setNewProdImage(e.target.value)} 
+                    placeholder="Url de Unsplash..." 
+                    className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none text-[10px]" 
+                    disabled={newProdImage.startsWith("data:image")}
+                  />
+                  <div className="mt-1.5 flex items-center justify-between">
                     <input 
-                      type="number" 
-                      value={newProdStock} 
-                      onChange={(e) => setNewProdStock(e.target.value)} 
-                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-mono" 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setNewProdImage(reader.result as string);
+                            onShowNotification("🖼️ Imagen de producto cargada con éxito.", "success");
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
                     />
-                  </div>
-                  <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir Local) *</label>
-                    <input 
-                      type="text" 
-                      value={newProdImage.startsWith("data:image") ? "Foto subida localmente" : newProdImage} 
-                      onChange={(e) => setNewProdImage(e.target.value)} 
-                      placeholder="Url de Unsplash..." 
-                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none text-[10px]" 
-                      disabled={newProdImage.startsWith("data:image")}
-                    />
+                    {newProdImage.startsWith("data:image") && (
+                      <button
+                        type="button"
+                        onClick={() => setNewProdImage("")}
+                        className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer shrink-0 ml-2"
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </div>
                 </div>
 
+                {newProdImage && (
+                  <div className="mt-1 text-center">
+                    <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Imagen</span>
+                    <img src={newProdImage} alt="Vista previa" className="h-24 w-auto rounded-xl border border-[#D4AF37]/30 mx-auto object-cover shadow-sm" />
+                  </div>
+                )}
+
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción</label>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción Gourmet</label>
                   <textarea 
                     value={newProdDescription} 
                     onChange={(e) => setNewProdDescription(e.target.value)} 
-                    placeholder="Descripción corta de la especialidad..." 
+                    placeholder="Descripción de la especialidad..." 
                     rows={2} 
                     className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-normal resize-none" 
                   />
@@ -2784,19 +2807,34 @@ export default function AdminHub({
                           : "bg-[#1C120C]/80 hover:bg-[#1C120C] border-[#D4AF37]/15 text-[#FDFBF7]/80 hover:text-[#FDFBF7]"
                       }`}
                     >
-                      <div className="space-y-1">
+                      <div className="space-y-1 pr-2 flex-1">
                         <strong className={`text-xs font-bold block ${active ? "text-[#FFDF00]" : "text-[#FDFBF7]"}`}>{item.name}</strong>
-                        <span className="text-[9px] text-[#FDFBF7]/50 block">
-                          {item.description ? item.description.substring(0, 50) + "..." : "Sin descripción disponible."}
+                        <span className="text-[9px] text-[#FDFBF7]/50 block line-clamp-1">
+                          {item.description ? item.description : "Sin descripción."}
                         </span>
                       </div>
-                      <div className="text-right shrink-0 ml-3 font-mono">
-                        <span className="text-xs font-bold block text-[#D4AF37]">${item.price.toFixed(0)}</span>
-                        <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
-                          itemMargin >= 60 ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30" : "bg-amber-950/80 text-amber-300 border border-amber-500/30"
-                        }`}>
-                          {itemMargin.toFixed(0)}% mrg.
-                        </span>
+                      <div className="text-right shrink-0 ml-2 font-mono flex items-center gap-2">
+                        <div>
+                          <span className="text-xs font-bold block text-[#D4AF37]">${item.price.toLocaleString("es-AR")}</span>
+                          <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
+                            itemMargin >= 60 ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30" : "bg-amber-950/80 text-amber-300 border border-amber-500/30"
+                          }`}>
+                            {itemMargin.toFixed(0)}% mrg.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedMenuProduct(item);
+                            setSimulatedPrice(item.price);
+                            handleStartEditingProduct(item);
+                          }}
+                          className="px-2 py-1.5 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/40 text-[#FFDF00] text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-sm"
+                          title="Editar Nombre, Precio, Categoría o Foto"
+                        >
+                          ✏️
+                        </button>
                       </div>
                     </div>
                   );
