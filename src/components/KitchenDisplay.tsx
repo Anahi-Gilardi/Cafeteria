@@ -1,6 +1,7 @@
 import { Order, OrderStatusType, MenuItem } from "../types";
-import { Clock, Play, CheckCircle2, ChevronRight, AlertTriangle, Coffee, BookOpen, X } from "lucide-react";
+import { Clock, Play, CheckCircle2, ChevronRight, AlertTriangle, Coffee, BookOpen, X, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
+import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 
 interface KitchenDisplayProps {
   orders: Order[];
@@ -13,6 +14,31 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
   const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos">("all");
   const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
+
+  const handleUpdateStatus = (order: Order, newStatus: OrderStatusType) => {
+    onOrderStatusUpdate(order.id, newStatus);
+
+    if (newStatus === "Listo" && (order.priceList === "Takeaway" || order.type === "Llevar")) {
+      WhatsAppNotificationService.sendReadyForPickupNotification({
+        id: order.id,
+        customerName: order.clientAccountName || "Cliente",
+        customerPhone: (order as any).customerPhone || "3585042311",
+        total: order.total,
+        type: "Takeaway"
+      });
+    }
+
+    if (newStatus === "Completado" && (order.priceList === "Delivery" || order.fulfillmentType === "delivery")) {
+      WhatsAppNotificationService.sendDeliveryEnCaminoNotification({
+        id: order.id,
+        customerName: order.clientAccountName || "Cliente",
+        customerPhone: (order as any).customerPhone || "3585042311",
+        deliveryAddress: order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944",
+        total: order.total,
+        type: "Delivery"
+      });
+    }
+  };
 
   const getItemDestination = (name: string): "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos" => {
     const n = name.toLowerCase();
@@ -296,7 +322,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
 
                   {order.status === "Recibido" && (
                     <button
-                      onClick={() => onOrderStatusUpdate(order.id, "Preparando")}
+                      onClick={() => handleUpdateStatus(order, "Preparando")}
                       className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:brightness-110 text-white text-xs font-black py-3 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg uppercase tracking-wider"
                     >
                       <Play className="h-4 w-4 fill-white" />
@@ -306,7 +332,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
 
                   {order.status === "Preparando" && (
                     <button
-                      onClick={() => onOrderStatusUpdate(order.id, "Listo")}
+                      onClick={() => handleUpdateStatus(order, "Listo")}
                       className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 hover:brightness-110 text-white text-xs font-black py-3 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg uppercase tracking-wider gold-glow"
                     >
                       <CheckCircle2 className="h-4 w-4" />
@@ -316,7 +342,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
 
                   {order.status === "Listo" && (
                     <button
-                      onClick={() => onOrderStatusUpdate(order.id, "Completado")}
+                      onClick={() => handleUpdateStatus(order, "Completado")}
                       className="w-full bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black py-3 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg uppercase tracking-wider gold-glow"
                     >
                       <ChevronRight className="h-4 w-4" />

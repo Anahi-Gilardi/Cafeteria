@@ -22,6 +22,8 @@ import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";
 import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingService";
 import { ReceiptPDFService } from "../services/ReceiptPDFService";
+import { OrderTypeSelector, OrderServiceType, TakeawayDetails, DeliveryDetails } from "./OrderTypeSelector";
+import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -243,6 +245,22 @@ export default function AdminHub({
   // Mixed Payment Amounts State
   const [mixedCashAmount, setMixedCashAmount] = useState<string>("");
   const [mixedDigitalAmount, setMixedDigitalAmount] = useState<string>("");
+
+  // Mozo Service Modality State (Salón, Takeaway, Delivery)
+  const [mozoServiceType, setMozoServiceType] = useState<OrderServiceType>("salon");
+  const [mozoTakeawayForm, setMozoTakeawayForm] = useState<TakeawayDetails>({
+    customerName: "",
+    customerPhone: "",
+    estimatedTime: "20:30"
+  });
+  const [mozoDeliveryForm, setMozoDeliveryForm] = useState<DeliveryDetails>({
+    customerName: "",
+    customerPhone: "",
+    street: "",
+    number: "",
+    floorNotes: "",
+    deliveryFee: 1200
+  });
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -3739,7 +3757,7 @@ export default function AdminHub({
       setSelectedOrderForBilling(targetOrder);
       setFiscalForm({
         cuitOrDni: cuitNumber || "20345678901",
-        nameOrReason: cuitName || "Consumidor Final",
+        nameOrReason: targetOrder.clientAccountName || cuitName || "Consumidor Final",
         ivaCondition: (ivaCondition as any) || "Consumidor Final"
       });
       setIsArcaModalOpen(true);
@@ -3894,8 +3912,16 @@ export default function AdminHub({
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <strong className="text-xs font-serif text-[#FFDF00] block">Mesa {order.tableNumber?.replace("Mesa ", "") || "1"}</strong>
-                            <span className="text-[9px] font-bold text-[#FDFBF7]/60 block mt-0.5">Mozo: {getMozoName(order.id)} • {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</span>
+                            <strong className="text-xs font-serif text-[#FFDF00] block">
+                              {order.priceList === "Takeaway" || order.type === "Llevar"
+                                ? `🛍️ RETIRO: ${order.clientAccountName || "Cliente"} - Tel: ${(order as any).customerPhone || "3585042311"}`
+                                : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
+                                ? `🛵 DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944"}`
+                                : `Mesa ${order.tableNumber?.replace("Mesa ", "") || "1"} (Mozo: ${getMozoName(order.id)})`}
+                            </strong>
+                            <span className="text-[9px] font-bold text-[#FDFBF7]/60 block mt-0.5">
+                              {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items • #{order.id}
+                            </span>
                           </div>
                           <span className="text-xs font-mono font-black text-[#D4AF37]">${order.total.toLocaleString()}</span>
                         </div>
@@ -4783,7 +4809,7 @@ export default function AdminHub({
     };
 
     const handleAddMozoCart = (item: MenuItem) => {
-      if (!mozoSelectedTable) {
+      if (mozoServiceType === "salon" && !mozoSelectedTable) {
         onShowNotification("⚠️ Seleccione una mesa a la izquierda antes de añadir productos.", "warning");
         return;
       }
@@ -4807,17 +4833,91 @@ export default function AdminHub({
     };
 
     const handleSubmitMozoOrder = () => {
-      if (!mozoSelectedTable) return;
       if (mozoCart.length === 0) {
         onShowNotification("⚠️ Añada productos a la comanda antes de enviar.", "warning");
         return;
       }
 
-      const activeOrder = getActiveOrderForTable(mozoSelectedTable);
       const subtotal = mozoCart.reduce((sum, c) => sum + c.item.price * c.qty, 0);
-      const tax = subtotal * 0.21;
-      const total = subtotal;
+      const deliveryExtra = mozoServiceType === "delivery" ? mozoDeliveryForm.deliveryFee : 0;
+      const total = subtotal + deliveryExtra;
+      const tax = parseFloat((total * 0.21).toFixed(2));
 
+      if (mozoServiceType === "takeaway") {
+        if (!mozoTakeawayForm.customerName || !mozoTakeawayForm.customerPhone) {
+          onShowNotification("⚠️ Complete el nombre y teléfono del cliente para Retiro.", "warning");
+          return;
+        }
+        const newTakeawayOrder: Order = {
+          id: "RET-" + Math.floor(Math.random() * 9000 + 1000).toString(),
+          items: mozoCart.map(c => ({
+            name: c.item.name,
+            quantity: c.qty,
+            price: c.item.price,
+            customizationSummary: c.notes || ""
+          })),
+          subtotal,
+          tax,
+          total,
+          status: "Recibido",
+          createdAt: new Date().toISOString(),
+          type: "Llevar",
+          priceList: "Takeaway",
+          estimatedMinutes: 15,
+          clientAccountName: mozoTakeawayForm.customerName,
+          customerPhone: mozoTakeawayForm.customerPhone
+        } as any;
+
+        if (onUpdateOrders) {
+          onUpdateOrders([newTakeawayOrder, ...orders]);
+        }
+        onShowNotification(`🛍️ Pedido de Retiro #${newTakeawayOrder.id} enviado a Cocina & Chef.`, "success");
+        setMozoCart([]);
+        return;
+      }
+
+      if (mozoServiceType === "delivery") {
+        if (!mozoDeliveryForm.customerName || !mozoDeliveryForm.customerPhone || !mozoDeliveryForm.street) {
+          onShowNotification("⚠️ Complete nombre, teléfono y dirección del cliente para Delivery.", "warning");
+          return;
+        }
+        const newDeliveryOrder: Order = {
+          id: "DEL-" + Math.floor(Math.random() * 9000 + 1000).toString(),
+          items: mozoCart.map(c => ({
+            name: c.item.name,
+            quantity: c.qty,
+            price: c.item.price,
+            customizationSummary: c.notes || ""
+          })),
+          subtotal,
+          tax,
+          total,
+          status: "Recibido",
+          createdAt: new Date().toISOString(),
+          type: "Mesa",
+          priceList: "Delivery",
+          fulfillmentType: "delivery",
+          estimatedMinutes: 25,
+          clientAccountName: mozoDeliveryForm.customerName,
+          customerPhone: mozoDeliveryForm.customerPhone,
+          deliveryAddress: {
+            street: mozoDeliveryForm.street,
+            number: mozoDeliveryForm.number,
+            notes: mozoDeliveryForm.floorNotes
+          }
+        } as any;
+
+        if (onUpdateOrders) {
+          onUpdateOrders([newDeliveryOrder, ...orders]);
+        }
+        onShowNotification(`🛵 Pedido de Delivery #${newDeliveryOrder.id} enviado a Cocina & Chef.`, "success");
+        setMozoCart([]);
+        return;
+      }
+
+      // Salón Flow
+      if (!mozoSelectedTable) return;
+      const activeOrder = getActiveOrderForTable(mozoSelectedTable);
       if (activeOrder) {
         const updatedOrderObj: Order = {
           ...activeOrder,
@@ -4849,7 +4949,7 @@ export default function AdminHub({
           tax,
           total,
           status: "Recibido",
-          createdAt: "Hace instantes",
+          createdAt: new Date().toISOString(),
           type: "Mesa",
           priceList: "Salon",
           estimatedMinutes: 15
@@ -4952,9 +5052,20 @@ export default function AdminHub({
             </div>
           </div>
 
-          {/* Tables Card */}
-          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-5 shadow-2xl space-y-4 gold-glow">
-            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
+          {/* Order Type Selector Bar (Salón, Retiro, Delivery) */}
+          <OrderTypeSelector
+            activeType={mozoServiceType}
+            onChangeType={setMozoServiceType}
+            takeawayForm={mozoTakeawayForm}
+            onChangeTakeawayForm={setMozoTakeawayForm}
+            deliveryForm={mozoDeliveryForm}
+            onChangeDeliveryForm={setMozoDeliveryForm}
+          />
+
+          {/* Tables Card (Visible in Salón Mode) */}
+          {mozoServiceType === "salon" && (
+            <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-5 shadow-2xl space-y-4 gold-glow">
+              <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
               <div>
                 <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">Distribución de Salón</span>
                 <h3 className="font-serif text-base font-bold mt-0.5 text-[#FFDF00]">Mapa de Mesas</h3>
@@ -4999,6 +5110,7 @@ export default function AdminHub({
               })}
             </div>
           </div>
+          )}
         </div>
 
         {/* Center Column: Categories and Products */}
