@@ -1,6 +1,6 @@
 import { useState, useMemo, ChangeEvent, FormEvent } from "react";
 import { CartItem, Order, Reservation, OrderStatusType, ClientAccount } from "../types";
-import { X, Trash2, Plus, Minus, ShoppingBag, CreditCard, ArrowRight, Table, Coffee } from "lucide-react";
+import { X, Trash2, Plus, Minus, ShoppingBag, CreditCard, ArrowRight, Table, Coffee, Truck, MapPin, User, Phone, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
 
@@ -26,10 +26,19 @@ export default function CartDrawer({
   clientAccounts = []
 }: CartDrawerProps) {
   const [checkoutMode, setCheckoutMode] = useState<"view_cart" | "checkout">("view_cart");
-  const [orderType, setOrderType] = useState<"Llevar" | "Mesa">("Llevar");
+  const [orderType, setOrderType] = useState<"Llevar" | "Mesa">("Mesa");
+  const [fulfillmentMode, setFulfillmentMode] = useState<"salon" | "takeaway" | "delivery">("salon");
   const [takeawayChannel, setTakeawayChannel] = useState<"Takeaway" | "Delivery">("Takeaway");
   const [selectedTableId, setSelectedTableId] = useState<string>("");
   const [customTableNumber, setCustomTableNumber] = useState<string>("");
+  
+  // Delivery & Customer fields
+  const [deliveryStreet, setDeliveryStreet] = useState<string>("");
+  const [deliveryNumber, setDeliveryNumber] = useState<string>("");
+  const [deliveryNotes, setDeliveryNotes] = useState<string>("");
+  const [customerName, setCustomerName] = useState<string>("");
+  const [customerPhone, setCustomerPhone] = useState<string>("");
+  const [pickupMinutes, setPickupMinutes] = useState<number>(20);
 
   // Payment Form States
   const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte">("Tarjeta");
@@ -93,8 +102,18 @@ export default function CartDrawer({
     return Number((subtotal * (tipPercent / 100)).toFixed(2));
   }, [subtotal, tipPercent, customTip]);
 
+  const deliveryFee = useMemo(() => {
+    if (fulfillmentMode === "delivery") {
+      const configuredFee = parseFloat(localStorage.getItem("puglia_delivery_fee") || "1200");
+      const freeMin = parseFloat(localStorage.getItem("puglia_delivery_free_min") || "25000");
+      if (subtotal >= freeMin && freeMin > 0) return 0;
+      return configuredFee;
+    }
+    return 0;
+  }, [fulfillmentMode, subtotal]);
+
   const tax = useMemo(() => Number((subtotal * 0.21).toFixed(2)), [subtotal]); // 21% IVA Argentina
-  const total = useMemo(() => Number((subtotal + tax + tipAmount).toFixed(2)), [subtotal, tax, tipAmount]);
+  const total = useMemo(() => Number((subtotal + tax + tipAmount + deliveryFee).toFixed(2)), [subtotal, tax, tipAmount, deliveryFee]);
 
   // Handle formatted card numbers
   const handleCardNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -219,11 +238,20 @@ export default function CartDrawer({
         tableNumber: tableValue,
         status: "Recibido",
         createdAt: new Date().toISOString(),
-        estimatedMinutes: 8,
+        estimatedMinutes: fulfillmentMode === "delivery" ? 35 : fulfillmentMode === "takeaway" ? pickupMinutes : 8,
         tipAmount,
         paymentMethod,
         couponNumber: paymentMethod === "Tarjeta" ? "CUP-" + Math.floor(Math.random() * 900000 + 100000) : undefined,
-        clientAccountName: clientObj?.name
+        clientAccountName: clientObj?.name,
+        fulfillmentType: fulfillmentMode,
+        deliveryFee: fulfillmentMode === "delivery" ? deliveryFee : 0,
+        deliveryAddress: fulfillmentMode === "delivery" ? {
+          street: deliveryStreet,
+          number: deliveryNumber,
+          notes: deliveryNotes
+        } : undefined,
+        customerName: customerName || (clientObj ? clientObj.name : undefined),
+        customerPhone: customerPhone || (clientObj ? clientObj.phone : undefined)
       };
 
       // Add to digital tip pool in Supabase
@@ -393,38 +421,192 @@ export default function CartDrawer({
                 ) : (
                   /* SECURE CHECKOUT FORM STEP */
                   <form onSubmit={handleCheckoutSubmit} className="space-y-5">
-                    {/* Select order style: Takeaway or Dine-in */}
+                    {/* Select order style: Salón, Takeaway, Delivery */}
                     <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Modalidad de entrega</label>
-                      <div className="grid grid-cols-2 gap-2 bg-coffee/20 rounded-xl p-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Modalidad de Consumo & Entrega</label>
+                      <div className="grid grid-cols-3 gap-1 bg-coffee/20 rounded-xl p-1 text-center">
                         <button
                           type="button"
-                          id="order-type-takeaway"
-                          onClick={() => setOrderType("Llevar")}
-                          className={`flex-1 text-center py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
-                            orderType === "Llevar"
-                              ? "bg-white text-espresso shadow-xs"
-                              : "text-espresso/55 hover:text-espresso"
+                          onClick={() => {
+                            setFulfillmentMode("salon");
+                            setOrderType("Mesa");
+                          }}
+                          className={`py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer ${
+                            fulfillmentMode === "salon"
+                              ? "bg-white text-espresso shadow-xs font-black"
+                              : "text-espresso/70 hover:text-espresso"
                           }`}
                         >
-                          <Coffee className="h-3.5 w-3.5" />
-                          <span>Para Llevar</span>
+                          <Table className="h-3.5 w-3.5 mb-0.5" />
+                          <span>En Salón</span>
                         </button>
                         <button
                           type="button"
-                          id="order-type-dinein"
-                          onClick={() => setOrderType("Mesa")}
-                          className={`flex-1 text-center py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
-                            orderType === "Mesa"
-                              ? "bg-white text-espresso shadow-xs"
-                              : "text-espresso/55 hover:text-espresso"
+                          onClick={() => {
+                            setFulfillmentMode("takeaway");
+                            setOrderType("Llevar");
+                            setTakeawayChannel("Takeaway");
+                          }}
+                          className={`py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer ${
+                            fulfillmentMode === "takeaway"
+                              ? "bg-white text-espresso shadow-xs font-black"
+                              : "text-espresso/70 hover:text-espresso"
                           }`}
                         >
-                          <Table className="h-3.5 w-3.5" />
-                          <span>En la Mesa</span>
+                          <Coffee className="h-3.5 w-3.5 mb-0.5" />
+                          <span>Retiro Local</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFulfillmentMode("delivery");
+                            setOrderType("Llevar");
+                            setTakeawayChannel("Delivery");
+                          }}
+                          className={`py-2 text-[10px] font-bold rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer ${
+                            fulfillmentMode === "delivery"
+                              ? "bg-[#2C1810] text-[#F59E0B] shadow-xs font-black"
+                              : "text-espresso/70 hover:text-espresso"
+                          }`}
+                        >
+                          <Truck className="h-3.5 w-3.5 mb-0.5" />
+                          <span>Delivery</span>
                         </button>
                       </div>
                     </div>
+
+                    {/* Delivery Address Fields */}
+                    {fulfillmentMode === "delivery" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="p-3.5 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5 text-amber-700" /> Dirección de Entrega (Río Cuarto)
+                          </span>
+                          <span className="text-[9px] bg-amber-200 text-amber-950 font-mono font-bold px-2 py-0.5 rounded-full">
+                            Envío: {deliveryFee === 0 ? "¡GRATIS!" : `$${deliveryFee.toFixed(0)}`}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="col-span-2">
+                            <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">Calle / Av.</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ej: Constitución"
+                              value={deliveryStreet}
+                              onChange={(e) => setDeliveryStreet(e.target.value)}
+                              className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">Número</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="944"
+                              value={deliveryNumber}
+                              onChange={(e) => setDeliveryNumber(e.target.value)}
+                              className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">Piso / Dpto / Notas de Timbre</label>
+                          <input
+                            type="text"
+                            placeholder="Ej: 3B / Portón negro frente al teatro"
+                            value={deliveryNotes}
+                            onChange={(e) => setDeliveryNotes(e.target.value)}
+                            className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">Nombre Cliente</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Nombre y Apellido"
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">WhatsApp Contacto</label>
+                            <input
+                              type="tel"
+                              required
+                              placeholder="358 154..."
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Takeaway Fields */}
+                    {fulfillmentMode === "takeaway" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl space-y-3"
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-700 flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-stone-600" /> Horario Estimado de Retiro por Mostrador
+                        </span>
+
+                        <div className="flex gap-2">
+                          {[15, 20, 30, 45].map((mins) => (
+                            <button
+                              key={mins}
+                              type="button"
+                              onClick={() => setPickupMinutes(mins)}
+                              className={`flex-1 py-1.5 text-xs font-bold rounded-xl border transition-all ${
+                                pickupMinutes === mins
+                                  ? "bg-[#2C1810] text-white border-[#2C1810]"
+                                  : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
+                              }`}
+                            >
+                              en {mins} min
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">Nombre Cliente</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Nombre..."
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] uppercase tracking-wider block mb-0.5 font-bold text-stone-600">WhatsApp para Avisar</label>
+                            <input
+                              type="tel"
+                              placeholder="358 154..."
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              className="w-full p-2 text-xs border border-stone-300 rounded-xl bg-white font-medium focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
 
                     {/* Select price list channel if Takeaway */}
                     {orderType === "Llevar" && (

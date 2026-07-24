@@ -212,8 +212,27 @@ export default function OrderStatus({ activeOrder, onOrderCompleted }: OrderStat
           </div>
         </div>
 
-        {/* Quick Reviewer Fast-Forward control button */}
-        <div className="pt-4 border-t border-coffee/30 flex flex-col items-stretch">
+        {/* Quick Reviewer Fast-Forward control button & WhatsApp notifier */}
+        <div className="pt-4 border-t border-coffee/30 flex flex-col gap-2">
+          {activeOrder.customerPhone && (
+            <button
+              onClick={() => {
+                let msg = `Hola ${activeOrder.customerName || "Cliente"}! 👋 Te escribimos de *Resto Bar Del Teatro* (Constitución 944, Río Cuarto).\n\n`;
+                msg += `Estado de tu pedido *#${activeOrder.id.substring(activeOrder.id.length - 6).toUpperCase()}*: *${currentStatus.toUpperCase()}* 🚀\n`;
+                if (activeOrder.fulfillmentType === "delivery" && activeOrder.deliveryAddress) {
+                  msg += `📍 Delivery a: ${activeOrder.deliveryAddress.street} ${activeOrder.deliveryAddress.number}\n`;
+                } else if (activeOrder.fulfillmentType === "takeaway") {
+                  msg += `🛍️ Retiro por mostrador en: ${activeOrder.estimatedMinutes} min.\n`;
+                }
+                msg += `\n¡Gracias por tu preferencia! 🎭`;
+                const encoded = encodeURIComponent(msg);
+                window.open(`https://wa.me/${activeOrder.customerPhone ? activeOrder.customerPhone.replace(/\D/g, "") : ""}?text=${encoded}`, "_blank");
+              }}
+              className="flex items-center justify-center space-x-1.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 py-3 text-xs font-bold text-white transition-all cursor-pointer shadow-xs"
+            >
+              <span>📲 Enviar Notificación por WhatsApp</span>
+            </button>
+          )}
           <button
             onClick={handleFastForward}
             className="flex items-center justify-center space-x-1.5 rounded-full bg-espresso/5 hover:bg-caramel/10 py-3 text-xs font-bold text-espresso hover:text-caramel border border-dashed border-coffee hover:border-caramel transition-all active:scale-98 cursor-pointer"

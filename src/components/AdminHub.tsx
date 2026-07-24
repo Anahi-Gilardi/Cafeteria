@@ -2550,6 +2550,62 @@ export default function AdminHub({
     );
   };
 
+  const renderDeliveryConfig = () => {
+    const [fee, setFee] = useState<number>(() => parseFloat(localStorage.getItem("puglia_delivery_fee") || "1200"));
+    const [freeMin, setFreeMin] = useState<number>(() => parseFloat(localStorage.getItem("puglia_delivery_free_min") || "25000"));
+
+    const saveDeliverySettings = () => {
+      localStorage.setItem("puglia_delivery_fee", fee.toString());
+      localStorage.setItem("puglia_delivery_free_min", freeMin.toString());
+      onShowNotification("🛵 Configuración de Delivery guardada con éxito.", "success");
+    };
+
+    return (
+      <div className="bg-white border border-[#2C1810]/10 rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#C2956E]">Logística & Despacho</span>
+          <h3 className="font-serif text-2xl font-bold mt-0.5">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
+          <p className="text-xs text-[#2C1810]/60 italic mt-1">
+            Configure la tarifa base de envío para la ciudad de Río Cuarto y el monto de pedido para envío bonificado gratis.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">Costo Base de Delivery ($)</label>
+            <input
+              type="number"
+              value={fee}
+              onChange={(e) => setFee(parseFloat(e.target.value) || 0)}
+              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-white text-[#2C1810]"
+            />
+            <span className="text-[10px] text-stone-500 block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
+          </div>
+
+          <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-stone-700 block">Envío Gratis a partir de ($)</label>
+            <input
+              type="number"
+              value={freeMin}
+              onChange={(e) => setFreeMin(parseFloat(e.target.value) || 0)}
+              className="w-full p-3 border border-stone-300 rounded-xl text-lg font-mono font-bold bg-white text-[#2C1810]"
+            />
+            <span className="text-[10px] text-stone-500 block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={saveDeliverySettings}
+            className="px-6 py-3 bg-[#2C1810] hover:bg-[#3d2217] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all uppercase tracking-wider"
+          >
+            Guardar Configuración de Envíos
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrecios = () => {
     const currentItem = selectedMenuProduct || menuItems[0];
     if (!currentItem) return <div>Cargando catálogo...</div>;
@@ -2574,6 +2630,7 @@ export default function AdminHub({
           {[
             { id: "todos", label: "Todos" },
             { id: "menu_diario", label: "⭐ Menú Ejecutivo & Rotación Diaria" },
+            { id: "delivery_config", label: "🛵 Configuración Delivery & Tarifas" },
             { id: "coffee", label: "☕ Cafetería" },
             { id: "pastry", label: "🍰 Pastelería" }
           ].map((cat) => (
@@ -2591,6 +2648,8 @@ export default function AdminHub({
 
         {selectedPosCategory === "menu_diario" ? (
           renderDailyMenuEditor()
+        ) : selectedPosCategory === "delivery_config" ? (
+          renderDeliveryConfig()
         ) : (
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

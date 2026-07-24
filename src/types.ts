@@ -122,9 +122,14 @@ export interface Order {
   estimatedMinutes: number;
   paymentMethod?: "Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte";
   couponNumber?: string; // POS Coupon ID if card
-  clientAccountName?: string; // Account owner if fiado
+  clientAccountName?: string;
   tipAmount?: number;
   fiscal?: FiscalDetails;
+  fulfillmentType?: "salon" | "takeaway" | "delivery";
+  deliveryAddress?: { street: string; number: string; floor?: string; notes?: string; zone?: string };
+  deliveryFee?: number;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 export interface ClientAccount {
