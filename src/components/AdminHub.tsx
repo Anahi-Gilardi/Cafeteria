@@ -5,7 +5,7 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
@@ -4804,9 +4804,9 @@ export default function AdminHub({
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Abastecimiento y Logística</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Abastecimiento & Logística</span>
             <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Directorio de Proveedores</h2>
-            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp.</p>
+            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp a proveedores de Resto Bar Del Teatro.</p>
           </div>
           <button
             onClick={() => setIsAddingProv(!isAddingProv)}
@@ -4816,67 +4816,103 @@ export default function AdminHub({
           </button>
         </div>
 
+        {/* KPI Metric Summary Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex items-center justify-between gold-glow">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] block">Proveedores Registrados</span>
+              <strong className="font-serif text-2xl font-black text-[#FFDF00] block mt-1">{proveedores.length}</strong>
+              <span className="text-[9px] text-[#FDFBF7]/60">Contactos comerciales activos</span>
+            </div>
+            <div className="h-12 w-12 rounded-2xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] flex items-center justify-center shadow-md">
+              <Users className="h-6 w-6" />
+            </div>
+          </div>
+
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex items-center justify-between gold-glow">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] block">Proveedores Activos</span>
+              <strong className="font-serif text-2xl font-black text-emerald-400 block mt-1">{proveedores.filter(p => p.status === "ACTIVO").length}</strong>
+              <span className="text-[9px] text-emerald-300/70 font-mono">Disponibles para pedidos</span>
+            </div>
+            <div className="h-12 w-12 rounded-2xl bg-[#2A1B12] border border-emerald-500/40 text-emerald-400 flex items-center justify-center shadow-md">
+              <CheckCircle className="h-6 w-6" />
+            </div>
+          </div>
+
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex items-center justify-between gold-glow">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] block">Canal Directo de Compras</span>
+              <strong className="font-serif text-lg font-black text-[#FFDF00] block mt-1">1-Click WhatsApp</strong>
+              <span className="text-[9px] text-[#FDFBF7]/60">Envío automático de reposición</span>
+            </div>
+            <div className="h-12 w-12 rounded-2xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#D4AF37] flex items-center justify-center shadow-md">
+              <PhoneCall className="h-6 w-6 text-emerald-400" />
+            </div>
+          </div>
+        </div>
+
         {/* Form to Add Supplier */}
         {isAddingProv && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4"
+            className="bg-[#1A110B] border-2 border-[#D4AF37]/40 text-[#FDFBF7] rounded-3xl p-6 shadow-2xl space-y-4 gold-glow"
           >
-            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Nuevo Proveedor de Compra</h3>
-            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2C1810]/70">
+            <h3 className="font-serif text-lg font-bold text-[#FFDF00]">Nuevo Proveedor de Compra</h3>
+            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#FDFBF7]">
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Nombre / Razón Social *</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Nombre / Razón Social *</label>
                 <input
                   type="text"
                   value={provFormName}
                   onChange={(e) => setProvFormName(e.target.value)}
                   placeholder="Ej: Distribuidora Sur"
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Teléfono / WhatsApp *</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Teléfono / WhatsApp *</label>
                 <input
                   type="text"
                   value={provFormPhone}
                   onChange={(e) => setProvFormPhone(e.target.value)}
-                  placeholder="Ej: 221 444-1234"
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  placeholder="Ej: 358 444-1234"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Correo de Ventas</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Correo de Ventas</label>
                 <input
                   type="email"
                   value={provFormContact}
                   onChange={(e) => setProvFormContact(e.target.value)}
                   placeholder="Ej: ventas@proveedor.com"
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Insumos Abastecidos</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Insumos Abastecidos</label>
                 <input
                   type="text"
                   value={provFormItems}
                   onChange={(e) => setProvFormItems(e.target.value)}
-                  placeholder="Ej: Café de especialidad, Yerba orgánica, Azúcar"
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  placeholder="Ej: Harina 0000, Muzzarella, Fernet Branca, Café"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
                 />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Estado Comercial</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Estado Comercial</label>
                 <select
                   value={provFormStatus}
                   onChange={(e) => setProvFormStatus(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none cursor-pointer"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer font-bold"
                 >
                   <option value="ACTIVO">ACTIVO</option>
                   <option value="PENDIENTE">PENDIENTE</option>
@@ -4887,13 +4923,13 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setIsAddingProv(false)}
-                  className="px-4 py-2 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer font-bold"
+                  className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7]/70 rounded-xl hover:bg-[#2A1B12] cursor-pointer font-bold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer font-bold"
+                  className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] rounded-xl shadow-md cursor-pointer font-black uppercase tracking-wider gold-glow"
                 >
                   Guardar Proveedor
                 </button>
@@ -4903,11 +4939,11 @@ export default function AdminHub({
         )}
 
         {/* Suppliers Table */}
-        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
+        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xl gold-glow">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/30 text-[10px] font-black uppercase tracking-wider text-[#FFDF00]">
                   <th className="p-4">Proveedor</th>
                   <th className="p-4">Insumos Abastecidos</th>
                   <th className="p-4">Contacto Ventas</th>
@@ -4916,29 +4952,36 @@ export default function AdminHub({
                   <th className="p-4 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C1810]/10 text-xs">
+              <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
                 {proveedores.map((prov, idx) => (
-                  <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                    <td className="p-4 font-bold text-[#2C1810]">{prov.name}</td>
-                    <td className="p-4 text-[#2C1810]/70 font-semibold">{prov.items}</td>
-                    <td className="p-4 font-mono font-semibold text-[#2C1810]/60">{prov.contact}</td>
-                    <td className="p-4 font-mono font-semibold text-[#2C1810]/60">+{prov.phone}</td>
+                  <tr key={idx} className="hover:bg-[#2A1B12]/80 transition-colors">
+                    <td className="p-4 font-serif font-bold text-[#FFDF00] text-sm">{prov.name}</td>
+                    <td className="p-4 text-[#FDFBF7] font-medium">{prov.items}</td>
+                    <td className="p-4 font-mono font-semibold text-[#D4AF37]">{prov.contact}</td>
+                    <td className="p-4 font-mono font-bold text-[#FFDF00]">+{prov.phone}</td>
                     <td className="p-4 text-center">
-                      <span className={`px-2.5 py-1 text-[8px] font-extrabold uppercase rounded-full tracking-wider border ${prov.color}`}>{prov.status}</span>
+                      <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-full tracking-wider border font-mono ${
+                        prov.status === "ACTIVO" 
+                          ? "bg-emerald-950/90 border-emerald-500/50 text-emerald-300" 
+                          : "bg-amber-950/90 border-amber-500/50 text-amber-300"
+                      }`}>
+                        {prov.status}
+                      </span>
                     </td>
                     <td className="p-4 text-center flex items-center justify-center gap-2.5">
                       <button
                         onClick={() => handleWhatsAppOrder(prov.phone, prov.name)}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                        className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white rounded-xl transition-all cursor-pointer font-black text-[10px] uppercase shadow-md flex items-center gap-1.5"
                       >
-                        💬 WhatsApp
+                        💬 WhatsApp Directo
                       </button>
                       <button
                         onClick={() => {
                           setProveedores(prev => prev.filter(p => p.name !== prov.name));
                           onShowNotification(`🗑️ Proveedor '${prov.name}' eliminado.`, "info");
                         }}
-                        className="p-1 text-red-600 hover:text-red-700 rounded-md hover:bg-red-50 transition-all cursor-pointer"
+                        className="p-1.5 text-red-400 hover:text-red-300 bg-[#2A1B12] hover:bg-red-950/80 border border-red-800/40 rounded-xl transition-all cursor-pointer"
+                        title="Eliminar proveedor"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
