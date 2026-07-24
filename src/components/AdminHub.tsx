@@ -19,6 +19,9 @@ import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneS
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
 import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
+import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";
+import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingService";
+import { ReceiptPDFService } from "../services/ReceiptPDFService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -213,6 +216,17 @@ export default function AdminHub({
     lat: -33.1245,
     lng: -64.3512,
     address: "Constitución 944, Río Cuarto (-33.1245, -64.3512)"
+  });
+
+  // Thermal Printer & ARCA Fiscal Billing State
+  const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(() => ThermalPrinterService.getConfig());
+  const [isPrinterConfigModalOpen, setIsPrinterConfigModalOpen] = useState<boolean>(false);
+  const [isArcaModalOpen, setIsArcaModalOpen] = useState<boolean>(false);
+  const [selectedOrderForBilling, setSelectedOrderForBilling] = useState<Order | null>(null);
+  const [fiscalForm, setFiscalForm] = useState<FiscalCustomerInfo>({
+    cuitOrDni: "20345678901",
+    nameOrReason: "Cliente Ejemplo S.A.",
+    ivaCondition: "Consumidor Final"
   });
 
   useEffect(() => {
@@ -1516,6 +1530,47 @@ export default function AdminHub({
       total += r.amount * unitCost;
     });
     return parseFloat(total.toFixed(2));
+  };
+
+  const handleConfirmArcaBilling = async () => {
+    if (!selectedOrderForBilling) return;
+
+    const val = ArcaBillingService.validateCuitOrDni(fiscalForm.cuitOrDni);
+    if (!val.isValid) {
+      onShowNotification(`⚠️ ${val.message}`, "warning");
+      return;
+    }
+
+    const fiscalDetails = ArcaBillingService.generateArcaInvoice(selectedOrderForBilling, fiscalForm);
+
+    const updatedOrder: Order = {
+      ...selectedOrderForBilling,
+      fiscal: fiscalDetails
+    };
+
+    ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
+
+    const thermalHtml = `
+      <h2>RESTO BAR DEL TEATRO</h2>
+      <div class="center">FACTURA ${fiscalDetails.invoiceType} - N° ${fiscalDetails.invoiceNumber}</div>
+      <div class="center">CAE: ${fiscalDetails.cae} (Vto: ${fiscalDetails.caeExpiration})</div>
+      <div class="line"></div>
+      <div>Cliente: ${fiscalDetails.customerName}</div>
+      <div>CUIT/DNI: ${fiscalDetails.customerCuit}</div>
+      <div class="line"></div>
+      <h3 class="right">TOTAL: $${updatedOrder.total.toLocaleString("es-AR")}</h3>
+      <div class="center italic">Comprobante Autorizado por ARCA (ex-AFIP)</div>
+    `;
+    ThermalPrinterService.printRawText(thermalHtml, `Factura_ARCA_${fiscalDetails.invoiceType}`);
+
+    onOrderStatusUpdate(selectedOrderForBilling.id, "Completado");
+    setIsArcaModalOpen(false);
+    setSelectedOrderForBilling(null);
+
+    onShowNotification(
+      `✅ Factura ARCA (${fiscalDetails.invoiceType}) emitida con éxito. CAE: ${fiscalDetails.cae}.`,
+      "success"
+    );
   };
 
   const renderDashboard = () => {
@@ -3552,6 +3607,47 @@ export default function AdminHub({
       if (lastChar === "5") return "PedidosYa Delivery";
       return "Enzo";
     };
+    const handleIssueTicketNoFiscal = async (targetOrder: Order) => {
+      ReceiptPDFService.generateTicketNoFiscalPDF(targetOrder);
+
+      const itemsRows = targetOrder.items.map(it => 
+        `<tr><td>${it.quantity}x</td><td>${it.name.slice(0, 20)}</td><td class="right">$${(it.price * it.quantity).toLocaleString("es-AR")}</td></tr>`
+      ).join("");
+
+      const ticketHtml = `
+        <h2>RESTO BAR DEL TEATRO</h2>
+        <div class="center">Constitución 944 • Río Cuarto</div>
+        <div class="center">Tel: 358 5042311</div>
+        <div class="line"></div>
+        <h4>DOCUMENTO NO FISCAL</h4>
+        <div class="center">Comanda #${targetOrder.id.slice(-6).toUpperCase()}</div>
+        <div>Ubicación: ${targetOrder.tableNumber || targetOrder.type}</div>
+        <div>Fecha: ${new Date(targetOrder.createdAt).toLocaleString("es-AR")}</div>
+        <div class="line"></div>
+        <table>
+          <tr><th>Cant</th><th>Producto</th><th class="right">Total</th></tr>
+          ${itemsRows}
+        </table>
+        <div class="double-line"></div>
+        <h3 class="right">TOTAL: $${targetOrder.total.toLocaleString("es-AR")}</h3>
+        <div class="line"></div>
+        <div class="center italic">¡Muchas gracias por su visita!</div>
+      `;
+
+      ThermalPrinterService.printRawText(ticketHtml, "Ticket No Fiscal");
+      handleProcessPosCheckout();
+      onShowNotification(`✅ Ticket No Fiscal emitido para ${targetOrder.tableNumber || "comanda"}.`, "success");
+    };
+
+    const handleOpenArcaModalForOrder = (targetOrder: Order) => {
+      setSelectedOrderForBilling(targetOrder);
+      setFiscalForm({
+        cuitOrDni: cuitNumber || "20345678901",
+        nameOrReason: cuitName || "Consumidor Final",
+        ivaCondition: (ivaCondition as any) || "Consumidor Final"
+      });
+      setIsArcaModalOpen(true);
+    };
 
     return (
       <motion.div
@@ -4010,28 +4106,24 @@ export default function AdminHub({
                 {/* Final receipt emission actions */}
                 <div className="border-t border-[#D4AF37]/20 pt-5 space-y-3">
                   <button 
-                    onClick={handleProcessPosCheckout}
+                    onClick={() => handleOpenArcaModalForOrder(posCheckoutOrder)}
                     className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-lg cursor-pointer uppercase tracking-wider gold-glow flex items-center justify-center gap-2"
                   >
-                    🧾 Confirmar Venta & Emitir Factura Fiscal (ARCA / AFIP)
+                    🧾 CONFIRMAR VENTA & EMITIR FACTURA FISCAL (ARCA)
                   </button>
+
                   <div className="grid grid-cols-2 gap-3">
                     <button 
-                      onClick={() => {
-                        handleProcessPosCheckout();
-                        onShowNotification("🖨️ Imprimiendo ticket no fiscal en ticketera térmica...", "success");
-                      }}
+                      onClick={() => handleIssueTicketNoFiscal(posCheckoutOrder)}
                       className="py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#FFDF00] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Printer className="h-3.5 w-3.5 text-[#D4AF37]" /> Ticket No Fiscal
+                      <Printer className="h-3.5 w-3.5 text-[#D4AF37]" /> 🖨️ Ticket No Fiscal
                     </button>
                     <button 
-                      onClick={() => {
-                        onShowNotification("📥 Descargando comprobante fiscal en formato PDF...", "success");
-                      }}
+                      onClick={() => setIsPrinterConfigModalOpen(true)}
                       className="py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#FFDF00] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <FileText className="h-3.5 w-3.5 text-[#D4AF37]" /> Descargar PDF ARCA
+                      <Settings className="h-3.5 w-3.5 text-[#D4AF37]" /> Config Ticketera
                     </button>
                   </div>
                 </div>
@@ -7233,6 +7325,210 @@ export default function AdminHub({
                 className="w-1/2 py-2 rounded-lg bg-[#2C1810] text-white text-[10px] font-bold font-sans cursor-pointer hover:bg-[#3d2217] transition-all flex items-center justify-center gap-1"
               >
                 <FileText className="h-3 w-3" /> Enviar Mail
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Thermal Printer Configuration Modal */}
+      {isPrinterConfigModalOpen && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/40 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col space-y-5 gold-glow">
+            <button 
+              onClick={() => setIsPrinterConfigModalOpen(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="border-b border-[#D4AF37]/20 pb-3">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Hardware & ESC/POS</span>
+              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">⚙️ Configuración de Ticketera Térmica</h4>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                  Ancho del Papel Térmico
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["80mm", "58mm"] as const).map(w => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => setPrinterConfig(prev => ({ ...prev, paperWidth: w }))}
+                      className={`p-3 rounded-2xl text-xs font-bold border transition-all cursor-pointer font-mono ${
+                        printerConfig.paperWidth === w
+                          ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-md gold-glow"
+                          : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7]"
+                      }`}
+                    >
+                      📄 Rollos de {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                  Tipo de Conexión de Impresora
+                </label>
+                <select
+                  value={printerConfig.printerType}
+                  onChange={(e) => setPrinterConfig(prev => ({ ...prev, printerType: e.target.value as any }))}
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FFDF00] font-bold outline-none cursor-pointer text-xs"
+                >
+                  <option value="browser_print">Direct Browser Print (Ventana Limpia ESC/POS)</option>
+                  <option value="websocket">Servidor WebSocket Local (ws://localhost:9100)</option>
+                  <option value="webusb">WebUSB API Directa (Driver Térmico USB)</option>
+                </select>
+              </div>
+
+              {printerConfig.printerType === "websocket" && (
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                    URL de Servidor WebSocket
+                  </label>
+                  <input
+                    type="text"
+                    value={printerConfig.websocketUrl}
+                    onChange={(e) => setPrinterConfig(prev => ({ ...prev, websocketUrl: e.target.value }))}
+                    className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FDFBF7] font-mono text-xs outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-xs font-bold text-[#FDFBF7]">Apertura Automática de Cajón de Dinero</span>
+                  <input
+                    type="checkbox"
+                    checked={printerConfig.kickDrawer}
+                    onChange={(e) => setPrinterConfig(prev => ({ ...prev, kickDrawer: e.target.checked }))}
+                    className="h-4 w-4 rounded border-[#D4AF37] text-[#FFDF00] cursor-pointer"
+                  />
+                </label>
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-xs font-bold text-[#FDFBF7]">Corte Automático de Papel (Auto-Cut)</span>
+                  <input
+                    type="checkbox"
+                    checked={printerConfig.autoCut}
+                    onChange={(e) => setPrinterConfig(prev => ({ ...prev, autoCut: e.target.checked }))}
+                    className="h-4 w-4 rounded border-[#D4AF37] text-[#FFDF00] cursor-pointer"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#D4AF37]/20 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  ThermalPrinterService.saveConfig(printerConfig);
+                  setIsPrinterConfigModalOpen(false);
+                  onShowNotification("✅ Configuración de ticketera térmica guardada.", "success");
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg cursor-pointer gold-glow"
+              >
+                Guardar Configuración
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. ARCA Fiscal Invoicing Modal */}
+      {isArcaModalOpen && selectedOrderForBilling && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/40 rounded-3xl p-6 w-full max-w-xl shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col space-y-5 gold-glow">
+            <button 
+              onClick={() => setIsArcaModalOpen(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="border-b border-[#D4AF37]/20 pb-3">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">WebServices ARCA (ex-AFIP)</span>
+              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">🧾 Emisión de Factura Electrónica Fiscal</h4>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl flex justify-between items-center">
+                <div>
+                  <span className="text-[9px] font-bold text-[#D4AF37] uppercase block">Importe Total Comanda</span>
+                  <strong className="text-2xl font-mono font-black text-[#FFDF00]">
+                    ${selectedOrderForBilling.total.toLocaleString("es-AR")}
+                  </strong>
+                </div>
+                <div className="text-right text-[10px] font-mono text-[#FDFBF7]/70 space-y-0.5">
+                  <div>Neto Gravado: ${(selectedOrderForBilling.total / 1.21).toFixed(0)}</div>
+                  <div className="text-emerald-400 font-bold">IVA (21%): ${(selectedOrderForBilling.total - selectedOrderForBilling.total / 1.21).toFixed(0)}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                    CUIT / CUIL / DNI *
+                  </label>
+                  <input
+                    type="text"
+                    value={fiscalForm.cuitOrDni}
+                    onChange={(e) => setFiscalForm(prev => ({ ...prev, cuitOrDni: e.target.value }))}
+                    placeholder="Ej: 20345678901"
+                    className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FFDF00] font-mono font-bold outline-none text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                    Nombre / Razón Social *
+                  </label>
+                  <input
+                    type="text"
+                    value={fiscalForm.nameOrReason}
+                    onChange={(e) => setFiscalForm(prev => ({ ...prev, nameOrReason: e.target.value }))}
+                    placeholder="Nombre del Cliente"
+                    className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FDFBF7] font-bold outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                  Condición Frente al IVA *
+                </label>
+                <select
+                  value={fiscalForm.ivaCondition}
+                  onChange={(e) => setFiscalForm(prev => ({ ...prev, ivaCondition: e.target.value as any }))}
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FFDF00] font-bold outline-none cursor-pointer text-xs"
+                >
+                  <option value="Consumidor Final">Consumidor Final (Factura B)</option>
+                  <option value="Responsable Inscripto">Responsable Inscripto (Factura A)</option>
+                  <option value="Monotributo">Monotributista (Factura C)</option>
+                  <option value="Exento">Exento (Factura B)</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl text-[10px] text-emerald-300 space-y-1">
+                <div className="font-bold flex items-center gap-1">
+                  ✓ Validación de WebServices ARCA Activos
+                </div>
+                <div className="text-[9px] text-emerald-200/80">
+                  Se solicitará el CAE electrónico y se generará la Factura con Código QR oficial de ARCA para descarga en PDF e impresión térmica.
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#D4AF37]/20">
+              <button
+                type="button"
+                onClick={handleConfirmArcaBilling}
+                className="w-full py-4 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:brightness-110 transition-all cursor-pointer gold-glow flex items-center justify-center gap-2"
+              >
+                📋 EMITIR FACTURA ELECTRÓNICA & DESCARGAR PDF
               </button>
             </div>
           </div>
