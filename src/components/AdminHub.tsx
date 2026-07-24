@@ -5,13 +5,14 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
 import { DailyExecutiveMenu } from "../types";
 import { supabase } from "../lib/supabase";
 import RestoBarLogo from "./RestoBarLogo";
+import KitchenDisplay from "./KitchenDisplay";
 import { TimeSlotService } from "../services/TimeSlotService";
 import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
@@ -68,7 +69,7 @@ export default function AdminHub({
   currentUser,
   bookings = []
 }: AdminHubProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "proveedores" | "personal" | "reportes">(
+  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal" | "reportes">(
     currentUser.role === "barista" 
       ? "inventario" 
       : currentUser.role === "mesero" 
@@ -6616,6 +6617,7 @@ export default function AdminHub({
               { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] },
               { id: "reservas", label: "Reservas", icon: Calendar, badge: adminBookings.length, roles: ["administrador", "mesero"] },
               { id: "pedidos_mozo", label: "Módulo Mozo", icon: ClipboardList, roles: ["administrador", "mesero"] },
+              { id: "kds_cocina", label: "KDS Cocina & Chef", icon: Flame, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
               { id: "caja", label: "Caja & Comandas", icon: Coins, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
               { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: Users, roles: ["administrador", "barista"] },
@@ -6695,6 +6697,9 @@ export default function AdminHub({
           {activeSubTab === "salon" && renderSalon()}
           {activeSubTab === "reservas" && renderReservas()}
           {activeSubTab === "pedidos_mozo" && renderPedidosMozo()}
+          {activeSubTab === "kds_cocina" && (
+            <KitchenDisplay orders={orders} menuItems={menuItems} onOrderStatusUpdate={onOrderStatusUpdate} />
+          )}
           {activeSubTab === "caja" && renderCaja()}
           {activeSubTab === "proveedores" && renderProveedores()}
           {activeSubTab === "personal" && renderPersonal()}
