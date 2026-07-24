@@ -256,40 +256,46 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         </div>
       </section>
 
-      {/* Info & Location Section */}
-      <section id="horarios" className="bg-white border-t border-b border-[#E2D4C3] py-16 px-6 shadow-sm">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-          <div className="space-y-3 p-6 bg-[#FAF8F5] rounded-3xl border border-[#E2D4C3]">
-            <div className="h-10 w-10 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto md:mx-0">
-              <MapPin className="h-5 w-5" />
+      {/* Compact Info & Location Section */}
+      <section id="horarios" className="bg-white border-t border-b border-[#E2D4C3] py-6 px-6 shadow-xs">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-start gap-3 p-3.5 px-4 bg-[#FAF8F5] rounded-2xl border border-[#E2D4C3]">
+            <div className="h-7 w-7 rounded-xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center shrink-0 mt-0.5">
+              <MapPin className="h-3.5 w-3.5" />
             </div>
-            <strong className="text-base font-extrabold text-[#1C120C] block">Ubicación Privilegiada</strong>
-            <p className="text-xs text-[#5C4A3E] leading-relaxed">
-              Constitución 944 (Frente al Teatro Municipal)<br />
-              Río Cuarto, Provincia de Córdoba
-            </p>
+            <div>
+              <strong className="text-xs font-extrabold text-[#1C120C] block">Ubicación Privilegiada</strong>
+              <p className="text-[10px] text-[#5C4A3E] leading-tight mt-0.5">
+                Constitución 944 (Frente al Teatro Municipal)<br />
+                Río Cuarto, Provincia de Córdoba
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-3 p-6 bg-[#FAF8F5] rounded-3xl border border-[#E2D4C3]">
-            <div className="h-10 w-10 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto md:mx-0">
-              <Clock className="h-5 w-5" />
+          <div className="flex items-start gap-3 p-3.5 px-4 bg-[#FAF8F5] rounded-2xl border border-[#E2D4C3]">
+            <div className="h-7 w-7 rounded-xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center shrink-0 mt-0.5">
+              <Clock className="h-3.5 w-3.5" />
             </div>
-            <strong className="text-base font-extrabold text-[#1C120C] block">Horarios de Atención</strong>
-            <p className="text-xs text-[#5C4A3E] leading-relaxed">
-              Lunes a Sábados: 07:30 a 01:00 hs<br />
-              Domingos: 08:30 a 00:00 hs
-            </p>
+            <div>
+              <strong className="text-xs font-extrabold text-[#1C120C] block">Horarios de Atención</strong>
+              <p className="text-[10px] text-[#5C4A3E] leading-tight mt-0.5">
+                Lunes a Sábados: 07:30 a 01:00 hs<br />
+                Domingos: 08:30 a 00:00 hs
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-3 p-6 bg-[#FAF8F5] rounded-3xl border border-[#E2D4C3]">
-            <div className="h-10 w-10 rounded-2xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center mx-auto md:mx-0">
-              <PhoneCall className="h-5 w-5" />
+          <div className="flex items-start gap-3 p-3.5 px-4 bg-[#FAF8F5] rounded-2xl border border-[#E2D4C3]">
+            <div className="h-7 w-7 rounded-xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center shrink-0 mt-0.5">
+              <PhoneCall className="h-3.5 w-3.5" />
             </div>
-            <strong className="text-base font-extrabold text-[#1C120C] block">Reservas & Pedidos</strong>
-            <p className="text-xs text-[#5C4A3E] leading-relaxed">
-              WhatsApp: 358 5042311 / 358 4651847<br />
-              Instagram: @restobardelteatro_rio4
-            </p>
+            <div>
+              <strong className="text-xs font-extrabold text-[#1C120C] block">Reservas & Pedidos</strong>
+              <p className="text-[10px] text-[#5C4A3E] leading-tight mt-0.5">
+                WhatsApp: 358 5042311 / 358 4651847<br />
+                Instagram: @restobardelteatro_rio4
+              </p>
+            </div>
           </div>
         </div>
       </section>
