@@ -5,7 +5,7 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
@@ -4004,8 +4004,13 @@ export default function AdminHub({
     const filteredBookings = adminBookings.filter(b => 
       b.customerName.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
       b.tableName.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
-      b.referenceCode.toLowerCase().includes(bookingSearchQuery.toLowerCase())
+      b.referenceCode.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
+      (b.customerPhone && b.customerPhone.includes(bookingSearchQuery))
     );
+
+    const totalGuests = adminBookings.reduce((sum, b) => sum + (parseInt(b.guests) || 0), 0);
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todayBookingsCount = adminBookings.filter(b => b.date === todayStr).length;
 
     return (
       <motion.div
@@ -4015,70 +4020,120 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="space-y-8 text-[#FDFBF7]"
       >
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control de Clientes</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control de Clientes & Salón</span>
             <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Reservas de Mesas</h2>
-            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione y agende reservas de clientes para el salón en tiempo real.</p>
+            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione y agende reservas de clientes para el salón de Resto Bar Del Teatro.</p>
           </div>
           <button
             onClick={() => setIsAddingBooking(!isAddingBooking)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-2xl shadow-lg hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
           >
-            <Plus className="h-4 w-4" /> Nueva Reserva
+            <Plus className="h-4 w-4" /> Agendar Nueva Reserva
           </button>
         </div>
 
-        {/* Add Booking Modal / Form */}
+        {/* KPI Cards Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+            <div>
+              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Reservas Totales</span>
+              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">{adminBookings.length}</span>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+              <Calendar className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+            <div>
+              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Reservas de Hoy</span>
+              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">{todayBookingsCount}</span>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+              <Clock className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+            <div>
+              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Total Comensales</span>
+              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">{totalGuests} pers.</span>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+            <div>
+              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Mesas Activas Salón</span>
+              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">
+                {restaurantTables.filter(t => t.status === "Activo").length}
+              </span>
+            </div>
+            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+              <Coffee className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Add Booking Drawer / Form */}
         {isAddingBooking && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4"
+            className="bg-[#1A110B] border-2 border-[#D4AF37]/40 text-[#FDFBF7] rounded-3xl p-6 shadow-2xl space-y-5 gold-glow"
           >
-            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Agendar Nueva Reserva</h3>
-            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2C1810]/70">
+            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
+              <h3 className="font-serif text-xl font-bold text-[#FFDF00]">📌 Agendar Nueva Reserva de Mesa</h3>
+              <button onClick={() => setIsAddingBooking(false)} className="text-[#D4AF37] hover:text-white font-black text-sm cursor-pointer">✕</button>
+            </div>
+
+            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#FDFBF7]">
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Nombre del Cliente *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Cliente *</label>
                 <input
                   type="text"
                   value={bookingFormName}
                   onChange={(e) => setBookingFormName(e.target.value)}
                   placeholder="Ej: Mariano Closs"
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 focus:border-[#FFDF00] outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Teléfono *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Teléfono Celular *</label>
                 <input
                   type="text"
                   value={bookingFormPhone}
                   onChange={(e) => setBookingFormPhone(e.target.value)}
-                  placeholder="Ej: 11-4567-8901"
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  placeholder="Ej: 3584123456"
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 focus:border-[#FFDF00] outline-none font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Fecha de Reserva *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Fecha de Reserva *</label>
                 <input
                   type="date"
                   value={bookingFormDate}
                   onChange={(e) => setBookingFormDate(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Horario / Turno</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Horario / Turno</label>
                 <select
                   value={bookingFormSlot}
                   onChange={(e) => setBookingFormSlot(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none cursor-pointer font-bold"
                 >
                   <option value="08:00 - 10:00">Desayuno (08:00 - 10:00)</option>
                   <option value="10:00 - 12:00">Media Mañana (10:00 - 12:00)</option>
@@ -4092,27 +4147,27 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Asignar Mesa</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Asignar Mesa en Salón</label>
                 <select
                   value={bookingFormTableId}
                   onChange={(e) => setBookingFormTableId(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none cursor-pointer font-bold"
                 >
                   {restaurantTables.filter(t => t.status === "Activo").map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.capacity} Pers.)</option>
+                    <option key={t.id} value={t.id}>{t.name} (Capacidad: {t.capacity} Pers.)</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-[9px] uppercase tracking-wider block mb-1">Cantidad de Comensales</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Cantidad de Comensales</label>
                 <input
                   type="number"
                   min="1"
                   max="12"
                   value={bookingFormGuests}
-                  onChange={(e) => setBookingFormGuests(parseInt(e.target.value))}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#FDFBF7] text-[#2C1810] outline-none"
+                  onChange={(e) => setBookingFormGuests(parseInt(e.target.value) || 1)}
+                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none font-mono"
                 />
               </div>
 
@@ -4120,13 +4175,13 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setIsAddingBooking(false)}
-                  className="px-4 py-2 border border-[#2C1810]/20 text-[#2C1810]/70 rounded-xl hover:bg-stone-100 cursor-pointer font-bold"
+                  className="px-5 py-2.5 border border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white rounded-xl hover:bg-stone-800 cursor-pointer font-bold uppercase tracking-wider text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#2C1810] hover:bg-[#3d2217] text-white rounded-xl shadow-md cursor-pointer font-bold"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] rounded-xl shadow-lg cursor-pointer font-black uppercase tracking-wider text-xs gold-glow"
                 >
                   Guardar Reserva
                 </button>
@@ -4135,67 +4190,91 @@ export default function AdminHub({
           </motion.div>
         )}
 
-        {/* Filter bar */}
-        <div className="max-w-md">
+        {/* Filter & Search Bar */}
+        <div className="w-full max-w-lg">
           <div className="relative">
-            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#2C1810]/40" />
+            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#D4AF37]" />
             <input
               type="text"
               value={bookingSearchQuery}
               onChange={(e) => setBookingSearchQuery(e.target.value)}
-              placeholder="Buscar por cliente, mesa o código..."
-              className="w-full rounded-xl border border-[#2C1810]/15 bg-white py-2.5 pr-4 pl-11 shadow-2xs outline-none transition-all focus:border-[#C2956E] text-xs font-semibold text-[#2C1810]"
+              placeholder="Buscar por cliente, teléfono, mesa o código..."
+              className="w-full rounded-2xl border border-[#D4AF37]/30 bg-[#1A110B] py-3 pr-4 pl-11 shadow-md outline-none transition-all focus:border-[#FFDF00] text-xs font-bold text-[#FDFBF7] placeholder-[#FDFBF7]/40"
             />
           </div>
         </div>
 
-        {/* List of Bookings */}
-        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
+        {/* High Contrast Table of Bookings */}
+        <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-2xl gold-glow">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs font-semibold text-[#2C1810]/80">
+            <table className="w-full text-left border-collapse text-xs font-medium">
               <thead>
-                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] uppercase tracking-wider text-[#2C1810]/60">
+                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/30 text-[10px] uppercase tracking-widest text-[#D4AF37]">
                   <th className="p-4 font-black">Cliente</th>
                   <th className="p-4 font-black">Teléfono</th>
                   <th className="p-4 font-black">Fecha</th>
-                  <th className="p-4 font-black">Horario</th>
+                  <th className="p-4 font-black">Horario / Turno</th>
                   <th className="p-4 font-black">Mesa Asignada</th>
-                  <th className="p-4 font-black">Comensales</th>
+                  <th className="p-4 font-black text-center">Comensales</th>
                   <th className="p-4 font-black">Código Ref.</th>
-                  <th className="p-4 font-black text-center">Acciones</th>
+                  <th className="p-4 font-black text-center">Acciones & WhatsApp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C1810]/5">
+              <tbody className="divide-y divide-[#D4AF37]/15">
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-espresso/50 font-medium italic">
+                    <td colSpan={8} className="p-12 text-center text-[#FDFBF7]/60 italic font-medium">
                       No hay reservas agendadas que coincidan con la búsqueda.
                     </td>
                   </tr>
                 ) : (
-                  filteredBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-stone-50/50 transition-colors">
-                      <td className="p-4 font-bold text-[#2C1810]">{b.customerName}</td>
-                      <td className="p-4 font-mono">{b.customerPhone}</td>
-                      <td className="p-4">{b.date}</td>
-                      <td className="p-4">{b.timeSlot}</td>
-                      <td className="p-4 font-bold">{b.tableName}</td>
-                      <td className="p-4 text-center">
-                        <span className="px-2 py-0.5 rounded-full bg-[#2C1810]/5 text-[#2C1810] text-[10px] font-bold">
-                          {b.guests} Pers.
-                        </span>
-                      </td>
-                      <td className="p-4 font-mono font-bold text-caramel">{b.referenceCode}</td>
-                      <td className="p-4 text-center">
-                        <button
-                          onClick={() => handleAdminCancelBooking(b.id)}
-                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs"
-                        >
-                          Cancelar
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  filteredBookings.map((b) => {
+                    const cleanPhone = b.customerPhone ? b.customerPhone.replace(/\D/g, "") : "";
+                    const waPhone = cleanPhone.startsWith("54") ? cleanPhone : `549${cleanPhone}`;
+                    const waMessage = encodeURIComponent(
+                      `🎭 *RESTO BAR DEL TEATRO*\n¡Hola ${b.customerName}! Confirmamos tu reserva para el *${b.date}* a las *${b.timeSlot}* en la *${b.tableName}* (${b.guests} personas). Código Ref: ${b.referenceCode}. ¡Te esperamos en Constitución 944, Río Cuarto!`
+                    );
+                    const waLink = `https://wa.me/${waPhone}?text=${waMessage}`;
+
+                    return (
+                      <tr key={b.id} className="hover:bg-[#2A1B12]/80 transition-colors">
+                        <td className="p-4 font-serif font-bold text-sm text-[#FFDF00]">{b.customerName}</td>
+                        <td className="p-4 font-mono text-[#FDFBF7]/90">{b.customerPhone}</td>
+                        <td className="p-4 font-mono font-bold text-xs text-[#FDFBF7]">{b.date}</td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#2A1B12] border border-[#D4AF37]/30 font-mono text-[10px] text-[#FFDF00] font-bold">
+                            {b.timeSlot}
+                          </span>
+                        </td>
+                        <td className="p-4 font-bold text-[#FDFBF7]">{b.tableName}</td>
+                        <td className="p-4 text-center">
+                          <span className="px-3 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FFDF00] text-[10px] font-mono font-bold">
+                            👤 {b.guests} Pers.
+                          </span>
+                        </td>
+                        <td className="p-4 font-mono font-bold text-[#D4AF37] text-xs">{b.referenceCode}</td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-sm flex items-center gap-1"
+                              title="Enviar Confirmación por WhatsApp"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                            </a>
+                            <button
+                              onClick={() => handleAdminCancelBooking(b.id)}
+                              className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-sm"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
