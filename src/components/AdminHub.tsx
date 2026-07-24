@@ -76,9 +76,7 @@ export default function AdminHub({
   const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal" | "reportes">(
     currentUser.role === "barista" 
       ? "inventario" 
-      : currentUser.role === "mesero" 
-      ? "salon" 
-      : "dashboard"
+      : "pedidos_mozo"
   );
   const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("barista");
   const [pinInput, setPinInput] = useState<string>("");
@@ -6721,15 +6719,67 @@ export default function AdminHub({
 
           {/* Navigation Links */}
           <nav className="space-y-1">
+            {/* 1. MÓDULOS DE OPERACIÓN DIARIA */}
             {[
-              { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador"] },
-              { id: "inventario", label: "Stock & Insumos", icon: Package, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
-              { id: "precios", label: "Carta & Recetas", icon: BookOpen, roles: ["administrador"] },
-              { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] },
-              { id: "reservas", label: "Reservas", icon: Calendar, badge: adminBookings.length, roles: ["administrador", "mesero"] },
               { id: "pedidos_mozo", label: "Módulo Mozo", icon: ClipboardList, roles: ["administrador", "mesero"] },
               { id: "kds_cocina", label: "Cocina & Chef", icon: Flame, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
               { id: "caja", label: "Caja & Comandas", icon: Coins, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
+              { id: "reservas", label: "Reservas", icon: Calendar, badge: adminBookings.length, roles: ["administrador", "mesero"] },
+              { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] }
+            ].filter(link => {
+              if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
+                return false;
+              }
+              if (currentUser.role === "administrador" || currentUser.role === "dueño") {
+                return true;
+              }
+              const meta = usersMetadata[currentUser.id];
+              if (meta && meta.permissions) {
+                return meta.permissions.includes(link.id);
+              }
+              return true;
+            }).map((link) => {
+              const active = activeSubTab === link.id;
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => setActiveSubTab(link.id as any)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    active 
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-md gold-glow"
+                      : "text-[#FDFBF7]/70 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-4.5 w-4.5" />
+                    {link.label}
+                  </span>
+                  {link.badge !== undefined && link.badge > 0 && (
+                    <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
+                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-red-600 text-white"
+                    }`}>
+                      {link.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Separador Visual Sutil */}
+            {(currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "barista") && (
+              <div className="pt-3 pb-1 border-t border-[#D4AF37]/20 my-2">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] px-2 block">
+                  Administración & Gestión
+                </span>
+              </div>
+            )}
+
+            {/* 2. MÓDULOS DE ADMINISTRACIÓN Y GESTIÓN */}
+            {[
+              { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador"] },
+              { id: "precios", label: "Carta & Recetas", icon: BookOpen, roles: ["administrador"] },
+              { id: "inventario", label: "Stock & Insumos", icon: Package, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
               { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: Users, roles: ["administrador", "barista"] },
               { id: "reportes", label: "Reportes", icon: FileText, roles: ["administrador"] }
@@ -6754,8 +6804,8 @@ export default function AdminHub({
                   onClick={() => setActiveSubTab(link.id as any)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-[#C2956E] text-white shadow-md"
-                      : "text-[#FDFBF7]/60 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-md gold-glow"
+                      : "text-[#FDFBF7]/70 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   <span className="flex items-center gap-3">
@@ -6763,8 +6813,8 @@ export default function AdminHub({
                     {link.label}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
-                    <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-bold shrink-0 ${
-                      active ? "bg-white text-[#C2956E]" : "bg-red-600 text-white"
+                    <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
+                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-amber-500 text-[#1C120C]"
                     }`}>
                       {link.badge}
                     </span>
