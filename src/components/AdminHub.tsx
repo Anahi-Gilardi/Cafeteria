@@ -4429,14 +4429,14 @@ export default function AdminHub({
         {/* Left Column: Waiter & Tables */}
         <div className="lg:col-span-3 space-y-6">
           {/* Waiter Card */}
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-5 shadow-2xl space-y-4 gold-glow">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] flex items-center justify-center">
                 <Users className="h-5 w-5" />
               </div>
               <div>
-                <span className="text-[8px] font-black uppercase tracking-wider text-[#D4AF37] block">Mozo en Turno Activo</span>
-                <strong className="text-xs font-serif block text-[#FDFBF7]">Terminal Registrada</strong>
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">Mozo en Turno Activo</span>
+                <strong className="text-xs font-serif block text-[#FFDF00]">Terminal POS Registrada</strong>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -4444,9 +4444,9 @@ export default function AdminHub({
                 <button
                   key={waiter}
                   onClick={() => setSelectedWaiter(waiter)}
-                  className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                  className={`py-2.5 rounded-xl text-[10px] font-black border transition-all cursor-pointer uppercase tracking-wider ${
                     selectedWaiter === waiter 
-                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] shadow-md font-black" 
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-lg gold-glow scale-105" 
                       : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
                   }`}
                 >
@@ -4457,18 +4457,18 @@ export default function AdminHub({
           </div>
 
           {/* Tables Card */}
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-5 shadow-2xl space-y-4 gold-glow">
             <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
               <div>
-                <span className="text-[8px] font-black uppercase tracking-wider text-[#D4AF37] block">Distribución de Mesas</span>
-                <h3 className="font-serif text-sm font-bold mt-0.5 text-[#FDFBF7]">Mapa de Comensales</h3>
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">Distribución de Salón</span>
+                <h3 className="font-serif text-base font-bold mt-0.5 text-[#FFDF00]">Mapa de Mesas</h3>
               </div>
-              <span className="px-2 py-0.5 rounded bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#FFDF00] text-[8px] font-black uppercase tracking-wider font-mono">
+              <span className="px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] text-[9px] font-mono font-black uppercase tracking-wider">
                 {occupiedTablesCount} Ocupadas
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
               {MOZO_TABLES.map(table => {
                 const activeOrder = getActiveOrderForTable(table);
                 const isOccupied = activeOrder !== undefined;
@@ -4478,22 +4478,24 @@ export default function AdminHub({
                   <div
                     key={table}
                     onClick={() => handleSelectMozoTable(table)}
-                    className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between h-20 ${
+                    className={`p-3.5 border-2 rounded-2xl cursor-pointer transition-all flex flex-col justify-between h-20 shadow-md ${
                       isSelected
-                        ? "bg-[#C2956E]/10 border-[#C2956E] shadow-sm"
+                        ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] border-[#FFDF00] text-[#1C120C] shadow-xl gold-glow scale-102"
                         : isOccupied
-                        ? "bg-red-50/70 border-red-200 text-red-800"
-                        : "bg-white border-[#2C1810]/10 hover:bg-stone-50"
+                        ? "bg-amber-950/90 border-amber-500/50 text-[#FFDF00]"
+                        : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7] hover:border-[#D4AF37]"
                     }`}
                   >
-                    <strong className="text-xs font-bold block">{table}</strong>
+                    <strong className={`text-xs font-bold block ${isSelected ? "text-[#1C120C]" : isOccupied ? "text-[#FFDF00]" : "text-[#FDFBF7]"}`}>
+                      {table}
+                    </strong>
                     {isOccupied ? (
-                      <span className="text-[8px] font-bold text-red-700/80 flex items-center gap-1 mt-2">
-                        <Users className="h-3 w-3" /> {getDinersMockCount(table)} comensales
+                      <span className={`text-[9px] font-bold flex items-center gap-1 mt-1 font-mono ${isSelected ? "text-[#1C120C]" : "text-amber-300"}`}>
+                        <Users className="h-3 w-3" /> {getDinersMockCount(table)} pers.
                       </span>
                     ) : (
-                      <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/30 mt-2 block">
-                        Libre
+                      <span className={`text-[8px] font-black uppercase tracking-wider mt-1 block ${isSelected ? "text-[#1C120C]" : "text-[#FDFBF7]/40"}`}>
+                        🟢 Disponible
                       </span>
                     )}
                   </div>
@@ -4506,20 +4508,20 @@ export default function AdminHub({
         {/* Center Column: Categories and Products */}
         <div className="lg:col-span-6 space-y-6">
           {/* Categories card with search */}
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/10 rounded-3xl p-5 shadow-xs space-y-4">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 rounded-3xl p-5 shadow-2xl space-y-4 gold-glow">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
-                <span className="text-[8px] font-black uppercase tracking-wider text-[#2C1810]/40 block">Filtro de Categorías Premium</span>
-                <h3 className="font-serif text-sm font-bold mt-0.5">Catálogo de Productos</h3>
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#D4AF37] block">Carta & Menú Digital POS</span>
+                <h3 className="font-serif text-lg font-bold text-[#FFDF00] mt-0.5">Catálogo de Productos</h3>
               </div>
-              <div className="relative w-full sm:w-48">
-                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#2C1810]/40" />
+              <div className="relative w-full sm:w-52">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-[#D4AF37]" />
                 <input
                   type="text"
-                  placeholder="Buscar plato o bebida..."
+                  placeholder="Buscar producto o bebida..."
                   value={mozoSearchQuery}
                   onChange={(e) => setMozoSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 border border-[#2C1810]/20 rounded-xl text-[10px] bg-white font-semibold"
+                  className="w-full pl-9 pr-4 py-2 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 font-semibold focus:border-[#FFDF00] outline-none"
                 />
               </div>
             </div>
@@ -4536,10 +4538,10 @@ export default function AdminHub({
                 <button
                   key={cat.id}
                   onClick={() => setMozoCategory(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border shrink-0 transition-all cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border shrink-0 transition-all cursor-pointer ${
                     mozoCategory === cat.id
-                      ? "bg-[#2C1810] text-[#FDFBF7] border-[#2C1810]"
-                      : "bg-white border-stone-250 text-[#2C1810]/60 hover:bg-stone-50"
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-md gold-glow"
+                      : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
                   }`}
                 >
                   {cat.label}
@@ -4549,52 +4551,52 @@ export default function AdminHub({
           </div>
 
           {/* Product grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[480px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
             {filteredMenuItems.map(item => {
               const isOut = item.stock === 0;
               return (
                 <div
                   key={item.id}
-                  className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl overflow-hidden flex flex-col justify-between h-44 shadow-xs relative"
+                  className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl overflow-hidden flex flex-col justify-between shadow-xl relative group hover:border-[#FFDF00] transition-all"
                 >
                   {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-20 w-full object-cover" />
+                    <img src={item.image} alt={item.name} className="h-28 w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
-                    <div className="h-20 w-full bg-[#2C1810]/5 flex items-center justify-center text-[#2C1810]/30 border-b border-[#2C1810]/5">
-                      <Coffee className="h-7 w-7 stroke-1" />
+                    <div className="h-28 w-full bg-[#2A1B12] flex items-center justify-center text-[#D4AF37]">
+                      <Coffee className="h-8 w-8 stroke-1" />
                     </div>
                   )}
 
                   {/* Stock status badge overlay */}
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2.5 right-2.5">
                     {isOut ? (
-                      <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-red-100 border border-red-200 text-red-700 tracking-wider">
-                        Sin Stock (Fórmulas 0)
+                      <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-red-950/90 border border-red-500/50 text-red-300 tracking-wider">
+                        Sin Stock
                       </span>
                     ) : (
                       item.stock !== undefined && (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase bg-emerald-50 border border-emerald-250 text-emerald-800 tracking-wider">
+                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 tracking-wider font-mono">
                           Disp: {item.stock}u
                         </span>
                       )
                     )}
                   </div>
 
-                  <div className="p-3 flex justify-between items-center gap-3 bg-white">
-                    <div className="space-y-0.5">
-                      <strong className="text-xs font-bold text-[#2C1810] line-clamp-1">{item.name}</strong>
-                      <span className="text-xs font-mono font-black text-[#2C1810]/80">${item.price.toFixed(0)}</span>
+                  <div className="p-4 flex justify-between items-center gap-3 bg-[#2A1B12] border-t border-[#D4AF37]/20">
+                    <div className="space-y-1 overflow-hidden">
+                      <strong className="text-xs font-serif font-bold text-[#FFDF00] block truncate">{item.name}</strong>
+                      <span className="text-sm font-mono font-black text-[#FDFBF7] block">${item.price.toLocaleString("es-AR")}</span>
                     </div>
                     <button
                       onClick={() => handleAddMozoCart(item)}
                       disabled={isOut}
-                      className={`h-8 w-8 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                      className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                         isOut 
-                          ? "bg-stone-100 border border-stone-200 text-stone-300 cursor-not-allowed" 
-                          : "bg-[#2C1810] hover:bg-[#3d2217] text-white shadow-sm"
+                          ? "bg-[#1A110B] border border-[#D4AF37]/20 text-[#FDFBF7]/30 cursor-not-allowed" 
+                          : "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] hover:brightness-110 shadow-md gold-glow"
                       }`}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-5 w-5 font-black" />
                     </button>
                   </div>
                 </div>
@@ -4605,56 +4607,60 @@ export default function AdminHub({
 
         {/* Right Column: Draft Comanda */}
         <div className="lg:col-span-3">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs flex flex-col justify-between h-[580px]">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-5 shadow-2xl flex flex-col justify-between h-[620px] gold-glow">
             {!mozoSelectedTable ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-300 p-6">
-                <Coffee className="h-12 w-12 stroke-1 animate-pulse" />
-                <span className="text-[10px] font-bold text-[#2C1810]/40 uppercase tracking-widest mt-3 block">Nueva Comanda</span>
-                <p className="text-[9px] text-[#2C1810]/30 mt-1.5 leading-normal">Seleccione una mesa disponible en el plano izquierdo para iniciar la comanda.</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-[#FDFBF7]/60 p-6 space-y-3">
+                <div className="h-16 w-16 rounded-3xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] flex items-center justify-center">
+                  <Coffee className="h-8 w-8 animate-pulse" />
+                </div>
+                <span className="text-xs font-black text-[#FFDF00] uppercase tracking-widest block">Comanda en Espera</span>
+                <p className="text-xs text-[#FDFBF7]/60 leading-relaxed max-w-[180px]">
+                  Seleccione una mesa disponible en el mapa de salón izquierdo para iniciar el pedido.
+                </p>
               </div>
             ) : (
               <div className="flex-1 flex flex-col justify-between h-full">
                 <div className="space-y-4 flex-1 flex flex-col">
-                  <div className="border-b border-[#2C1810]/10 pb-3 flex justify-between items-center">
+                  <div className="border-b border-[#D4AF37]/20 pb-3 flex justify-between items-center">
                     <div>
-                      <h4 className="font-serif text-sm font-bold">Comanda {mozoSelectedTable}</h4>
-                      <span className="text-[8px] font-bold text-[#2C1810]/45 block">Mozo: {selectedWaiter}</span>
+                      <h4 className="font-serif text-base font-bold text-[#FFDF00]">Comanda {mozoSelectedTable}</h4>
+                      <span className="text-[10px] font-bold text-[#D4AF37] block mt-0.5">Mozo: {selectedWaiter}</span>
                     </div>
-                    <span className="text-[9px] font-black uppercase text-[#C2956E] tracking-wider">
-                      {getActiveOrderForTable(mozoSelectedTable) ? "Edición" : "Borrador"}
+                    <span className="px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] text-[9px] font-mono font-black uppercase tracking-wider">
+                      {getActiveOrderForTable(mozoSelectedTable) ? "Edición" : "Nueva"}
                     </span>
                   </div>
 
-                  <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[320px]">
+                  <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px]">
                     {mozoCart.length > 0 ? (
                       mozoCart.map((cart, idx) => (
-                        <div key={idx} className="border-b border-[#2C1810]/5 pb-2.5 space-y-2">
-                          <div className="flex justify-between items-center text-[10px] font-semibold">
+                        <div key={idx} className="bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl p-3 space-y-2">
+                          <div className="flex justify-between items-center text-xs font-semibold">
                             <div className="space-y-0.5 truncate pr-2">
-                              <strong className="text-[#2C1810] block truncate">{cart.item.name}</strong>
-                              <span className="text-[8px] text-[#2C1810]/40 font-bold font-mono">${cart.item.price.toFixed(0)} c/u</span>
+                              <strong className="text-[#FFDF00] block truncate font-serif">{cart.item.name}</strong>
+                              <span className="text-[10px] text-[#FDFBF7]/70 font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
                             </div>
-                            <div className="flex items-center gap-2.5 shrink-0">
-                              <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center gap-1 bg-[#1A110B] border border-[#D4AF37]/30 rounded-xl p-1">
                                 <button
                                   onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
-                                  className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                                  className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] text-[#FFDF00] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
                                 >
                                   -
                                 </button>
-                                <span className="font-mono font-bold w-4 text-center">{cart.qty}</span>
+                                <span className="font-mono font-bold w-5 text-center text-[#FDFBF7]">{cart.qty}</span>
                                 <button
                                   onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
-                                  className="h-5 w-5 bg-stone-100 hover:bg-stone-200 text-[#2C1810] flex items-center justify-center rounded text-[10px] font-bold cursor-pointer"
+                                  className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] text-[#FFDF00] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
                                 >
                                   +
                                 </button>
                               </div>
                               <button
                                 onClick={() => handleRemoveFromMozoCart(cart.item.id)}
-                                className="p-1 text-[#2C1810]/40 hover:text-red-700 transition-all cursor-pointer"
+                                className="p-1.5 text-rose-400 hover:text-rose-300 transition-all cursor-pointer"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
@@ -4665,47 +4671,47 @@ export default function AdminHub({
                               const val = e.target.value;
                               setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
                             }}
-                            placeholder="Añadir nota (ej: almendra, sin azúcar, caliente...)"
-                            className="w-full text-[9px] px-2 py-1.5 border border-[#2C1810]/10 rounded-lg bg-[#FDFBF7] text-[#2C1810]/80 placeholder-[#2C1810]/40 outline-none font-semibold"
+                            placeholder="Añadir aclaración (ej: bien cocido, sin hielo...)"
+                            className="w-full text-[10px] p-2 border border-[#D4AF37]/20 rounded-xl bg-[#1A110B] text-[#FDFBF7] placeholder-[#FDFBF7]/40 outline-none font-medium"
                           />
                         </div>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-16 text-stone-300 text-center">
-                        <ClipboardList className="h-8 w-8 stroke-1.5 mb-2" />
-                        <span className="text-[8px] font-bold uppercase tracking-wider text-[#2C1810]/40 block">Comanda Vacía</span>
-                        <p className="text-[8px] text-[#2C1810]/30 mt-1 max-w-[120px]">Haga clic en los productos del panel central para añadirlos.</p>
+                      <div className="flex flex-col items-center justify-center py-16 text-[#FDFBF7]/40 text-center space-y-2">
+                        <ClipboardList className="h-8 w-8 text-[#D4AF37] stroke-1.5" />
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Comanda Vacía</span>
+                        <p className="text-[10px] text-[#FDFBF7]/50 max-w-[140px]">Seleccione productos del catálogo para agregarlos.</p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-[#2C1810]/15 pt-4 space-y-4">
-                  <div className="space-y-1.5 text-[10px] font-semibold text-[#2C1810]/70">
+                <div className="border-t border-[#D4AF37]/20 pt-4 space-y-4">
+                  <div className="space-y-1.5 text-xs font-bold text-[#FDFBF7]/80">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span className="font-mono">${subtotal.toFixed(0)}</span>
+                      <span className="font-mono text-[#FDFBF7]">${subtotal.toLocaleString("es-AR")}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>IVA (21% Incl.)</span>
-                      <span className="font-mono">${tax.toFixed(0)}</span>
+                      <span>IVA (21% Incluido)</span>
+                      <span className="font-mono text-[#FDFBF7]">${tax.toLocaleString("es-AR")}</span>
                     </div>
-                    <div className="flex justify-between border-t border-[#2C1810]/10 pt-2 text-xs font-black text-[#2C1810]">
+                    <div className="flex justify-between border-t border-[#D4AF37]/20 pt-2 text-sm font-black text-[#FFDF00]">
                       <span>TOTAL COMANDA</span>
-                      <span className="font-mono text-emerald-800">${total.toFixed(0)}</span>
+                      <span className="font-mono text-xl text-[#FFDF00]">${total.toLocaleString("es-AR")}</span>
                     </div>
                   </div>
 
                   <button
                     onClick={handleSubmitMozoOrder}
                     disabled={mozoCart.length === 0}
-                    className={`w-full py-3 rounded-2xl font-bold text-xs shadow-md transition-all cursor-pointer uppercase tracking-wider ${
+                    className={`w-full py-3.5 rounded-2xl font-black text-xs shadow-xl transition-all cursor-pointer uppercase tracking-wider ${
                       mozoCart.length > 0
-                        ? "bg-[#2C1810] hover:bg-[#3d2217] text-white"
-                        : "bg-stone-100 text-[#2C1810]/30 border border-stone-200 cursor-not-allowed"
+                        ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] hover:brightness-110 gold-glow"
+                        : "bg-[#2A1B12] text-[#FDFBF7]/30 border border-[#D4AF37]/20 cursor-not-allowed"
                     }`}
                   >
-                    🍳 Enviar Comanda a Cocina ✓
+                    🍳 Marchar Comanda a Cocina & KDS
                   </button>
                 </div>
               </div>
