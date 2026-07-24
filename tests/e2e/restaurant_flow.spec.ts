@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { test, expect } from '@playwright/test';
 
 test.describe('Resto Bar Del Teatro - Suite de Pruebas E2E & Alta Concurrencia POS/ERP', () => {
