@@ -14,6 +14,7 @@ import CartaDigital from "./components/CartaDigital";
 import TicketPreviewModal from "./components/TicketPreviewModal";
 import ManualPuglia from "./components/ManualPuglia";
 import { PublicDigitalMarquee } from "./components/PublicDigitalMarquee";
+import { PublicLandingPage } from "./components/PublicLandingPage";
 import WhatsAppOrderService from "./services/WhatsAppOrderService";
 import { Coffee, ArrowRight, Sparkles, BookOpen, Clock, Heart, Star, Phone, MapPin, X, CheckCircle, Info, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -536,8 +537,9 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-paper font-sans text-espresso selection:bg-caramel selection:text-white flex flex-col justify-between">
-        <LoginScreen
+      <div className="min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7]">
+        <PublicLandingPage
+          menuItems={menuItems}
           onLoginSuccess={(user) => {
             setCurrentUser(user);
             if (user.role === "barista") {
