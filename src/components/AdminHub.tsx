@@ -239,6 +239,9 @@ export default function AdminHub({
   const [dinersCount, setDinersCount] = useState<number>(2);
   const [selectedSplitItems, setSelectedSplitItems] = useState<Record<string, number>>({});
   const [selectedCtaCteClient, setSelectedCtaCteClient] = useState<string>("");
+  // Delivery logistics config states (Top level to respect React rules of hooks)
+  const [deliveryFeeConfig, setDeliveryFeeConfig] = useState<number>(() => parseFloat(localStorage.getItem("puglia_delivery_fee") || "1200"));
+  const [deliveryFreeMinConfig, setDeliveryFreeMinConfig] = useState<number>(() => parseFloat(localStorage.getItem("puglia_delivery_free_min") || "25000"));
 
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>("Enzo");
@@ -2554,12 +2557,9 @@ export default function AdminHub({
   };
 
   const renderDeliveryConfig = () => {
-    const [fee, setFee] = useState<number>(() => parseFloat(localStorage.getItem("puglia_delivery_fee") || "1200"));
-    const [freeMin, setFreeMin] = useState<number>(() => parseFloat(localStorage.getItem("puglia_delivery_free_min") || "25000"));
-
     const saveDeliverySettings = () => {
-      localStorage.setItem("puglia_delivery_fee", fee.toString());
-      localStorage.setItem("puglia_delivery_free_min", freeMin.toString());
+      localStorage.setItem("puglia_delivery_fee", deliveryFeeConfig.toString());
+      localStorage.setItem("puglia_delivery_free_min", deliveryFreeMinConfig.toString());
       onShowNotification("🛵 Configuración de Delivery guardada con éxito.", "success");
     };
 
@@ -2578,8 +2578,8 @@ export default function AdminHub({
             <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">Costo Base de Delivery ($)</label>
             <input
               type="number"
-              value={fee}
-              onChange={(e) => setFee(parseFloat(e.target.value) || 0)}
+              value={deliveryFeeConfig}
+              onChange={(e) => setDeliveryFeeConfig(parseFloat(e.target.value) || 0)}
               className="w-full p-3 border border-[#D4AF37]/30 rounded-xl text-lg font-mono font-bold bg-[#1C120C] text-[#FFDF00]"
             />
             <span className="text-[10px] text-[#FDFBF7]/60 block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
@@ -2589,8 +2589,8 @@ export default function AdminHub({
             <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">Envío Gratis a partir de ($)</label>
             <input
               type="number"
-              value={freeMin}
-              onChange={(e) => setFreeMin(parseFloat(e.target.value) || 0)}
+              value={deliveryFreeMinConfig}
+              onChange={(e) => setDeliveryFreeMinConfig(parseFloat(e.target.value) || 0)}
               className="w-full p-3 border border-[#D4AF37]/30 rounded-xl text-lg font-mono font-bold bg-[#1C120C] text-[#FFDF00]"
             />
             <span className="text-[10px] text-[#FDFBF7]/60 block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
