@@ -2941,7 +2941,7 @@ export default function AdminHub({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
             <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
-            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú Ejecutivo del Día (Plato Único)</h3>
+            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú del Día (Plato Único)</h3>
             <p className="text-xs text-[#FDFBF7]/80 italic mt-0.5 font-medium">
               Configure el plato estrella del día de Lunes a Domingo. Se sincroniza en vivo con la Portada Publicitaria y Menú Digital.
             </p>
@@ -3038,7 +3038,7 @@ export default function AdminHub({
                     const file = e.target.files?.[0];
                     if (file) {
                       setIsUploadingImage(true);
-                      onShowNotification("⏳ Subiendo imagen del Menú Ejecutivo a Supabase Storage...", "info");
+                      onShowNotification("⏳ Subiendo imagen del Menú del Día a Supabase Storage...", "info");
                       try {
                         const imgUrl = await StorageService.uploadProductImage(file);
                         updateCurrentDayMenu({ image: imgUrl });
@@ -3193,7 +3193,7 @@ export default function AdminHub({
         <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#D4AF37]/30 mb-6 scrollbar-thin scrollbar-thumb-[#D4AF37]/40">
           {[
             { id: "todos", label: "🍽️ Todos" },
-            { id: "menu_diario", label: "⭐ Menú Diario Ejecutivo" },
+            { id: "menu_diario", label: "⭐ Menú del Día" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },

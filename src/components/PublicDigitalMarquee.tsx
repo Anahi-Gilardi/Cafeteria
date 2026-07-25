@@ -217,7 +217,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             <h2 className="font-serif text-2xl font-bold text-[#1C120C]">Platos Más Pedidos</h2>
           </div>
           <span className="text-xs font-black text-[#B8860B] bg-[#FFF8E7] border border-[#F3E5C8] px-3.5 py-1.5 rounded-full font-mono shadow-xs">
-            ⭐ Menú Ejecutivo $8.000
+            ⭐ Menú del Día ${todayMenu.price.toLocaleString("es-AR")}
           </span>
         </div>
 
