@@ -3135,11 +3135,11 @@ export default function AdminHub({
           <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Carta & Recetas</h2>
         </div>
 
-        <div className="flex flex-wrap border-b border-[#D4AF37]/20 gap-1.5 mb-6">
+        <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#D4AF37]/30 mb-6 scrollbar-thin scrollbar-thumb-[#D4AF37]/40">
           {[
-            { id: "todos", label: "Todos" },
+            { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú Diario Ejecutivo" },
-            { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
+            { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
             { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
@@ -3147,13 +3147,15 @@ export default function AdminHub({
             { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
             { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
             { id: "postres", label: "🍰 Postres" },
-            { id: "delivery_config", label: "🛵 Configuración Delivery & Tarifas" }
+            { id: "delivery_config", label: "🛵 Config. Delivery & Tarifas" }
           ].map((cat) => (
             <button 
               key={cat.id}
               onClick={() => setSelectedPosCategory(cat.id)}
-              className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-                selectedPosCategory === cat.id ? "border-[#D4AF37] text-[#FFDF00] font-black bg-[#2A1B12] rounded-t-lg" : "border-transparent text-[#FDFBF7]/60 hover:text-[#FDFBF7]"
+              className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl whitespace-nowrap transition-all cursor-pointer border ${
+                selectedPosCategory === cat.id 
+                  ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] shadow-lg gold-glow" 
+                  : "bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/25 hover:border-[#D4AF37]/60 hover:text-white"
               }`}
             >
               {cat.label}
@@ -3180,41 +3182,41 @@ export default function AdminHub({
             </div>
 
             {isAddingProduct && (
-              <form onSubmit={handleAddNewProduct} className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3.5 text-xs font-bold text-[#FDFBF7]">
-                <h4 className="font-serif text-sm font-bold text-[#D4AF37]">Agregar Nuevo Producto</h4>
+              <form onSubmit={handleAddNewProduct} className="p-5 bg-[#2A1B12] border-2 border-[#D4AF37]/50 rounded-3xl space-y-4 text-xs font-bold text-[#FDFBF7] shadow-2xl gold-glow">
+                <h4 className="font-serif text-base font-bold text-[#FFDF00] border-b border-[#D4AF37]/20 pb-2">➕ Agregar Nuevo Producto</h4>
                 
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Producto *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Producto *</label>
                   <input 
                     type="text" 
                     value={newProdName} 
                     onChange={(e) => setNewProdName(e.target.value)} 
                     placeholder="Ej: Bife de Chorizo a las Brasas" 
-                    className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none"
+                    className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none text-xs font-bold shadow-inner focus:border-[#FFDF00]"
                     required 
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Sugerido ($) *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Sugerido ($) *</label>
                     <input 
                       type="number" 
                       value={newProdPrice} 
                       onChange={(e) => setNewProdPrice(e.target.value)} 
                       placeholder="Ej: 8000" 
-                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-mono"
+                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FFDF00] outline-none font-mono text-sm font-bold shadow-inner focus:border-[#FFDF00]"
                       required 
                     />
                   </div>
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Categoría</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Categoría</label>
                     <select 
                       value={newProdCategory} 
                       onChange={(e) => setNewProdCategory(e.target.value)} 
-                      className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer"
+                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer text-xs font-bold"
                     >
-                      <option value="desayunos_meriendas">☕ Desayunos, Almuerzos & Meriendas</option>
+                      <option value="desayunos_meriendas">☕ Desayunos & Meriendas</option>
                       <option value="pizzas_focaccias">🍕 Pizzas & Focaccias</option>
                       <option value="minutas_carnes">🥩 Minutas & Carnes</option>
                       <option value="pastas_caseras">🍝 Pastas Caseras</option>
@@ -3228,16 +3230,16 @@ export default function AdminHub({
                 </div>
 
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
                   <input 
                     type="text" 
                     value={newProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : newProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : newProdImage} 
                     onChange={(e) => setNewProdImage(e.target.value)} 
                     placeholder="Pegar URL pública de imagen..." 
-                    className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none text-[10px]" 
+                    className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none text-[11px] font-medium" 
                   />
-                  <div className="mt-1.5 space-y-1">
-                    <label className="text-[8px] uppercase tracking-wider block text-[#D4AF37]">📷 Cargar Foto desde Celular / Cámara / PC</label>
+                  <div className="mt-2 space-y-1 bg-[#1C120C] p-3 rounded-2xl border border-[#D4AF37]/20">
+                    <label className="text-[9px] font-black uppercase tracking-wider block text-[#FFDF00]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                     <input 
                       type="file" 
                       accept="image/*"
@@ -3257,10 +3259,10 @@ export default function AdminHub({
                           }
                         }
                       }}
-                      className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[9px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
+                      className="w-full text-[10px] text-[#D4AF37] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
                     />
                     {isUploadingImage && (
-                      <span className="text-[9px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                      <span className="text-[10px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
                     )}
                     {newProdImage && (
                       <button
@@ -3276,35 +3278,35 @@ export default function AdminHub({
 
                 {newProdImage && (
                   <div className="mt-1 text-center">
-                    <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Foto</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Foto</span>
                     <img src={newProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border-2 border-[#D4AF37]/40 mx-auto object-cover shadow-md gold-glow" />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción Gourmet</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción Gourmet</label>
                   <textarea 
                     value={newProdDescription} 
                     onChange={(e) => setNewProdDescription(e.target.value)} 
                     placeholder="Descripción de la especialidad..." 
-                    rows={2} 
-                    className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none font-normal resize-none" 
+                    rows={3} 
+                    className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-medium resize-none text-xs leading-relaxed" 
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-1.5">
+                <div className="flex justify-end gap-3 pt-2">
                   <button 
                     type="button" 
                     onClick={() => setIsAddingProduct(false)} 
-                    className="px-3.5 py-1.5 border border-[#D4AF37]/40 text-[#FDFBF7]/70 rounded-xl hover:bg-stone-800 cursor-pointer"
+                    className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7] rounded-xl hover:bg-stone-800 cursor-pointer font-bold"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit" 
-                    className="px-4 py-1.5 bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-extrabold rounded-xl shadow-md cursor-pointer uppercase tracking-wider"
+                    className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black rounded-xl shadow-md cursor-pointer uppercase tracking-wider gold-glow"
                   >
-                    Crear Producto
+                    ➕ Crear Producto
                   </button>
                 </div>
               </form>
@@ -3323,23 +3325,33 @@ export default function AdminHub({
                       onClick={() => {
                         setSelectedMenuProduct(item);
                         setSimulatedPrice(item.price);
-                        setIsEditingProduct(false);
+                        handleStartEditingProduct(item);
                       }}
                       className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border transition-all ${
                         active 
-                          ? "bg-[#2A1B12] border-[#D4AF37] text-[#FDFBF7] shadow-lg ring-1 ring-[#D4AF37]/50"
-                          : "bg-[#1C120C]/80 hover:bg-[#1C120C] border-[#D4AF37]/15 text-[#FDFBF7]/80 hover:text-[#FDFBF7]"
+                          ? "bg-[#2A1B12] border-2 border-[#FFDF00] text-[#FDFBF7] shadow-xl gold-glow"
+                          : "bg-[#1C120C] hover:bg-[#2A1B12] border-[#D4AF37]/25 text-[#FDFBF7]"
                       }`}
                     >
-                      <div className="space-y-1 pr-2 flex-1">
-                        <strong className={`text-xs font-bold block ${active ? "text-[#FFDF00]" : "text-[#FDFBF7]"}`}>{item.name}</strong>
-                        <span className="text-[9px] text-[#FDFBF7]/50 block line-clamp-1">
-                          {item.description ? item.description : "Sin descripción."}
-                        </span>
+                      <div className="flex items-center gap-3 pr-2 flex-1 min-w-0">
+                        {item.image && (
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="h-12 w-12 rounded-xl object-cover border border-[#D4AF37]/30 shrink-0 shadow-sm"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <strong className={`text-xs font-bold block truncate ${active ? "text-[#FFDF00]" : "text-[#FDFBF7]"}`}>{item.name}</strong>
+                          <span className="text-[10px] text-[#FDFBF7]/80 block line-clamp-1 font-medium">
+                            {item.description ? item.description : "Sin descripción."}
+                          </span>
+                        </div>
                       </div>
+
                       <div className="text-right shrink-0 ml-2 font-mono flex items-center gap-2">
                         <div>
-                          <span className="text-xs font-bold block text-[#D4AF37]">${item.price.toLocaleString("es-AR")}</span>
+                          <span className="text-sm font-black block text-[#FFDF00]">${item.price.toLocaleString("es-AR")}</span>
                           <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
                             itemMargin >= 60 ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30" : "bg-amber-950/80 text-amber-300 border border-amber-500/30"
                           }`}>
@@ -3354,10 +3366,10 @@ export default function AdminHub({
                             setSimulatedPrice(item.price);
                             handleStartEditingProduct(item);
                           }}
-                          className="px-2 py-1.5 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/40 text-[#FFDF00] text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-sm"
-                          title="Editar Nombre, Precio, Categoría o Foto"
+                          className="px-2.5 py-1.5 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37] text-[#FFDF00] text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-sm gold-glow"
+                          title="Editar Ficha de Producto"
                         >
-                          ✏️
+                          ✏️ Editar
                         </button>
                       </div>
                     </div>
@@ -3376,35 +3388,35 @@ export default function AdminHub({
                   </div>
                   
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Producto *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Nombre del Producto *</label>
                     <input 
                       type="text" 
                       value={editProdName} 
                       onChange={(e) => setEditProdName(e.target.value)} 
-                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-xs"
+                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none text-xs font-bold shadow-inner"
                       required 
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Comercial ($) *</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Precio Comercial ($) *</label>
                       <input 
                         type="number" 
                         value={editProdPrice} 
                         onChange={(e) => setEditProdPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs"
+                        className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FFDF00] focus:border-[#FFDF00] outline-none font-mono text-sm font-bold shadow-inner"
                         required 
                       />
                     </div>
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Categoría</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Categoría</label>
                       <select 
                         value={editProdCategory} 
                         onChange={(e) => setEditProdCategory(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer text-xs"
+                        className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer text-xs font-bold"
                       >
-                        <option value="desayunos_meriendas">☕ Desayunos, Almuerzos & Meriendas</option>
+                        <option value="desayunos_meriendas">☕ Desayunos & Meriendas</option>
                         <option value="pizzas_focaccias">🍕 Pizzas & Focaccias</option>
                         <option value="minutas_carnes">🥩 Minutas & Carnes</option>
                         <option value="pastas_caseras">🍝 Pastas Caseras</option>
@@ -3419,45 +3431,45 @@ export default function AdminHub({
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Takeaway ($)</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Precio Takeaway ($)</label>
                       <input 
                         type="number" 
                         value={editProdTakeawayPrice} 
                         onChange={(e) => setEditProdTakeawayPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs"
+                        className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs font-bold"
                       />
                     </div>
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Delivery ($)</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Precio Delivery ($)</label>
                       <input 
                         type="number" 
                         value={editProdDeliveryPrice} 
                         onChange={(e) => setEditProdDeliveryPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs"
+                        className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs font-bold"
                       />
                     </div>
                     <div>
-                      <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Stock Actual</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Stock Actual</label>
                       <input 
                         type="number" 
                         value={editProdStock} 
                         onChange={(e) => setEditProdStock(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs" 
+                        className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FFDF00] outline-none font-mono text-xs font-bold" 
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
                       type="text" 
                       value={editProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : editProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : editProdImage} 
                       onChange={(e) => setEditProdImage(e.target.value)} 
                       placeholder="Pegar URL pública de imagen..." 
-                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-[10px]" 
+                      className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-[11px] font-medium" 
                     />
-                    <div className="mt-1.5 space-y-1">
-                      <label className="text-[8px] uppercase tracking-wider block text-[#D4AF37]">📷 Cargar Foto desde Celular / Cámara / PC</label>
+                    <div className="mt-2 space-y-1 bg-[#1C120C] p-3 rounded-2xl border border-[#D4AF37]/20">
+                      <label className="text-[9px] font-black uppercase tracking-wider block text-[#FFDF00]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                       <input 
                         type="file" 
                         accept="image/*"
@@ -3477,10 +3489,10 @@ export default function AdminHub({
                             }
                           }
                         }}
-                        className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[9px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
+                        className="w-full text-[10px] text-[#D4AF37] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
                       />
                       {isUploadingImage && (
-                        <span className="text-[9px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                        <span className="text-[10px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
                       )}
                       {editProdImage && (
                         <button
@@ -3495,13 +3507,13 @@ export default function AdminHub({
                   </div>
 
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Descripción Gourmet</label>
                     <textarea 
                       value={editProdDescription} 
                       onChange={(e) => setEditProdDescription(e.target.value)} 
                       placeholder="Descripción de la especialidad..." 
                       rows={3} 
-                      className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-normal resize-none text-xs" 
+                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-medium resize-none text-xs leading-relaxed" 
                     />
                   </div>
 
@@ -7266,19 +7278,19 @@ export default function AdminHub({
                 <button
                   key={link.id}
                   onClick={() => setActiveSubTab(link.id as any)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-md gold-glow"
-                      : "text-[#FDFBF7]/70 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg gold-glow scale-[1.02]"
+                      : "text-[#FDFBF7] hover:text-white hover:bg-[#2A1B12] hover:border hover:border-[#D4AF37]/30"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className="h-4.5 w-4.5 text-[#D4AF37]" />
                     {link.label}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
                     <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-red-600 text-white"
+                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-red-600 text-white shadow-sm"
                     }`}>
                       {link.badge}
                     </span>
@@ -7289,9 +7301,9 @@ export default function AdminHub({
 
             {/* Separador Visual Sutil */}
             {(currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "barista") && (
-              <div className="pt-3 pb-1 border-t border-[#D4AF37]/20 my-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] px-2 block">
-                  Administración & Gestión
+              <div className="pt-3 pb-1 border-t border-[#D4AF37]/30 my-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#FFDF00] px-2 block">
+                  ADMINISTRACIÓN & GESTIÓN
                 </span>
               </div>
             )}
@@ -7323,19 +7335,19 @@ export default function AdminHub({
                 <button
                   key={link.id}
                   onClick={() => setActiveSubTab(link.id as any)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-md gold-glow"
-                      : "text-[#FDFBF7]/70 hover:text-white hover:bg-white/5"
+                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg gold-glow scale-[1.02]"
+                      : "text-[#FDFBF7] hover:text-white hover:bg-[#2A1B12] hover:border hover:border-[#D4AF37]/30"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className="h-4.5 w-4.5 text-[#D4AF37]" />
                     {link.label}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
                     <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-amber-500 text-[#1C120C]"
+                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-amber-500 text-[#1C120C] shadow-sm"
                     }`}>
                       {link.badge}
                     </span>
