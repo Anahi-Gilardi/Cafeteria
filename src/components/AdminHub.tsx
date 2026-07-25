@@ -1449,18 +1449,20 @@ export default function AdminHub({
     setIsAutoOrderModalOpen(true);
   };
 
-  // Adjust raw materials stock
+  // Adjust raw materials stock with full Supabase & LocalStorage persistence
   const handleAdjustInsumo = (id: string, amount: number) => {
-    setInsumos(prev =>
-      prev.map(ins => {
+    setInsumos(prev => {
+      const updated = prev.map(ins => {
         if (ins.id === id) {
           const newQty = parseFloat((ins.quantity + amount).toFixed(2));
           const finalQty = Math.max(0, newQty);
           if (finalQty < ins.minLimit) {
             onShowNotification(`⚠️ Alerta: El insumo '${ins.name}' quedó por debajo de su stock de seguridad.`, "warning");
+          } else {
+            onShowNotification(`✅ Stock de '${ins.name}' actualizado a ${finalQty} ${ins.unit}.`, "success");
           }
 
-          // Async update to Supabase
+          // 1. Sync to Supabase insumos table
           supabase.from("insumos").upsert({
             id: ins.id,
             name: ins.name,
@@ -1470,14 +1472,30 @@ export default function AdminHub({
             provider: ins.provider || null,
             expiration_date: ins.expirationDate || null
           }).then(({ error }) => {
-            if (error) console.error("Error al actualizar insumo en Supabase:", error);
+            if (error) console.warn("Supabase insumos update warning:", error.message);
+          });
+
+          // 2. Sync to Supabase supplies table
+          supabase.from("supplies").upsert({
+            id: ins.id,
+            name: ins.name,
+            current_stock: finalQty,
+            unit: ins.unit,
+            min_stock: ins.minLimit,
+            provider: ins.provider || null,
+            expiration_date: ins.expirationDate || null
+          }).then(({ error }) => {
+            if (error) console.warn("Supabase supplies update warning:", error.message);
           });
 
           return { ...ins, quantity: finalQty };
         }
         return ins;
-      })
-    );
+      });
+
+      localStorage.setItem("puglia_insumos", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handleCreateNewInsumo = async (e: FormEvent) => {
@@ -1501,11 +1519,15 @@ export default function AdminHub({
       expirationDate: newInsumoExpDate || undefined
     };
 
-    setInsumos(prev => [...prev, createdInsumo]);
+    setInsumos(prev => {
+      const newList = [...prev, createdInsumo];
+      localStorage.setItem("puglia_insumos", JSON.stringify(newList));
+      return newList;
+    });
 
-    // Upsert to Supabase
+    // Save to Supabase insumos & supplies tables
     try {
-      const { error } = await supabase.from("insumos").upsert({
+      await supabase.from("insumos").upsert({
         id: createdInsumo.id,
         name: createdInsumo.name,
         quantity: createdInsumo.quantity,
@@ -1514,13 +1536,22 @@ export default function AdminHub({
         provider: createdInsumo.provider,
         expiration_date: createdInsumo.expirationDate || null
       });
-      if (error) console.error("Error al guardar nuevo insumo en Supabase:", error);
+
+      await supabase.from("supplies").upsert({
+        id: createdInsumo.id,
+        name: createdInsumo.name,
+        current_stock: createdInsumo.quantity,
+        unit: createdInsumo.unit,
+        min_stock: createdInsumo.minLimit,
+        provider: createdInsumo.provider,
+        expiration_date: createdInsumo.expirationDate || null
+      });
     } catch (e) {
-      console.warn("Excepción al guardar insumo:", e);
+      console.warn("Excepción al guardar nuevo insumo en Supabase:", e);
     }
 
     setIsNewInsumoModalOpen(false);
-    onShowNotification(`✅ Insumo '${newInsumoName}' registrado e integrado a Supabase.`, "success");
+    onShowNotification(`✅ Insumo '${newInsumoName}' registrado e integrado a Supabase con éxito.`, "success");
   };
 
   const handleAddIngredientToRecipe = async (productId: string, ingredientId: string, amount: number) => {
@@ -7441,14 +7472,14 @@ export default function AdminHub({
                   {Object.keys(draftOrders).map((prov) => {
                     const order = draftOrders[prov];
                     const whatsappUrl = `https://wa.me/${order.phone.replace(/[+\s-]/g, "")}?text=${encodeURIComponent(order.message)}`;
-                    const mailtoUrl = `mailto:${order.email}?subject=Pedido%20Reposicion%20-%20Cafe%20Puglia&body=${encodeURIComponent(order.message)}`;
+                    const mailtoUrl = `mailto:${order.email}?subject=Pedido%20Reposicion%20-%20Resto%20Bar%20Del%20Teatro&body=${encodeURIComponent(order.message)}`;
 
                     return (
-                      <div key={prov} className="border border-[#2C1810]/15 rounded-2xl p-4 bg-white space-y-4">
-                        <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-2">
+                      <div key={prov} className="border border-[#D4AF37]/30 rounded-2xl p-4 bg-[#2A1B12] space-y-4 shadow-lg">
+                        <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-2">
                           <div>
-                            <span className="font-serif text-sm font-black text-[#2C1810]">{prov}</span>
-                            <span className="text-[10px] text-[#2C1810]/50 block font-mono">Tel: {order.phone} • Email: {order.email}</span>
+                            <span className="font-serif text-sm font-black text-[#FFDF00]">{prov}</span>
+                            <span className="text-[10px] text-[#FDFBF7]/80 block font-mono">Tel: {order.phone} • Email: {order.email}</span>
                           </div>
                           <div className="flex gap-2">
                             <a
@@ -7458,7 +7489,7 @@ export default function AdminHub({
                               onClick={() => {
                                 onShowNotification(`📱 Redirigiendo a WhatsApp para ${prov}`, "info");
                               }}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center"
+                              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-md"
                             >
                               📱 WhatsApp
                             </a>
@@ -7467,7 +7498,7 @@ export default function AdminHub({
                               onClick={() => {
                                 onShowNotification(`📧 Abriendo cliente de correo para ${prov}`, "info");
                               }}
-                              className="px-3 py-1.5 bg-caramel hover:bg-[#B45309] text-white rounded-lg font-bold text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center"
+                              className="px-3.5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-md gold-glow"
                             >
                               📧 Email
                             </a>
@@ -7475,12 +7506,12 @@ export default function AdminHub({
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Borrador del Pedido</label>
+                          <label className="text-[9px] font-black text-[#D4AF37] uppercase tracking-wider block">Borrador del Pedido</label>
                           <textarea
                             readOnly
                             value={order.message}
                             rows={6}
-                            className="w-full text-xs font-mono p-3 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-xl resize-none outline-none text-stone-700 font-medium"
+                            className="w-full text-xs font-mono p-3 bg-[#1C120C] border border-[#D4AF37]/40 text-[#FFDF00] rounded-xl resize-none outline-none font-bold leading-relaxed shadow-inner"
                           />
                         </div>
                       </div>
@@ -7490,14 +7521,129 @@ export default function AdminHub({
               )}
             </div>
 
-            <div className="border-t border-[#2C1810]/10 pt-4 mt-4 flex justify-end">
+            <div className="border-t border-[#D4AF37]/20 pt-4 mt-4 flex justify-end">
               <button
                 onClick={() => setIsAutoOrderModalOpen(false)}
-                className="px-5 py-2 bg-espresso hover:bg-[#3d2217] text-white text-xs font-bold rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider gold-glow hover:brightness-110"
               >
-                Entendido
+                ENTENDIDO
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ➕ Crear Nuevo Insumo / Materia Prima */}
+      {isNewInsumoModalOpen && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/50 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#FDFBF7] space-y-4 gold-glow">
+            <button 
+              type="button"
+              onClick={() => setIsNewInsumoModalOpen(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="border-b border-[#D4AF37]/20 pb-2">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Gestión de Inventario</span>
+              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">➕ Crear Nuevo Insumo / Materia Prima</h4>
+            </div>
+
+            <form onSubmit={handleCreateNewInsumo} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Nombre de la Materia Prima *</label>
+                <input
+                  type="text"
+                  required
+                  value={newInsumoName}
+                  onChange={(e) => setNewInsumoName(e.target.value)}
+                  placeholder="Ej. Harina 0000 Masa Madre, Queso Muzzarella..."
+                  className="w-full p-3 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none focus:border-[#FFDF00]"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Cantidad Inicial *</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    value={newInsumoQuantity}
+                    onChange={(e) => setNewInsumoQuantity(e.target.value)}
+                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-mono font-bold text-[#FFDF00] outline-none text-center"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Unidad *</label>
+                  <select
+                    value={newInsumoUnit}
+                    onChange={(e) => setNewInsumoUnit(e.target.value)}
+                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none cursor-pointer"
+                  >
+                    <option value="kg">kg (Kilogramos)</option>
+                    <option value="L">L (Litros)</option>
+                    <option value="g">g (Gramos)</option>
+                    <option value="ml">ml (Mililitros)</option>
+                    <option value="un">un (Unidades)</option>
+                    <option value="barras">barras</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Stock Mínimo *</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    value={newInsumoMinLimit}
+                    onChange={(e) => setNewInsumoMinLimit(e.target.value)}
+                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-mono font-bold text-[#FDFBF7] outline-none text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Proveedor Designado</label>
+                  <input
+                    type="text"
+                    value={newInsumoProvider}
+                    onChange={(e) => setNewInsumoProvider(e.target.value)}
+                    placeholder="Ej. Distribuidora Sur, Lácteos del Campo"
+                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Fecha de Vencimiento</label>
+                  <input
+                    type="date"
+                    value={newInsumoExpDate}
+                    onChange={(e) => setNewInsumoExpDate(e.target.value)}
+                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-mono text-[#FDFBF7] outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-[#D4AF37]/20 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsNewInsumoModalOpen(false)}
+                  className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7] rounded-xl hover:bg-stone-800 cursor-pointer font-bold text-xs"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-xl cursor-pointer gold-glow hover:brightness-110"
+                >
+                  ➕ REGISTRAR EN SUPABASE
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
