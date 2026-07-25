@@ -25,6 +25,7 @@ import { ReceiptPDFService } from "../services/ReceiptPDFService";
 import { OrderTypeSelector, OrderServiceType, TakeawayDetails, DeliveryDetails } from "./OrderTypeSelector";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { SupabaseSyncService } from "../services/SupabaseSyncService";
+import { StorageService } from "../services/StorageService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -1060,12 +1061,15 @@ export default function AdminHub({
 
   // New Insumo Modal State
   const [isNewInsumoModalOpen, setIsNewInsumoModalOpen] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newInsumoName, setNewInsumoName] = useState("");
   const [newInsumoUnit, setNewInsumoUnit] = useState("kg");
   const [newInsumoQuantity, setNewInsumoQuantity] = useState("10");
   const [newInsumoMinLimit, setNewInsumoMinLimit] = useState("5");
   const [newInsumoProvider, setNewInsumoProvider] = useState("Distribuidora Sur");
   const [newInsumoExpDate, setNewInsumoExpDate] = useState("2026-12-31");
+  const [recipeIngredientId, setRecipeIngredientId] = useState<string>("");
+  const [recipeIngredientQty, setRecipeIngredientQty] = useState<string>("0.1");
   const [historySearchTable, setHistorySearchTable] = useState("");
   const [historyFilterWaiter, setHistoryFilterWaiter] = useState("todos");
   const [historyFilterPayment, setHistoryFilterPayment] = useState("todos");
@@ -1517,6 +1521,75 @@ export default function AdminHub({
 
     setIsNewInsumoModalOpen(false);
     onShowNotification(`✅ Insumo '${newInsumoName}' registrado e integrado a Supabase.`, "success");
+  };
+
+  const handleAddIngredientToRecipe = async (productId: string, ingredientId: string, amount: number) => {
+    if (!ingredientId || amount <= 0) {
+      onShowNotification("⚠️ Seleccione un insumo y una cantidad válida.", "warning");
+      return;
+    }
+    const updatedMenu = menuItems.map(item => {
+      if (item.id === productId) {
+        const currentRecipe = item.recipe || [];
+        const existingIdx = currentRecipe.findIndex(r => r.ingredientId === ingredientId);
+        let newRecipe = [...currentRecipe];
+        if (existingIdx >= 0) {
+          newRecipe[existingIdx] = { ...newRecipe[existingIdx], amount: Number((newRecipe[existingIdx].amount + amount).toFixed(3)) };
+        } else {
+          newRecipe.push({ ingredientId, amount });
+        }
+        return { ...item, recipe: newRecipe };
+      }
+      return item;
+    });
+
+    onUpdateMenu(updatedMenu);
+    const updatedProd = updatedMenu.find(i => i.id === productId);
+    if (updatedProd) {
+      setSelectedMenuProduct(updatedProd);
+      try {
+        const { error } = await supabase.from("menu_items").upsert({
+          id: updatedProd.id,
+          name: updatedProd.name,
+          price: updatedProd.price,
+          category: updatedProd.category,
+          recipe: updatedProd.recipe
+        });
+        if (error) console.error("Error al actualizar receta en Supabase:", error);
+      } catch (e) {
+        console.warn("Excepción al actualizar receta:", e);
+      }
+    }
+    onShowNotification("✅ Insumo añadido a la receta técnica del producto.", "success");
+  };
+
+  const handleRemoveIngredientFromRecipe = async (productId: string, ingredientId: string) => {
+    const updatedMenu = menuItems.map(item => {
+      if (item.id === productId) {
+        const currentRecipe = item.recipe || [];
+        const newRecipe = currentRecipe.filter(r => r.ingredientId !== ingredientId);
+        return { ...item, recipe: newRecipe };
+      }
+      return item;
+    });
+
+    onUpdateMenu(updatedMenu);
+    const updatedProd = updatedMenu.find(i => i.id === productId);
+    if (updatedProd) {
+      setSelectedMenuProduct(updatedProd);
+      try {
+        await supabase.from("menu_items").upsert({
+          id: updatedProd.id,
+          name: updatedProd.name,
+          price: updatedProd.price,
+          category: updatedProd.category,
+          recipe: updatedProd.recipe
+        });
+      } catch (e) {
+        console.warn("Excepción al quitar insumo de la receta:", e);
+      }
+    }
+    onShowNotification("🗑️ Insumo removido de la receta.", "info");
   };
 
   // Save changes to menu item pricing & stock
@@ -3155,39 +3228,47 @@ export default function AdminHub({
                 </div>
 
                 <div>
-                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir Local) *</label>
+                  <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
                   <input 
                     type="text" 
-                    value={newProdImage.startsWith("data:image") ? "Foto subida localmente" : newProdImage} 
+                    value={newProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : newProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : newProdImage} 
                     onChange={(e) => setNewProdImage(e.target.value)} 
-                    placeholder="Url de Unsplash..." 
+                    placeholder="Pegar URL pública de imagen..." 
                     className="w-full p-2 border border-[#D4AF37]/30 rounded-lg bg-[#1C120C] text-[#FDFBF7] outline-none text-[10px]" 
-                    disabled={newProdImage.startsWith("data:image")}
                   />
-                  <div className="mt-1.5 flex items-center justify-between">
+                  <div className="mt-1.5 space-y-1">
+                    <label className="text-[8px] uppercase tracking-wider block text-[#D4AF37]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                     <input 
                       type="file" 
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            setNewProdImage(reader.result as string);
-                            onShowNotification("🖼️ Imagen de producto cargada con éxito.", "success");
-                          };
-                          reader.readAsDataURL(file);
+                          setIsUploadingImage(true);
+                          onShowNotification("⏳ Subiendo imagen a Supabase Storage...", "info");
+                          try {
+                            const imageUrl = await StorageService.uploadProductImage(file);
+                            setNewProdImage(imageUrl);
+                            onShowNotification("📸 Imagen guardada en Supabase Storage con éxito.", "success");
+                          } catch (err) {
+                            console.error("Error al subir foto:", err);
+                          } finally {
+                            setIsUploadingImage(false);
+                          }
                         }
                       }}
-                      className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
+                      className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[9px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
                     />
-                    {newProdImage.startsWith("data:image") && (
+                    {isUploadingImage && (
+                      <span className="text-[9px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                    )}
+                    {newProdImage && (
                       <button
                         type="button"
                         onClick={() => setNewProdImage("")}
-                        className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer shrink-0 ml-2"
+                        className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer shrink-0 mt-1 block"
                       >
-                        Eliminar
+                        Quitar foto
                       </button>
                     )}
                   </div>
@@ -3195,8 +3276,8 @@ export default function AdminHub({
 
                 {newProdImage && (
                   <div className="mt-1 text-center">
-                    <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Imagen</span>
-                    <img src={newProdImage} alt="Vista previa" className="h-24 w-auto rounded-xl border border-[#D4AF37]/30 mx-auto object-cover shadow-sm" />
+                    <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Foto</span>
+                    <img src={newProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border-2 border-[#D4AF37]/40 mx-auto object-cover shadow-md gold-glow" />
                   </div>
                 )}
 
@@ -3367,38 +3448,47 @@ export default function AdminHub({
                   </div>
 
                   <div>
-                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir Local) *</label>
+                    <label className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
                       type="text" 
-                      value={editProdImage.startsWith("data:image") ? "Foto subida localmente" : editProdImage} 
+                      value={editProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : editProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : editProdImage} 
                       onChange={(e) => setEditProdImage(e.target.value)} 
-                      placeholder="Url de Unsplash..." 
+                      placeholder="Pegar URL pública de imagen..." 
                       className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-[10px]" 
-                      disabled={editProdImage.startsWith("data:image")}
                     />
-                    <div className="mt-1 flex items-center justify-between">
+                    <div className="mt-1.5 space-y-1">
+                      <label className="text-[8px] uppercase tracking-wider block text-[#D4AF37]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                       <input 
                         type="file" 
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setEditProdImage(reader.result as string);
-                            };
-                            reader.readAsDataURL(file);
+                            setIsUploadingImage(true);
+                            onShowNotification("⏳ Subiendo foto a Supabase Storage...", "info");
+                            try {
+                              const imageUrl = await StorageService.uploadProductImage(file);
+                              setEditProdImage(imageUrl);
+                              onShowNotification("📸 Foto guardada en Supabase Storage con éxito.", "success");
+                            } catch (err) {
+                              console.error("Error al subir foto:", err);
+                            } finally {
+                              setIsUploadingImage(false);
+                            }
                           }
                         }}
-                        className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[9px] file:font-semibold file:bg-[#2A1B12] file:text-[#D4AF37] hover:file:bg-[#3D281A] cursor-pointer" 
+                        className="w-full text-[9px] text-[#D4AF37] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[9px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
                       />
-                      {editProdImage.startsWith("data:image") && (
+                      {isUploadingImage && (
+                        <span className="text-[9px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                      )}
+                      {editProdImage && (
                         <button
                           type="button"
                           onClick={() => setEditProdImage("")}
-                          className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer"
+                          className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer mt-1 block"
                         >
-                          Eliminar
+                          Quitar foto
                         </button>
                       )}
                     </div>
@@ -3417,8 +3507,8 @@ export default function AdminHub({
 
                   {editProdImage && (
                     <div className="mt-2 text-center">
-                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Imagen</span>
-                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#D4AF37]/30 mx-auto object-cover shadow-sm" />
+                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Foto</span>
+                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border-2 border-[#D4AF37]/40 mx-auto object-cover shadow-md gold-glow" />
                     </div>
                   )}
 
@@ -3481,7 +3571,10 @@ export default function AdminHub({
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-[#FFDF00] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-[10px] font-black text-[#FFDF00] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
+                    </div>
+
                     <div className="border border-[#D4AF37]/20 rounded-2xl overflow-hidden text-xs bg-[#2A1B12]">
                       <table className="w-full text-left">
                         <thead>
@@ -3490,30 +3583,88 @@ export default function AdminHub({
                             <th className="p-3 text-center">Cantidad Receta</th>
                             <th className="p-3 text-center">Costo Unitario</th>
                             <th className="p-3 text-right">Inversión</th>
+                            <th className="p-3 text-center w-12">Acción</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#D4AF37]/15">
                           {currentItem.recipe && currentItem.recipe.length > 0 ? (
                             currentItem.recipe.map((r, idx) => {
                               const ins = insumos.find(i => i.id === r.ingredientId);
-                              const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || 0;
+                              const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || (ins ? getInsumoUnitCost(ins.name) : 0);
                               const totalCost = r.amount * unitCost;
                               return (
                                 <tr key={idx} className="hover:bg-[#1C120C]/60 transition-colors">
                                   <td className="p-3 font-bold text-[#FDFBF7]">{ins?.name || r.ingredientId}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#FDFBF7]">{r.amount} {ins?.unit}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#D4AF37]">${unitCost.toLocaleString("es-AR")} / {ins?.unit}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#FDFBF7]">{r.amount} {ins?.unit || "kg"}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#D4AF37]">${unitCost.toLocaleString("es-AR")} / {ins?.unit || "kg"}</td>
                                   <td className="p-3 text-right font-mono font-bold text-[#FFDF00]">${totalCost.toFixed(0)}</td>
+                                  <td className="p-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveIngredientFromRecipe(currentItem.id, r.ingredientId)}
+                                      className="p-1 text-red-400 hover:text-red-200 transition-colors bg-transparent border-none cursor-pointer"
+                                      title="Remover insumo de la receta"
+                                    >
+                                      ❌
+                                    </button>
+                                  </td>
                                 </tr>
                               );
                             })
                           ) : (
                             <tr>
-                              <td colSpan={4} className="p-4 text-center text-xs text-[#D4AF37] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
+                              <td colSpan={5} className="p-4 text-center text-xs text-[#D4AF37] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
                             </tr>
                           )}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Quick Add Ingredient to Recipe Bar */}
+                    <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 rounded-2xl flex flex-wrap items-center gap-3">
+                      <div className="flex-1 min-w-[160px]">
+                        <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Añadir Insumo Registrado a Receta</label>
+                        <select
+                          value={recipeIngredientId}
+                          onChange={(e) => setRecipeIngredientId(e.target.value)}
+                          className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] font-bold cursor-pointer"
+                        >
+                          <option value="">-- Seleccionar Insumo --</option>
+                          {insumos.map(ins => (
+                            <option key={ins.id} value={ins.id}>{ins.name} ({ins.unit})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="w-28">
+                        <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Cantidad Receta</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={recipeIngredientQty}
+                          onChange={(e) => setRecipeIngredientQty(e.target.value)}
+                          className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FFDF00] font-mono font-bold"
+                        />
+                      </div>
+
+                      <div className="shrink-0 self-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const qty = parseFloat(recipeIngredientQty);
+                            if (recipeIngredientId && qty > 0) {
+                              handleAddIngredientToRecipe(currentItem.id, recipeIngredientId, qty);
+                              setRecipeIngredientId("");
+                              setRecipeIngredientQty("0.1");
+                            } else {
+                              onShowNotification("⚠️ Seleccione un insumo y una cantidad válida.", "warning");
+                            }
+                          }}
+                          className="px-4 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md cursor-pointer uppercase tracking-wider gold-glow hover:brightness-110"
+                        >
+                          ➕ Agregar a Receta
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
