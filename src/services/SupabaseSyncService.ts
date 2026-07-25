@@ -3,11 +3,12 @@ import { Order } from "../types";
 
 export class SupabaseSyncService {
   /**
-   * Upserts an order to Supabase, logging errors clearly and returning success status.
+   * Upserts an order to Supabase, with automatic fallback and clear error diagnostics for RLS and missing columns.
    */
   public static async saveOrder(order: Order): Promise<{ success: boolean; error?: string }> {
     try {
-      const orderPayload = {
+      // 1. Try full payload with all extended columns
+      const fullPayload = {
         id: order.id,
         created_at: order.createdAt || new Date().toISOString(),
         order_type: order.priceList === "Delivery" || order.fulfillmentType === "delivery" ? "delivery" : order.priceList === "Takeaway" || order.type === "Llevar" ? "takeaway" : "salon",
@@ -24,15 +25,58 @@ export class SupabaseSyncService {
         total: order.total,
         price_list: order.priceList || "Salon",
         type: order.type || "Mesa",
-        fiscal: order.fiscal || null
+        fiscal: order.fiscal || null,
+        coupon_number: order.couponNumber || null,
+        client_account_name: order.clientAccountName || order.customerName || null,
+        tip_amount: order.tipAmount || 0
       };
 
-      const { error } = await supabase.from("orders").upsert(orderPayload);
-      if (error) {
-        console.error("❌ Error de Supabase al guardar comanda:", error);
-        return { success: false, error: `${error.message} (Código: ${error.code})` };
+      const { error: fullError } = await supabase.from("orders").upsert(fullPayload);
+      if (!fullError) {
+        return { success: true };
       }
-      return { success: true };
+
+      // 2. If column error (PGRST204), try basic core payload
+      if (fullError.code === "PGRST204") {
+        console.warn("⚠️ Columna faltante en tabla orders de Supabase, intentando payload básico...");
+        const basicPayload = {
+          id: order.id,
+          created_at: order.createdAt || new Date().toISOString(),
+          items: order.items,
+          status: order.status,
+          subtotal: order.subtotal || order.total,
+          tax: order.tax || 0,
+          total: order.total,
+          type: order.type || "Mesa",
+          price_list: order.priceList || "Salon",
+          payment_method: order.paymentMethod || null,
+          table_number: order.tableNumber || null,
+          client_account_name: order.clientAccountName || order.customerName || null
+        };
+
+        const { error: basicError } = await supabase.from("orders").upsert(basicPayload);
+        if (!basicError) {
+          return { success: true };
+        }
+
+        if (basicError.code === "42501") {
+          return {
+            success: false,
+            error: "⚠️ Supabase Bloqueado por RLS (Error 42501): Ejecuta 'ALTER TABLE orders DISABLE ROW LEVEL SECURITY;' en Supabase SQL Editor."
+          };
+        }
+
+        return { success: false, error: `${basicError.message} (Código: ${basicError.code})` };
+      }
+
+      if (fullError.code === "42501") {
+        return {
+          success: false,
+          error: "⚠️ Supabase Bloqueado por RLS (Error 42501): Ejecuta 'ALTER TABLE orders DISABLE ROW LEVEL SECURITY;' en Supabase SQL Editor."
+        };
+      }
+
+      return { success: false, error: `${fullError.message} (Código: ${fullError.code})` };
     } catch (err: any) {
       console.error("❌ Excepción al guardar comanda en Supabase:", err);
       return { success: false, error: err.message || "Error de conexión con Supabase" };
@@ -82,12 +126,12 @@ export class SupabaseSyncService {
   }
 
   /**
-   * Full database SQL script to initialize all 11 tables required by RESTO BAR DEL TEATRO
+   * Full database SQL script to initialize or repair Supabase tables and RLS policies
    */
   public static getFullSetupSQL(): string {
     return `-- ==============================================================================
--- RESTO BAR DEL TEATRO - SCRIPT COMPLETO DE ESTRUCTURA Y TABLAS DE SUPABASE (11 TABLAS)
--- Copia y pega este script en: Supabase Dashboard -> SQL Editor -> New Query -> Run
+-- RESTO BAR DEL TEATRO - SCRIPT DESBLOQUEO Y MIGRACIÓN COMPLETA PARA SUPABASE
+-- Copia este código ➔ Ve a tu Dashboard de Supabase ➔ SQL Editor ➔ New Query ➔ RUN
 -- ==============================================================================
 
 -- 1. Tabla de Pedidos / Comandas (orders)
@@ -113,6 +157,19 @@ CREATE TABLE IF NOT EXISTS orders (
   client_account_name TEXT,
   tip_amount NUMERIC DEFAULT 0
 );
+
+-- Asegurar columnas si la tabla orders ya existía previamente
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_type TEXT DEFAULT 'salon';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_number TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_name TEXT DEFAULT 'Consumidor Final';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_phone TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_address TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS waiter_name TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS price_list TEXT DEFAULT 'Salon';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS fiscal JSONB;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_number TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_account_name TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tip_amount NUMERIC DEFAULT 0;
 
 -- 2. Tabla de Carta & Productos (menu_items)
 CREATE TABLE IF NOT EXISTS menu_items (
@@ -142,7 +199,7 @@ CREATE TABLE IF NOT EXISTS product_images (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Tabla de Cuentas Corrientes de Clientes (client_accounts)
+-- 4. Tabla de Cuentas Corrientes (client_accounts)
 CREATE TABLE IF NOT EXISTS client_accounts (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -152,7 +209,7 @@ CREATE TABLE IF NOT EXISTS client_accounts (
   credit_limit NUMERIC DEFAULT 20000
 );
 
--- 5. Tabla de Reservas de Mesas (reservations)
+-- 5. Tabla de Reservas (reservations)
 CREATE TABLE IF NOT EXISTS reservations (
   id TEXT PRIMARY KEY,
   table_id TEXT,
@@ -166,7 +223,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   reference_code TEXT
 );
 
--- 6. Tabla de Usuarios & Personal (users_accounts)
+-- 6. Tabla de Usuarios (users_accounts)
 CREATE TABLE IF NOT EXISTS users_accounts (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -177,7 +234,7 @@ CREATE TABLE IF NOT EXISTS users_accounts (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. Tabla de Insumos e Inventario (insumos)
+-- 7. Tabla de Insumos (insumos)
 CREATE TABLE IF NOT EXISTS insumos (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -188,7 +245,7 @@ CREATE TABLE IF NOT EXISTS insumos (
   supplier TEXT
 );
 
--- 8. Tabla de Flujo de Caja Diaria (cash_ledger)
+-- 8. Tabla de Caja Diaria (cash_ledger)
 CREATE TABLE IF NOT EXISTS cash_ledger (
   id TEXT PRIMARY KEY,
   cash NUMERIC DEFAULT 0,
@@ -232,7 +289,9 @@ CREATE TABLE IF NOT EXISTS barista_calibrations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- DESHABILITAR BLOQUEOS RLS PARA PERMITIR OPERACIÓN DESDE TERMINAL POS
+-- ==============================================================================
+-- PASO CLAVE: DESHABILITAR DESBLOQUEO RLS PARA PERMITIR GUARDAR DESDE EL POS
+-- ==============================================================================
 ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items DISABLE ROW LEVEL SECURITY;
 ALTER TABLE product_images DISABLE ROW LEVEL SECURITY;
@@ -245,7 +304,7 @@ ALTER TABLE staff_attendance DISABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE barista_calibrations DISABLE ROW LEVEL SECURITY;
 
--- DATOS INICIALES POR DEFECTO
+-- DATOS INICIALES
 INSERT INTO users_accounts (id, name, email, password, role, pin)
 VALUES 
   ('usr-1', 'Pablo Madina (Administrador)', 'pablo@cafepuglia.com', 'pablo123', 'administrador', '1111'),
