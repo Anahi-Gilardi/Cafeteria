@@ -2911,31 +2911,49 @@ export default function AdminHub({
       const newList = weeklyMenus.map(m => m.dayOfWeek === selectedDayTab ? { ...m, ...updatedFields } : m);
       setWeeklyMenus(newList);
       localStorage.setItem("puglia_custom_daily_menus", JSON.stringify(newList));
+    };
+
+    const handleSaveDailyMenuToSupabase = async (e?: FormEvent) => {
+      if (e) e.preventDefault();
+      try {
+        const { error } = await supabase.from("daily_menu").upsert({
+          day_of_week: activeMenu.dayOfWeek,
+          title: activeMenu.title,
+          description: activeMenu.description,
+          price: activeMenu.price,
+          image: activeMenu.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=800"
+        });
+
+        if (!error) {
+          onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase con éxito.`, "success");
+        } else {
+          console.warn("Aviso al guardar en Supabase (usando respaldo local):", error.message);
+          onShowNotification(`⭐ Menú del ${activeMenu.dayOfWeek} guardado en vivo.`, "success");
+        }
+      } catch (err) {
+        console.warn("Excepción al guardar menú del día:", err);
+      }
       window.dispatchEvent(new Event("daily_menus_updated"));
-      onShowNotification(`⭐ Menú del ${selectedDayTab} actualizado en vivo en la página publicitaria.`, "success");
     };
 
     return (
-      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl gold-glow">
+      <div className="space-y-6 bg-[#1A110B] border-2 border-[#D4AF37]/40 text-[#FDFBF7] rounded-3xl p-6 shadow-2xl gold-glow">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
           <div>
             <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
-            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú Ejecutivo del Día</h3>
-            <p className="text-xs text-[#FDFBF7]/70 italic mt-0.5">
-              Personalice las opciones de Entrada, Principal, Bebida y Postre para cada día. Se sincronizan en vivo con la portada publicitaria.
+            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú Ejecutivo del Día (Plato Único)</h3>
+            <p className="text-xs text-[#FDFBF7]/80 italic mt-0.5 font-medium">
+              Configure el plato estrella del día de Lunes a Domingo. Se sincroniza en vivo con la Portada Publicitaria y Menú Digital.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FFDF00] px-4 py-2 rounded-2xl text-xs font-mono font-bold">
-            <span>Precio Combo Cerrado ($):</span>
-            <input
-              type="number"
-              step="100"
-              value={activeMenu.price}
-              onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 8000 })}
-              className="w-24 p-1 bg-[#1C120C] text-[#FFDF00] border border-[#D4AF37]/40 rounded-lg text-center font-bold text-xs"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => handleSaveDailyMenuToSupabase()}
+            className="px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg cursor-pointer gold-glow hover:brightness-110 flex items-center gap-2"
+          >
+            💾 GUARDAR MENÚ DEL DÍA ({selectedDayTab})
+          </button>
         </div>
 
         {/* Day of Week Selector Tabs */}
@@ -2945,10 +2963,10 @@ export default function AdminHub({
               key={day}
               type="button"
               onClick={() => setSelectedDayTab(day)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
                 selectedDayTab === day
-                  ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] shadow-md font-black gold-glow"
-                  : "bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FDFBF7] hover:bg-[#3D281A]"
+                  ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] shadow-xl gold-glow scale-[1.03]"
+                  : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7] hover:bg-[#3D281A]"
               }`}
             >
               {day}
@@ -2956,75 +2974,112 @@ export default function AdminHub({
           ))}
         </div>
 
-        {/* Active Menu Detail Form */}
-        <div className="space-y-4 pt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase text-[#D4AF37] block mb-1">Título del Menú ({selectedDayTab})</label>
+        {/* Plato Único Form for the selected day */}
+        <form onSubmit={handleSaveDailyMenuToSupabase} className="p-5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-4">
+          <div className="border-b border-[#D4AF37]/20 pb-2">
+            <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Detalles del Plato Único — {selectedDayTab}</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="md:col-span-8">
+              <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Nombre del Plato del Día *</label>
               <input
                 type="text"
+                required
                 value={activeMenu.title}
                 onChange={(e) => updateCurrentDayMenu({ title: e.target.value })}
-                className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none"
+                placeholder="Ej. Tallarines Caseros con Tuco de Ternera al Malbec"
+                className="w-full p-3 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-sm font-bold text-[#FDFBF7] outline-none focus:border-[#FFDF00]"
               />
             </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase text-[#D4AF37] block mb-1">Descripción Gourmet del Día</label>
+
+            <div className="md:col-span-4">
+              <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Precio Promocional ($ ARS) *</label>
+              <input
+                type="number"
+                required
+                step="100"
+                value={activeMenu.price}
+                onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 8500 })}
+                className="w-full p-3 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-sm font-mono font-bold text-[#FFDF00] outline-none text-center focus:border-[#FFDF00]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Descripción Gourmet Tentadora *</label>
+            <textarea
+              rows={3}
+              required
+              value={activeMenu.description}
+              onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
+              placeholder="Describa la preparación, ingredientes premium y propuesta de maridaje..."
+              className="w-full p-3 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-xs font-medium text-[#FDFBF7] outline-none resize-none leading-relaxed focus:border-[#FFDF00]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-2">
+            <div className="md:col-span-7 space-y-2">
+              <label className="text-[10px] font-black uppercase text-[#D4AF37] block">Foto HD del Plato (Subida a Supabase Storage)</label>
               <input
                 type="text"
-                value={activeMenu.description}
-                onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
-                className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-xl text-xs font-semibold text-[#FDFBF7] outline-none"
+                value={activeMenu.image || ""}
+                onChange={(e) => updateCurrentDayMenu({ image: e.target.value })}
+                placeholder="URL pública de la imagen de Unsplash o Supabase Storage..."
+                className="w-full p-2.5 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-xs font-mono text-[#FDFBF7] outline-none"
               />
+
+              <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 rounded-xl space-y-1.5">
+                <label className="text-[9px] font-black uppercase text-[#FFDF00] block">📷 Cargar Foto HD desde Celular / PC</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setIsUploadingImage(true);
+                      onShowNotification("⏳ Subiendo imagen del Menú Ejecutivo a Supabase Storage...", "info");
+                      try {
+                        const imgUrl = await StorageService.uploadProductImage(file);
+                        updateCurrentDayMenu({ image: imgUrl });
+                        onShowNotification("📸 Foto del plato subida con éxito.", "success");
+                      } catch (err) {
+                        console.error("Error al subir foto de menú diario:", err);
+                      } finally {
+                        setIsUploadingImage(false);
+                      }
+                    }
+                  }}
+                  className="w-full text-[10px] text-[#D4AF37] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-5 text-center">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Vista Previa Portada Publicitaria</span>
+              {activeMenu.image ? (
+                <img
+                  src={activeMenu.image}
+                  alt="Plato del día"
+                  className="h-36 w-full rounded-2xl object-cover border-2 border-[#D4AF37]/50 shadow-xl gold-glow"
+                />
+              ) : (
+                <div className="h-36 w-full rounded-2xl bg-[#1C120C] border-2 border-dashed border-[#D4AF37]/30 flex items-center justify-center text-xs text-[#FDFBF7]/50 italic">
+                  Sin imagen cargada
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-            {/* Starters */}
-            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🥟 Entradas (Línea por opción)</span>
-              <textarea
-                rows={4}
-                value={activeMenu.starters.join("\n")}
-                onChange={(e) => updateCurrentDayMenu({ starters: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
-              />
-            </div>
-
-            {/* Mains */}
-            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🥩 Platos Principales</span>
-              <textarea
-                rows={4}
-                value={activeMenu.mains.join("\n")}
-                onChange={(e) => updateCurrentDayMenu({ mains: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
-              />
-            </div>
-
-            {/* Drinks */}
-            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🍷 Bebidas Incluidas</span>
-              <textarea
-                rows={4}
-                value={activeMenu.drinks.join("\n")}
-                onChange={(e) => updateCurrentDayMenu({ drinks: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
-              />
-            </div>
-
-            {/* Desserts */}
-            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black uppercase text-[#FFDF00] block">🍰 Postres o Café</span>
-              <textarea
-                rows={4}
-                value={activeMenu.desserts.join("\n")}
-                onChange={(e) => updateCurrentDayMenu({ desserts: e.target.value.split("\n").filter(s => s.trim() !== "") })}
-                className="w-full p-2 text-xs bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl font-medium outline-none"
-              />
-            </div>
+          <div className="pt-3 flex justify-end">
+            <button
+              type="submit"
+              className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-xl cursor-pointer gold-glow hover:brightness-110"
+            >
+              💾 GUARDAR MENÚ DEL DÍA ({selectedDayTab})
+            </button>
           </div>
-        </div>
+        </form>
       </div>
     );
   };

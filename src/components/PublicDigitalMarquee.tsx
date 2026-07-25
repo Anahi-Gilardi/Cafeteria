@@ -279,14 +279,23 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         {/* Executive Menu Live Combo Builder Box */}
         {(selectedCategory === "all" || selectedCategory === "executive") && (
           <div className="bg-white border-2 border-[#D4AF37] rounded-3xl p-6 shadow-xl space-y-5">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-[#E2D4C3] pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase text-[#B8860B] tracking-widest block">Configurador en Vivo</span>
-                <h3 className="font-serif text-2xl font-bold text-[#1C120C]">⭐ {todayMenu.title} ({todayMenu.dayOfWeek})</h3>
-                <p className="text-xs text-[#5C4A3E] italic mt-0.5">"{todayMenu.description}"</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#E2D4C3] pb-4">
+              <div className="flex items-center gap-4">
+                {todayMenu.image && (
+                  <img
+                    src={todayMenu.image}
+                    alt={todayMenu.title}
+                    className="h-20 w-24 rounded-2xl object-cover border-2 border-[#D4AF37] shadow-md shrink-0"
+                  />
+                )}
+                <div>
+                  <span className="text-[10px] font-black uppercase text-[#B8860B] tracking-widest block">⭐ Plato Único del Día</span>
+                  <h3 className="font-serif text-2xl font-bold text-[#1C120C]">{todayMenu.title} ({todayMenu.dayOfWeek})</h3>
+                  <p className="text-xs text-[#5C4A3E] italic mt-0.5 font-medium">"{todayMenu.description}"</p>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-xs text-[#8C7A6B] block font-bold">Precio Combo Cerrado</span>
+              <div className="text-right shrink-0">
+                <span className="text-xs text-[#8C7A6B] block font-bold">Precio del Plato ($ ARS)</span>
                 <span className="text-3xl font-black font-mono text-[#B8860B]">${todayMenu.price.toLocaleString("es-AR")}</span>
               </div>
             </div>

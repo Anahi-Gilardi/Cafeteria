@@ -66,6 +66,7 @@ export interface DailyExecutiveMenu {
   title: string;
   description: string;
   price: number;
+  image?: string;
   starters: string[];
   mains: string[];
   drinks: string[];
