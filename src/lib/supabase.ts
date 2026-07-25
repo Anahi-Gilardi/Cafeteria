@@ -1,7 +1,7 @@
-// Cliente de Supabase para la Cafetería - Conectado con las credenciales del proyecto
+// Cliente de Supabase para RESTO BAR DEL TEATRO - Credenciales oficiales del propietario
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://idjecovmqlyjhflfakfr.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkamVjb3ZtcWx5amhmbGZha2ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NDgzMDYsImV4cCI6MjA5ODUyNDMwNn0.ERhlMTS-ElRhghi10ZNXPi8IvUw9N3O-p8yuPJk6GIY";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://qavpleanmjbxbwfzismp.supabase.co";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdnBsZWFubWpieGJ3Znppc21wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MzkyOTgsImV4cCI6MjEwMDUxNTI5OH0.8ch0D-p019xHw17DzIfa-k_2GXT_I49jfd1rAwPjKh4";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
