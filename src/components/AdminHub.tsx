@@ -1057,6 +1057,15 @@ export default function AdminHub({
   const [movInsumoId, setMovInsumoId] = useState<string>("");
   const [movQty, setMovQty] = useState<string>("");
   const [movReason, setMovReason] = useState<string>("");
+
+  // New Insumo Modal State
+  const [isNewInsumoModalOpen, setIsNewInsumoModalOpen] = useState(false);
+  const [newInsumoName, setNewInsumoName] = useState("");
+  const [newInsumoUnit, setNewInsumoUnit] = useState("kg");
+  const [newInsumoQuantity, setNewInsumoQuantity] = useState("10");
+  const [newInsumoMinLimit, setNewInsumoMinLimit] = useState("5");
+  const [newInsumoProvider, setNewInsumoProvider] = useState("Distribuidora Sur");
+  const [newInsumoExpDate, setNewInsumoExpDate] = useState("2026-12-31");
   const [historySearchTable, setHistorySearchTable] = useState("");
   const [historyFilterWaiter, setHistoryFilterWaiter] = useState("todos");
   const [historyFilterPayment, setHistoryFilterPayment] = useState("todos");
@@ -1442,14 +1451,72 @@ export default function AdminHub({
       prev.map(ins => {
         if (ins.id === id) {
           const newQty = parseFloat((ins.quantity + amount).toFixed(2));
-          if (newQty < ins.minLimit) {
+          const finalQty = Math.max(0, newQty);
+          if (finalQty < ins.minLimit) {
             onShowNotification(`⚠️ Alerta: El insumo '${ins.name}' quedó por debajo de su stock de seguridad.`, "warning");
           }
-          return { ...ins, quantity: Math.max(0, newQty) };
+
+          // Async update to Supabase
+          supabase.from("insumos").upsert({
+            id: ins.id,
+            name: ins.name,
+            quantity: finalQty,
+            unit: ins.unit,
+            min_limit: ins.minLimit,
+            provider: ins.provider || null,
+            expiration_date: ins.expirationDate || null
+          }).then(({ error }) => {
+            if (error) console.error("Error al actualizar insumo en Supabase:", error);
+          });
+
+          return { ...ins, quantity: finalQty };
         }
         return ins;
       })
     );
+  };
+
+  const handleCreateNewInsumo = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newInsumoName.trim()) {
+      onShowNotification("⚠️ Ingrese el nombre de la materia prima o insumo.", "warning");
+      return;
+    }
+
+    const qty = parseFloat(newInsumoQuantity) || 0;
+    const minLim = parseFloat(newInsumoMinLimit) || 1;
+    const insumoId = "ins-" + Date.now();
+
+    const createdInsumo = {
+      id: insumoId,
+      name: newInsumoName.trim(),
+      quantity: qty,
+      unit: newInsumoUnit,
+      minLimit: minLim,
+      provider: newInsumoProvider.trim() || "Distribuidora Sur",
+      expirationDate: newInsumoExpDate || undefined
+    };
+
+    setInsumos(prev => [...prev, createdInsumo]);
+
+    // Upsert to Supabase
+    try {
+      const { error } = await supabase.from("insumos").upsert({
+        id: createdInsumo.id,
+        name: createdInsumo.name,
+        quantity: createdInsumo.quantity,
+        unit: createdInsumo.unit,
+        min_limit: createdInsumo.minLimit,
+        provider: createdInsumo.provider,
+        expiration_date: createdInsumo.expirationDate || null
+      });
+      if (error) console.error("Error al guardar nuevo insumo en Supabase:", error);
+    } catch (e) {
+      console.warn("Excepción al guardar insumo:", e);
+    }
+
+    setIsNewInsumoModalOpen(false);
+    onShowNotification(`✅ Insumo '${newInsumoName}' registrado e integrado a Supabase.`, "success");
   };
 
   // Save changes to menu item pricing & stock
@@ -1935,30 +2002,30 @@ export default function AdminHub({
     return (
       <div className="space-y-6 text-[#FDFBF7]">
         <div className="bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl p-4 flex gap-3 text-xs text-[#FDFBF7] font-semibold leading-relaxed gold-glow">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-[#FFDF00] shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-800">Instrucciones de Auditoría a Ciegas</span>
+            <span className="font-bold block uppercase tracking-wider text-[10px] text-[#FFDF00]">Instrucciones de Auditoría a Ciegas</span>
             El inventario digital teórico se encuentra oculto para forzar un conteo manual honesto. Recorra el local, cuente las existencias físicas de cada insumo e ingréselas abajo. Al finalizar, el sistema calculará las discrepancias y generará alertas si se detectan pérdidas significativas.
           </div>
         </div>
 
         <form onSubmit={handleSubmitBlindAudit} className="space-y-4">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xs">
+          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xl gold-glow">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-wider text-[#D4AF37]">
                   <th className="p-4">Insumo</th>
                   <th className="p-4">Proveedor Asignado</th>
                   <th className="p-4 text-center">Unidad</th>
                   <th className="p-4 text-center w-40">Conteo Relevado (Visual)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2C1810]/10 text-xs">
+              <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
                 {insumos.map((ins, idx) => (
-                  <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                    <td className="p-4 font-bold text-[#2C1810]">{ins.name}</td>
-                    <td className="p-4 text-[#2C1810]/70 font-semibold">{ins.provider || "Sin designar"}</td>
-                    <td className="p-4 text-center text-[#2C1810]/60 uppercase font-bold">{ins.unit}</td>
+                  <tr key={idx} className="hover:bg-[#2A1B12]/60 transition-colors">
+                    <td className="p-4 font-bold text-[#FDFBF7]">{ins.name}</td>
+                    <td className="p-4 text-[#D4AF37] font-semibold">{ins.provider || "Sin designar"}</td>
+                    <td className="p-4 text-center text-[#FDFBF7]/80 uppercase font-bold">{ins.unit}</td>
                     <td className="p-4 text-center">
                       <input
                         type="number"
@@ -1966,7 +2033,7 @@ export default function AdminHub({
                         placeholder="Ej. 12"
                         value={blindCounts[ins.id] || ""}
                         onChange={(e) => setBlindCounts(prev => ({ ...prev, [ins.id]: e.target.value }))}
-                        className="w-28 text-center p-1.5 border border-[#2C1810]/20 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold outline-none focus:ring-1 focus:ring-caramel"
+                        className="w-28 text-center p-1.5 border border-[#D4AF37]/40 rounded-lg bg-[#2A1B12] text-[#FFDF00] font-mono font-bold outline-none focus:ring-1 focus:ring-[#D4AF37]"
                       />
                     </td>
                   </tr>
@@ -1978,7 +2045,7 @@ export default function AdminHub({
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-6 py-2.5 bg-caramel hover:bg-[#B45309] text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer border-none uppercase tracking-wider"
+              className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl transition-all shadow-md cursor-pointer border-none uppercase tracking-wider gold-glow hover:brightness-110"
             >
               🔒 Finalizar Auditoría y Procesar Desvíos
             </button>
@@ -2029,14 +2096,14 @@ export default function AdminHub({
                         {audit.details.map((d: any, idx: number) => {
                           const isWarning = d.desvioPct < -2;
                           return (
-                            <tr key={idx} className={isWarning ? "bg-red-50/20 text-red-900" : "text-[#2C1810]"}>
+                            <tr key={idx} className={isWarning ? "bg-red-950/40 text-red-200" : "text-[#FDFBF7]"}>
                               <td className="p-3 font-bold">{d.name}</td>
-                              <td className="p-3 text-center font-mono">{d.teorico} {d.unit}</td>
-                              <td className="p-3 text-center font-mono">{d.visual} {d.unit}</td>
-                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-red-600" : d.desvio > 0 ? "text-emerald-600" : ""}`}>
+                              <td className="p-3 text-center font-mono text-[#FDFBF7]/80">{d.teorico} {d.unit}</td>
+                              <td className="p-3 text-center font-mono text-[#FFDF00]">{d.visual} {d.unit}</td>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-red-400" : d.desvio > 0 ? "text-emerald-400" : "text-[#FDFBF7]/70"}`}>
                                 {d.desvio > 0 ? `+${d.desvio}` : d.desvio} {d.unit}
                               </td>
-                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-red-600" : d.desvioPct > 0 ? "text-emerald-600" : ""}`}>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-red-400" : d.desvioPct > 0 ? "text-emerald-400" : "text-[#FDFBF7]/70"}`}>
                                 {d.desvioPct > 0 ? `+${d.desvioPct.toFixed(1)}%` : `${d.desvioPct.toFixed(1)}%`}
                               </td>
                             </tr>
@@ -2101,7 +2168,7 @@ export default function AdminHub({
                   ]);
                 }
               }}
-              className="w-full text-xs p-2.5 border border-[#2C1810]/15 rounded-xl bg-[#FDFBF7] text-[#2C1810] font-bold cursor-pointer outline-none focus:ring-1 focus:ring-caramel"
+              className="w-full text-xs p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] font-bold cursor-pointer outline-none focus:ring-1 focus:ring-[#D4AF37]"
             >
               <option value="">-- Seleccionar Insumo --</option>
               {insumos.map(ins => (
@@ -2115,12 +2182,12 @@ export default function AdminHub({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {compareQuotes.map((q, idx) => (
-                <div key={idx} className="space-y-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl">
-                  <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-1">
-                    <span className="text-[9px] font-black uppercase text-[#C2956E]">Oferta Proveedor #{idx + 1}</span>
+                <div key={idx} className="space-y-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl gold-glow">
+                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-1">
+                    <span className="text-[9px] font-black uppercase text-[#D4AF37]">Oferta Proveedor #{idx + 1}</span>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block">Nombre de Proveedor</label>
+                    <label className="text-[8px] font-bold text-[#D4AF37] uppercase block">Nombre de Proveedor</label>
                     <input
                       type="text"
                       value={q.supplier}
@@ -2129,11 +2196,11 @@ export default function AdminHub({
                         updated[idx].supplier = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-stone-50/50 text-[#2C1810] font-bold"
+                      className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-lg bg-[#2A1B12] text-[#FDFBF7] font-bold"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block">Precio Unitario ($)</label>
+                    <label className="text-[8px] font-bold text-[#D4AF37] uppercase block">Precio Unitario ($)</label>
                     <input
                       type="number"
                       step="any"
@@ -2144,7 +2211,7 @@ export default function AdminHub({
                         updated[idx].price = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-mono font-bold"
+                      className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-lg bg-[#2A1B12] text-[#FFDF00] font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -2154,8 +2221,8 @@ export default function AdminHub({
             {validQuotes.length > 0 && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#C2956E]">Resultados Comparativos en Paralelo</h4>
-                  <span className="text-[10px] font-bold text-[#2C1810]/60 italic font-mono bg-stone-100 px-2 py-0.5 rounded-md">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">Resultados Comparativos en Paralelo</h4>
+                  <span className="text-[10px] font-bold text-[#FFDF00] italic font-mono bg-[#2A1B12] border border-[#D4AF37]/30 px-2.5 py-1 rounded-lg">
                     Consumo Estimado Local: {consumption} {selectedInsumo.unit}/mes
                   </span>
                 </div>
@@ -2591,6 +2658,18 @@ export default function AdminHub({
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer animate-fade-in border-none gold-glow uppercase tracking-wider"
               >
                 <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos (US-2.3)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewInsumoName("");
+                  setNewInsumoQuantity("10");
+                  setNewInsumoMinLimit("5");
+                  setIsNewInsumoModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black transition-all cursor-pointer gold-glow uppercase tracking-wider shadow-md hover:brightness-110"
+              >
+                <Plus className="h-4 w-4" /> ➕ Crear Nuevo Insumo
               </button>
               <button 
                 onClick={() => {
@@ -7284,11 +7363,11 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Materia Prima / Insumo</label>
+                <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Materia Prima / Insumo</label>
                 <select 
                   value={movInsumoId}
                   onChange={(e) => setMovInsumoId(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] font-bold cursor-pointer"
                 >
                   {insumos.map(i => (
                     <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
@@ -7297,25 +7376,25 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Cantidad a Ajustar</label>
+                <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Cantidad a Ajustar</label>
                 <input 
                   type="number"
                   placeholder="Ingrese el valor numérico"
                   value={movQty}
                   onChange={(e) => setMovQty(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold"
+                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FFDF00] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none font-bold font-mono"
                 />
               </div>
 
               {movType === "Egreso" && (
                 <div>
-                  <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Motivo / Descripción de la Merma</label>
+                  <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Motivo / Descripción de la Merma</label>
                   <textarea 
                     placeholder="Escriba el motivo del descarte..."
                     value={movReason}
                     onChange={(e) => setMovReason(e.target.value)}
                     rows={2}
-                    className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold resize-none"
+                    className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none font-bold resize-none"
                   />
                 </div>
               )}
@@ -7326,7 +7405,7 @@ export default function AdminHub({
                     setIsMovementModalOpen(false);
                     setMovReason("");
                   }}
-                  className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer text-center bg-transparent"
+                  className="w-1/2 py-2.5 rounded-xl border border-[#D4AF37]/30 text-xs font-bold text-[#D4AF37] hover:bg-[#3D281A] transition-all cursor-pointer text-center bg-transparent"
                 >
                   Cancelar
                 </button>
@@ -7359,10 +7438,11 @@ export default function AdminHub({
                     }
 
                     setIsMovementModalOpen(false);
+                    setMovQty("");
                     setMovReason("");
-                    onShowNotification(`📦 Ajuste realizado: Se registró ${movType.toLowerCase()} de ${val} unidades.`, "success");
+                    onShowNotification(`✅ Movimiento de ${movType} registrado e integrado a Supabase.`, "success");
                   }}
-                  className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md transition-all cursor-pointer text-center"
+                  className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black transition-all cursor-pointer gold-glow uppercase tracking-wider shadow-md"
                 >
                   Guardar Cambios ✓
                 </button>
