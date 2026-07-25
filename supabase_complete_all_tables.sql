@@ -1,93 +1,6 @@
-import { supabase } from "../lib/supabase";
-import { Order } from "../types";
-
-export class SupabaseSyncService {
-  /**
-   * Upserts an order to Supabase, logging errors clearly and returning success status.
-   */
-  public static async saveOrder(order: Order): Promise<{ success: boolean; error?: string }> {
-    try {
-      const orderPayload = {
-        id: order.id,
-        created_at: order.createdAt || new Date().toISOString(),
-        order_type: order.priceList === "Delivery" || order.fulfillmentType === "delivery" ? "delivery" : order.priceList === "Takeaway" || order.type === "Llevar" ? "takeaway" : "salon",
-        table_number: order.tableNumber || null,
-        client_name: order.clientAccountName || order.customerName || "Consumidor Final",
-        client_phone: order.customerPhone || order.clientPhone || null,
-        client_address: order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number || ""}`.trim() : null,
-        waiter_name: order.tableNumber ? "Enzo" : null,
-        items: order.items,
-        status: order.status,
-        payment_method: order.paymentMethod || null,
-        subtotal: order.subtotal || order.total,
-        discount: 0,
-        total: order.total,
-        price_list: order.priceList || "Salon",
-        type: order.type || "Mesa",
-        fiscal: order.fiscal || null
-      };
-
-      const { error } = await supabase.from("orders").upsert(orderPayload);
-      if (error) {
-        console.error("❌ Error de Supabase al guardar comanda:", error);
-        return { success: false, error: `${error.message} (Código: ${error.code})` };
-      }
-      return { success: true };
-    } catch (err: any) {
-      console.error("❌ Excepción al guardar comanda en Supabase:", err);
-      return { success: false, error: err.message || "Error de conexión con Supabase" };
-    }
-  }
-
-  /**
-   * Fetches all orders from Supabase table 'orders'.
-   */
-  public static async fetchOrders(): Promise<{ orders: Order[]; error?: string }> {
-    try {
-      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-      if (error) {
-        console.error("❌ Error de Supabase al consultar comandas:", error);
-        return { orders: [], error: `${error.message} (Código: ${error.code})` };
-      }
-      if (!data) return { orders: [] };
-
-      const mapped: Order[] = data.map((o: any) => ({
-        id: o.id,
-        items: typeof o.items === "string" ? JSON.parse(o.items) : (o.items || []),
-        subtotal: Number(o.subtotal || o.total),
-        tax: Number(o.tax || 0),
-        total: Number(o.total),
-        type: (o.type || (o.order_type === "takeaway" ? "Llevar" : "Mesa")) as any,
-        priceList: (o.price_list || (o.order_type === "delivery" ? "Delivery" : o.order_type === "takeaway" ? "Takeaway" : "Salon")) as any,
-        tableReservationId: o.table_reservation_id || undefined,
-        tableNumber: o.table_number || undefined,
-        status: o.status as any,
-        createdAt: o.created_at,
-        estimatedMinutes: o.estimated_minutes || 15,
-        paymentMethod: (o.payment_method || o.paymentMethod) as any,
-        couponNumber: o.coupon_number || undefined,
-        clientAccountName: o.client_account_name || o.client_name || o.customerName || undefined,
-        customerName: o.client_name || o.client_account_name || o.customerName || undefined,
-        customerPhone: o.client_phone || o.customerPhone || undefined,
-        deliveryAddress: typeof o.client_address === "object" ? o.client_address : o.client_address ? { street: o.client_address, number: "" } : undefined,
-        tipAmount: o.tip_amount ? Number(o.tip_amount) : undefined,
-        fiscal: o.fiscal || undefined
-      }));
-
-      return { orders: mapped };
-    } catch (err: any) {
-      console.error("❌ Excepción al consultar comandas en Supabase:", err);
-      return { orders: [], error: err.message };
-    }
-  }
-
-  /**
-   * Full database SQL script to initialize all 11 tables required by RESTO BAR DEL TEATRO
-   */
-  public static getFullSetupSQL(): string {
-    return `-- ==============================================================================
--- RESTO BAR DEL TEATRO - SCRIPT COMPLETO DE ESTRUCTURA Y TABLAS DE SUPABASE (11 TABLAS)
--- Copia y pega este script en: Supabase Dashboard -> SQL Editor -> New Query -> Run
+-- ==============================================================================
+-- RESTO BAR DEL TEATRO - SCRIPT COMPLETO DE ESTRUCTURA Y TABLAS DE SUPABASE
+-- Ejecuta este script en: Supabase Dashboard -> SQL Editor -> New Query -> Run
 -- ==============================================================================
 
 -- 1. Tabla de Pedidos / Comandas (orders)
@@ -232,7 +145,9 @@ CREATE TABLE IF NOT EXISTS barista_calibrations (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- DESHABILITAR BLOQUEOS RLS PARA PERMITIR OPERACIÓN DESDE TERMINAL POS
+-- ==============================================================================
+-- DESHABILITAR DESBLOQUEO RLS PARA PERMITIR OPERACIÓN DESDE TERMINAL POS
+-- ==============================================================================
 ALTER TABLE orders DISABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items DISABLE ROW LEVEL SECURITY;
 ALTER TABLE product_images DISABLE ROW LEVEL SECURITY;
@@ -245,7 +160,9 @@ ALTER TABLE staff_attendance DISABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE barista_calibrations DISABLE ROW LEVEL SECURITY;
 
--- DATOS INICIALES POR DEFECTO
+-- ==============================================================================
+-- DATOS INICIALES POR DEFECTO (USUARIOS Y CUENTAS)
+-- ==============================================================================
 INSERT INTO users_accounts (id, name, email, password, role, pin)
 VALUES 
   ('usr-1', 'Pablo Madina (Administrador)', 'pablo@cafepuglia.com', 'pablo123', 'administrador', '1111'),
@@ -259,6 +176,3 @@ VALUES
   ('cli-2', 'Estela de Carlotto', '27-05556667-1', '11-9876-5432', 0.00, 50000),
   ('cli-3', 'Enzo Francescoli', '20-99887766-3', '11-2345-6789', -1200.00, 30000)
 ON CONFLICT (id) DO NOTHING;
-`;
-  }
-}
