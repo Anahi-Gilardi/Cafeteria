@@ -24,6 +24,7 @@ import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingS
 import { ReceiptPDFService } from "../services/ReceiptPDFService";
 import { OrderTypeSelector, OrderServiceType, TakeawayDetails, DeliveryDetails } from "./OrderTypeSelector";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
+import { SupabaseSyncService } from "../services/SupabaseSyncService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -261,6 +262,7 @@ export default function AdminHub({
     floorNotes: "",
     deliveryFee: 1200
   });
+  const [isSupabaseSqlModalOpen, setIsSupabaseSqlModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -3788,6 +3790,12 @@ export default function AdminHub({
               className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider gold-glow shadow-md"
             >
               <Plus className="h-3.5 w-3.5" /> ➕ FACTURACIÓN MANUAL ARCA
+            </button>
+            <button 
+              onClick={() => setIsSupabaseSqlModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider gold-glow"
+            >
+              <Layers className="h-3.5 w-3.5 text-[#D4AF37]" /> 🗄️ SQL SUPABASE
             </button>
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
@@ -7685,6 +7693,52 @@ export default function AdminHub({
               {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
               <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
               <div className="text-[7px] text-[#2C1810]/40 font-sans mt-2">COMPROBANTE HOMOLOGADO POR AFIP EMISIÓN CONTROLADA</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Supabase SQL & DB Schema Setup Modal */}
+      {isSupabaseSqlModalOpen && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/40 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col space-y-5 gold-glow custom-gold-scrollbar">
+            <button 
+              onClick={() => setIsSupabaseSqlModalOpen(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="border-b border-[#D4AF37]/20 pb-3">
+              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Base de Datos PostgreSQL (Supabase)</span>
+              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">🗄️ Script SQL de Inicialización / Reparación</h4>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] text-[#FDFBF7]/80 leading-relaxed">
+                Si las comandas no se guardan en Supabase o salta un error RLS o de columnas faltantes, copia este script SQL y ejecútalo en tu proyecto:
+                <br />
+                <strong className="text-[#D4AF37]">Supabase Dashboard ➔ SQL Editor ➔ New Query ➔ Run</strong>
+              </p>
+
+              <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 rounded-2xl">
+                <pre className="font-mono text-[9.5px] text-[#FFDF00] whitespace-pre-wrap max-h-60 overflow-y-auto custom-gold-scrollbar p-2">
+                  {SupabaseSyncService.getFullSetupSQL()}
+                </pre>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#D4AF37]/20 flex justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(SupabaseSyncService.getFullSetupSQL());
+                  onShowNotification("📋 Script SQL copiado al portapapeles. Pégalo en Supabase SQL Editor.", "success");
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:brightness-110 transition-all cursor-pointer gold-glow flex items-center justify-center gap-2"
+              >
+                📋 Copiar Script SQL de Supabase
+              </button>
             </div>
           </div>
         </div>

@@ -19,6 +19,7 @@ import WhatsAppOrderService from "./services/WhatsAppOrderService";
 import { Coffee, ArrowRight, Sparkles, BookOpen, Clock, Heart, Star, Phone, MapPin, X, CheckCircle, Info, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "./lib/supabase";
+import { SupabaseSyncService } from "./services/SupabaseSyncService";
 import LoginScreen from "./components/LoginScreen";
 import KitchenDisplay from "./components/KitchenDisplay";
 import SalonMap from "./components/SalonMap";
@@ -219,29 +220,15 @@ export default function App() {
           })));
         }
 
-        // 4. Fetch Orders
-        const { data: ordersData } = await supabase.from("orders").select("*");
-        if (ordersData) {
-          const mappedOrders: Order[] = ordersData.map(o => ({
-            id: o.id,
-            items: o.items,
-            subtotal: Number(o.subtotal),
-            tax: Number(o.tax),
-            total: Number(o.total),
-            type: o.type as any,
-            priceList: o.price_list as any,
-            tableReservationId: o.table_reservation_id || undefined,
-            tableNumber: o.table_number || undefined,
-            status: o.status as any,
-            createdAt: o.created_at,
-            estimatedMinutes: o.estimated_minutes,
-            paymentMethod: o.payment_method as any,
-            couponNumber: o.coupon_number || undefined,
-            clientAccountName: o.client_account_name || undefined,
-            tipAmount: o.tip_amount ? Number(o.tip_amount) : undefined,
-            fiscal: o.fiscal || undefined
-          }));
-          setOrders(mappedOrders);
+        // 4. Fetch Orders from Supabase
+        const { orders: remoteOrders, error: fetchErr } = await SupabaseSyncService.fetchOrders();
+        if (remoteOrders && remoteOrders.length > 0) {
+          setOrders(remoteOrders);
+          try {
+            localStorage.setItem("resto_bar_orders", JSON.stringify(remoteOrders));
+          } catch (e) {}
+        } else if (fetchErr) {
+          console.warn("⚠️ Advertencia al consultar comandas en Supabase:", fetchErr);
         }
 
         // 5. Fetch & Seed User Accounts
@@ -543,30 +530,11 @@ export default function App() {
         localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
       } catch (e) {}
       
-      // Async sync to Supabase
+      // Async sync each order to Supabase via SupabaseSyncService
       nextOrders.forEach(async (order) => {
-        try {
-          await supabase.from("orders").upsert({
-            id: order.id,
-            created_at: order.createdAt || new Date().toISOString(),
-            order_type: order.priceList === "Delivery" || order.fulfillmentType === "delivery" ? "delivery" : order.priceList === "Takeaway" || order.type === "Llevar" ? "takeaway" : "salon",
-            table_number: order.tableNumber || null,
-            client_name: order.clientAccountName || order.customerName || "Consumidor Final",
-            client_phone: order.customerPhone || order.clientPhone || null,
-            client_address: order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number || ""}`.trim() : null,
-            waiter_name: order.tableNumber ? "Enzo" : null,
-            items: order.items,
-            status: order.status,
-            payment_method: order.paymentMethod || null,
-            subtotal: order.subtotal || order.total,
-            discount: 0,
-            total: order.total,
-            price_list: order.priceList || "Salon",
-            type: order.type || "Mesa",
-            fiscal: order.fiscal || null
-          });
-        } catch (e) {
-          console.warn("Supabase order sync warning:", e);
+        const res = await SupabaseSyncService.saveOrder(order);
+        if (!res.success) {
+          console.error(`❌ Error al guardar comanda ${order.id} en Supabase:`, res.error);
         }
       });
 
