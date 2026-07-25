@@ -3737,50 +3737,6 @@ export default function AdminHub({
                 </>
               )}
             </div>
-
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
-              <h4 className="font-serif text-sm font-bold text-[#FFDF00] flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-[#D4AF37]" /> SIMULADOR DE ESTRATEGIA PARA EL CLIENTE
-              </h4>
-              <p className="text-[10px] text-[#FDFBF7]/70 leading-relaxed font-semibold">
-                Edite el precio sugerido de venta (ingresando un valor alternativo debajo) para evaluar la rentabilidad del producto.
-              </p>
-              <div className="flex gap-4 items-center">
-                <div className="w-1/2">
-                  <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">PRECIO DE VENTA SUGERIDO ($)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-[#D4AF37] text-xs font-bold">$</span>
-                    <input 
-                      type="number"
-                      value={simulatedPrice}
-                      onChange={(e) => setSimulatedPrice(Math.max(1, parseFloat(e.target.value) || 0))}
-                      className="w-full pl-6 pr-3 py-2 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] focus:outline-none focus:ring-1 focus:ring-[#D4AF37] font-bold font-mono"
-                    />
-                  </div>
-                </div>
-                <div className="w-1/2 p-3 bg-[#2A1B12] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl flex justify-between items-center text-xs">
-                  <div>
-                    <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Margen Sim.</span>
-                    <span className="text-base font-black text-[#FFDF00] block font-mono">{margin.toFixed(1)}%</span>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      const updated = menuItems.map(item => {
-                        if (item.id === currentItem.id) {
-                          return { ...item, price: simulatedPrice };
-                        }
-                        return item;
-                      });
-                      onUpdateMenu(updated);
-                      onShowNotification(`💰 Precio comercial actualizado para '${currentItem.name}' a $${simulatedPrice.toFixed(0)}`, "success");
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-[10px] font-black transition-all cursor-pointer uppercase tracking-wider shadow-md gold-glow"
-                  >
-                    Guardar Precio 
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         )}
