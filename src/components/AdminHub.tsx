@@ -5,7 +5,7 @@ import {
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame, Menu
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
@@ -264,6 +264,7 @@ export default function AdminHub({
     deliveryFee: 1200
   });
   const [isSupabaseSqlModalOpen, setIsSupabaseSqlModalOpen] = useState<boolean>(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -2765,13 +2766,18 @@ export default function AdminHub({
 
   const renderInventario = () => {
     const totalInsumosCount = insumos.length;
+    const expiredInsumosCount = insumos.filter(i => i.expirationDate && new Date(i.expirationDate) < new Date(new Date().setHours(0,0,0,0))).length;
     const criticalInsumosCount = insumos.filter(i => i.quantity <= i.minLimit / 2).length;
     const lowStockInsumosCount = insumos.filter(i => i.quantity <= i.minLimit && i.quantity > i.minLimit / 2).length;
-    const healthyInsumosCount = insumos.filter(i => i.quantity > i.minLimit).length;
+    const healthyInsumosCount = insumos.filter(i => {
+      const isExpired = i.expirationDate ? new Date(i.expirationDate) < new Date(new Date().setHours(0,0,0,0)) : false;
+      return i.quantity > i.minLimit && !isExpired;
+    }).length;
 
+    const normalizeStr = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const filteredInsumos = insumos.filter(i => 
-      i.name.toLowerCase().includes(searchInsumoQuery.toLowerCase()) ||
-      (i.provider && i.provider.toLowerCase().includes(searchInsumoQuery.toLowerCase()))
+      normalizeStr(i.name).includes(normalizeStr(searchInsumoQuery)) ||
+      (i.provider && normalizeStr(i.provider).includes(normalizeStr(searchInsumoQuery)))
     );
 
     return (
@@ -3897,7 +3903,7 @@ export default function AdminHub({
 
     // Calculate checkout totals dynamically
     const orderTotalOriginal = posCheckoutOrder ? posCheckoutOrder.total : 0;
-    const discountAmount = orderTotalOriginal * (discountPercentage / 105);
+    const discountAmount = Math.round((orderTotalOriginal * (discountPercentage / 100)) * 100) / 100;
     const orderTotalWithDiscount = Math.max(0, orderTotalOriginal - discountAmount);
 
     // Calculate split totals
@@ -5902,7 +5908,7 @@ export default function AdminHub({
                     <td className="p-4 font-serif font-bold text-[#FFDF00] text-sm">{prov.name}</td>
                     <td className="p-4 text-[#FDFBF7] font-medium">{prov.items}</td>
                     <td className="p-4 font-mono font-semibold text-[#D4AF37]">{prov.contact}</td>
-                    <td className="p-4 font-mono font-bold text-[#FFDF00]">+{prov.phone}</td>
+                    <td className="p-4 font-mono font-bold text-[#FFDF00]">{prov.phone.startsWith("+") ? prov.phone : "+" + prov.phone.replace(/\D/g, "")}</td>
                     <td className="p-4 text-center">
                       <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-full tracking-wider border font-mono ${
                         prov.status === "ACTIVO" 
@@ -7318,13 +7324,49 @@ export default function AdminHub({
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] select-none">
-      {/* Sidebar Navigation */}
-      <div className="w-64 bg-[#1C120C] text-[#FDFBF7] flex flex-col justify-between p-6 shrink-0 border-r border-[#D4AF37]/25">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] select-none relative">
+      {/* Mobile Sticky Header Bar (<1024px) */}
+      <div className="lg:hidden sticky top-0 z-40 bg-[#1C120C] border-b border-[#D4AF37]/30 px-4 py-3 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="Abrir menú de navegación"
+            onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+            className="p-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FFDF00] hover:bg-[#3D281A] cursor-pointer"
+          >
+            {isMobileDrawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <span className="font-serif font-bold text-sm text-[#FFDF00] uppercase tracking-wider">Resto Bar Del Teatro</span>
+        </div>
+        <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37]">
+          {activeSubTab.toUpperCase()}
+        </span>
+      </div>
+
+      {/* Mobile Drawer Overlay Backdrop */}
+      {isMobileDrawerOpen && (
+        <div 
+          onClick={() => setIsMobileDrawerOpen(false)}
+          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-xs z-45"
+        />
+      )}
+
+      {/* Sidebar Navigation Drawer */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#1C120C] text-[#FDFBF7] flex flex-col justify-between p-6 shrink-0 border-r border-[#D4AF37]/25 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:w-64 ${
+        isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"
+      }`}>
         <div>
           {/* Logo brand */}
-          <div className="mb-8 cursor-pointer animate-fade-in" onClick={onClosePanel}>
+          <div className="mb-8 cursor-pointer animate-fade-in flex items-center justify-between" onClick={onClosePanel}>
             <RestoBarLogo size="md" />
+            <button 
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(false)}
+              className="lg:hidden p-1 text-[#D4AF37] hover:text-white"
+              aria-label="Cerrar menú"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Navigation Links */}
@@ -7354,7 +7396,10 @@ export default function AdminHub({
               return (
                 <button
                   key={link.id}
-                  onClick={() => setActiveSubTab(link.id as any)}
+                  onClick={() => {
+                    setActiveSubTab(link.id as any);
+                    setIsMobileDrawerOpen(false);
+                  }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
                       ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg gold-glow scale-[1.02]"
@@ -7411,7 +7456,10 @@ export default function AdminHub({
               return (
                 <button
                   key={link.id}
-                  onClick={() => setActiveSubTab(link.id as any)}
+                  onClick={() => {
+                    setActiveSubTab(link.id as any);
+                    setIsMobileDrawerOpen(false);
+                  }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
                       ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg gold-glow scale-[1.02]"
