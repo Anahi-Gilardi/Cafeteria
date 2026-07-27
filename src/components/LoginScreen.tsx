@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import RestoBarLogo from "./RestoBarLogo";
 import { Key, User, Eye, EyeOff, ShieldCheck, Lock } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { AuthService } from "../services/AuthService";
 
 interface LoginScreenProps {
   onLoginSuccess: (user: { id: string; name: string; email: string; role: string; pin?: string }) => void;
@@ -96,85 +97,15 @@ export default function LoginScreen({ onLoginSuccess, onShowNotification }: Logi
 
     setIsLoading(true);
     try {
-      let localUsers: any[] = [];
-      try {
-        const saved = localStorage.getItem("puglia_local_users");
-        if (saved) localUsers = JSON.parse(saved);
-      } catch (e) {}
-
-      const cleanInput = emailInput.trim().toLowerCase();
-      const matchUserEmail = (uEmail: string) => {
-        const e = uEmail.toLowerCase();
-        return e === cleanInput || (cleanInput === "admin" && (e === "admin@cafepuglia.com" || e === "admin"));
-      };
-
-      const matchedLocal = localUsers.find(u => matchUserEmail(u.email));
-      if (matchedLocal) {
-        if (matchedLocal.password === passwordInput) {
-          onShowNotification(`🎭 ¡Bienvenido/a, ${matchedLocal.name}! Sesión iniciada como ${matchedLocal.role}.`, "success");
-          onLoginSuccess({
-            id: matchedLocal.id,
-            name: matchedLocal.name,
-            email: matchedLocal.email,
-            role: matchedLocal.role,
-            pin: matchedLocal.pin
-          });
-          setIsLoading(false);
-          return;
-        } else {
-          onShowNotification("❌ Contraseña incorrecta.", "warning");
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      const { data } = await supabase
-        .from("users_accounts")
-        .select("*")
-        .eq("email", cleanInput)
-        .single();
-
-      let user = data;
-      if (!data) {
-        const fallbackUser = DEFAULT_USERS.find(u => matchUserEmail(u.email));
-        if (fallbackUser) {
-          user = fallbackUser;
-        } else {
-          onShowNotification("❌ Usuario no registrado.", "warning");
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      if (user.password !== passwordInput) {
-        onShowNotification("❌ Contraseña incorrecta.", "warning");
-        setIsLoading(false);
-        return;
-      }
-
-      onShowNotification(`🎭 ¡Bienvenido/a, ${user.name}! Sesión iniciada como ${user.role}.`, "success");
-      onLoginSuccess({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        pin: user.pin
-      });
-    } catch (err) {
-      const cleanInput = emailInput.trim().toLowerCase();
-      const fallbackUser = DEFAULT_USERS.find(u => u.email.toLowerCase() === cleanInput || (cleanInput === "admin" && (u.email === "admin" || u.email === "admin@cafepuglia.com")));
-      if (fallbackUser && fallbackUser.password === passwordInput) {
-        onShowNotification(`🎭 ¡Bienvenido/a, ${fallbackUser.name}! Sesión iniciada como ${fallbackUser.role}.`, "success");
-        onLoginSuccess({
-          id: fallbackUser.id,
-          name: fallbackUser.name,
-          email: fallbackUser.email,
-          role: fallbackUser.role,
-          pin: fallbackUser.pin
-        });
+      const authResult = await AuthService.loginWithCredentials(emailInput, passwordInput);
+      if (authResult.success && authResult.user) {
+        onShowNotification(`🎭 ¡Bienvenido/a, ${authResult.user.name}! Sesión iniciada como ${authResult.user.role}.`, "success");
+        onLoginSuccess(authResult.user);
       } else {
-        onShowNotification("❌ Error de conexión al verificar credenciales.", "warning");
+        onShowNotification(`❌ ${authResult.error || "Credenciales de acceso incorrectas."}`, "warning");
       }
+    } catch (err) {
+      onShowNotification("❌ Error de autenticación.", "warning");
     } finally {
       setIsLoading(false);
     }
