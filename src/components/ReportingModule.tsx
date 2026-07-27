@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from "react";
 import { Order } from "../types";
 import { ReportingService, CashClosureAudit } from "../services/ReportingService";
+import { formatARS } from "../utils/formatters";
 import { Calculator, Download, FileText, TrendingUp, DollarSign, Award, AlertCircle, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -90,22 +91,22 @@ export default function ReportingModule({ orders, onShowNotification }: Reportin
             >
               <div className="flex justify-between items-center text-xs border-b border-[#D4AF37]/20 pb-2">
                 <span className="text-[#FDFBF7]/70">Efectivo Esperado:</span>
-                <span className="font-mono font-bold text-[#FDFBF7]">${closureAudit.expectedCash.toFixed(2)}</span>
+                <span className="font-mono font-bold text-[#FDFBF7]">{formatARS(closureAudit.expectedCash)}</span>
               </div>
               <div className="flex justify-between items-center text-xs border-b border-[#D4AF37]/20 pb-2">
                 <span className="text-[#FDFBF7]/70">Mercado Pago / QR:</span>
-                <span className="font-mono font-bold text-[#FDFBF7]">${closureAudit.expectedMercadoPago.toFixed(2)}</span>
+                <span className="font-mono font-bold text-[#FDFBF7]">{formatARS(closureAudit.expectedMercadoPago)}</span>
               </div>
               <div className="flex justify-between items-center text-xs border-b border-[#D4AF37]/20 pb-2">
                 <span className="text-[#FDFBF7]/70">Tarjetas Crédito/Débito:</span>
-                <span className="font-mono font-bold text-[#FDFBF7]">${closureAudit.expectedCard.toFixed(2)}</span>
+                <span className="font-mono font-bold text-[#FDFBF7]">{formatARS(closureAudit.expectedCard)}</span>
               </div>
               <div className="flex justify-between items-center text-sm pt-1">
                 <strong className="text-[#FFDF00]">Diferencia de Caja:</strong>
                 <strong className={`font-mono text-base ${
                   closureAudit.cashDifference === 0 ? "text-emerald-400" : closureAudit.cashDifference > 0 ? "text-blue-400" : "text-rose-400"
                 }`}>
-                  ${closureAudit.cashDifference.toFixed(2)}
+                  {formatARS(closureAudit.cashDifference)}
                 </strong>
               </div>
             </motion.div>
@@ -119,7 +120,7 @@ export default function ReportingModule({ orders, onShowNotification }: Reportin
               <Award className="h-5 w-5 text-[#D4AF37]" /> Ranking de Productos Más Vendidos
             </h3>
             <p className="text-[10px] text-[#FDFBF7]/60 mt-1">
-              Desglose de rotación entre Cafetería de Especialidad y Menú Ejecutivo del Día.
+              Desglose de rotación entre Cafetería de Especialidad y Menú del Día.
             </p>
           </div>
 
@@ -132,7 +133,7 @@ export default function ReportingModule({ orders, onShowNotification }: Reportin
                 </div>
                 <div className="text-right font-mono">
                   <span className="text-xs font-bold block text-[#FFDF00]">{prod.unitsSold} u.</span>
-                  <span className="text-[10px] text-[#FDFBF7]/60 block">${prod.totalRevenue.toFixed(0)}</span>
+                  <span className="text-[10px] text-[#FDFBF7]/60 block">{formatARS(prod.totalRevenue)}</span>
                 </div>
               </div>
             ))}

@@ -1,87 +1,130 @@
-export interface ARCAPayload {
-  voucherType: 1 | 6 | 11; // 1: Factura A, 6: Factura B, 11: Factura C
-  posNumber: number;
-  docType: 80 | 96; // 80: CUIT, 96: DNI
-  docNumber: string;
-  customerName?: string;
-  items: { description: string; amount: number; vatRate: 21 | 10.5 }[];
-  subtotal: number;
-  vatAmount: number;
-  totalAmount: number;
+/**
+ * ARCA (Agencia de Recaudación y Control Aduanero - ex-AFIP) Official Electronic Invoicing Adapter
+ * Connects POS frontend to secure WSAA + WSFEV1 / WSMTXCA Backend Edge Functions.
+ * Resto Bar Del Teatro - Constitución 944, Río Cuarto (Córdoba) - CUIT: 30-71234567-8
+ */
+
+import { Order, FiscalDetails } from "../types";
+
+export type ARCAEnvironment = "homologation" | "production";
+export type FiscalStatus = "draft" | "authorizing" | "authorized" | "observed" | "rejected" | "uncertain";
+
+export interface ARCARequestPayload {
+  environment: ARCAEnvironment;
+  cuitEmisor: string;
+  ptoVta: number;
+  tipoCmp: number; // 1 = Factura A, 6 = Factura B, 11 = Factura C
+  concepto: number; // 1 = Productos, 2 = Servicios, 3 = Productos y Servicios
+  tipoDocRec: number; // 80 = CUIT, 96 = DNI, 99 = Consumidor Final
+  nroDocRec: number;
+  importeTotal: number;
+  importeNeto: number;
+  importeIVA: number;
+  idempotencyKey: string;
 }
 
 export interface ARCAResponse {
-  cae: string;
-  caeDueDate: string;
-  voucherNumber: number;
-  qrPayload: string;
-  qrUrl: string;
-  status: "Emitida" | "Rechazada";
+  success: boolean;
+  status: FiscalStatus;
+  cae?: string;
+  caeExpiration?: string;
+  invoiceNumber?: string;
+  qrCodeUrl?: string;
+  observations?: string[];
+  errors?: string[];
+  rawResponse?: any;
 }
 
-export interface IARCAAdapter {
-  authorizeVoucher(payload: ARCAPayload): Promise<ARCAResponse>;
-  generateStandardQR(payload: ARCAPayload, response: ARCAResponse): string;
-}
+export class ARCAAdapter {
+  private static readonly CUIT_EMISOR = "30712345678";
+  private static readonly PTO_VTA = 5;
+  private static environment: ARCAEnvironment = "homologation";
 
-export class ARCAFiscalAdapter implements IARCAAdapter {
-  private posNumber: number = 1;
+  /**
+   * Configures environment mode (homologation or production)
+   */
+  public static setEnvironment(env: ARCAEnvironment): void {
+    this.environment = env;
+  }
 
-  public async authorizeVoucher(payload: ARCAPayload): Promise<ARCAResponse> {
-    // 1. Validate mandatory ARCA fields
-    if (!payload.docNumber || payload.docNumber.trim() === "") {
-      payload.docNumber = "00000000";
+  /**
+   * Generates Official ARCA QR URL (Version 1 Specification)
+   */
+  public static generateOfficialArcaQR(data: {
+    ver: number;
+    fecha: string;
+    cuit: number;
+    ptoVta: number;
+    tipoCmp: number;
+    nroCmp: number;
+    importe: number;
+    moneda: string;
+    ctz: number;
+    tipoDocRec: number;
+    nroDocRec: number;
+    tipoCodAut: "E" | "A"; // E = CAE, A = CAEA
+    codAut: number;
+  }): string {
+    try {
+      const jsonStr = JSON.stringify(data);
+      const base64Data = btoa(jsonStr);
+      // Official ARCA URL (ex-AFIP)
+      return `https://www.afip.gob.ar/fe/qr/?p=${base64Data}`;
+    } catch (e) {
+      console.error("Error building ARCA QR Base64:", e);
+      return "";
+    }
+  }
+
+  /**
+   * Requests real CAE fiscal authorization via secure Backend Edge Function.
+   * If backend is not reached or credentials are not yet configured, returns a safe draft state.
+   */
+  public static async authorizeInvoice(order: Order, customerCuitDni: string, customerName: string, invoiceType: "A" | "B" | "C"): Promise<ARCAResponse> {
+    const cleanDoc = customerCuitDni.replace(/\D/g, "");
+    const idempotencyKey = `inv-${order.id}-${Date.now()}`;
+
+    const payload: ARCARequestPayload = {
+      environment: this.environment,
+      cuitEmisor: this.CUIT_EMISOR,
+      ptoVta: this.PTO_VTA,
+      tipoCmp: invoiceType === "A" ? 1 : invoiceType === "B" ? 6 : 11,
+      concepto: 1, // Productos
+      tipoDocRec: cleanDoc.length === 11 ? 80 : cleanDoc.length === 8 ? 96 : 99,
+      nroDocRec: cleanDoc ? parseInt(cleanDoc) : 0,
+      importeTotal: order.total,
+      importeNeto: parseFloat((order.total / 1.21).toFixed(2)),
+      importeIVA: parseFloat((order.total - order.total / 1.21).toFixed(2)),
+      idempotencyKey
+    };
+
+    // Attempt to invoke backend edge function if configured
+    try {
+      const response = await fetch("/api/arca/authorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const resData: ARCAResponse = await response.json();
+        return resData;
+      }
+    } catch (e) {
+      // Backend not yet reachable in current environment
     }
 
-    // 2. Generate sequential fiscal voucher number
-    const lastVoucherNum = parseInt(localStorage.getItem("puglia_last_arca_voucher") || "1040");
-    const voucherNumber = lastVoucherNum + 1;
-    localStorage.setItem("puglia_last_arca_voucher", voucherNumber.toString());
-
-    // 3. Generate 14-digit CAE and Due Date (10 days ahead)
-    const randomCAE = "74" + Math.floor(Math.random() * 900000000000 + 100000000000).toString();
-    const due = new Date();
-    due.setDate(due.getDate() + 10);
-    const caeDueDate = due.toISOString().split("T")[0];
-
-    const tempResponse: Omit<ARCAResponse, "qrPayload" | "qrUrl"> = {
-      cae: randomCAE,
-      caeDueDate,
-      voucherNumber,
-      status: "Emitida"
-    };
-
-    // 4. Generate Official ARCA QR Payload
-    const qrUrl = this.generateStandardQR(payload, tempResponse as any);
-    const qrPayload = btoa(qrUrl);
-
+    // Safe Fallback: Return draft state with clear indication that backend WSAA authorization is pending
     return {
-      ...tempResponse,
-      qrPayload,
-      qrUrl
+      success: false,
+      status: "draft",
+      invoiceNumber: `00005-BORRADOR-${order.id.slice(-6).toUpperCase()}`,
+      observations: [
+        "El comprobante se generó como Borrador No Fiscal.",
+        "La autorización WSAA/WSFEV1 requiere configurar los certificados digitales ARCA (.crt y .key) en las variables de entorno del servidor Backend."
+      ]
     };
-  }
-
-  public generateStandardQR(payload: ARCAPayload, response: Partial<ARCAResponse>): string {
-    const qrObj = {
-      ver: 1,
-      fecha: new Date().toISOString().split("T")[0],
-      cuit: 30712345678,
-      ptoVta: payload.posNumber || this.posNumber,
-      tipoCmp: payload.voucherType,
-      nroCmp: response.voucherNumber || 1041,
-      importe: payload.totalAmount,
-      moneda: "PES",
-      ctz: 1,
-      tipoDocRec: payload.docType,
-      nroDocRec: parseInt(payload.docNumber.replace(/\D/g, "") || "0"),
-      tipoCodAut: "E",
-      codAut: parseInt(response.cae || "74123456789012")
-    };
-
-    const jsonStr = JSON.stringify(qrObj);
-    return `https://www.arca.gob.ar/fe/qr/?p=${btoa(jsonStr)}`;
   }
 }
 
-export const arcaAdapter = new ARCAFiscalAdapter();
+export const arcaAdapter = ARCAAdapter;
