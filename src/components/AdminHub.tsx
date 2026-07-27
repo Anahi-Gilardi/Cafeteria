@@ -26,6 +26,7 @@ import { OrderTypeSelector, OrderServiceType, TakeawayDetails, DeliveryDetails }
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { SupabaseSyncService } from "../services/SupabaseSyncService";
 import { StorageService } from "../services/StorageService";
+import { PresupuestoPDFService } from "../services/PresupuestoPDFService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -7484,7 +7485,15 @@ export default function AdminHub({
         </div>
 
         {/* Sidebar Bottom Widgets */}
-        <div className="space-y-4">
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => PresupuestoPDFService.generatePresupuestoPDF()}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-[10px] font-black uppercase tracking-wider shadow-md hover:brightness-110 cursor-pointer gold-glow"
+          >
+            <FileText className="h-3.5 w-3.5" /> Presupuesto PDF ($2M / 12 Cuotas)
+          </button>
+
           <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px]">
             <span className="text-white/40 block font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Estado de Conexión
