@@ -55,10 +55,10 @@ export default function App() {
     const id = "toast-" + Date.now() + Math.random().toString(36).substring(2, 5);
     setNotifications((prev) => [...prev, { id, message, type }]);
     
-    // Auto-dismiss after 4 seconds
+    // Auto-dismiss after 2.8 seconds
     setTimeout(() => {
       setNotifications((prev) => prev.filter((toast) => toast.id !== id));
-    }, 4000);
+    }, 2800);
   };
 
   const removeNotification = (id: string) => {
@@ -537,7 +537,6 @@ export default function App() {
           console.error(`❌ Error al guardar comanda ${order.id} en Supabase:`, res.error);
         }
       });
-
       return nextOrders;
     });
   };
@@ -547,6 +546,50 @@ export default function App() {
     setActiveTab("dashboard");
     showNotification("👋 Sesión cerrada correctamente.", "info");
   };
+
+  const renderNotificationStack = () => (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col-reverse gap-2 max-w-[320px] w-full pointer-events-none">
+      <AnimatePresence>
+        {notifications.slice(-3).map((toast) => {
+          const isSuccess = toast.type === "success";
+          const isWarning = toast.type === "warning";
+          const Icon = isSuccess ? CheckCircle : isWarning ? AlertTriangle : Info;
+          return (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 0.95, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className={`pointer-events-auto flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border backdrop-blur-md shadow-2xl transition-all ${
+                isSuccess
+                  ? "bg-[#1A110B]/90 border-emerald-500/50 text-emerald-300"
+                  : isWarning
+                  ? "bg-[#1A110B]/90 border-amber-500/50 text-amber-300"
+                  : "bg-[#1A110B]/90 border-[#D4AF37]/50 text-[#FFDF00]"
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Icon className={`h-4 w-4 shrink-0 ${
+                  isSuccess ? "text-emerald-400" : isWarning ? "text-amber-400" : "text-[#FFDF00]"
+                }`} />
+                <span className="text-[11px] font-bold text-[#FDFBF7] line-clamp-2 leading-tight">
+                  {toast.message}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeNotification(toast.id)}
+                className="p-1 hover:bg-white/10 rounded-lg transition-all cursor-pointer text-[#FDFBF7]/60 hover:text-white shrink-0 border-none bg-transparent"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  );
 
   if (!currentUser) {
     return (
@@ -561,48 +604,22 @@ export default function App() {
               setActiveTab("dashboard");
             }
           }}
+          onSelectCategory={(catId) => {
+            setActiveTab("public_menu");
+          }}
+          onOpenPublicMarquee={() => setActiveTab("public_menu")}
+          currentUser={currentUser}
+          onOpenAdmin={() => {
+            if (currentUser?.role === "administrador" || currentUser?.role === "dueño" || currentUser?.role === "barista") {
+              setActiveTab("admin");
+            } else {
+              setActiveTab("dashboard");
+            }
+          }}
           onShowNotification={showNotification}
         />
         
-        {/* Floating Interactive Toast Notifications Overlay Stack */}
-        <div className="fixed top-6 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
-          <AnimatePresence>
-            {notifications.map((toast) => {
-              const isSuccess = toast.type === "success";
-              const isWarning = toast.type === "warning";
-              const Icon = isSuccess ? CheckCircle : isWarning ? AlertTriangle : Info;
-              return (
-                <motion.div
-                  key={toast.id}
-                  initial={{ opacity: 0, x: 50, y: -10 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, x: 50 }}
-                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                  className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-lg ${
-                    isSuccess
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                      : isWarning
-                      ? "bg-amber-50 border-amber-200 text-amber-900"
-                      : "bg-blue-50 border-blue-200 text-blue-900"
-                  }`}
-                >
-                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${
-                    isSuccess ? "text-emerald-700" : isWarning ? "text-amber-700" : "text-blue-700"
-                  }`} />
-                  <div className="flex-1 text-xs font-semibold leading-relaxed">
-                    {toast.message}
-                  </div>
-                  <button
-                    onClick={() => removeNotification(toast.id)}
-                    className="p-0.5 hover:bg-stone-200/50 rounded transition-all cursor-pointer text-stone-500"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+        {renderNotificationStack()}
       </div>
     );
   }
@@ -632,46 +649,7 @@ export default function App() {
           currentUser={currentUser}
           bookings={bookings}
         />
-        
-        {/* Floating Interactive Toast Notifications Overlay Stack */}
-        <div className="fixed top-6 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
-          <AnimatePresence>
-            {notifications.map((toast) => {
-              const isSuccess = toast.type === "success";
-              const isWarning = toast.type === "warning";
-              const Icon = isSuccess ? CheckCircle : isWarning ? AlertTriangle : Info;
-              return (
-                <motion.div
-                  key={toast.id}
-                  initial={{ opacity: 0, x: 50, y: -10 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, x: 50 }}
-                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                  className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-lg ${
-                    isSuccess
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                      : isWarning
-                      ? "bg-amber-50 border-amber-200 text-amber-900"
-                      : "bg-blue-50 border-blue-200 text-blue-900"
-                  }`}
-                >
-                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${
-                    isSuccess ? "text-emerald-700" : isWarning ? "text-amber-700" : "text-blue-700"
-                  }`} />
-                  <div className="flex-1 text-xs font-semibold leading-relaxed">
-                    {toast.message}
-                  </div>
-                  <button
-                    onClick={() => removeNotification(toast.id)}
-                    className="p-0.5 hover:bg-stone-200/50 rounded transition-all cursor-pointer text-stone-500"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
+        {renderNotificationStack()}
       </div>
     );
   }
@@ -971,45 +949,7 @@ export default function App() {
         onShowNotification={showNotification}
       />
 
-      {/* Floating Interactive Toast Notifications Overlay Stack */}
-      <div className="fixed top-24 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
-        <AnimatePresence>
-          {notifications.map((toast) => {
-            const isSuccess = toast.type === "success";
-            const isWarning = toast.type === "warning";
-            const Icon = isSuccess ? CheckCircle : isWarning ? AlertTriangle : Info;
-            return (
-              <motion.div
-                key={toast.id}
-                initial={{ opacity: 0, x: 50, y: -10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                exit={{ opacity: 0, x: 50 }}
-                transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border shadow-lg ${
-                  isSuccess
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                    : isWarning
-                    ? "bg-amber-50 border-amber-200 text-amber-900"
-                    : "bg-blue-50 border-blue-200 text-blue-900"
-                }`}
-              >
-                <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${
-                  isSuccess ? "text-emerald-700" : isWarning ? "text-amber-700" : "text-blue-700"
-                }`} />
-                <div className="flex-1 text-xs font-semibold leading-relaxed">
-                  {toast.message}
-                </div>
-                <button
-                  onClick={() => removeNotification(toast.id)}
-                  className="p-0.5 hover:bg-stone-200/50 rounded transition-all cursor-pointer text-stone-500"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+      {renderNotificationStack()}
     </div>
   );
 }
