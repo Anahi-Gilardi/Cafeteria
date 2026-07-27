@@ -205,12 +205,12 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                             }}
                             className={`flex flex-col p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
                               isSel
-                                ? "border-caramel bg-caramel/10 text-espresso font-bold"
-                                : "border-coffee/40 bg-white text-espresso/60 hover:border-caramel/40"
+                                ? "border-[#FFDF00] bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg"
+                                : "border-[#D4AF37]/30 bg-[#2A1B12] text-[#FDFBF7] hover:border-[#D4AF37]"
                             }`}
                           >
                             <span className="text-xs font-bold">{slot.label}</span>
-                            <span className="text-[10px] text-espresso/45 leading-none mt-0.5">{slot.time}</span>
+                            <span className={`text-[10px] leading-none mt-0.5 ${isSel ? "text-[#1C120C]/80" : "text-[#FDFBF7]/60"}`}>{slot.time}</span>
                           </button>
                         );
                       })}
@@ -219,8 +219,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
 
                   {/* Guests */}
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Personas</label>
-                    <div className="flex items-center space-x-1.5 rounded-xl bg-coffee/20 p-1">
+                    <label htmlFor="booking-guests-selector" className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1.5 font-semibold">Personas</label>
+                    <div id="booking-guests-selector" className="flex items-center space-x-1.5 rounded-xl bg-[#2A1B12] p-1 border border-[#D4AF37]/30">
                       {[1, 2, 4, 6].map((num) => (
                         <button
                           type="button"
@@ -232,8 +232,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                           }}
                           className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                             selectedGuests === num
-                              ? "bg-espresso text-paper shadow-xs"
-                              : "text-espresso/50 hover:text-espresso"
+                              ? "bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-black shadow-sm"
+                              : "text-[#FDFBF7]/70 hover:text-[#FDFBF7] bg-[#1C120C]"
                           }`}
                         >
                           {num === 1 ? "1p" : num === 2 ? "2p" : num === 4 ? "4p" : "6p+"}
@@ -387,46 +387,48 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Name */}
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Nombre Completo</label>
+                      <label htmlFor="booking-name-input" className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1.5 font-semibold">Nombre Completo *</label>
                       <div className="relative">
-                        <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-espresso/40" />
+                        <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#D4AF37]" />
                         <input
                           type="text"
                           id="booking-name-input"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
                           placeholder="Ingrese su nombre"
-                          className="w-full rounded-xl border border-coffee bg-paper/35 py-2.5 pr-4 pl-10 text-sm outline-none focus:border-caramel focus:bg-white text-espresso font-medium"
+                          className="w-full rounded-xl border border-[#D4AF37]/30 bg-[#1C120C] py-2.5 pr-4 pl-10 text-sm outline-none focus:border-[#FFDF00] text-[#FDFBF7] font-medium"
+                          required
                         />
                       </div>
                     </div>
 
                     {/* Phone */}
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Teléfono Móvil</label>
+                      <label htmlFor="booking-phone-input" className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1.5 font-semibold">Teléfono Móvil *</label>
                       <div className="relative">
-                        <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-espresso/40" />
+                        <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#D4AF37]" />
                         <input
                           type="tel"
                           id="booking-phone-input"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
-                          placeholder="e.g. +54 221 123 4567"
-                          className="w-full rounded-xl border border-coffee bg-paper/35 py-2.5 pr-4 pl-10 text-sm outline-none focus:border-caramel focus:bg-white text-espresso font-medium"
+                          placeholder="ej: +54 358 504 2311"
+                          className="w-full rounded-xl border border-[#D4AF37]/30 bg-[#1C120C] py-2.5 pr-4 pl-10 text-sm outline-none focus:border-[#FFDF00] text-[#FDFBF7] font-medium"
+                          required
                         />
                       </div>
                     </div>
                   </div>
 
                   {formError && (
-                    <p className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 p-2.5 rounded-lg">{formError}</p>
+                    <p className="text-xs font-bold text-rose-300 bg-rose-950/80 border border-rose-500/50 p-2.5 rounded-lg">{formError}</p>
                   )}
 
-                  <div className="pt-4 border-t border-coffee flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="text-xs text-espresso/60 leading-snug">
+                  <div className="pt-4 border-t border-[#D4AF37]/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="text-xs text-[#FDFBF7]/70 leading-snug">
                       {selectedTable ? (
                         <>
-                          Reservando: <strong className="text-espresso font-bold">{selectedTable.name}</strong> para {selectedGuests} personas el {selectedDate} ({selectedTimeSlot}).
+                          Reservando: <strong className="text-[#FFDF00] font-bold">{selectedTable.name}</strong> para {selectedGuests} personas el {selectedDate} ({selectedTimeSlot}).
                         </>
                       ) : (
                         "Selecciona una mesa en el plano de arriba para continuar."
@@ -435,12 +437,12 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                     <button
                       type="submit"
                       id="confirm-booking-submit-btn"
-                      className={`rounded-full px-8 py-3 text-sm font-bold text-white shadow-md transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer ${
-                        selectedTableId 
-                          ? "bg-espresso hover:bg-caramel" 
-                          : "bg-espresso/15 border border-coffee/30 text-espresso/35 cursor-not-allowed"
+                      className={`rounded-full px-8 py-3 text-xs font-black uppercase tracking-wider text-[#1C120C] shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer ${
+                        selectedTableId && customerName.trim() && customerPhone.trim()
+                          ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] hover:brightness-110 gold-glow" 
+                          : "bg-gray-700/40 text-gray-400 border border-gray-600/30 cursor-not-allowed"
                       }`}
-                      disabled={!selectedTableId}
+                      disabled={!selectedTableId || !customerName.trim() || !customerPhone.trim()}
                     >
                       <Sparkles className="h-4 w-4" />
                       <span>Confirmar Reserva Gratis</span>

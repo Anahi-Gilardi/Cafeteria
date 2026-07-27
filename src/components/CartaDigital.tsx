@@ -51,10 +51,13 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
   const tableDetails = tables.find(t => t.id === selectedTable);
 
   // Filter items using dynamic menuItems
+  const normalizeStr = (str: string) => (str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normQuery = normalizeStr(searchQuery);
+
   const filteredItems = menuItems.filter((item) => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !normQuery || normalizeStr(item.name).includes(normQuery) || 
+                          normalizeStr(item.description).includes(normQuery);
     const matchesTag = !activeFilter || (item.tags && item.tags.includes(activeFilter));
     return matchesCategory && matchesSearch && matchesTag;
   });
@@ -407,6 +410,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
 
                             <button
                               disabled={isOutOfStock}
+                              aria-label={`Pedir ${item.name} para su mesa`}
                               onClick={() => {
                                 onAddToBag(item, { size: "M", milk: "Regular", sweetness: "100%" });
                                 onShowNotification(`🛒 Añadió ${item.name} para su Mesa.`, "success");

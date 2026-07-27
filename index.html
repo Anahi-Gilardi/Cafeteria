@@ -3,11 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Resto Bar Del Teatro | ERP/POS & Carta Digital</title>
+    <title>Resto Bar Del Teatro | Cafetería de Especialidad, Menú Ejecutivo y Cenas en Río Cuarto</title>
+    <meta name="description" content="Resto Bar Del Teatro en Constitución 944, Río Cuarto (Córdoba). Cafetería de especialidad por las mañanas, Menú Ejecutivo gourmet del día ($8.000) y la mejor cocina de autor por las noches." />
+    <meta name="keywords" content="Resto Bar Del Teatro, Río Cuarto, Cafetería Río Cuarto, Menú Ejecutivo, Restaurante Córdoba, Teatro Municipal Río Cuarto" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://cafeteria-ten-pied.vercel.app/" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:url" content="https://cafeteria-ten-pied.vercel.app/" />
+    <meta property="og:title" content="Resto Bar Del Teatro | Gastronomía de Autor en Río Cuarto" />
+    <meta property="og:description" content="Cafetería de especialidad, Menú Ejecutivo gourmet del día ($8.000) y cocina de autor frente al Teatro Municipal." />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:site_name" content="Resto Bar Del Teatro" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Resto Bar Del Teatro | Río Cuarto" />
+    <meta name="twitter:description" content="Cafetería de especialidad, Menú Ejecutivo gourmet del día ($8.000) y cocina de autor frente al Teatro Municipal." />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "Resto Bar Del Teatro",
+      "url": "https://cafeteria-ten-pied.vercel.app/",
+      "telephone": "+543585042311",
+      "priceRange": "$$$",
+      "menu": "https://cafeteria-ten-pied.vercel.app/",
+      "servesCuisine": ["Argentine", "Coffee", "Gourmet"],
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Constitución 944",
+        "addressLocality": "Río Cuarto",
+        "addressRegion": "Córdoba",
+        "postalCode": "X5800",
+        "addressCountry": "AR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": -33.1245,
+        "longitude": -64.3512
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "07:30",
+          "closes": "01:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Sunday",
+          "opens": "08:30",
+          "closes": "00:00"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
