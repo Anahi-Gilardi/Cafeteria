@@ -47,7 +47,7 @@ export class MenuPDFService {
       doc.setTextColor(212, 175, 55);
       doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
-      doc.text("MENÚ EJECUTIVO DEL DÍA: $8.000 (ENTRADA + PRINCIPAL + BEBIDA + POSTRE)", pageWidth / 2, 32, { align: "center" });
+      doc.text("MENÚ EJECUTIVO DEL DÍA: $12.500 (ENTRADA + PRINCIPAL + BEBIDA + POSTRE)", pageWidth / 2, 32, { align: "center" });
 
       currentY = 52;
     };

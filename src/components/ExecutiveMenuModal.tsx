@@ -55,7 +55,7 @@ export default function ExecutiveMenuModal({ isOpen, onClose, onConfirm }: Execu
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#C2956E] text-[#2C1810]">
-                ⭐ {dailyConfig.dayOfWeek} • Menú del Día ($8.000)
+                ⭐ {dailyConfig.dayOfWeek} • Menú del Día ($12.500)
               </span>
             </div>
             <h3 className="font-serif text-2xl font-bold mt-1 text-[#2C1810]">{dailyConfig.title}</h3>

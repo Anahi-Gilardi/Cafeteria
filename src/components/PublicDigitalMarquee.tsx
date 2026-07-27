@@ -252,7 +252,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         <div className="flex border-b border-[#E2D4C3] pb-3 gap-3 overflow-x-auto text-xs font-bold">
           {[
             { id: "all", label: "🍽️ Ver Todo" },
-            { id: "executive", label: "⭐ Menú Diario ($8.000)" },
+            { id: "executive", label: "⭐ Menú Diario ($12.500)" },
             { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },

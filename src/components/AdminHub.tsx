@@ -7096,7 +7096,7 @@ export default function AdminHub({
       });
     });
     const sortedDishes = Object.entries(itemSalesCount).sort((a, b) => b[1] - a[1]);
-    const topSellingDish = sortedDishes.length > 0 ? `${sortedDishes[0][0]} (${sortedDishes[0][1]} un.)` : "Menú del Día ($8.000)";
+    const topSellingDish = sortedDishes.length > 0 ? `${sortedDishes[0][0]} (${sortedDishes[0][1]} un.)` : "Menú del Día ($12.500)";
 
     // Total merma cost calculation
     const totalMermaCost = mermaLogs.reduce((acc, m) => {

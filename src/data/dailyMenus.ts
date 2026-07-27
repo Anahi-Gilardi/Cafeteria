@@ -5,7 +5,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Lunes",
     title: "Menú del Día - Tradicional de Cuchara",
     description: "Iniciá la semana con sabores reconfortantes de nuestra cocina criolla casera.",
-    price: 8000,
+    price: 12500,
     starters: ["Sopa Crema de Calabaza y Crutones", "Empanada de Carne Cortada a Cuchillo", "Ensalada Verde de la Huerta"],
     mains: ["Guiso de Lentejas Criollo con Chorizo", "Pastel de Papa Tradicional Horneado", "Milanesa de Pechuga a la Parmigiana con Puré"],
     drinks: ["Copa de Vino Malbec de la Casa", "Limonada Fresca con Menta y Jengibre", "Agua Mineral / Gaseosa 500ml"],
@@ -16,7 +16,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Martes",
     title: "Menú del Día - Minutas Gourmet",
     description: "Clásicos inoxidables de las mejores minutas de Buenos Aires elaboradas al momento.",
-    price: 8000,
+    price: 12500,
     starters: ["Provolone a la Chapa con Oreganato", "Empanada de Jamón y Queso Glaseada", "Bruschetta de Tomate Concasse y Albahaca"],
     mains: ["Milanesa Napolitana de Ternera con Papas Fritas", "Suprema Maryland con Choclo Cremoso", "Ensalada César Gourmet con Pollo Grillado"],
     drinks: ["Copa de Vino Cabernet Sauvignon", "Jugo Natural de Naranja Exprimido", "Agua Con / Sin Gas 500ml"],
@@ -27,7 +27,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Miércoles",
     title: "Menú del Día - Pastas Caseras",
     description: "Pastas amasaditas al huevo por nuestros maestros fideos con salsas italianas.",
-    price: 8000,
+    price: 12500,
     starters: ["Caprese con Muzzarella de Búfala y Pesto", "Sopa Minestrone de Vegetales", "Focaccia Artesanal con Romero"],
     mains: ["Sorrentinos de Jamón y Queso con Salsa Tuco", "Ravioles de Espinaca y Ricota con Salsa Mixta", "Lasagna Bolognesa de la Casa"],
     drinks: ["Copa de Vino Chardonnay / Malbec", "Limonada de Arándanos y Romero", "Gaseosa / Agua Mineral"],
@@ -38,7 +38,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Jueves",
     title: "Menú del Día - Parrilla & Cortes",
     description: "Nuestra selección de carnes a la parrilla con leña de quebracho y guarniciones de fuego.",
-    price: 8000,
+    price: 12500,
     starters: ["Choripán de Campo con Chimichurri", "Empanada Salteña de Carne Picante", "Ensalada de Rúcula y Parmesano"],
     mains: ["Bife de Chorizo (250g) a las Brasas con Papas Provenzal", "Entraña Tiernizada a la Chapa", "Bondiola de Cerdo al Malbec con Puré de Batatas"],
     drinks: ["Copa de Vino Red Blend Reserva", "Cerveza Tirada Artesanal IPA / Rubia", "Agua Mineral / Gaseosa"],
@@ -49,7 +49,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Viernes",
     title: "Menú del Día - Especial del Chef",
     description: "Platos frescos seleccionados por nuestro chef para cerrar la semana hábil.",
-    price: 8000,
+    price: 12500,
     starters: ["Rabitas Crocantes con Salsa Tartara", "Sopa de Mariscos al Vino Blanco", "Empanada de Humita y Queso"],
     mains: ["Filet de Merluza a la Romana con Puré Mixto", "Cazuela de Mariscos con Arroz Azafranado", "Salmon de Criadero al Horno con Vegetales Asados"],
     drinks: ["Copa de Vino Sauvignon Blanc", "Limonada de Hierbabuena", "Cerveza Tirada / Agua Mineral"],
@@ -60,7 +60,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Sábado",
     title: "Menú del Día - Bistró & Brunch",
     description: "Una experiencia gastronómica relajada para disfrutar el fin de semana en familia o amigos.",
-    price: 8000,
+    price: 12500,
     starters: ["Tabla de Quesos y Fiambres Artesanales", "Empanada de Carne a la Leña", "Bruschetta de Salmón Ahumado"],
     mains: ["Ojo de Bife con Manteca de Hierbas y Papas Rústicas", "Risotto de Hongos Portobello y Trufa", "Raviolones de Cordero con Salsa de Hierbas"],
     drinks: ["Copa de Espumante o Vino Reserva", "Trago Aperol Spritz / Gin Tonic", "Jugo Exprimido / Agua Mineral"],
@@ -71,7 +71,7 @@ export const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     dayOfWeek: "Domingo",
     title: "Menú del Día - Asado Familiar",
     description: "La mesa de domingo servida con abundancia y cariño como en las mejores casas.",
-    price: 8000,
+    price: 12500,
     starters: ["Chorizo y Morcilla de Campo", "Empanada de Carne Cortada a Cuchillo", "Provolone Fundido"],
     mains: ["Asado de Tira a la Parrilla con Ensalada Rusa", "Ñoquis de Papa Caseros con Estofado de Peceto", "Milanesa de Ternera Gigante a la Napolitana"],
     drinks: ["Copa de Vino Malbec Don Pablo", "Limonada con Jengibre y Miel", "Gaseosa / Agua Mineral"],
@@ -99,7 +99,7 @@ export function getTodayExecutiveMenu(): DailyExecutiveMenu {
       const parsed: DailyExecutiveMenu[] = JSON.parse(savedCustom);
       const found = parsed.find((m) => m.dayOfWeek === dayName);
       if (found) {
-        found.price = 8000;
+        found.price = 12500;
         if (!found.title.startsWith("Menú del Día")) {
           found.title = "Menú del Día - Especial del Chef";
         }
@@ -111,6 +111,6 @@ export function getTodayExecutiveMenu(): DailyExecutiveMenu {
   }
 
   const defaultFound = DEFAULT_WEEKLY_MENUS.find((m) => m.dayOfWeek === dayName) || DEFAULT_WEEKLY_MENUS[1];
-  defaultFound.price = 8000;
+  defaultFound.price = 12500;
   return defaultFound;
 }

@@ -911,7 +911,7 @@ export default function App() {
             <div className="space-y-1 text-white/80">
               <p>Lunes a Viernes: <span className="text-white font-semibold">07:30 - 00:30 hs</span></p>
               <p>Sábados y Domingos: <span className="text-white font-semibold">08:30 - 02:00 hs</span></p>
-              <p className="text-[10px] text-[#F59E0B] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $8.000 (Incluye Entrada, Principal, Bebida y Postre)</p>
+              <p className="text-[10px] text-[#F59E0B] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $12.500 (Incluye Entrada, Principal, Bebida y Postre)</p>
             </div>
           </div>
 

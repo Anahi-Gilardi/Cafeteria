@@ -106,7 +106,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
       {/* Top Marketing Banner */}
       <div className="bg-gradient-to-r from-[#D4AF37] via-[#C59B27] to-[#996515] text-white py-2.5 px-4 text-center font-black text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2">
         <Sparkles className="h-4 w-4 animate-spin shrink-0" />
-        <span>🎭 RESTO BAR DEL TEATRO • MENÚ EJECUTIVO PROMOCIONAL $8.000 • CONSTITUCIÓN 944, RÍO CUARTO</span>
+        <span>🎭 RESTO BAR DEL TEATRO • MENÚ EJECUTIVO PROMOCIONAL $12.500 • CONSTITUCIÓN 944, RÍO CUARTO</span>
         <Sparkles className="h-4 w-4 animate-spin shrink-0" />
       </div>
 
@@ -207,7 +207,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             </button>
           </div>
 
-          {/* HIGH-IMPACT MARKETING SHOWCASE: MENÚ DEL DÍA ($8.000) */}
+          {/* HIGH-IMPACT MARKETING SHOWCASE: MENÚ DEL DÍA ($12.500) */}
           <div className="mt-8 max-w-4xl mx-auto bg-gradient-to-br from-[#1C120C] via-[#2A1B12] to-[#1C120C] text-[#FDFBF7] border-2 border-[#D4AF37] rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden text-left gold-glow">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b border-[#D4AF37]/30 pb-4">
               <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               </div>
               <div className="flex items-center gap-2 text-xs text-[#D4AF37] font-bold">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>Vianda del Día • <strong>$8.000 ARS</strong></span>
+                <span>Vianda del Día • <strong>$12.500 ARS</strong></span>
               </div>
             </div>
 
@@ -228,7 +228,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                   ⭐ MENÚ DEL DÍA
                 </h3>
                 <span className="text-2xl md:text-3xl font-black font-mono text-[#FFDF00] bg-[#2A1B12] px-5 py-2 rounded-2xl border-2 border-[#D4AF37] shadow-xl gold-glow">
-                  $8.000
+                  $12.500
                 </span>
               </div>
               <p className="text-xs text-[#FDFBF7]/80 italic font-medium">
@@ -237,7 +237,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             </div>
 
             <div className="bg-[#130B07]/90 p-5 rounded-2xl border border-[#D4AF37]/30 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] block">🍱 OPICIONES DE VIANDA / PLATO PRINCIPAL DEL DÍA ($8.000)</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] block">🍱 OPICIONES DE VIANDA / PLATO PRINCIPAL DEL DÍA ($12.500)</span>
               <p className="text-sm text-[#FDFBF7] font-serif font-bold leading-relaxed">
                 {todayMenu.mains.join(" • ")}
               </p>
@@ -246,13 +246,13 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 onClick={() => {
-                  const message = `Hola Resto Bar Del Teatro, quiero encargar el Menú del Día (${todayMenu.dayOfWeek}) por $8.000.`;
+                  const message = `Hola Resto Bar Del Teatro, quiero encargar el Menú del Día (${todayMenu.dayOfWeek}) por $12.500.`;
                   window.open(`https://wa.me/543585042311?text=${encodeURIComponent(message)}`, "_blank");
-                  onShowNotification("📱 Abriendo chat de WhatsApp para pedir el Menú del Día ($8.000)...", "success");
+                  onShowNotification("📱 Abriendo chat de WhatsApp para pedir el Menú del Día ($12.500)...", "success");
                 }}
                 className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
               >
-                💬 Pedir Menú del Día por WhatsApp ($8.000)
+                💬 Pedir Menú del Día por WhatsApp ($12.500)
               </button>
               <button
                 onClick={() => setViewMode("digital_menu")}
