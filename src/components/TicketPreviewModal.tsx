@@ -42,14 +42,10 @@ export default function TicketPreviewModal({
   const [splitCount, setSplitCount] = useState<number>(2);
   const [selectedItemIndexes, setSelectedItemIndexes] = useState<number[]>([]);
 
-  // Simulation steps
-  const [isCaeAuthorized, setIsCaeAuthorized] = useState<boolean>(true);
-  const [simulatedCae, setSimulatedCae] = useState<string>(() => "CAE-" + Math.floor(Math.random() * 90000000000000 + 10000000000000));
-  const [simulatedCaeVto, setSimulatedCaeVto] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 10);
-    return d.toLocaleDateString("es-AR");
-  });
+  // Simulation steps - Non-fiscal draft state by default until real WSAA/WSMTXCA Backend
+  const [isCaeAuthorized, setIsCaeAuthorized] = useState<boolean>(false);
+  const [simulatedCae, setSimulatedCae] = useState<string>("SIN_AUTORIZACION_FISCAL");
+  const [simulatedCaeVto, setSimulatedCaeVto] = useState<string>("-");
 
   const ticketRef = useRef<HTMLDivElement>(null);
 

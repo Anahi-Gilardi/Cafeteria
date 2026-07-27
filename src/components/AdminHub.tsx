@@ -1790,24 +1790,24 @@ export default function AdminHub({
 
     const thermalHtml = `
       <h2>RESTO BAR DEL TEATRO</h2>
-      <div class="center">FACTURA ${fiscalDetails.invoiceType} - N° ${fiscalDetails.invoiceNumber}</div>
-      <div class="center">CAE: ${fiscalDetails.cae} (Vto: ${fiscalDetails.caeExpiration})</div>
+      <div class="center">DOCUMENTO NO FISCAL - ${fiscalDetails.invoiceType} (${fiscalDetails.invoiceNumber})</div>
+      <div class="center">ESTADO: PRE-TICKET / BORRADOR</div>
       <div class="line"></div>
       <div>Cliente: ${fiscalDetails.customerName}</div>
       <div>CUIT/DNI: ${fiscalDetails.customerCuit}</div>
       <div class="line"></div>
       <h3 class="right">TOTAL: $${updatedOrder.total.toLocaleString("es-AR")}</h3>
-      <div class="center italic">Comprobante Autorizado por ARCA (ex-AFIP)</div>
+      <div class="center italic">*** DOCUMENTO NO FISCAL — FACTURACIÓN ARCA REAL EN PROCESO ***</div>
     `;
-    ThermalPrinterService.printRawText(thermalHtml, `Factura_ARCA_${fiscalDetails.invoiceType}`);
+    ThermalPrinterService.printRawText(thermalHtml, `PreTicket_${fiscalDetails.invoiceType}`);
 
     onOrderStatusUpdate(selectedOrderForBilling.id, "Completado");
     setIsArcaModalOpen(false);
     setSelectedOrderForBilling(null);
 
     onShowNotification(
-      `✅ Factura ARCA (${fiscalDetails.invoiceType}) emitida con éxito. CAE: ${fiscalDetails.cae}.`,
-      "success"
+      `📋 Comprobante borrador de Factura (${fiscalDetails.invoiceType}) generado correctamente.`,
+      "info"
     );
   };
 
@@ -2908,9 +2908,12 @@ export default function AdminHub({
                 </thead>
                 <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
                   {filteredInsumos.map((ins, idx) => {
+                    const isExpired = ins.expirationDate ? new Date(ins.expirationDate) < new Date(new Date().setHours(0,0,0,0)) : false;
                     const isCritical = ins.quantity <= ins.minLimit / 2;
                     const isLow = ins.quantity <= ins.minLimit && !isCritical;
-                    const statusBadge = isCritical ? (
+                    const statusBadge = isExpired ? (
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-purple-950/90 border border-purple-500/60 text-purple-300 rounded-full tracking-wider animate-pulse">VENCIDO</span>
+                    ) : isCritical ? (
                       <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-red-950/80 border border-red-500/50 text-red-300 rounded-full tracking-wider">CRÍTICO</span>
                     ) : isLow ? (
                       <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-amber-950/80 border border-amber-500/50 text-amber-300 rounded-full tracking-wider">BAJO</span>
@@ -7436,10 +7439,12 @@ export default function AdminHub({
         <div className="space-y-4">
           <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px]">
             <span className="text-white/40 block font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Conectividad POS
+              <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Estado de Conexión
             </span>
-            <p className="text-[#FDFBF7]/80 font-semibold">• Servidor Local Offline Activo</p>
-            <p className="text-[#FDFBF7]/40 mt-0.5">Mesa 1-8 sintonizada - Respuestas en 0ms.</p>
+            <p className="text-[#FDFBF7]/80 font-semibold">
+              {navigator.onLine ? "• Sincronización Nube Activa (Supabase)" : "• Modo Standalone (Resguardo Local)"}
+            </p>
+            <p className="text-[#FDFBF7]/40 mt-0.5">Servicio en línea - Río Cuarto, Córdoba.</p>
           </div>
 
           <button
@@ -7451,7 +7456,7 @@ export default function AdminHub({
           </button>
           
           <div className="text-[8px] text-white/30 text-center font-bold tracking-wider uppercase">
-            Diseño para Resto Bar Del Teatro SL<br />Arg: Mar del Plata (Prov. Bs As)
+            RESTO BAR DEL TEATRO<br />Constitución 944, Río Cuarto (Córdoba)
           </div>
         </div>
       </div>
@@ -8125,52 +8130,6 @@ export default function AdminHub({
               {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
               <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
               <div className="text-[7px] text-[#2C1810]/40 font-sans mt-2">COMPROBANTE HOMOLOGADO POR AFIP EMISIÓN CONTROLADA</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Supabase SQL & DB Schema Setup Modal */}
-      {isSupabaseSqlModalOpen && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/40 rounded-3xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col space-y-5 gold-glow custom-gold-scrollbar">
-            <button 
-              onClick={() => setIsSupabaseSqlModalOpen(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="border-b border-[#D4AF37]/20 pb-3">
-              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Base de Datos PostgreSQL (Supabase)</span>
-              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">🗄️ Script SQL de Inicialización / Reparación</h4>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-[11px] text-[#FDFBF7]/80 leading-relaxed">
-                Si las comandas no se guardan en Supabase o salta un error RLS o de columnas faltantes, copia este script SQL y ejecútalo en tu proyecto:
-                <br />
-                <strong className="text-[#D4AF37]">Supabase Dashboard ➔ SQL Editor ➔ New Query ➔ Run</strong>
-              </p>
-
-              <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 rounded-2xl">
-                <pre className="font-mono text-[9.5px] text-[#FFDF00] whitespace-pre-wrap max-h-60 overflow-y-auto custom-gold-scrollbar p-2">
-                  {SupabaseSyncService.getFullSetupSQL()}
-                </pre>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-[#D4AF37]/20 flex justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(SupabaseSyncService.getFullSetupSQL());
-                  onShowNotification("📋 Script SQL copiado al portapapeles. Pégalo en Supabase SQL Editor.", "success");
-                }}
-                className="w-full py-3.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl hover:brightness-110 transition-all cursor-pointer gold-glow flex items-center justify-center gap-2"
-              >
-                📋 Copiar Script SQL de Supabase
-              </button>
             </div>
           </div>
         </div>

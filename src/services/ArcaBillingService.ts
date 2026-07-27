@@ -9,23 +9,44 @@ export interface FiscalCustomerInfo {
 
 export class ArcaBillingService {
   /**
-   * Validates CUIT / DNI format (11 digits for CUIT, 7-8 digits for DNI)
+   * Validates CUIT format using official Modulo 11 verification algorithm or DNI (8 digits)
    */
   public static validateCuitOrDni(input: string): { isValid: boolean; message: string } {
     const clean = input.replace(/\D/g, "");
     if (!clean) {
       return { isValid: false, message: "El CUIT/DNI no puede estar vacío." };
     }
-    if (clean.length !== 8 && clean.length !== 11) {
-      return { isValid: false, message: "El documento debe tener 8 dígitos (DNI) o 11 dígitos (CUIT)." };
+
+    if (clean.length === 8) {
+      return { isValid: true, message: "DNI válido (Consumidor Final)." };
     }
-    return { isValid: true, message: "Documento válido." };
+
+    if (clean.length === 11) {
+      // Validate CUIT Modulo 11
+      const multipliers = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+      let sum = 0;
+      for (let i = 0; i < 10; i++) {
+        sum += parseInt(clean[i]) * multipliers[i];
+      }
+      const remainder = sum % 11;
+      let checkDigit = 11 - remainder;
+      if (checkDigit === 11) checkDigit = 0;
+      if (checkDigit === 10) checkDigit = 9;
+
+      if (checkDigit !== parseInt(clean[10])) {
+        return { isValid: false, message: "El CUIT ingresado no es válido (dígito verificador incorrecto)." };
+      }
+      return { isValid: true, message: "CUIT verificado correctamente." };
+    }
+
+    return { isValid: false, message: "El documento debe tener 8 dígitos (DNI) o 11 dígitos (CUIT)." };
   }
 
   /**
-   * Generates electronic invoice details (CAE, CAE Expiration, QR URL) using Adapter Pattern
+   * Generates a non-fiscal draft preview of the invoice.
+   * REAL fiscal invoices with CAE/CAEA are requested exclusively via Backend Edge Functions.
    */
-  public static generateArcaInvoice(order: Order, customer: FiscalCustomerInfo): FiscalDetails {
+  public static generateDraftInvoice(order: Order, customer: FiscalCustomerInfo): FiscalDetails {
     const cleanCuit = customer.cuitOrDni.replace(/\D/g, "");
     
     // Determine Invoice Type (A, B, C)
@@ -38,54 +59,33 @@ export class ArcaBillingService {
       invoiceType = "B";
     }
 
-    // Punto de Venta: 00005 (Resto Bar Del Teatro)
     const ptoVta = "00005";
-    const nextInvoiceNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const draftNumber = "BORRADOR-" + order.id.slice(-6).toUpperCase();
 
-    // CAE generation (14 digits)
-    const randomCae = "74" + Math.floor(100000000000 + Math.random() * 900000000000).toString();
-    
-    // CAE expiration: 10 days from today
-    const expDate = new Date();
-    expDate.setDate(expDate.getDate() + 10);
-    const caeExpiration = expDate.toISOString().slice(0, 10);
-
-    // Compute Tax Breakdown (Neto vs IVA 21%)
+    // Compute Tax Breakdown (Neto vs IVA 21% incluido)
     const total = order.total;
     const neto = parseFloat((total / 1.21).toFixed(2));
     const iva21 = parseFloat((total - neto).toFixed(2));
 
-    // Build ARCA QR JSON Payload
-    const qrData = {
-      ver: 1,
-      fecha: new Date().toISOString().slice(0, 10),
-      cuit: 30712345678, // ARCA Emisor CUIT (Resto Bar Del Teatro)
-      ptoVta: 5,
-      tipoCmp: invoiceType === "A" ? 1 : invoiceType === "B" ? 6 : 11,
-      nroCmp: parseInt(nextInvoiceNum),
-      importe: total,
-      moneda: "PES",
-      ctz: 1,
-      tipoDocRec: cleanCuit.length === 11 ? 80 : 96,
-      nroDocRec: parseInt(cleanCuit) || 0,
-      tipoCodAut: "E",
-      codAut: parseInt(randomCae)
-    };
-
-    const qrBase64 = btoa(JSON.stringify(qrData));
-    const qrCodeUrl = `https://www.afip.gob.ar/fe/qr/?p=${qrBase64}`;
-
     return {
       invoiceType,
-      invoiceNumber: `${ptoVta}-${nextInvoiceNum}`,
-      cae: randomCae,
-      caeExpiration,
+      invoiceNumber: `${ptoVta}-${draftNumber}`,
+      cae: "SIN_AUTORIZACION_FISCAL",
+      caeExpiration: "-",
       neto,
       iva21,
       iva105: 0,
-      customerCuit: cleanCuit,
+      customerCuit: cleanCuit || "00000000",
       customerName: customer.nameOrReason || "Consumidor Final",
-      qrCodeUrl
+      qrCodeUrl: "" // No QR code generated without real ARCA authorization
     };
+  }
+
+  /**
+   * Legacy adapter for backward compatibility.
+   * Explicitly marks non-fiscal receipts as drafts until WSAA/WSMTXCA backend integration.
+   */
+  public static generateArcaInvoice(order: Order, customer: FiscalCustomerInfo): FiscalDetails {
+    return this.generateDraftInvoice(order, customer);
   }
 }
