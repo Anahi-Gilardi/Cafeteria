@@ -7,8 +7,21 @@ export class MenuPDFService {
    * Generates and downloads a complete, multi-page PDF of the active menu catalog
    */
   public static generateMenuPDF(inputMenuItems: MenuItem[]): void {
-    // Fallback to static catalog if input array is empty
-    const menuItems = inputMenuItems && inputMenuItems.length > 0 ? inputMenuItems : MENU_ITEMS;
+    // Merge input menu items with master MENU_ITEMS to ensure 2026 prices
+    const baseItems = inputMenuItems && inputMenuItems.length > 0 ? inputMenuItems : MENU_ITEMS;
+    const menuItems = baseItems.map(item => {
+      const catalogItem = MENU_ITEMS.find(m => m.id === item.id);
+      if (catalogItem) {
+        return {
+          ...item,
+          price: Math.max(item.price, catalogItem.price),
+          offerPrice: catalogItem.offerPrice || item.offerPrice,
+          takeawayPrice: catalogItem.takeawayPrice || item.takeawayPrice,
+          deliveryPrice: catalogItem.deliveryPrice || item.deliveryPrice
+        };
+      }
+      return item;
+    });
 
     const doc = new jsPDF({
       orientation: "portrait",

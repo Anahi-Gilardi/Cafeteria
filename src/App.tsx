@@ -161,7 +161,16 @@ export default function App() {
         }
 
         if (menuData && menuData.length > 0) {
-          const mapped = menuData.map(mapDbToMenuItem);
+          const mapped = menuData.map(dbItem => {
+            const item = mapDbToMenuItem(dbItem);
+            const catalogItem = MENU_ITEMS.find(m => m.id === item.id);
+            if (catalogItem) {
+              item.price = Math.max(item.price, catalogItem.price);
+              item.takeawayPrice = catalogItem.takeawayPrice || item.takeawayPrice;
+              item.deliveryPrice = catalogItem.deliveryPrice || item.deliveryPrice;
+            }
+            return item;
+          });
           customImages.forEach((img: any) => {
             const match = mapped.find(item => item.id === img.product_id);
             if (match) {
