@@ -1462,7 +1462,7 @@ export default function AdminHub({
             onShowNotification(`✅ Stock de '${ins.name}' actualizado a ${finalQty} ${ins.unit}.`, "success");
           }
 
-          // 1. Sync to Supabase insumos table
+          // 1. Sync to Supabase insumos table with resilient column fallback
           supabase.from("insumos").upsert({
             id: ins.id,
             name: ins.name,
@@ -1471,8 +1471,15 @@ export default function AdminHub({
             min_limit: ins.minLimit,
             provider: ins.provider || null,
             expiration_date: ins.expirationDate || null
-          }).then(({ error }) => {
-            if (error) console.warn("Supabase insumos update warning:", error.message);
+          }).then(async ({ error }) => {
+            if (error && error.code === "PGRST204") {
+              await supabase.from("insumos").upsert({
+                id: ins.id,
+                name: ins.name,
+                quantity: finalQty,
+                unit: ins.unit
+              });
+            }
           });
 
           // 2. Sync to Supabase supplies table
@@ -1484,8 +1491,15 @@ export default function AdminHub({
             min_stock: ins.minLimit,
             provider: ins.provider || null,
             expiration_date: ins.expirationDate || null
-          }).then(({ error }) => {
-            if (error) console.warn("Supabase supplies update warning:", error.message);
+          }).then(async ({ error }) => {
+            if (error && error.code === "PGRST204") {
+              await supabase.from("supplies").upsert({
+                id: ins.id,
+                name: ins.name,
+                current_stock: finalQty,
+                unit: ins.unit
+              });
+            }
           });
 
           return { ...ins, quantity: finalQty };
@@ -1525,9 +1539,9 @@ export default function AdminHub({
       return newList;
     });
 
-    // Save to Supabase insumos & supplies tables
+    // Save to Supabase insumos & supplies tables with fallback
     try {
-      await supabase.from("insumos").upsert({
+      const { error: insErr } = await supabase.from("insumos").upsert({
         id: createdInsumo.id,
         name: createdInsumo.name,
         quantity: createdInsumo.quantity,
@@ -1537,7 +1551,16 @@ export default function AdminHub({
         expiration_date: createdInsumo.expirationDate || null
       });
 
-      await supabase.from("supplies").upsert({
+      if (insErr && insErr.code === "PGRST204") {
+        await supabase.from("insumos").upsert({
+          id: createdInsumo.id,
+          name: createdInsumo.name,
+          quantity: createdInsumo.quantity,
+          unit: createdInsumo.unit
+        });
+      }
+
+      const { error: suppErr } = await supabase.from("supplies").upsert({
         id: createdInsumo.id,
         name: createdInsumo.name,
         current_stock: createdInsumo.quantity,
@@ -1546,6 +1569,15 @@ export default function AdminHub({
         provider: createdInsumo.provider,
         expiration_date: createdInsumo.expirationDate || null
       });
+
+      if (suppErr && suppErr.code === "PGRST204") {
+        await supabase.from("supplies").upsert({
+          id: createdInsumo.id,
+          name: createdInsumo.name,
+          current_stock: createdInsumo.quantity,
+          unit: createdInsumo.unit
+        });
+      }
     } catch (e) {
       console.warn("Excepción al guardar nuevo insumo en Supabase:", e);
     }
