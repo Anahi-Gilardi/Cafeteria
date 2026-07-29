@@ -99,54 +99,50 @@ export default function SalonMap({
       className="space-y-6 max-w-7xl mx-auto"
     >
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1A110B] border border-[#D4AF37]/25 rounded-3xl p-6 shadow-xl gold-glow">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 shadow-sm">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control Operativo de Salón</span>
-          <h2 className="font-serif text-2xl font-bold text-[#FDFBF7] mt-0.5">📌 Plano de Mesas y Estado en Vivo</h2>
-          <p className="text-xs text-[#FDFBF7]/60 italic mt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control Operativo de Salón</span>
+          <h2 className="font-serif text-2xl font-bold text-[#843747] mt-0.5">📌 Plano de Mesas y Estado en Vivo</h2>
+          <p className="text-xs text-[#6F5A55] font-medium mt-1">
             Gestión táctil de mesas para meseros y recepción. Seleccione una mesa para abrir comanda o consultar consumo.
           </p>
         </div>
 
         {/* Legend pills for 6 Table States */}
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider font-mono">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/40">
+            <span className="w-2 h-2 rounded-full bg-[#4F735A]"></span>
             <span>Libre</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/80 text-[#FFDF00] border border-[#D4AF37]/50 gold-glow">
-            <span className="w-2 h-2 rounded-full bg-[#FFDF00]"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F4DCDD] text-[#843747] border border-[#843747]/50">
+            <span className="w-2 h-2 rounded-full bg-[#843747]"></span>
             <span>Ocupada</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-950/80 text-orange-300 border border-orange-500/40">
-            <span className="w-2 h-2 rounded-full bg-orange-400"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/40">
+            <span className="w-2 h-2 rounded-full bg-[#B97932]"></span>
             <span>Esperando</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-950/80 text-sky-300 border border-sky-500/40">
-            <span className="w-2 h-2 rounded-full bg-sky-400"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E0EBF7] text-[#4A7BB0] border border-[#4A7BB0]/40">
+            <span className="w-2 h-2 rounded-full bg-[#4A7BB0]"></span>
             <span>Servida</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/40">
-            <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EFE6F7] text-[#7B4AB0] border border-[#7B4AB0]/40">
+            <span className="w-2 h-2 rounded-full bg-[#7B4AB0]"></span>
             <span>Cuenta</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-800 text-stone-300 border border-stone-600">
-            <span className="w-2 h-2 rounded-full bg-stone-400"></span>
-            <span>Limpieza</span>
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-[#D4AF37]/20 pb-3">
+      <div className="flex gap-2 border-b border-[#D7BBA8] pb-3">
         {["Todos", "Salon Principal", "Barra Alta", "Terraza Exterior"].map((sec) => (
           <button
             key={sec}
             onClick={() => setSelectedSection(sec)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               selectedSection === sec
-                ? "bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-black shadow-md gold-glow"
-                : "bg-[#1C120C] text-[#FDFBF7]/70 hover:text-white border border-[#D4AF37]/20"
+                ? "bg-[#843747] text-white font-black shadow-xs"
+                : "bg-[#FFF9F4] text-[#6F5A55] hover:text-[#332424] border border-[#D7BBA8]"
             }`}
           >
             {sec === "Todos" ? "🏬 Todas las Áreas" : sec}

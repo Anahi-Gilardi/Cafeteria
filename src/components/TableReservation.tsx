@@ -145,9 +145,9 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-10 text-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] block mb-1">Experiencia Gastronómica & Salón</span>
-        <h1 className="font-serif text-4xl font-extrabold tracking-tight text-[#FDFBF7] sm:text-5xl italic">Reserve su Mesa</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-[#FDFBF7]/70 font-medium text-xs">
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55] block mb-1">Experiencia Gastronómica & Salón</span>
+        <h1 className="font-serif text-4xl font-extrabold tracking-tight text-[#843747] sm:text-5xl italic">Reserve su Mesa</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-[#6F5A55] font-medium text-xs">
           Elija el ambiente ideal para su menú ejecutivo, cena de autor o reunión. Reserva gratuita e instantánea.
         </p>
       </div>
@@ -157,17 +157,17 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 items-start">
             {/* Step 1: Filters & Details (Left Sidebar) */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="rounded-3xl border border-[#D4AF37]/25 bg-[#1A110B] p-6 shadow-xl text-[#FDFBF7] gold-glow">
-                <h3 className="font-serif text-xl font-bold text-[#FFDF00] mb-5 flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-caramel" /> 1. Cuándo y Quiénes
+              <div className="rounded-3xl border border-[#D7BBA8] bg-[#FFF9F4] p-6 shadow-sm text-[#332424]">
+                <h3 className="font-serif text-xl font-bold text-[#843747] mb-5 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-[#843747]" /> 1. Cuándo y Quiénes
                 </h3>
 
                 <form className="space-y-4">
                   {/* Date Input */}
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Fecha</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block mb-1.5 font-semibold">Fecha</label>
                     <div className="relative">
-                      <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-espresso/40" />
+                      <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#6F5A55]" />
                       <input
                         type="date"
                         id="booking-date"
@@ -177,14 +177,14 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                           setSelectedTableId(null); // Reset selected table
                         }}
                         min={new Date().toISOString().split("T")[0]}
-                        className="w-full rounded-xl border border-coffee bg-paper/50 py-2.5 pr-4 pl-10 text-sm font-semibold text-espresso outline-none focus:border-caramel focus:bg-white"
+                        className="w-full rounded-xl border border-[#D7BBA8] bg-[#FFF9F4] py-2.5 pr-4 pl-10 text-sm font-semibold text-[#332424] outline-none focus:border-[#843747]"
                       />
                     </div>
                   </div>
 
                   {/* Time Slot */}
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-espresso/50 block mb-1.5 font-semibold">Turno del Día</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block mb-1.5 font-semibold">Turno del Día</label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
                         { id: "Desayuno", label: "Desayuno", time: "8:00 - 11:00" },
@@ -203,14 +203,14 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                               setSelectedTimeSlot(slot.id as BookingTimeSlot);
                               setSelectedTableId(null); // Reset
                             }}
-                            className={`flex flex-col p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                            className={`flex flex-col p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                               isSel
-                                ? "border-[#FFDF00] bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg"
-                                : "border-[#D4AF37]/30 bg-[#2A1B12] text-[#FDFBF7] hover:border-[#D4AF37]"
+                                ? "border-[#843747] bg-[#843747] text-white font-black shadow-xs"
+                                : "border-[#D7BBA8] bg-[#FFF9F4] text-[#332424] hover:bg-[#E8D4C3]"
                             }`}
                           >
                             <span className="text-xs font-bold">{slot.label}</span>
-                            <span className={`text-[10px] leading-none mt-0.5 ${isSel ? "text-[#1C120C]/80" : "text-[#FDFBF7]/60"}`}>{slot.time}</span>
+                            <span className={`text-[10px] leading-none mt-0.5 ${isSel ? "text-white/80" : "text-[#6F5A55]"}`}>{slot.time}</span>
                           </button>
                         );
                       })}

@@ -2642,25 +2642,25 @@ export default function AdminHub({
         className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#FDFBF7]"
       >
         {/* Left Column: GPS Clock In / Out Panel */}
-        <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="border-b border-[#D4AF37]/20 pb-3 flex justify-between items-center">
+            <div className="border-b border-[#D7BBA8] pb-3 flex justify-between items-center">
               <div>
-                <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest">Control Biométrico & GPS</span>
-                <h3 className="font-serif text-xl font-bold text-[#FFDF00]">⏱️ Fichaje de Ingreso y Egreso</h3>
+                <span className="text-[10px] font-black uppercase text-[#6F5A55] tracking-widest">Control Biométrico & GPS</span>
+                <h3 className="font-serif text-xl font-bold text-[#843747]">⏱️ Fichaje de Ingreso y Egreso</h3>
               </div>
-              <span className="h-3 w-3 rounded-full bg-emerald-400 animate-ping" title="GPS Activo"></span>
+              <span className="h-3 w-3 rounded-full bg-[#4F735A] animate-ping" title="GPS Activo"></span>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block mb-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block mb-1">
                   Seleccionar Colaborador / Empleado *
                 </label>
                 <select
                   value={selectedStaffMember}
                   onChange={(e) => setSelectedStaffMember(e.target.value)}
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-2xl bg-[#2A1B12] text-[#FFDF00] font-bold outline-none cursor-pointer text-sm"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-2xl bg-[#FFF9F4] text-[#332424] font-bold outline-none cursor-pointer text-sm focus:border-[#843747]"
                 >
                   <option value="Sofía Colombo">Sofía Colombo (Barista Principal)</option>
                   <option value="Matías Benítez">Matías Benítez (Maestro Pizzero)</option>
@@ -2671,14 +2671,14 @@ export default function AdminHub({
               </div>
 
               {/* GPS Live Location Card */}
-              <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-1">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] flex items-center gap-1">
+              <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#843747] flex items-center gap-1">
                   📍 Ubicación GPS Exacta Registrada
                 </span>
-                <strong className="text-xs font-mono font-bold text-[#FDFBF7] block">
+                <strong className="text-xs font-mono font-bold text-[#332424] block">
                   {currentGPSLoc ? currentGPSLoc.address : "Constitución 944, Río Cuarto (-33.1245, -64.3512)"}
                 </strong>
-                <span className="text-[9px] text-emerald-400 font-bold block">✓ Precisión GPS &lt; 10m (Verificado)</span>
+                <span className="text-[9px] text-[#4F735A] font-bold block">✓ Precisión GPS &lt; 10m (Verificado)</span>
               </div>
             </div>
 
@@ -2688,7 +2688,7 @@ export default function AdminHub({
                 type="button"
                 disabled={isLocatingGPS}
                 onClick={() => handleCaptureGPSAndClock("INGRESO")}
-                className="py-4 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 gold-glow"
+                className="py-4 px-4 bg-[#4F735A] hover:bg-[#3D5B46] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 {isLocatingGPS ? "⏱️ Ubicando GPS..." : "🟢 INGRESAR (ENTRADA)"}
               </button>
@@ -2697,20 +2697,20 @@ export default function AdminHub({
                 type="button"
                 disabled={isLocatingGPS}
                 onClick={() => handleCaptureGPSAndClock("EGRESO")}
-                className="py-4 px-4 bg-gradient-to-r from-rose-700 to-rose-900 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="py-4 px-4 bg-[#A63F45] hover:bg-[#843747] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 {isLocatingGPS ? "⏱️ Ubicando GPS..." : "🔴 EGRESAR (SALIDA)"}
               </button>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-[#D4AF37]/20">
+          <div className="pt-4 border-t border-[#D7BBA8]">
             <button
               onClick={() => {
                 StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
                 onShowNotification("📄 Generando informe PDF de control de personal...", "success");
               }}
-              className="w-full py-3.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-2xl shadow-md hover:brightness-110 transition-all cursor-pointer gold-glow flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               📄 Descargar Reporte de Asistencia (PDF)
             </button>
@@ -2718,7 +2718,7 @@ export default function AdminHub({
         </div>
 
         {/* Right Column: Attendance History Table */}
-        <div className="lg:col-span-7 bg-[#1A110B] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-6 shadow-xl gold-glow space-y-4">
+        <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
           <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
             <div>
               <h3 className="font-serif text-xl font-bold text-[#FFDF00]">📋 Historial de Asistencia y Turnos GPS</h3>
@@ -2945,14 +2945,14 @@ export default function AdminHub({
                         <td className="p-4 text-center flex items-center justify-center gap-1.5">
                           <button 
                             onClick={() => handleAdjustInsumo(ins.id, -1)}
-                            className="h-7 w-7 rounded-lg bg-[#2A1B12] border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#3D281A] hover:text-white flex items-center justify-center font-bold text-base cursor-pointer transition-colors"
+                            className="h-7 w-7 rounded-lg bg-[#843747] text-white hover:bg-[#71303D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
                             title="Descontar 1 unidad"
                           >
                             -
                           </button>
                           <button 
                             onClick={() => handleAdjustInsumo(ins.id, 1)}
-                            className="h-7 w-7 rounded-lg bg-[#2A1B12] border border-[#D4AF37]/40 text-[#D4AF37] hover:bg-[#3D281A] hover:text-white flex items-center justify-center font-bold text-base cursor-pointer transition-colors"
+                            className="h-7 w-7 rounded-lg bg-[#843747] text-white hover:bg-[#71303D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
                             title="Aumentar 1 unidad"
                           >
                             +
@@ -3573,36 +3573,36 @@ export default function AdminHub({
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Precio Delivery ($)</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Precio Delivery ($)</label>
                       <input 
                         type="number" 
                         value={editProdDeliveryPrice} 
                         onChange={(e) => setEditProdDeliveryPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs font-bold"
+                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-mono text-xs font-bold focus:border-[#843747]"
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Stock Actual</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Stock Actual</label>
                       <input 
                         type="number" 
                         value={editProdStock} 
                         onChange={(e) => setEditProdStock(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FFDF00] outline-none font-mono text-xs font-bold" 
+                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] outline-none font-mono text-xs font-bold focus:border-[#843747]" 
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
                       type="text" 
                       value={editProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : editProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : editProdImage} 
                       onChange={(e) => setEditProdImage(e.target.value)} 
                       placeholder="Pegar URL pública de imagen..." 
-                      className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none text-[11px] font-medium" 
+                      className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none text-[11px] font-medium focus:border-[#843747]" 
                     />
-                    <div className="mt-2 space-y-1 bg-[#1C120C] p-3 rounded-2xl border border-[#D4AF37]/20">
-                      <label className="text-[9px] font-black uppercase tracking-wider block text-[#FFDF00]">📷 Cargar Foto desde Celular / Cámara / PC</label>
+                    <div className="mt-2 space-y-1 bg-[#E8D4C3]/40 p-3 rounded-2xl border border-[#D7BBA8]">
+                      <label className="text-[9px] font-black uppercase tracking-wider block text-[#843747]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                       <input 
                         type="file" 
                         accept="image/*"
@@ -3622,16 +3622,16 @@ export default function AdminHub({
                             }
                           }
                         }}
-                        className="w-full text-[10px] text-[#D4AF37] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
+                        className="w-full text-[10px] text-[#6F5A55] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#E8D4C3] file:text-[#843747] hover:file:bg-[#E7C8CF] cursor-pointer" 
                       />
                       {isUploadingImage && (
-                        <span className="text-[10px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                        <span className="text-[10px] text-[#843747] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
                       )}
                       {editProdImage && (
                         <button
                           type="button"
                           onClick={() => setEditProdImage("")}
-                          className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer mt-1 block"
+                          className="text-[9px] text-[#A63F45] underline font-bold bg-transparent border-none cursor-pointer mt-1 block"
                         >
                           Quitar foto
                         </button>
@@ -3640,75 +3640,75 @@ export default function AdminHub({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Descripción Gourmet</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Descripción Gourmet</label>
                     <textarea 
                       value={editProdDescription} 
                       onChange={(e) => setEditProdDescription(e.target.value)} 
                       placeholder="Descripción de la especialidad..." 
                       rows={3} 
-                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-medium resize-none text-xs leading-relaxed" 
+                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-medium resize-none text-xs leading-relaxed focus:border-[#843747]" 
                     />
                   </div>
 
                   {editProdImage && (
                     <div className="mt-2 text-center">
-                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Foto</span>
-                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border-2 border-[#D4AF37]/40 mx-auto object-cover shadow-md gold-glow" />
+                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Vista Previa de la Foto</span>
+                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#D7BBA8] mx-auto object-cover shadow-xs" />
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-[#D4AF37]/20">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[#D7BBA8]">
                     <button 
                       type="button" 
                       onClick={() => setIsEditingProduct(false)} 
-                      className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7]/70 rounded-xl hover:bg-stone-800 cursor-pointer"
+                      className="px-4 py-2 border border-[#D7BBA8] text-[#332424] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold"
                     >
                       Cancelar
                     </button>
                     <button 
                       type="submit" 
-                      className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black rounded-xl shadow-md cursor-pointer uppercase tracking-wider gold-glow"
+                      className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
                     >
                       Guardar Ficha
                     </button>
                   </div>
                 </form>
               ) : !currentItem ? (
-                <div className="p-8 text-center text-[#FDFBF7]/60 italic font-medium">
+                <div className="p-8 text-center text-[#6F5A55] italic font-medium">
                   Seleccione un producto de la lista izquierda para visualizar su ficha técnica de recetas y simulador de margen.
                 </div>
               ) : (
                 <>
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
-                      <h3 className="font-serif text-2xl font-bold text-[#FDFBF7] mt-1">{currentItem.name}</h3>
-                      <p className="text-xs text-[#FDFBF7]/70 mt-1 leading-relaxed">{currentItem.description}</p>
+                      <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
+                      <h3 className="font-serif text-2xl font-bold text-[#843747] mt-1">{currentItem.name}</h3>
+                      <p className="text-xs text-[#6F5A55] mt-1 leading-relaxed font-medium">{currentItem.description}</p>
                     </div>
                     <button
                       onClick={() => handleStartEditingProduct(currentItem)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-md border-none gold-glow"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
                     >
                       ✏️ Editar Ficha
                     </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Costo Materia Prima</span>
-                      <div className="text-xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
-                      <span className="text-[7px] text-[#FDFBF7]/60 block font-semibold mt-1">Calculado por gramo/mL</span>
+                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Costo Materia Prima</span>
+                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#6F5A55] block font-semibold mt-1">Calculado por gramo/mL</span>
                     </div>
-                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Utilidad Bruta</span>
-                      <div className="text-xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">${utility.toFixed(0)}</div>
-                      <span className="text-[7px] text-[#FDFBF7]/60 block font-semibold mt-1">Sugerido menos costos fijos</span>
+                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Utilidad Bruta</span>
+                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">${utility.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#6F5A55] block font-semibold mt-1">Sugerido menos costos fijos</span>
                     </div>
-                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#D4AF37] uppercase tracking-wider block">Margen de Contribución</span>
-                      <div className="text-xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
+                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Margen de Contribución</span>
+                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
                       <span className={`text-[7px] font-bold block mt-1 uppercase text-center ${
-                        margin >= 60 ? "text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-1 py-0.5 rounded" : "text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1 py-0.5 rounded"
+                        margin >= 60 ? "text-[#4F735A] bg-[#DFEADF] border border-[#4F735A]/30 px-1 py-0.5 rounded" : "text-[#B97932] bg-[#F5E4CC] border border-[#B97932]/30 px-1 py-0.5 rounded"
                       }`}>
                         {margin >= 60 ? "EXCELENTE" : "BAJO"}
                       </span>
@@ -3717,13 +3717,13 @@ export default function AdminHub({
 
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-[10px] font-black text-[#FFDF00] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
+                      <h4 className="text-[10px] font-black text-[#843747] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
                     </div>
 
-                    <div className="border border-[#D4AF37]/20 rounded-2xl overflow-hidden text-xs bg-[#2A1B12]">
+                    <div className="border border-[#D7BBA8] rounded-2xl overflow-hidden text-xs bg-[#FFF9F4]">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-[#1C120C] border-b border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-wider text-[#D4AF37]">
+                          <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
                             <th className="p-3">Insumo</th>
                             <th className="p-3 text-center">Cantidad Receta</th>
                             <th className="p-3 text-center">Costo Unitario</th>
@@ -3731,23 +3731,23 @@ export default function AdminHub({
                             <th className="p-3 text-center w-12">Acción</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#D4AF37]/15">
+                        <tbody className="divide-y divide-[#D7BBA8]">
                           {currentItem.recipe && currentItem.recipe.length > 0 ? (
                             currentItem.recipe.map((r, idx) => {
                               const ins = insumos.find(i => i.id === r.ingredientId);
                               const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || (ins ? getInsumoUnitCost(ins.name) : 0);
                               const totalCost = r.amount * unitCost;
                               return (
-                                <tr key={idx} className="hover:bg-[#1C120C]/60 transition-colors">
-                                  <td className="p-3 font-bold text-[#FDFBF7]">{ins?.name || r.ingredientId}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#FDFBF7]">{r.amount} {ins?.unit || "kg"}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#D4AF37]">${unitCost.toLocaleString("es-AR")} / {ins?.unit || "kg"}</td>
-                                  <td className="p-3 text-right font-mono font-bold text-[#FFDF00]">${totalCost.toFixed(0)}</td>
+                                <tr key={idx} className="hover:bg-[#E8D4C3]/30 transition-colors">
+                                  <td className="p-3 font-bold text-[#332424]">{ins?.name || r.ingredientId}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#332424]">{r.amount} {ins?.unit || "kg"}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#6F5A55]">${unitCost.toLocaleString("es-AR")} / {ins?.unit || "kg"}</td>
+                                  <td className="p-3 text-right font-mono font-bold text-[#843747]">${totalCost.toFixed(0)}</td>
                                   <td className="p-3 text-center">
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveIngredientFromRecipe(currentItem.id, r.ingredientId)}
-                                      className="p-1 text-red-400 hover:text-red-200 transition-colors bg-transparent border-none cursor-pointer"
+                                      className="p-1 text-[#A63F45] hover:text-[#843747] transition-colors bg-transparent border-none cursor-pointer"
                                       title="Remover insumo de la receta"
                                     >
                                       ❌
@@ -3758,7 +3758,7 @@ export default function AdminHub({
                             })
                           ) : (
                             <tr>
-                              <td colSpan={5} className="p-4 text-center text-xs text-[#D4AF37] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
+                              <td colSpan={5} className="p-4 text-center text-xs text-[#6F5A55] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
                             </tr>
                           )}
                         </tbody>
@@ -3766,13 +3766,13 @@ export default function AdminHub({
                     </div>
 
                     {/* Quick Add Ingredient to Recipe Bar */}
-                    <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 rounded-2xl flex flex-wrap items-center gap-3">
+                    <div className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex flex-wrap items-center gap-3">
                       <div className="flex-1 min-w-[160px]">
-                        <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Añadir Insumo Registrado a Receta</label>
+                        <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Añadir Insumo Registrado a Receta</label>
                         <select
                           value={recipeIngredientId}
                           onChange={(e) => setRecipeIngredientId(e.target.value)}
-                          className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] font-bold cursor-pointer"
+                          className="w-full text-xs p-2 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer focus:border-[#843747]"
                         >
                           <option value="">-- Seleccionar Insumo --</option>
                           {insumos.map(ins => (
@@ -3782,13 +3782,13 @@ export default function AdminHub({
                       </div>
 
                       <div className="w-28">
-                        <label className="text-[8px] font-bold text-[#D4AF37] uppercase block mb-1">Cantidad Receta</label>
+                        <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Cantidad Receta</label>
                         <input
                           type="number"
                           step="any"
                           value={recipeIngredientQty}
                           onChange={(e) => setRecipeIngredientQty(e.target.value)}
-                          className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FFDF00] font-mono font-bold"
+                          className="w-full text-xs p-2 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] font-mono font-bold focus:border-[#843747]"
                         />
                       </div>
 
@@ -3805,7 +3805,7 @@ export default function AdminHub({
                               onShowNotification("⚠️ Seleccione un insumo y una cantidad válida.", "warning");
                             }
                           }}
-                          className="px-4 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md cursor-pointer uppercase tracking-wider gold-glow hover:brightness-110"
+                          className="px-4 py-2 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
                         >
                           ➕ Agregar a Receta
                         </button>
@@ -4803,6 +4803,34 @@ export default function AdminHub({
   };
 
   const renderReservas = () => {
+    // Interactive Calendar View State
+    const todayStr = new Date().toISOString().split("T")[0];
+    const [selectedCalDate, setSelectedCalDate] = useState<string>(bookingFormDate || todayStr);
+    const [calMonthOffset, setCalMonthOffset] = useState<number>(0);
+
+    // Compute Calendar Days
+    const currentCalMonth = new Date();
+    currentCalMonth.setMonth(currentCalMonth.getMonth() + calMonthOffset);
+    const year = currentCalMonth.getFullYear();
+    const month = currentCalMonth.getMonth();
+
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const monthTitle = `${monthNames[month]} ${year}`;
+
+    const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Dom
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const calendarGrid = [];
+    // Prev month padding
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      calendarGrid.push(null);
+    }
+    // Days of current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      calendarGrid.push({ day: d, dateStr });
+    }
+
     const handleFormSubmit = async (e: FormEvent) => {
       e.preventDefault();
       if (!bookingFormName || !bookingFormPhone || !bookingFormDate) {
@@ -4822,18 +4850,18 @@ export default function AdminHub({
       setIsAddingBooking(false);
       setBookingFormName("");
       setBookingFormPhone("");
-      setBookingFormDate("");
     };
 
+    const bookingsForSelectedDate = adminBookings.filter(b => b.date === selectedCalDate);
     const filteredBookings = adminBookings.filter(b => 
       b.customerName.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
       b.tableName.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
       b.referenceCode.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
-      (b.customerPhone && b.customerPhone.includes(bookingSearchQuery))
+      (b.customerPhone && b.customerPhone.includes(bookingSearchQuery)) ||
+      b.date.includes(bookingSearchQuery)
     );
 
     const totalGuests = adminBookings.reduce((sum, b) => sum + (parseInt(b.guests) || 0), 0);
-    const todayStr = new Date().toISOString().split("T")[0];
     const todayBookingsCount = adminBookings.filter(b => b.date === todayStr).length;
 
     return (
@@ -4848,11 +4876,14 @@ export default function AdminHub({
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control de Clientes & Salón</span>
-            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Reservas de Mesas</h2>
-            <p className="text-xs text-[#6F5A55] mt-1">Gestione y agende reservas de clientes para el salón de Castaño — Resto Bar.</p>
+            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Calendario & Reservas de Mesas</h2>
+            <p className="text-xs text-[#6F5A55] mt-1 font-medium">Gestione y agende reservas sincronizadas en vivo con Supabase.</p>
           </div>
           <button
-            onClick={() => setIsAddingBooking(!isAddingBooking)}
+            onClick={() => {
+              setBookingFormDate(selectedCalDate);
+              setIsAddingBooking(!isAddingBooking);
+            }}
             className="flex items-center gap-2 px-5 py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-2xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Agendar Nueva Reserva
@@ -4893,10 +4924,8 @@ export default function AdminHub({
 
           <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Mesas Activas Salón</span>
-              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">
-                {restaurantTables.filter(t => t.status === "Activo").length}
-              </span>
+              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">En Fecha Seleccionada</span>
+              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{bookingsForSelectedDate.length}</span>
             </div>
             <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Coffee className="h-5 w-5" />
@@ -4904,7 +4933,144 @@ export default function AdminHub({
           </div>
         </div>
 
-        {/* Add Booking Drawer / Form */}
+        {/* Interactive Calendar Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Calendar Grid Picker */}
+          <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCalMonthOffset(prev => prev - 1)}
+                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer"
+                >
+                  ◀
+                </button>
+                <h3 className="font-serif text-lg font-bold text-[#843747] capitalize">{monthTitle}</h3>
+                <button
+                  type="button"
+                  onClick={() => setCalMonthOffset(prev => prev + 1)}
+                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer"
+                >
+                  ▶
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCalMonthOffset(0);
+                  setSelectedCalDate(todayStr);
+                  setBookingFormDate(todayStr);
+                }}
+                className="px-3 py-1.5 bg-[#843747] text-white text-[10px] font-black uppercase tracking-wider rounded-xl cursor-pointer"
+              >
+                Hoy
+              </button>
+            </div>
+
+            {/* Days of Week Header */}
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-widest text-[#6F5A55] py-1">
+              <span>Dom</span>
+              <span>Lun</span>
+              <span>Mar</span>
+              <span>Mié</span>
+              <span>Jue</span>
+              <span>Vie</span>
+              <span>Sáb</span>
+            </div>
+
+            {/* Monthly Days Cells */}
+            <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-bold">
+              {calendarGrid.map((item, idx) => {
+                if (!item) {
+                  return <div key={idx} className="h-12 p-2 rounded-xl bg-transparent"></div>;
+                }
+                const isSelected = selectedCalDate === item.dateStr;
+                const dayBookings = adminBookings.filter(b => b.date === item.dateStr);
+                const count = dayBookings.length;
+                const isToday = item.dateStr === todayStr;
+
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCalDate(item.dateStr);
+                      setBookingFormDate(item.dateStr);
+                    }}
+                    className={`h-12 p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer border ${
+                      isSelected
+                        ? "bg-[#843747] text-white border-[#843747] shadow-xs"
+                        : isToday
+                        ? "bg-[#E8D4C3] border-2 border-[#843747] text-[#332424]"
+                        : "bg-[#FFF9F4] hover:bg-[#E8D4C3]/50 border-[#D7BBA8] text-[#332424]"
+                    }`}
+                  >
+                    <span className="font-mono text-xs leading-none">{item.day}</span>
+                    {count > 0 && (
+                      <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black leading-none ${
+                        isSelected ? "bg-white text-[#843747]" : "bg-[#843747] text-white"
+                      }`}>
+                        {count} res.
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Date Summary Side Panel */}
+          <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+            <div>
+              <div className="border-b border-[#D7BBA8] pb-3 flex justify-between items-center">
+                <div>
+                  <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Detalle por Día</span>
+                  <h3 className="font-serif text-lg font-bold text-[#843747]">📅 {selectedCalDate}</h3>
+                </div>
+                <span className="text-xs font-mono font-bold text-[#843747] bg-[#E8D4C3] px-2.5 py-1 rounded-lg">
+                  {bookingsForSelectedDate.length} Reservas
+                </span>
+              </div>
+
+              <div className="space-y-3 py-3 max-h-[260px] overflow-y-auto pr-1">
+                {bookingsForSelectedDate.length === 0 ? (
+                  <div className="text-center py-8 text-[#6F5A55] italic font-medium">
+                    No hay reservas registradas para esta fecha.
+                  </div>
+                ) : (
+                  bookingsForSelectedDate.map((b) => (
+                    <div key={b.id} className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-1.5 text-xs shadow-xs">
+                      <div className="flex justify-between items-center font-bold text-[#843747]">
+                        <span>{b.customerName}</span>
+                        <span className="font-mono text-[10px] bg-[#E8D4C3] px-2 py-0.5 rounded-md text-[#332424]">{b.tableName}</span>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-[#6F5A55] font-semibold font-mono">
+                        <span>Horario: {b.timeSlot}</span>
+                        <span>👥 {b.guests} Pers.</span>
+                      </div>
+                      <div className="text-[10px] text-[#6F5A55] font-mono">
+                        Tel: {b.customerPhone} • Ref: {b.referenceCode}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setBookingFormDate(selectedCalDate);
+                setIsAddingBooking(true);
+              }}
+              className="w-full py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl uppercase tracking-wider shadow-xs cursor-pointer"
+            >
+              ➕ Agendar Reserva para {selectedCalDate}
+            </button>
+          </div>
+        </div>
+
+        {/* Add Booking Form Drawer */}
         {isAddingBooking && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -4912,7 +5078,7 @@ export default function AdminHub({
             className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-5"
           >
             <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
-              <h3 className="font-serif text-xl font-bold text-[#843747]">Agendar Nueva Reserva de Mesa</h3>
+              <h3 className="font-serif text-xl font-bold text-[#843747]">Agendar Nueva Reserva en Supabase</h3>
               <button onClick={() => setIsAddingBooking(false)} className="text-[#6F5A55] hover:text-[#332424] font-black text-sm cursor-pointer">✕</button>
             </div>
 
@@ -4924,7 +5090,7 @@ export default function AdminHub({
                   value={bookingFormName}
                   onChange={(e) => setBookingFormName(e.target.value)}
                   placeholder="Ej: Mariano Closs"
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none font-bold"
                   required
                 />
               </div>
@@ -4936,7 +5102,7 @@ export default function AdminHub({
                   value={bookingFormPhone}
                   onChange={(e) => setBookingFormPhone(e.target.value)}
                   placeholder="Ej: 3584123456"
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none font-mono"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none font-mono font-bold"
                   required
                 />
               </div>
@@ -4947,7 +5113,7 @@ export default function AdminHub({
                   type="date"
                   value={bookingFormDate}
                   onChange={(e) => setBookingFormDate(e.target.value)}
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono font-bold"
                   required
                 />
               </div>
@@ -4991,7 +5157,7 @@ export default function AdminHub({
                   max="12"
                   value={bookingFormGuests}
                   onChange={(e) => setBookingFormGuests(parseInt(e.target.value) || 1)}
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono font-bold"
                 />
               </div>
 
@@ -5007,7 +5173,7 @@ export default function AdminHub({
                   type="submit"
                   className="px-6 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider text-xs"
                 >
-                  Guardar Reserva
+                  Guardar Reserva en Supabase
                 </button>
               </div>
             </form>
@@ -5022,13 +5188,13 @@ export default function AdminHub({
               type="text"
               value={bookingSearchQuery}
               onChange={(e) => setBookingSearchQuery(e.target.value)}
-              placeholder="Buscar por cliente, teléfono, mesa o código..."
+              placeholder="Buscar por cliente, teléfono, mesa o fecha..."
               className="w-full rounded-2xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pr-4 pl-11 shadow-sm outline-none transition-all focus:border-[#843747] text-xs font-bold text-[#332424] placeholder-[#6F5A55]/50"
             />
           </div>
         </div>
 
-        {/* High Contrast Table of Bookings */}
+        {/* Table of Bookings */}
         <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs font-medium">
@@ -5047,7 +5213,7 @@ export default function AdminHub({
               <tbody className="divide-y divide-[#D7BBA8]">
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-[#FDFBF7]/60 italic font-medium">
+                    <td colSpan={8} className="p-12 text-center text-[#6F5A55] italic font-medium">
                       No hay reservas agendadas que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -5056,41 +5222,41 @@ export default function AdminHub({
                     const cleanPhone = b.customerPhone ? b.customerPhone.replace(/\D/g, "") : "";
                     const waPhone = cleanPhone.startsWith("54") ? cleanPhone : `549${cleanPhone}`;
                     const waMessage = encodeURIComponent(
-                      `🎭 *RESTO BAR DEL TEATRO*\n¡Hola ${b.customerName}! Confirmamos tu reserva para el *${b.date}* a las *${b.timeSlot}* en la *${b.tableName}* (${b.guests} personas). Código Ref: ${b.referenceCode}. ¡Te esperamos en Constitución 944, Río Cuarto!`
+                      `🎭 *CASTAÑO — RESTO BAR*\n¡Hola ${b.customerName}! Confirmamos tu reserva para el *${b.date}* a las *${b.timeSlot}* en la *${b.tableName}* (${b.guests} personas). Código Ref: ${b.referenceCode}. ¡Te esperamos en Constitución 944, Río Cuarto!`
                     );
                     const waLink = `https://wa.me/${waPhone}?text=${waMessage}`;
 
                     return (
-                      <tr key={b.id} className="hover:bg-[#2A1B12]/80 transition-colors">
-                        <td className="p-4 font-serif font-bold text-sm text-[#FFDF00]">{b.customerName}</td>
-                        <td className="p-4 font-mono text-[#FDFBF7]/90">{b.customerPhone}</td>
-                        <td className="p-4 font-mono font-bold text-xs text-[#FDFBF7]">{b.date}</td>
+                      <tr key={b.id} className="hover:bg-[#E8D4C3]/30 transition-colors">
+                        <td className="p-4 font-serif font-bold text-sm text-[#843747]">{b.customerName}</td>
+                        <td className="p-4 font-mono text-[#332424] font-semibold">{b.customerPhone}</td>
+                        <td className="p-4 font-mono font-bold text-xs text-[#332424]">{b.date}</td>
                         <td className="p-4">
-                          <span className="px-2.5 py-1 rounded-lg bg-[#2A1B12] border border-[#D4AF37]/30 font-mono text-[10px] text-[#FFDF00] font-bold">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#E8D4C3] border border-[#D7BBA8] font-mono text-[10px] text-[#843747] font-bold">
                             {b.timeSlot}
                           </span>
                         </td>
-                        <td className="p-4 font-bold text-[#FDFBF7]">{b.tableName}</td>
+                        <td className="p-4 font-bold text-[#332424]">{b.tableName}</td>
                         <td className="p-4 text-center">
-                          <span className="px-3 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FFDF00] text-[10px] font-mono font-bold">
+                          <span className="px-3 py-1 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[10px] font-mono font-bold">
                             👤 {b.guests} Pers.
                           </span>
                         </td>
-                        <td className="p-4 font-mono font-bold text-[#D4AF37] text-xs">{b.referenceCode}</td>
+                        <td className="p-4 font-mono font-bold text-[#6F5A55] text-xs">{b.referenceCode}</td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <a
                               href={waLink}
                               target="_blank"
                               rel="noreferrer"
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-sm flex items-center gap-1"
+                              className="px-3 py-1.5 bg-[#4F735A] hover:bg-[#3D5B46] text-white rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-xs flex items-center gap-1"
                               title="Enviar Confirmación por WhatsApp"
                             >
                               <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                             </a>
                             <button
                               onClick={() => handleAdminCancelBooking(b.id)}
-                              className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-sm"
+                              className="px-3 py-1.5 bg-[#F4DCDD] hover:bg-[#E7C8CF] border border-[#A63F45]/30 text-[#A63F45] rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-xs"
                             >
                               Cancelar
                             </button>
@@ -6809,27 +6975,27 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#FDFBF7]"
+        className="space-y-8 text-[#332424]"
       >
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control en Vivo</span>
-          <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Plano del Salón</h2>
-          <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione el estado de las mesas y agilice el cobro en tiempo real.</p>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control en Vivo</span>
+          <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Plano del Salón</h2>
+          <p className="text-xs text-[#6F5A55] mt-1 font-medium">Gestione el estado de las mesas y agilice el cobro en tiempo real.</p>
         </div>
 
         {/* Legend */}
-        <div className="flex gap-4 text-xs font-bold text-[#FDFBF7] bg-[#1A110B] p-4 border border-[#D4AF37]/25 rounded-2xl gold-glow">
+        <div className="flex gap-4 text-xs font-bold text-[#332424] bg-[#FFF9F4] p-4 border border-[#D7BBA8] rounded-2xl shadow-sm">
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-400"></span>
-            <span className="text-emerald-300">Libre</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#4F735A]"></span>
+            <span className="text-[#4F735A] font-bold">Libre</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#FFDF00] border border-[#D4AF37]"></span>
-            <span className="text-[#FFDF00]">Ocupada</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#843747]"></span>
+            <span className="text-[#843747] font-bold">Ocupada</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-amber-500 border border-amber-400"></span>
-            <span className="text-amber-300">Reservada</span>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#B97932]"></span>
+            <span className="text-[#B97932] font-bold">Reservada</span>
           </div>
         </div>
 
@@ -6843,57 +7009,57 @@ export default function AdminHub({
             const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
 
             let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
-            let colorClasses = "border-emerald-500/40 bg-[#1A110B] text-emerald-300 gold-glow";
+            let colorClasses = "border-[#4F735A]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
             if (table.status === "Mantenimiento") {
               status = "Mantenimiento";
-              colorClasses = "border-red-500/40 bg-[#1A110B] text-red-300 gold-glow";
+              colorClasses = "border-[#A63F45]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
             } else if (activeOrder) {
               status = "Ocupada";
-              colorClasses = "border-[#D4AF37] bg-[#1A110B] text-[#FFDF00] gold-glow";
+              colorClasses = "border-[#843747] bg-[#FFF9F4] text-[#332424] shadow-sm";
             } else if (reservation) {
               status = "Reservada";
-              colorClasses = "border-amber-500/40 bg-[#1A110B] text-amber-300 gold-glow";
+              colorClasses = "border-[#B97932]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
             }
 
             return (
               <div
                 key={table.id}
-                className={`border rounded-3xl p-6 shadow-xl flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
+                className={`border rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
               >
                 <div>
-                  <div className="flex items-center justify-between border-b border-[#D4AF37]/20 pb-3 mb-3">
-                    <span className="font-serif text-lg font-black text-[#FDFBF7]">{table.name}</span>
-                    <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37]">
+                  <div className="flex items-center justify-between border-b border-[#D7BBA8] pb-3 mb-3">
+                    <span className="font-serif text-lg font-black text-[#843747]">{table.name}</span>
+                    <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747]">
                       {table.capacity} Personas
                     </span>
                   </div>
 
                   {status === "Mantenimiento" && (
                     <div className="py-4">
-                      <p className="text-xs text-red-800 italic font-semibold">🔧 Mesa fuera de servicio por mantenimiento.</p>
+                      <p className="text-xs text-[#A63F45] italic font-semibold">🔧 Mesa fuera de servicio por mantenimiento.</p>
                     </div>
                   )}
 
                   {status === "Libre" && (
                     <div className="py-4">
-                      <p className="text-xs text-[#2C1810]/60 italic font-semibold">Mesa disponible para recibir comensales.</p>
+                      <p className="text-xs text-[#6F5A55] italic font-semibold">Mesa disponible para recibir comensales.</p>
                     </div>
                   )}
 
                   {status === "Reservada" && reservation && (
                     <div className="space-y-1.5 py-2 text-xs">
-                      <p className="font-bold text-amber-800">📌 Reservada por: {reservation.customerName}</p>
-                      <p className="text-[10px] text-amber-700 font-semibold font-mono">Horario: {reservation.timeSlot} • Tel: {reservation.customerPhone}</p>
+                      <p className="font-bold text-[#B97932]">📌 Reservada por: {reservation.customerName}</p>
+                      <p className="text-[10px] text-[#6F5A55] font-semibold font-mono">Horario: {reservation.timeSlot} • Tel: {reservation.customerPhone}</p>
                     </div>
                   )}
 
                   {status === "Ocupada" && activeOrder && (
                     <div className="space-y-2 py-1 text-xs">
-                      <div className="flex justify-between items-center text-[10px] uppercase font-black text-caramel">
+                      <div className="flex justify-between items-center text-[10px] uppercase font-black text-[#843747]">
                         <span>Consumo Activo</span>
                         <span>Total: ${activeOrder.total.toFixed(0)}</span>
                       </div>
-                      <div className="max-h-[60px] overflow-y-auto pr-1 text-[10px] text-[#2C1810]/80 space-y-0.5 font-semibold">
+                      <div className="max-h-[60px] overflow-y-auto pr-1 text-[10px] text-[#6F5A55] space-y-0.5 font-semibold">
                         {activeOrder.items.map((it: any, idx: number) => (
                           <div key={idx} className="flex justify-between">
                             <span>{it.quantity}x {it.name}</span>
@@ -6905,11 +7071,11 @@ export default function AdminHub({
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-[#2C1810]/5 mt-2">
+                <div className="pt-4 border-t border-[#D7BBA8] mt-2">
                   {status === "Mantenimiento" && (
                     <button
                       disabled
-                      className="w-full bg-red-100/50 text-red-700/50 text-[10px] font-bold py-2 rounded-xl uppercase tracking-wider cursor-not-allowed border border-red-200/20"
+                      className="w-full bg-[#F4DCDD] text-[#A63F45] text-[10px] font-bold py-2 rounded-xl uppercase tracking-wider cursor-not-allowed border border-[#A63F45]/20"
                     >
                       Fuera de Servicio
                     </button>
@@ -6922,7 +7088,7 @@ export default function AdminHub({
                         setActiveSubTab("caja");
                         onShowNotification(`✨ Iniciando pedido para la ${table.name}.`, "info");
                       }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider"
+                      className="w-full bg-[#4F735A] hover:bg-[#3D5B46] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
                     >
                       Abrir Mesa
                     </button>
@@ -6935,7 +7101,7 @@ export default function AdminHub({
                         setActiveSubTab("caja");
                         onShowNotification(`📌 Ocupando mesa reservada para la ${table.name}.`, "info");
                       }}
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider"
+                      className="w-full bg-[#B97932] hover:bg-[#A0672A] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
                     >
                       Registrar Arribo
                     </button>
@@ -6950,7 +7116,7 @@ export default function AdminHub({
                         setPosCouponInput("");
                         setActiveSubTab("caja");
                       }}
-                      className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-md"
+                      className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
                     >
                       💵 Cobrar Ticket
                     </button>
@@ -6962,34 +7128,34 @@ export default function AdminHub({
         </div>
 
         {/* Table Editor Panel */}
-        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6 text-[#2C1810]">
-          <div className="border-b border-[#2C1810]/10 pb-4">
-            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Configuración y Distribución del Salón</h3>
-            <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
+        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
+          <div className="border-b border-[#D7BBA8] pb-4">
+            <h3 className="font-serif text-lg font-bold text-[#843747]">Configuración y Distribución del Salón</h3>
+            <p className="text-[10px] text-[#6F5A55] mt-0.5 font-medium">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Form: Add table */}
-            <form onSubmit={handleAddTable} className="lg:col-span-4 space-y-4 text-xs font-semibold text-[#2C1810]/80">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#C2956E] border-b border-[#2C1810]/5 pb-1 flex items-center gap-1.5">
+            <form onSubmit={handleAddTable} className="lg:col-span-4 space-y-4 text-xs font-semibold text-[#332424]">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1 flex items-center gap-1.5">
                 ➕ Agregar Mesa Nueva
               </h4>
               <div>
-                <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Nombre (ej: Mesa 9, VIP-2)</label>
+                <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Nombre (ej: Mesa 9, VIP-2)</label>
                 <input 
                   type="text"
                   placeholder="Nombre de mesa"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold outline-none"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]"
                 />
               </div>
               <div>
-                <label className="text-[8px] font-bold text-[#2C1810]/40 uppercase block mb-1">Capacidad (Comensales)</label>
+                <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Capacidad (Comensales)</label>
                 <select
                   value={newTableCapacity}
                   onChange={(e) => setNewTableCapacity(Number(e.target.value))}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 font-bold cursor-pointer outline-none"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
                 >
                   <option value="2">2 Personas</option>
                   <option value="4">4 Personas</option>
