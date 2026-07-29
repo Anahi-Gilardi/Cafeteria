@@ -1802,7 +1802,7 @@ export default function AdminHub({
     ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
 
     const thermalHtml = `
-      <h2>RESTO BAR DEL TEATRO</h2>
+      <h2>CASTAÑO — RESTO BAR</h2>
       <div class="center">DOCUMENTO NO FISCAL - ${fiscalDetails.invoiceType} (${fiscalDetails.invoiceNumber})</div>
       <div class="center">ESTADO: PRE-TICKET / BORRADOR</div>
       <div class="line"></div>
@@ -1917,8 +1917,8 @@ export default function AdminHub({
         {/* Title Banner */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Resumen Diario</span>
-            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Control de Operaciones</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Resumen Diario</span>
+            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Control de Operaciones</h2>
           </div>
           <div className="flex gap-3">
             <button 
@@ -1928,13 +1928,13 @@ export default function AdminHub({
                 setMovQty("");
                 setIsMovementModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 active:scale-98 transition-all cursor-pointer gold-glow uppercase tracking-wider"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-sm transition-all cursor-pointer uppercase tracking-wider"
             >
               <Plus className="h-4 w-4" /> Registrar Movimiento
             </button>
             <button 
               onClick={() => setActiveSubTab("caja")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#D4AF37] hover:text-white transition-all cursor-pointer uppercase tracking-wider"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer uppercase tracking-wider"
             >
               <Receipt className="h-4 w-4" /> Terminal de Caja
             </button>
@@ -1943,53 +1943,53 @@ export default function AdminHub({
 
         {/* 3 Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#D4AF37] block font-bold uppercase tracking-wider">Caja Turno Actual</span>
-              <div className="text-3xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">${isShiftOpen ? cashLedger.totalCollected.toLocaleString() : (closuresHistory[0]?.ventasTurno || 0).toLocaleString()}</div>
-              <span className="text-[10px] text-emerald-400 font-semibold block mt-1.5 flex items-center gap-0.5">
+              <span className="text-[10px] text-[#6F5A55] block font-bold uppercase tracking-wider">Caja Turno Actual</span>
+              <div className="text-3xl font-serif font-black text-[#843747] mt-1.5 font-mono">${isShiftOpen ? cashLedger.totalCollected.toLocaleString() : (closuresHistory[0]?.ventasTurno || 0).toLocaleString()}</div>
+              <span className="text-[10px] text-[#4F735A] font-semibold block mt-1.5 flex items-center gap-0.5">
                 {isShiftOpen 
-                  ? "🟢 Turno abierto y operando en Caja" 
+                  ? "Turno abierto y operando en Caja" 
                   : closuresHistory.length > 0 
                   ? `Último arqueo: $${(closuresHistory[0]?.ventasTurno || 0).toLocaleString()}` 
-                  : "🔴 Sin turnos activos actualmente"}
+                  : "Sin turnos activos actualmente"}
               </span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Coins className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#D4AF37] block font-bold uppercase tracking-wider">Auditoría (Diferencias)</span>
-              <div className="text-3xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">
+              <span className="text-[10px] text-[#6F5A55] block font-bold uppercase tracking-wider">Auditoría (Diferencias)</span>
+              <div className="text-3xl font-serif font-black text-[#843747] mt-1.5 font-mono">
                 {closuresHistory.length > 0 
                   ? `${closuresHistory.reduce((sum, c) => sum + c.diferencia, 0) >= 0 ? "+" : ""}$${closuresHistory.reduce((sum, c) => sum + c.diferencia, 0).toLocaleString()}` 
                   : "$0"}
               </div>
-              <span className="text-[10px] text-[#FDFBF7]/70 font-semibold block mt-1.5">
+              <span className="text-[10px] text-[#6F5A55] font-semibold block mt-1.5">
                 {closuresHistory.length > 0 
                   ? `Acumulado de ${closuresHistory.length} arqueos cerrados` 
                   : "Sin descuadres de arqueo declarados"}
               </span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Coffee className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl relative overflow-hidden flex items-center justify-between gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#D4AF37] block font-bold uppercase tracking-wider">Arqueos Homologados</span>
-              <div className="text-3xl font-serif font-black text-[#FFDF00] mt-1.5 font-mono">{closuresHistory.length}</div>
-              <span className="text-[10px] text-[#FDFBF7]/70 font-semibold block mt-1.5">
+              <span className="text-[10px] text-[#6F5A55] block font-bold uppercase tracking-wider">Arqueos Homologados</span>
+              <div className="text-3xl font-serif font-black text-[#843747] mt-1.5 font-mono">{closuresHistory.length}</div>
+              <span className="text-[10px] text-[#6F5A55] font-semibold block mt-1.5">
                 {closuresHistory.length > 0 
                   ? `Promedio por turno: $${(closuresHistory.reduce((sum, c) => sum + c.ventasTurno, 0) / closuresHistory.length).toFixed(0)}` 
                   : "Ningún turno de caja cerrado todavía"}
               </span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <TrendingUp className="h-6 w-6" />
             </div>
           </div>
@@ -1997,20 +1997,20 @@ export default function AdminHub({
 
         {/* Chart + Reposición split */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+          <div className="lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-[#FDFBF7]">Desempeño de Ventas</h3>
-                  <p className="text-[10px] text-[#FDFBF7]/60 font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
+                  <h3 className="font-serif text-lg font-bold text-[#332424]">Desempeño de Ventas</h3>
+                  <p className="text-[10px] text-[#6F5A55] font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
                 </div>
-                <span className="text-[9px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                <span className="text-[9px] font-bold text-[#843747] bg-[#E8D4C3] border border-[#D7BBA8] px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
                   7 Días Históricos
                 </span>
               </div>
 
               {/* Custom CSS Bars */}
-              <div className="flex justify-between items-end h-64 px-4 border-b border-[#D4AF37]/20 pb-2">
+              <div className="flex justify-between items-end h-64 px-4 border-b border-[#D7BBA8] pb-2">
                 {[
                   { label: "Lunes", value: "$150k", height: "45%" },
                   { label: "Martes", value: "$170k", height: "52%" },
@@ -2021,18 +2021,18 @@ export default function AdminHub({
                   { label: "Domingo", value: "$280k", height: "84%" }
                 ].map((bar, idx) => (
                   <div key={idx} className="flex flex-col items-center group w-10">
-                    <span className="text-[9px] font-bold text-[#FFDF00] opacity-0 group-hover:opacity-100 transition-opacity mb-1 font-mono">
+                    <span className="text-[9px] font-bold text-[#843747] opacity-0 group-hover:opacity-100 transition-opacity mb-1 font-mono">
                       {bar.value}
                     </span>
                     <div 
                       style={{ height: bar.height }}
-                      className="w-8 bg-gradient-to-t from-[#996515] to-[#D4AF37] hover:to-[#FFDF00] transition-all rounded-t-md duration-300 shadow-md"
+                      className="w-8 bg-[#843747] hover:bg-[#71303D] transition-all rounded-t-md duration-300 shadow-xs"
                     ></div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between px-4 pt-3 text-[10px] font-bold text-[#D4AF37]">
+              <div className="flex justify-between px-4 pt-3 text-[10px] font-bold text-[#6F5A55]">
                 <span>Lunes</span>
                 <span>Martes</span>
                 <span>Miércoles</span>
@@ -2044,46 +2044,46 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-[#FDFBF7]">Semáforo de Reposición</h3>
-                  <p className="text-[10px] text-[#FDFBF7]/60 font-medium">Insumos críticos e alertas potenciales</p>
+                  <h3 className="font-serif text-lg font-bold text-[#332424]">Semáforo de Reposición</h3>
+                  <p className="text-[10px] text-[#6F5A55] font-medium">Insumos críticos e alertas potenciales</p>
                 </div>
-                <span className="h-5 px-2 flex items-center justify-center rounded-full bg-red-600 text-white text-[9px] font-bold">
+                <span className="h-5 px-2 flex items-center justify-center rounded-full bg-[#A63F45] text-white text-[9px] font-bold">
                   4 Alertas
                 </span>
               </div>
 
-              <div className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl">
-                <div className="flex justify-between text-[10px] font-bold text-[#FDFBF7] mb-1.5">
+              <div className="p-3 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl">
+                <div className="flex justify-between text-[10px] font-bold text-[#332424] mb-1.5">
                   <span>Cobertura General de Stock</span>
-                  <span className="text-[#FFDF00]">56% óptimo</span>
+                  <span className="text-[#843747]">56% óptimo</span>
                 </div>
-                <div className="w-full h-2 bg-[#1C120C] rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 rounded-full" style={{ width: "56%" }}></div>
+                <div className="w-full h-2 bg-[#E8D4C3] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#843747] rounded-full" style={{ width: "56%" }}></div>
                 </div>
               </div>
 
               <div className="space-y-2.5">
                 {[
-                  { name: "Harina 000 Pastelera", qty: "0,8 kg", min: "Mínimo: 10 kg", color: "bg-red-500", provider: "Distribuidora Sur" },
-                  { name: "Leche Entera La Suipachense", qty: "1,2 L", min: "Mínimo: 12 L", color: "bg-red-500", provider: "Lácteos del Campo" },
-                  { name: "Manteca Calidad Extra", qty: "3,2 kg", min: "Mínimo: 8 kg", color: "bg-amber-500", provider: "Distribuidora Sur" },
-                  { name: "Crema de Leche 44% Tenor Gras", qty: "4,5 L", min: "Mínimo: 6 L", color: "bg-amber-500", provider: "Lácteos del Campo" }
+                  { name: "Harina 000 Pastelera", qty: "0,8 kg", min: "Mínimo: 10 kg", color: "bg-[#A63F45]", provider: "Distribuidora Sur" },
+                  { name: "Leche Entera La Suipachense", qty: "1,2 L", min: "Mínimo: 12 L", color: "bg-[#A63F45]", provider: "Lácteos del Campo" },
+                  { name: "Manteca Calidad Extra", qty: "3,2 kg", min: "Mínimo: 8 kg", color: "bg-[#B97932]", provider: "Distribuidora Sur" },
+                  { name: "Crema de Leche 44% Tenor Gras", qty: "4,5 L", min: "Mínimo: 6 L", color: "bg-[#B97932]", provider: "Lácteos del Campo" }
                 ].map((alert, idx) => (
-                  <div key={idx} className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl flex items-center justify-between">
+                  <div key={idx} className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className={`h-2.5 w-2.5 rounded-full ${alert.color} shrink-0`}></span>
                       <div>
-                        <strong className="text-xs font-bold text-[#FDFBF7] block leading-tight">{alert.name}</strong>
-                        <span className="text-[9px] text-[#D4AF37]">Proveedor: {alert.provider}</span>
+                        <strong className="text-xs font-bold text-[#332424] block leading-tight">{alert.name}</strong>
+                        <span className="text-[9px] text-[#6F5A55]">Proveedor: {alert.provider}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-[#FFDF00] block font-mono">{alert.qty}</span>
-                      <span className="text-[9px] text-[#FDFBF7]/60 block font-semibold">{alert.min}</span>
+                      <span className="text-xs font-bold text-[#843747] block font-mono">{alert.qty}</span>
+                      <span className="text-[9px] text-[#6F5A55] block font-semibold">{alert.min}</span>
                     </div>
                   </div>
                 ))}
@@ -2092,7 +2092,7 @@ export default function AdminHub({
 
             <button 
               onClick={() => setActiveSubTab("inventario")}
-              className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/30 text-xs font-bold text-[#D4AF37] hover:text-white transition-all cursor-pointer uppercase tracking-wider"
+              className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-xs font-bold text-[#843747] transition-all cursor-pointer uppercase tracking-wider"
             >
               Gestionar Inventario Completo ↗
             </button>
@@ -2149,32 +2149,32 @@ export default function AdminHub({
     };
 
     return (
-      <div className="space-y-6 text-[#FDFBF7]">
-        <div className="bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl p-4 flex gap-3 text-xs text-[#FDFBF7] font-semibold leading-relaxed gold-glow">
-          <AlertTriangle className="h-5 w-5 text-[#FFDF00] shrink-0 mt-0.5" />
+      <div className="space-y-6 text-[#332424]">
+        <div className="bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl p-4 flex gap-3 text-xs text-[#332424] font-semibold leading-relaxed shadow-xs">
+          <AlertTriangle className="h-5 w-5 text-[#843747] shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold block uppercase tracking-wider text-[10px] text-[#FFDF00]">Instrucciones de Auditoría a Ciegas</span>
+            <span className="font-bold block uppercase tracking-wider text-[10px] text-[#843747]">Instrucciones de Auditoría a Ciegas</span>
             El inventario digital teórico se encuentra oculto para forzar un conteo manual honesto. Recorra el local, cuente las existencias físicas de cada insumo e ingréselas abajo. Al finalizar, el sistema calculará las discrepancias y generará alertas si se detectan pérdidas significativas.
           </div>
         </div>
 
         <form onSubmit={handleSubmitBlindAudit} className="space-y-4">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xl gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-wider text-[#D4AF37]">
+                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
                   <th className="p-4">Insumo</th>
                   <th className="p-4">Proveedor Asignado</th>
                   <th className="p-4 text-center">Unidad</th>
                   <th className="p-4 text-center w-40">Conteo Relevado (Visual)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
+              <tbody className="divide-y divide-[#D7BBA8] text-xs">
                 {insumos.map((ins, idx) => (
-                  <tr key={idx} className="hover:bg-[#2A1B12]/60 transition-colors">
-                    <td className="p-4 font-bold text-[#FDFBF7]">{ins.name}</td>
-                    <td className="p-4 text-[#D4AF37] font-semibold">{ins.provider || "Sin designar"}</td>
-                    <td className="p-4 text-center text-[#FDFBF7]/80 uppercase font-bold">{ins.unit}</td>
+                  <tr key={idx} className="hover:bg-[#E8D4C3]/30 transition-colors">
+                    <td className="p-4 font-bold text-[#332424]">{ins.name}</td>
+                    <td className="p-4 text-[#843747] font-semibold">{ins.provider || "Sin designar"}</td>
+                    <td className="p-4 text-center text-[#6F5A55] uppercase font-bold">{ins.unit}</td>
                     <td className="p-4 text-center">
                       <input
                         type="number"
@@ -2182,7 +2182,7 @@ export default function AdminHub({
                         placeholder="Ej. 12"
                         value={blindCounts[ins.id] || ""}
                         onChange={(e) => setBlindCounts(prev => ({ ...prev, [ins.id]: e.target.value }))}
-                        className="w-28 text-center p-1.5 border border-[#D4AF37]/40 rounded-lg bg-[#2A1B12] text-[#FFDF00] font-mono font-bold outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                        className="w-28 text-center p-1.5 border border-[#D7BBA8] rounded-lg bg-[#FFF9F4] text-[#843747] font-mono font-bold outline-none focus:border-[#843747]"
                       />
                     </td>
                   </tr>
@@ -2194,46 +2194,46 @@ export default function AdminHub({
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl transition-all shadow-md cursor-pointer border-none uppercase tracking-wider gold-glow hover:brightness-110"
+              className="px-6 py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl transition-all shadow-sm cursor-pointer border-none uppercase tracking-wider"
             >
-              🔒 Finalizar Auditoría y Procesar Desvíos
+              Finalizar Auditoría y Procesar Desvíos
             </button>
           </div>
         </form>
 
         {/* Audit History Log */}
-        <div className="space-y-4 pt-6 border-t border-[#2C1810]/10">
+        <div className="space-y-4 pt-6 border-t border-[#D7BBA8]">
           <div>
-            <h3 className="font-serif text-lg font-bold text-[#2C1810]">Historial de Auditorías y Desvíos</h3>
-            <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Reportes consolidados de discrepancias físicas vs teóricas.</p>
+            <h3 className="font-serif text-lg font-bold text-[#332424]">Historial de Auditorías y Desvíos</h3>
+            <p className="text-[10px] text-[#6F5A55] mt-0.5">Reportes consolidados de discrepancias físicas vs teóricas.</p>
           </div>
 
           {auditHistory.length === 0 ? (
-            <p className="text-xs text-[#2C1810]/50 italic font-semibold">No se han registrado auditorías físicas aún.</p>
+            <p className="text-xs text-[#6F5A55] italic font-semibold">No se han registrado auditorías físicas aún.</p>
           ) : (
             <div className="space-y-6">
               {auditHistory.map((audit) => (
-                <div key={audit.id} className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xs space-y-4">
-                  <div className="flex justify-between items-center border-b border-[#2C1810]/15 pb-2.5 text-xs">
+                <div key={audit.id} className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-2.5 text-xs">
                     <div>
-                      <span className="font-bold text-[#2C1810]">Auditor: {audit.auditor}</span>
-                      <span className="text-[10px] text-[#2C1810]/50 block font-mono font-semibold">{new Date(audit.date).toLocaleString("es-AR")}</span>
+                      <span className="font-bold text-[#332424]">Auditor: {audit.auditor}</span>
+                      <span className="text-[10px] text-[#6F5A55] block font-mono font-semibold">{new Date(audit.date).toLocaleString("es-AR")}</span>
                     </div>
                     {audit.hasAlert ? (
-                      <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-red-100 border border-red-200 text-red-700 rounded-full tracking-wider animate-pulse flex items-center gap-1">
-                        ⚠️ Alerta de Pérdida (&gt;2%)
+                      <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider animate-pulse flex items-center gap-1">
+                        Alerta de Pérdida (&gt;2%)
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full tracking-wider flex items-center gap-1">
-                        ✅ Conciliación Exitosa
+                      <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-[#DFEADF] border border-[#4F735A]/40 text-[#4F735A] rounded-full tracking-wider flex items-center gap-1">
+                        Conciliación Exitosa
                       </span>
                     )}
                   </div>
 
-                  <div className="border border-[#2C1810]/10 rounded-xl overflow-hidden text-xs">
+                  <div className="border border-[#D7BBA8] rounded-xl overflow-hidden text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                        <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
                           <th className="p-3">Insumo</th>
                           <th className="p-3 text-center">Teórico Digital</th>
                           <th className="p-3 text-center">Visual Relevado</th>
@@ -2241,18 +2241,18 @@ export default function AdminHub({
                           <th className="p-3 text-center">Desvío %</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#2C1810]/5 font-semibold">
+                      <tbody className="divide-y divide-[#D7BBA8] font-semibold">
                         {audit.details.map((d: any, idx: number) => {
                           const isWarning = d.desvioPct < -2;
                           return (
-                            <tr key={idx} className={isWarning ? "bg-red-950/40 text-red-200" : "text-[#FDFBF7]"}>
+                            <tr key={idx} className={isWarning ? "bg-[#F4DCDD] text-[#A63F45]" : "text-[#332424]"}>
                               <td className="p-3 font-bold">{d.name}</td>
-                              <td className="p-3 text-center font-mono text-[#FDFBF7]/80">{d.teorico} {d.unit}</td>
-                              <td className="p-3 text-center font-mono text-[#FFDF00]">{d.visual} {d.unit}</td>
-                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-red-400" : d.desvio > 0 ? "text-emerald-400" : "text-[#FDFBF7]/70"}`}>
+                              <td className="p-3 text-center font-mono text-[#6F5A55]">{d.teorico} {d.unit}</td>
+                              <td className="p-3 text-center font-mono text-[#843747]">{d.visual} {d.unit}</td>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-[#A63F45]" : d.desvio > 0 ? "text-[#4F735A]" : "text-[#6F5A55]"}`}>
                                 {d.desvio > 0 ? `+${d.desvio}` : d.desvio} {d.unit}
                               </td>
-                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-red-400" : d.desvioPct > 0 ? "text-emerald-400" : "text-[#FDFBF7]/70"}`}>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-[#A63F45]" : d.desvioPct > 0 ? "text-[#4F735A]" : "text-[#6F5A55]"}`}>
                                 {d.desvioPct > 0 ? `+${d.desvioPct.toFixed(1)}%` : `${d.desvioPct.toFixed(1)}%`}
                               </td>
                             </tr>
@@ -2295,15 +2295,15 @@ export default function AdminHub({
     const sortedQuotes = [...validQuotes].sort((a, b) => a.numericPrice - b.numericPrice);
 
     return (
-      <div className="space-y-6 text-[#FDFBF7]">
+      <div className="space-y-6 text-[#332424]">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#FFDF00]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
-          <p className="text-[10px] text-[#FDFBF7]/70 mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
+          <h3 className="font-serif text-lg font-bold text-[#843747]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
+          <p className="text-[10px] text-[#6F5A55] mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-2 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl gold-glow">
-            <label className="text-[9px] font-black uppercase text-[#D4AF37] block">Seleccione el Insumo a Comparar</label>
+          <div className="space-y-2 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] p-5 rounded-2xl shadow-sm">
+            <label className="text-[9px] font-black uppercase text-[#6F5A55] block">Seleccione el Insumo a Comparar</label>
             <select
               value={compareInsumoId}
               onChange={(e) => {
@@ -2317,7 +2317,7 @@ export default function AdminHub({
                   ]);
                 }
               }}
-              className="w-full text-xs p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] font-bold cursor-pointer outline-none focus:ring-1 focus:ring-[#D4AF37]"
+              className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
             >
               <option value="">-- Seleccionar Insumo --</option>
               {insumos.map(ins => (
@@ -2331,12 +2331,12 @@ export default function AdminHub({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {compareQuotes.map((q, idx) => (
-                <div key={idx} className="space-y-3 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-5 rounded-2xl gold-glow">
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-1">
-                    <span className="text-[9px] font-black uppercase text-[#D4AF37]">Oferta Proveedor #{idx + 1}</span>
+                <div key={idx} className="space-y-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] p-5 rounded-2xl shadow-sm">
+                  <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-1">
+                    <span className="text-[9px] font-black uppercase text-[#6F5A55]">Oferta Proveedor #{idx + 1}</span>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-[#D4AF37] uppercase block">Nombre de Proveedor</label>
+                    <label className="text-[8px] font-bold text-[#6F5A55] uppercase block">Nombre de Proveedor</label>
                     <input
                       type="text"
                       value={q.supplier}
@@ -2345,11 +2345,11 @@ export default function AdminHub({
                         updated[idx].supplier = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-lg bg-[#2A1B12] text-[#FDFBF7] font-bold"
+                      className="w-full text-xs p-2 border border-[#D7BBA8] rounded-lg bg-[#FFF9F4] text-[#332424] font-bold"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-[#D4AF37] uppercase block">Precio Unitario ($)</label>
+                    <label className="text-[8px] font-bold text-[#6F5A55] uppercase block">Precio Unitario ($)</label>
                     <input
                       type="number"
                       step="any"
@@ -2360,7 +2360,7 @@ export default function AdminHub({
                         updated[idx].price = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#D4AF37]/30 rounded-lg bg-[#2A1B12] text-[#FFDF00] font-mono font-bold"
+                      className="w-full text-xs p-2 border border-[#D7BBA8] rounded-lg bg-[#FFF9F4] text-[#843747] font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -2370,8 +2370,8 @@ export default function AdminHub({
             {validQuotes.length > 0 && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">Resultados Comparativos en Paralelo</h4>
-                  <span className="text-[10px] font-bold text-[#FFDF00] italic font-mono bg-[#2A1B12] border border-[#D4AF37]/30 px-2.5 py-1 rounded-lg">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#6F5A55]">Resultados Comparativos en Paralelo</h4>
+                  <span className="text-[10px] font-bold text-[#843747] italic font-mono bg-[#E8D4C3] border border-[#D7BBA8] px-2.5 py-1 rounded-lg">
                     Consumo Estimado Local: {consumption} {selectedInsumo.unit}/mes
                   </span>
                 </div>
@@ -2381,8 +2381,8 @@ export default function AdminHub({
                     const priceVal = parseFloat(q.price) || 0;
                     if (!q.supplier.trim() || priceVal <= 0) {
                       return (
-                        <div key={idx} className="bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7]/40 border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
-                          <p className="text-xs text-stone-400 font-bold italic">Sin cotización ingresada</p>
+                        <div key={idx} className="bg-[#E8D4C3]/30 border border-[#D7BBA8] text-[#6F5A55] border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
+                          <p className="text-xs text-[#6F5A55] font-bold italic">Sin cotización ingresada</p>
                         </div>
                       );
                     }
@@ -2392,39 +2392,33 @@ export default function AdminHub({
 
                     const isCheapest = priceVal === cheapestPrice;
                     const isExpensive = priceVal === highestPrice && sortedQuotes.length > 1;
-                    const isIntermediate = !isCheapest && !isExpensive;
 
-                    let highlightColor = "border-amber-200 bg-amber-50/10 text-amber-900";
-                    let badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-amber-100 text-amber-800 border border-amber-200">Tarifa Media</span>;
+                    let highlightColor = "border-[#D7BBA8] bg-[#FFF9F4] text-[#332424]";
+                    let badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30">Tarifa Media</span>;
                     let savingsText = "";
 
                     if (isCheapest) {
-                      highlightColor = "border-emerald-300 bg-emerald-50/15 text-emerald-950 ring-2 ring-emerald-500/25";
-                      badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-emerald-100 text-emerald-850 border border-emerald-200">¡MEJOR PRECIO!</span>;
-                      
+                      highlightColor = "border-[#4F735A] bg-[#DFEADF] text-[#4F735A]";
+                      badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-[#4F735A] text-white">Mejor Opción</span>;
                       if (sortedQuotes.length > 1) {
-                        const savings = (highestPrice - priceVal) * consumption;
-                        savingsText = `🎉 Ahorro potencial: $${savings.toLocaleString("es-AR")}/mes`;
+                        const diffPerUnit = highestPrice - cheapestPrice;
+                        const totalMonthlySavings = diffPerUnit * consumption;
+                        savingsText = `Ahorro estimado de $${totalMonthlySavings.toLocaleString("es-AR")}/mes vs cotización más cara.`;
                       }
                     } else if (isExpensive) {
-                      highlightColor = "border-rose-300 bg-rose-50/10 text-rose-950";
-                      badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-rose-100 text-rose-800 border border-rose-200">Tarifa Alta</span>;
-                      
-                      const extraCost = (priceVal - cheapestPrice) * consumption;
-                      savingsText = `⚠️ Extra Costo: +$${extraCost.toLocaleString("es-AR")}/mes`;
-                    } else if (isIntermediate) {
-                      const extraCost = (priceVal - cheapestPrice) * consumption;
-                      savingsText = `⚠️ Extra Costo: +$${extraCost.toLocaleString("es-AR")}/mes`;
+                      highlightColor = "border-[#A63F45] bg-[#F4DCDD] text-[#A63F45]";
+                      badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-[#A63F45] text-white">Más Costoso</span>;
                     }
 
+                    const monthlyTotal = priceVal * consumption;
+
                     return (
-                      <div key={idx} className={`border rounded-3xl p-6 flex flex-col justify-between min-h-[180px] shadow-xs relative transition-all ${highlightColor}`}>
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center border-b border-[#2C1810]/5 pb-2">
-                            <span className="font-serif text-sm font-black">{q.supplier}</span>
+                      <div key={idx} className={`border-2 rounded-3xl p-5 shadow-sm flex flex-col justify-between space-y-4 ${highlightColor}`}>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-black uppercase">{q.supplier}</span>
                             {badge}
                           </div>
-                          
                           <div className="space-y-1">
                             <span className="text-[8px] text-[#2C1810]/40 uppercase tracking-widest font-black block">Costo Unitario</span>
                             <div className="text-2xl font-mono font-black">${priceVal.toFixed(2)}</div>
@@ -2480,16 +2474,16 @@ export default function AdminHub({
     const maxCost = Math.max(...consumptionList.map(c => c.totalCost), 1);
 
     return (
-      <div className="space-y-6 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl gold-glow">
+      <div className="space-y-6 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#FFDF00]">📈 Analítica de Consumo Real de Insumos</h3>
-          <p className="text-xs text-[#FDFBF7]/70 mt-0.5">
+          <h3 className="font-serif text-lg font-bold text-[#843747]">Analítica de Consumo Real de Insumos</h3>
+          <p className="text-xs text-[#6F5A55] mt-0.5">
             Deducción automatizada de materias primas basada en las comandas finalizadas y las dosificaciones de recetas.
           </p>
         </div>
 
         {consumptionList.length === 0 ? (
-          <div className="p-8 text-center border border-dashed border-[#D4AF37]/30 rounded-2xl text-xs text-[#D4AF37] italic">
+          <div className="p-8 text-center border border-dashed border-[#D7BBA8] rounded-2xl text-xs text-[#6F5A55] italic">
             No hay comandas completadas registradas para computar consumo de recetas aún.
           </div>
         ) : (
@@ -2497,17 +2491,17 @@ export default function AdminHub({
             {consumptionList.map((item, idx) => {
               const widthPct = `${Math.max(10, Math.round((item.totalCost / maxCost) * 100))}%`;
               return (
-                <div key={idx} className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl space-y-2 text-[#FDFBF7]">
+                <div key={idx} className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-2 text-[#332424]">
                   <div className="flex justify-between items-center text-xs font-bold">
-                    <span className="text-[#FDFBF7]">{item.name}</span>
-                    <span className="font-mono text-[#FFDF00]">
+                    <span className="text-[#332424]">{item.name}</span>
+                    <span className="font-mono text-[#843747]">
                       {item.amount.toFixed(2)} {item.unit} (${item.totalCost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
                     </span>
                   </div>
-                  <div className="w-full h-3 bg-[#1C120C] rounded-full overflow-hidden">
+                  <div className="w-full h-3 bg-[#E8D4C3] rounded-full overflow-hidden">
                     <div
                       style={{ width: widthPct }}
-                      className="h-full bg-gradient-to-r from-[#996515] via-[#D4AF37] to-[#FFDF00] rounded-full transition-all duration-500"
+                      className="h-full bg-[#843747] rounded-full transition-all duration-500"
                     ></div>
                   </div>
                 </div>
@@ -2798,18 +2792,18 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#FDFBF7]"
+        className="space-y-8 text-[#332424]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Módulo de Inventario</span>
-            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Stock & Materias Primas</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Módulo de Inventario</span>
+            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Stock & Materias Primas</h2>
           </div>
           {inventarioSubTab === "general" && (
             <div className="flex flex-wrap gap-3">
               <button 
                 onClick={handleGenerateAutoOrders}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer animate-fade-in border-none gold-glow uppercase tracking-wider"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-sm transition-all cursor-pointer border-none uppercase tracking-wider"
               >
                 <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos (US-2.3)
               </button>
@@ -2821,9 +2815,9 @@ export default function AdminHub({
                   setNewInsumoMinLimit("5");
                   setIsNewInsumoModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black transition-all cursor-pointer gold-glow uppercase tracking-wider shadow-md hover:brightness-110"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
               >
-                <Plus className="h-4 w-4" /> ➕ Crear Nuevo Insumo
+                <Plus className="h-4 w-4" /> Crear Nuevo Insumo
               </button>
               <button 
                 onClick={() => {
@@ -2832,7 +2826,7 @@ export default function AdminHub({
                   setMovQty("");
                   setIsMovementModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#2A1B12] hover:bg-[#3D281A] text-xs font-bold text-[#D4AF37] hover:text-white transition-all cursor-pointer animate-fade-in uppercase tracking-wider"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer uppercase tracking-wider"
               >
                 <Plus className="h-4 w-4" /> Registrar Movimiento
               </button>
@@ -2841,26 +2835,26 @@ export default function AdminHub({
         </div>
 
         {/* Sub-tabs header for stock submodules */}
-        <div className="flex border-b border-[#D4AF37]/20 pb-3 gap-6 text-xs font-bold text-[#FDFBF7]/60">
+        <div className="flex border-b border-[#D7BBA8] pb-3 gap-6 text-xs font-bold text-[#6F5A55]">
           {[
-            { id: "general", label: "📋 Vista General" },
-            { id: "ciegas", label: "👁️ Auditoría a Ciegas (US-2.1)" },
-            { id: "comparador", label: "📊 Comparador de Presupuestos (US-2.2)" },
-            { id: "analitica", label: "📈 Analítica de Consumo Real" }
+            { id: "general", label: "Vista General" },
+            { id: "ciegas", label: "Auditoría a Ciegas (US-2.1)" },
+            { id: "comparador", label: "Comparador de Presupuestos (US-2.2)" },
+            { id: "analitica", label: "Analítica de Consumo Real" }
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setInventarioSubTab(tab.id as any)}
               className={`pb-3 relative transition-colors cursor-pointer border-none bg-transparent ${
-                inventarioSubTab === tab.id ? "text-[#FFDF00] font-black" : "hover:text-[#FDFBF7]"
+                inventarioSubTab === tab.id ? "text-[#843747] font-black" : "hover:text-[#332424]"
               }`}
             >
               {tab.label}
               {inventarioSubTab === tab.id && (
                 <motion.div
                   layoutId="inventario-active-pill"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37] rounded-full"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#843747] rounded-full"
                 />
               )}
             </button>
@@ -2870,50 +2864,50 @@ export default function AdminHub({
         {inventarioSubTab === "general" && (
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
-                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Total Insumos</span>
-                <div className="text-2xl font-serif font-black text-[#FFDF00] mt-1 font-mono">{totalInsumosCount}</div>
+              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+                <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Total Insumos</span>
+                <div className="text-2xl font-serif font-black text-[#843747] mt-1 font-mono">{totalInsumosCount}</div>
               </div>
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
-                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span> Críticos
+              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+                <span className="text-[9px] font-bold text-[#A63F45] uppercase tracking-wider block flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#A63F45]"></span> Críticos
                 </span>
-                <div className="text-2xl font-serif font-black text-red-400 mt-1 font-mono">{criticalInsumosCount}</div>
+                <div className="text-2xl font-serif font-black text-[#A63F45] mt-1 font-mono">{criticalInsumosCount}</div>
               </div>
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
-                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Stock Bajo
+              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+                <span className="text-[9px] font-bold text-[#B97932] uppercase tracking-wider block flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#B97932]"></span> Stock Bajo
                 </span>
-                <div className="text-2xl font-serif font-black text-amber-400 mt-1 font-mono">{lowStockInsumosCount}</div>
+                <div className="text-2xl font-serif font-black text-[#B97932] mt-1 font-mono">{lowStockInsumosCount}</div>
               </div>
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-2xl p-4 shadow-xl gold-glow">
-                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Stock Saludable
+              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+                <span className="text-[9px] font-bold text-[#4F735A] uppercase tracking-wider block flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#4F735A]"></span> Stock Saludable
                 </span>
-                <div className="text-2xl font-serif font-black text-emerald-400 mt-1 font-mono">{healthyInsumosCount}</div>
+                <div className="text-2xl font-serif font-black text-[#4F735A] mt-1 font-mono">{healthyInsumosCount}</div>
               </div>
             </div>
 
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-96">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#D4AF37]" />
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#843747]" />
                 <input 
                   type="text"
                   placeholder="Buscar insumo, proveedor..."
                   value={searchInsumoQuery}
                   onChange={(e) => setSearchInsumoQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 focus:ring-1 focus:ring-[#D4AF37] focus:outline-none font-bold"
+                  className="w-full pl-10 pr-4 py-2 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/60 focus:border-[#843747] outline-none font-bold"
                 />
               </div>
-              <div className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider font-mono">
+              <div className="text-xs font-bold text-[#6F5A55] uppercase tracking-wider font-mono">
                 Mostrando {filteredInsumos.length} productos
               </div>
             </div>
 
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xl gold-glow">
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/20 text-[9px] font-bold uppercase tracking-wider text-[#D4AF37]">
+                  <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
                     <th className="p-4">Producto</th>
                     <th className="p-4">Proveedor</th>
                     <th className="p-4 text-center">Mínimo</th>
@@ -2924,29 +2918,29 @@ export default function AdminHub({
                     <th className="p-4 text-center">Ajuste</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
+                <tbody className="divide-y divide-[#D7BBA8] text-xs">
                   {filteredInsumos.map((ins, idx) => {
                     const isExpired = ins.expirationDate ? new Date(ins.expirationDate) < new Date(new Date().setHours(0,0,0,0)) : false;
                     const isCritical = ins.quantity <= ins.minLimit / 2;
                     const isLow = ins.quantity <= ins.minLimit && !isCritical;
                     const statusBadge = isExpired ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-purple-950/90 border border-purple-500/60 text-purple-300 rounded-full tracking-wider animate-pulse">VENCIDO</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider animate-pulse">VENCIDO</span>
                     ) : isCritical ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-red-950/80 border border-red-500/50 text-red-300 rounded-full tracking-wider">CRÍTICO</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider">CRÍTICO</span>
                     ) : isLow ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-amber-950/80 border border-amber-500/50 text-amber-300 rounded-full tracking-wider">BAJO</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F5E4CC] border border-[#B97932]/40 text-[#B97932] rounded-full tracking-wider">BAJO</span>
                     ) : (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 rounded-full tracking-wider">OK</span>
+                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#DFEADF] border border-[#4F735A]/40 text-[#4F735A] rounded-full tracking-wider">OK</span>
                     );
 
                     return (
-                      <tr key={idx} className="hover:bg-[#2A1B12]/60 transition-colors">
-                        <td className="p-4 font-bold text-[#FDFBF7]">{ins.name}</td>
-                        <td className="p-4 text-[#D4AF37] font-semibold">{ins.provider || "Sin designar"}</td>
-                        <td className="p-4 text-center font-mono font-bold text-[#FDFBF7]/70">{ins.minLimit}</td>
-                        <td className="p-4 text-center font-mono font-black text-[#FFDF00]">{ins.quantity}</td>
-                        <td className="p-4 text-center text-[#FDFBF7]/80 uppercase font-bold">{ins.unit}</td>
-                        <td className="p-4 font-mono font-semibold text-[#FDFBF7]/70">{ins.expirationDate || "-"}</td>
+                      <tr key={idx} className="hover:bg-[#E8D4C3]/40 transition-colors">
+                        <td className="p-4 font-bold text-[#332424]">{ins.name}</td>
+                        <td className="p-4 text-[#843747] font-semibold">{ins.provider || "Sin designar"}</td>
+                        <td className="p-4 text-center font-mono font-bold text-[#6F5A55]">{ins.minLimit}</td>
+                        <td className="p-4 text-center font-mono font-black text-[#843747]">{ins.quantity}</td>
+                        <td className="p-4 text-center text-[#6F5A55] uppercase font-bold">{ins.unit}</td>
+                        <td className="p-4 font-mono font-semibold text-[#6F5A55]">{ins.expirationDate || "-"}</td>
                         <td className="p-4 text-center">{statusBadge}</td>
                         <td className="p-4 text-center flex items-center justify-center gap-1.5">
                           <button 
@@ -3309,76 +3303,76 @@ export default function AdminHub({
         ) : (
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4">
-            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-2">
-              <h3 className="font-serif text-base font-bold text-[#FDFBF7] uppercase tracking-wider">Menú Disponible</h3>
+          <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-2">
+              <h3 className="font-serif text-base font-bold text-[#843747] uppercase tracking-wider">Menú Disponible</h3>
               <button 
                 onClick={() => setIsAddingProduct(!isAddingProduct)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] text-[10px] font-black rounded-xl shadow-md transition-all cursor-pointer uppercase tracking-wider"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
               >
                 <Plus className="h-3.5 w-3.5" /> Agregar Producto
               </button>
             </div>
 
             {isAddingProduct && (
-              <form onSubmit={handleAddNewProduct} className="p-5 bg-[#2A1B12] border-2 border-[#D4AF37]/50 rounded-3xl space-y-4 text-xs font-bold text-[#FDFBF7] shadow-2xl gold-glow">
-                <h4 className="font-serif text-base font-bold text-[#FFDF00] border-b border-[#D4AF37]/20 pb-2">➕ Agregar Nuevo Producto</h4>
+              <form onSubmit={handleAddNewProduct} className="p-5 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-3xl space-y-4 text-xs font-bold text-[#332424] shadow-sm">
+                <h4 className="font-serif text-base font-bold text-[#843747] border-b border-[#D7BBA8] pb-2">Agregar Nuevo Producto</h4>
                 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Producto *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Nombre del Producto *</label>
                   <input 
                     type="text" 
                     value={newProdName} 
                     onChange={(e) => setNewProdName(e.target.value)} 
                     placeholder="Ej: Bife de Chorizo a las Brasas" 
-                    className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none text-xs font-bold shadow-inner focus:border-[#FFDF00]"
+                    className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none text-xs font-bold focus:border-[#843747]"
                     required 
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Precio Sugerido ($) *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Precio Sugerido ($) *</label>
                     <input 
                       type="number" 
                       value={newProdPrice} 
                       onChange={(e) => setNewProdPrice(e.target.value)} 
                       placeholder="Ej: 8000" 
-                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FFDF00] outline-none font-mono text-sm font-bold shadow-inner focus:border-[#FFDF00]"
+                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] outline-none font-mono text-sm font-bold focus:border-[#843747]"
                       required 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Categoría</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Categoría</label>
                     <select 
                       value={newProdCategory} 
                       onChange={(e) => setNewProdCategory(e.target.value)} 
-                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer text-xs font-bold"
+                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer text-xs font-bold"
                     >
-                      <option value="desayunos_meriendas">☕ Desayunos & Meriendas</option>
-                      <option value="pizzas_focaccias">🍕 Pizzas & Focaccias</option>
-                      <option value="minutas_carnes">🥩 Minutas & Carnes</option>
-                      <option value="pastas_caseras">🍝 Pastas Caseras</option>
-                      <option value="empanadas">🥟 Empanadas</option>
-                      <option value="bebidas_sa">🥤 Bebidas S/A</option>
-                      <option value="bebidas_alcohol">🍸 Bebidas c/Alcohol</option>
-                      <option value="postres">🍰 Postres</option>
-                      <option value="executive">⭐ Menú Diario</option>
+                      <option value="desayunos_meriendas">Desayunos & Meriendas</option>
+                      <option value="pizzas_focaccias">Pizzas & Focaccias</option>
+                      <option value="minutas_carnes">Minutas & Carnes</option>
+                      <option value="pastas_caseras">Pastas Caseras</option>
+                      <option value="empanadas">Empanadas</option>
+                      <option value="bebidas_sa">Bebidas S/A</option>
+                      <option value="bebidas_alcohol">Bebidas c/Alcohol</option>
+                      <option value="postres">Postres</option>
+                      <option value="executive">Menú Diario</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Foto (URL o Subir desde Dispositivo) *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Foto (URL o Subir desde Dispositivo) *</label>
                   <input 
                     type="text" 
-                    value={newProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : newProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : newProdImage} 
+                    value={newProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : newProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage" : newProdImage} 
                     onChange={(e) => setNewProdImage(e.target.value)} 
                     placeholder="Pegar URL pública de imagen..." 
-                    className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none text-[11px] font-medium" 
+                    className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none text-[11px] font-medium" 
                   />
-                  <div className="mt-2 space-y-1 bg-[#1C120C] p-3 rounded-2xl border border-[#D4AF37]/20">
-                    <label className="text-[9px] font-black uppercase tracking-wider block text-[#FFDF00]">📷 Cargar Foto desde Celular / Cámara / PC</label>
+                  <div className="mt-2 space-y-1 bg-[#FFF9F4] p-3 rounded-2xl border border-[#D7BBA8]">
+                    <label className="text-[9px] font-black uppercase tracking-wider block text-[#843747]">📷 Cargar Foto desde Celular / PC</label>
                     <input 
                       type="file" 
                       accept="image/*"
@@ -3398,16 +3392,16 @@ export default function AdminHub({
                           }
                         }
                       }}
-                      className="w-full text-[10px] text-[#D4AF37] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer" 
+                      className="w-full text-[10px] text-[#6F5A55] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#E8D4C3] file:text-[#843747] hover:file:bg-[#E7C8CF] cursor-pointer" 
                     />
                     {isUploadingImage && (
-                      <span className="text-[10px] text-[#FFDF00] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                      <span className="text-[10px] text-[#843747] font-bold animate-pulse block">Subiendo imagen a Supabase...</span>
                     )}
                     {newProdImage && (
                       <button
                         type="button"
                         onClick={() => setNewProdImage("")}
-                        className="text-[9px] text-red-400 underline font-bold bg-transparent border-none cursor-pointer shrink-0 mt-1 block"
+                        className="text-[9px] text-[#A63F45] underline font-bold bg-transparent border-none cursor-pointer shrink-0 mt-1 block"
                       >
                         Quitar foto
                       </button>
@@ -3417,19 +3411,19 @@ export default function AdminHub({
 
                 {newProdImage && (
                   <div className="mt-1 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Vista Previa de la Foto</span>
-                    <img src={newProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border-2 border-[#D4AF37]/40 mx-auto object-cover shadow-md gold-glow" />
+                    <span className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Vista Previa de la Foto</span>
+                    <img src={newProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#D7BBA8] mx-auto object-cover shadow-xs" />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#D4AF37]">Descripción Gourmet</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Descripción Gourmet</label>
                   <textarea 
                     value={newProdDescription} 
                     onChange={(e) => setNewProdDescription(e.target.value)} 
                     placeholder="Descripción de la especialidad..." 
                     rows={3} 
-                    className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-medium resize-none text-xs leading-relaxed" 
+                    className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-medium resize-none text-xs leading-relaxed" 
                   />
                 </div>
 
@@ -3437,15 +3431,15 @@ export default function AdminHub({
                   <button 
                     type="button" 
                     onClick={() => setIsAddingProduct(false)} 
-                    className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7] rounded-xl hover:bg-stone-800 cursor-pointer font-bold"
+                    className="px-4 py-2 border border-[#D7BBA8] text-[#332424] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit" 
-                    className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black rounded-xl shadow-md cursor-pointer uppercase tracking-wider gold-glow"
+                    className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
                   >
-                    ➕ Crear Producto
+                    Crear Producto
                   </button>
                 </div>
               </form>
@@ -3468,8 +3462,8 @@ export default function AdminHub({
                       }}
                       className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border transition-all ${
                         active 
-                          ? "bg-[#2A1B12] border-2 border-[#FFDF00] text-[#FDFBF7] shadow-xl gold-glow"
-                          : "bg-[#1C120C] hover:bg-[#2A1B12] border-[#D4AF37]/25 text-[#FDFBF7]"
+                          ? "bg-[#E8D4C3] border-2 border-[#843747] text-[#332424] shadow-sm"
+                          : "bg-[#FFF9F4] hover:bg-[#E8D4C3]/50 border-[#D7BBA8] text-[#332424]"
                       }`}
                     >
                       <div className="flex items-center gap-3 pr-2 flex-1 min-w-0">
@@ -3477,12 +3471,12 @@ export default function AdminHub({
                           <img 
                             src={item.image} 
                             alt={item.name} 
-                            className="h-12 w-12 rounded-xl object-cover border border-[#D4AF37]/30 shrink-0 shadow-sm"
+                            className="h-12 w-12 rounded-xl object-cover border border-[#D7BBA8] shrink-0 shadow-xs"
                           />
                         )}
                         <div className="min-w-0 flex-1 space-y-0.5">
-                          <strong className={`text-xs font-bold block truncate ${active ? "text-[#FFDF00]" : "text-[#FDFBF7]"}`}>{item.name}</strong>
-                          <span className="text-[10px] text-[#FDFBF7]/80 block line-clamp-1 font-medium">
+                          <strong className={`text-xs font-bold block truncate ${active ? "text-[#843747]" : "text-[#332424]"}`}>{item.name}</strong>
+                          <span className="text-[10px] text-[#6F5A55] block line-clamp-1 font-medium">
                             {item.description ? item.description : "Sin descripción."}
                           </span>
                         </div>
@@ -3490,9 +3484,9 @@ export default function AdminHub({
 
                       <div className="text-right shrink-0 ml-2 font-mono flex items-center gap-2">
                         <div>
-                          <span className="text-sm font-black block text-[#FFDF00]">${item.price.toLocaleString("es-AR")}</span>
+                          <span className="text-sm font-black block text-[#843747]">${item.price.toLocaleString("es-AR")}</span>
                           <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
-                            itemMargin >= 60 ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30" : "bg-amber-950/80 text-amber-300 border border-amber-500/30"
+                            itemMargin >= 60 ? "bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30" : "bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30"
                           }`}>
                             {itemMargin.toFixed(0)}% mrg.
                           </span>
@@ -3505,10 +3499,10 @@ export default function AdminHub({
                             setSimulatedPrice(item.price);
                             handleStartEditingProduct(item);
                           }}
-                          className="px-2.5 py-1.5 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37] text-[#FFDF00] text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-sm gold-glow"
+                          className="px-2.5 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs"
                           title="Editar Ficha de Producto"
                         >
-                          ✏️ Editar
+                          Editar
                         </button>
                       </div>
                     </div>
@@ -3518,64 +3512,64 @@ export default function AdminHub({
           </div>
 
           <div className="lg:col-span-7 space-y-6">
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow">
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
               {isEditingProduct ? (
-                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#FDFBF7]">
-                  <div className="border-b border-[#D4AF37]/20 pb-2 flex justify-between items-center">
-                    <h3 className="font-serif text-base font-bold text-[#FFDF00]">Editar Ficha de Producto</h3>
-                    <span className="text-[9px] bg-[#2A1B12] text-[#D4AF37] border border-[#D4AF37]/30 px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
+                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#332424]">
+                  <div className="border-b border-[#D7BBA8] pb-2 flex justify-between items-center">
+                    <h3 className="font-serif text-base font-bold text-[#843747]">Editar Ficha de Producto</h3>
+                    <span className="text-[9px] bg-[#E8D4C3] text-[#843747] border border-[#D7BBA8] px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
                   </div>
                   
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Nombre del Producto *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Nombre del Producto *</label>
                     <input 
                       type="text" 
                       value={editProdName} 
                       onChange={(e) => setEditProdName(e.target.value)} 
-                      className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none text-xs font-bold shadow-inner"
+                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none text-xs font-bold"
                       required 
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Precio Comercial ($) *</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Precio Comercial ($) *</label>
                       <input 
                         type="number" 
                         value={editProdPrice} 
                         onChange={(e) => setEditProdPrice(e.target.value)} 
-                        className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FFDF00] focus:border-[#FFDF00] outline-none font-mono text-sm font-bold shadow-inner"
+                        className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] focus:border-[#843747] outline-none font-mono text-sm font-bold"
                         required 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Categoría</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Categoría</label>
                       <select 
                         value={editProdCategory} 
                         onChange={(e) => setEditProdCategory(e.target.value)} 
-                        className="w-full p-3 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer text-xs font-bold"
+                        className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer text-xs font-bold"
                       >
-                        <option value="desayunos_meriendas">☕ Desayunos & Meriendas</option>
-                        <option value="pizzas_focaccias">🍕 Pizzas & Focaccias</option>
-                        <option value="minutas_carnes">🥩 Minutas & Carnes</option>
-                        <option value="pastas_caseras">🍝 Pastas Caseras</option>
-                        <option value="empanadas">🥟 Empanadas</option>
-                        <option value="bebidas_sa">🥤 Bebidas S/A</option>
-                        <option value="bebidas_alcohol">🍸 Bebidas c/Alcohol</option>
-                        <option value="postres">🍰 Postres</option>
-                        <option value="executive">⭐ Menú Diario</option>
+                        <option value="desayunos_meriendas">Desayunos & Meriendas</option>
+                        <option value="pizzas_focaccias">Pizzas & Focaccias</option>
+                        <option value="minutas_carnes">Minutas & Carnes</option>
+                        <option value="pastas_caseras">Pastas Caseras</option>
+                        <option value="empanadas">Empanadas</option>
+                        <option value="bebidas_sa">Bebidas S/A</option>
+                        <option value="bebidas_alcohol">Bebidas c/Alcohol</option>
+                        <option value="postres">Postres</option>
+                        <option value="executive">Menú Diario</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#D4AF37]">Precio Takeaway ($)</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Precio Takeaway ($)</label>
                       <input 
                         type="number" 
                         value={editProdTakeawayPrice} 
                         onChange={(e) => setEditProdTakeawayPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D4AF37]/40 rounded-xl bg-[#2A1B12] text-[#FDFBF7] outline-none font-mono text-xs font-bold"
+                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-mono text-xs font-bold"
                       />
                     </div>
                     <div>
@@ -5519,12 +5513,12 @@ export default function AdminHub({
               return (
                 <div
                   key={item.id}
-                  className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden flex flex-col justify-between shadow-sm relative group hover:border-[#843747] transition-all"
+                  className="bg-[#925063] border border-[#D7BBA8]/40 text-white rounded-3xl overflow-hidden flex flex-col justify-between shadow-sm relative group hover:brightness-105 transition-all"
                 >
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="h-28 w-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
-                    <div className="h-28 w-full bg-[#E8D4C3] flex items-center justify-center text-[#843747]">
+                    <div className="h-28 w-full bg-[#843747] flex items-center justify-center text-[#E7C8CF]">
                       <Coffee className="h-8 w-8 stroke-1" />
                     </div>
                   )}
@@ -5537,25 +5531,25 @@ export default function AdminHub({
                       </span>
                     ) : (
                       item.stock !== undefined && (
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#DFEADF] border border-[#4F735A]/40 text-[#4F735A] tracking-wider font-mono">
+                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#E7C8CF] text-[#843747] border border-white/20 tracking-wider font-mono">
                           Disp: {item.stock}u
                         </span>
                       )
                     )}
                   </div>
 
-                  <div className="p-4 flex justify-between items-center gap-3 bg-[#FFF9F4] border-t border-[#D7BBA8]">
+                  <div className="p-4 flex justify-between items-center gap-3 bg-[#925063] border-t border-white/10">
                     <div className="space-y-1 overflow-hidden">
-                      <strong className="text-xs font-serif font-bold text-[#843747] block truncate">{item.name}</strong>
-                      <span className="text-sm font-mono font-black text-[#332424] block">${item.price.toLocaleString("es-AR")}</span>
+                      <strong className="text-xs font-serif font-bold text-white block truncate">{item.name}</strong>
+                      <span className="text-sm font-mono font-black text-[#FFF9F4] block">${item.price.toLocaleString("es-AR")}</span>
                     </div>
                     <button
                       onClick={() => handleAddMozoCart(item)}
                       disabled={isOut}
                       className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                         isOut 
-                          ? "bg-[#E8D4C3] border border-[#D7BBA8] text-[#6F5A55]/40 cursor-not-allowed" 
-                          : "bg-[#843747] text-white hover:bg-[#71303D] shadow-xs"
+                          ? "bg-[#843747] opacity-50 cursor-not-allowed text-white/50" 
+                          : "bg-[#FFF9F4] text-[#843747] hover:bg-white shadow-xs font-black"
                       }`}
                     >
                       <Plus className="h-5 w-5 font-black" />
@@ -5569,14 +5563,14 @@ export default function AdminHub({
 
         {/* Right Column: Draft Comanda */}
         <div className="lg:col-span-3">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex flex-col justify-between h-[620px]">
+          <div className="bg-[#71303D] border border-[#D7BBA8]/40 text-white rounded-3xl p-5 shadow-md flex flex-col justify-between h-[620px]">
             {!mozoSelectedTable && mozoServiceType === "salon" ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center text-[#6F5A55] p-6 space-y-3">
-                <div className="h-16 w-16 rounded-3xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-white/80 p-6 space-y-3">
+                <div className="h-16 w-16 rounded-3xl bg-[#843747] border border-white/20 text-white flex items-center justify-center">
                   <Coffee className="h-8 w-8" />
                 </div>
-                <span className="text-xs font-black text-[#843747] uppercase tracking-widest block">Comanda en Espera</span>
-                <p className="text-xs text-[#6F5A55] leading-relaxed max-w-[180px]">
+                <span className="text-xs font-black text-white uppercase tracking-widest block">Comanda en Espera</span>
+                <p className="text-xs text-white/70 leading-relaxed max-w-[180px]">
                   Seleccione una mesa disponible en el mapa de salón izquierdo para iniciar el pedido.
                 </p>
               </div>
@@ -5603,16 +5597,16 @@ export default function AdminHub({
                 return (
                   <div className="flex-1 flex flex-col justify-between h-full">
                     <div className="space-y-4 flex-1 flex flex-col">
-                      <div className="border-b border-[#D7BBA8] pb-3 flex justify-between items-center">
+                      <div className="border-b border-white/20 pb-3 flex justify-between items-center">
                         <div>
-                          <h4 className="font-serif text-base font-bold text-[#843747]">
+                          <h4 className="font-serif text-base font-bold text-white">
                             {mozoServiceType === "takeaway"
                               ? `RETIRO EN LOCAL`
                               : mozoServiceType === "delivery"
                               ? `DELIVERY A DOMICILIO`
                               : `Comanda ${mozoSelectedTable}`}
                           </h4>
-                          <span className="text-[10px] font-bold text-[#6F5A55] block mt-0.5">
+                          <span className="text-[10px] font-bold text-white/80 block mt-0.5">
                             {mozoServiceType === "takeaway"
                               ? `Cliente: ${mozoTakeawayForm.customerName || "Consumidor Final"}`
                               : mozoServiceType === "delivery"
@@ -5620,7 +5614,7 @@ export default function AdminHub({
                               : `Mozo: ${selectedWaiter}`}
                           </span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[9px] font-mono font-black uppercase tracking-wider">
+                        <span className="px-2.5 py-1 rounded-full bg-[#843747] border border-white/20 text-white text-[9px] font-mono font-black uppercase tracking-wider">
                           {mozoServiceType === "takeaway" ? "RETIRO" : mozoServiceType === "delivery" ? "DELIVERY" : activeOrder ? "Edición" : "Nueva"}
                         </span>
                       </div>
@@ -5628,31 +5622,31 @@ export default function AdminHub({
                       <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px]">
                         {mozoCart.length > 0 ? (
                           mozoCart.map((cart, idx) => (
-                            <div key={idx} className="bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl p-3 space-y-2">
+                            <div key={idx} className="bg-[#843747]/80 border border-white/10 rounded-2xl p-3 space-y-2 text-white">
                               <div className="flex justify-between items-center text-xs font-semibold">
                                 <div className="space-y-0.5 truncate pr-2">
-                                  <strong className="text-[#843747] block truncate font-serif">{cart.item.name}</strong>
-                                  <span className="text-[10px] text-[#6F5A55] font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
+                                  <strong className="text-white block truncate font-serif">{cart.item.name}</strong>
+                                  <span className="text-[10px] text-white/70 font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <div className="flex items-center gap-1 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl p-1">
+                                  <div className="flex items-center gap-1 bg-[#71303D] border border-white/20 rounded-xl p-1">
                                     <button
                                       onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
-                                      className="h-6 w-6 bg-[#E8D4C3] hover:bg-[#843747] hover:text-white text-[#843747] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      className="h-6 w-6 bg-[#843747] hover:bg-white hover:text-[#71303D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
                                     >
                                       -
                                     </button>
-                                    <span className="font-mono font-bold w-5 text-center text-[#332424]">{cart.qty}</span>
+                                    <span className="font-mono font-bold w-5 text-center text-white">{cart.qty}</span>
                                     <button
                                       onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
-                                      className="h-6 w-6 bg-[#E8D4C3] hover:bg-[#843747] hover:text-white text-[#843747] flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      className="h-6 w-6 bg-[#843747] hover:bg-white hover:text-[#71303D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
                                     >
                                       +
                                     </button>
                                   </div>
                                   <button
                                     onClick={() => handleRemoveFromMozoCart(cart.item.id)}
-                                    className="p-1.5 text-[#A63F45] hover:text-red-700 transition-all cursor-pointer"
+                                    className="p-1.5 text-[#E7C8CF] hover:text-white transition-all cursor-pointer"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </button>
@@ -5666,39 +5660,39 @@ export default function AdminHub({
                                   setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
                                 }}
                                 placeholder="Añadir aclaración (ej: bien cocido, sin hielo...)"
-                                className="w-full text-[10px] p-2 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 outline-none font-medium"
+                                className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#71303D] text-white placeholder-white/50 outline-none font-medium"
                               />
                             </div>
                           ))
                         ) : (
-                          <div className="flex flex-col items-center justify-center py-16 text-[#6F5A55] text-center space-y-2">
-                            <ClipboardList className="h-8 w-8 text-[#843747] stroke-1.5" />
-                            <span className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">Comanda Vacía</span>
-                            <p className="text-[10px] text-[#6F5A55] max-w-[140px]">Seleccione productos del catálogo para agregarlos.</p>
+                          <div className="flex flex-col items-center justify-center py-16 text-white/70 text-center space-y-2">
+                            <ClipboardList className="h-8 w-8 text-white stroke-1.5" />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-white block">Comanda Vacía</span>
+                            <p className="text-[10px] text-white/70 max-w-[140px]">Seleccione productos del catálogo para agregarlos.</p>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="border-t border-[#D7BBA8] pt-4 space-y-4">
-                      <div className="space-y-1.5 text-xs font-bold text-[#6F5A55]">
+                    <div className="border-t border-white/20 pt-4 space-y-4">
+                      <div className="space-y-1.5 text-xs font-bold text-white/80">
                         <div className="flex justify-between">
                           <span>Subtotal Consumos</span>
-                          <span className="font-mono text-[#332424]">${subtotal.toLocaleString("es-AR")}</span>
+                          <span className="font-mono text-white">${subtotal.toLocaleString("es-AR")}</span>
                         </div>
                         {mozoServiceType === "delivery" && (
-                          <div className="flex justify-between text-[#B97932]">
+                          <div className="flex justify-between text-[#F5E4CC]">
                             <span>Envío Cadete</span>
                             <span className="font-mono">${deliveryFeeExtra.toLocaleString("es-AR")}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
                           <span>IVA (21% Estimado)</span>
-                          <span className="font-mono text-[#332424]">${(currentTotal - currentTotal / 1.21).toFixed(0)}</span>
+                          <span className="font-mono text-white">${(currentTotal - currentTotal / 1.21).toFixed(0)}</span>
                         </div>
-                        <div className="flex justify-between border-t border-[#D7BBA8] pt-2 text-sm font-black text-[#843747]">
+                        <div className="flex justify-between border-t border-white/20 pt-2 text-sm font-black text-white">
                           <span>TOTAL COMANDA</span>
-                          <span className="font-mono text-xl text-[#843747]">${currentTotal.toLocaleString("es-AR")}</span>
+                          <span className="font-mono text-xl text-white">${currentTotal.toLocaleString("es-AR")}</span>
                         </div>
                       </div>
 
@@ -5707,8 +5701,8 @@ export default function AdminHub({
                         disabled={mozoCart.length === 0}
                         className={`w-full py-3.5 rounded-2xl font-black text-xs shadow-md transition-all cursor-pointer uppercase tracking-wider ${
                           mozoCart.length > 0
-                            ? "bg-[#843747] hover:bg-[#71303D] text-white"
-                            : "bg-[#E8D4C3] text-[#6F5A55]/50 border border-[#D7BBA8] cursor-not-allowed"
+                            ? "bg-[#FFF9F4] text-[#71303D] hover:bg-white"
+                            : "bg-[#843747] text-white/40 border border-white/10 cursor-not-allowed"
                         }`}
                       >
                         Marchar Comanda a Cocina
@@ -7427,7 +7421,8 @@ export default function AdminHub({
               return (
                 <button
                   key={link.id}
-                  title={isSidebarCollapsed ? link.label : undefined}
+                  title={isSidebarCollapsed ? `${link.label}${link.badge ? ` (${link.badge} pendientes)` : ""}` : undefined}
+                  aria-label={`${link.label}${link.badge ? `, ${link.badge} pendientes` : ""}`}
                   onClick={() => {
                     setActiveSubTab(link.id as any);
                     setIsMobileDrawerOpen(false);
@@ -7443,9 +7438,12 @@ export default function AdminHub({
                     {!isSidebarCollapsed && <span>{link.label}</span>}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
-                    <span className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                      active ? "bg-white text-[#843747]" : "bg-[#A63F45] text-white shadow-xs"
-                    }`}>
+                    <span 
+                      aria-label={`${link.badge} ${link.id === 'caja' ? 'comandas pendientes' : 'alertas'}`}
+                      className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
+                        active ? "bg-white text-[#843747]" : "bg-[#A63F45] text-white shadow-xs"
+                      }`}
+                    >
                       {link.badge}
                     </span>
                   )}
@@ -7490,7 +7488,8 @@ export default function AdminHub({
               return (
                 <button
                   key={link.id}
-                  title={isSidebarCollapsed ? link.label : undefined}
+                  title={isSidebarCollapsed ? `${link.label}${link.badge ? ` (${link.badge} insumos bajos)` : ""}` : undefined}
+                  aria-label={`${link.label}${link.badge ? `, ${link.badge} insumos bajos` : ""}`}
                   onClick={() => {
                     setActiveSubTab(link.id as any);
                     setIsMobileDrawerOpen(false);
@@ -7506,9 +7505,12 @@ export default function AdminHub({
                     {!isSidebarCollapsed && <span>{link.label}</span>}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
-                    <span className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                      active ? "bg-white text-[#843747]" : "bg-[#B97932] text-white shadow-xs"
-                    }`}>
+                    <span 
+                      aria-label={`${link.badge} insumos bajos`}
+                      className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
+                        active ? "bg-white text-[#843747]" : "bg-[#B97932] text-white shadow-xs"
+                      }`}
+                    >
                       {link.badge}
                     </span>
                   )}

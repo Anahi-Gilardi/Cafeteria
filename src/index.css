@@ -9,6 +9,8 @@
   --sidebar-border: #D1AD95;
 
   --primary: #843747;
+  --primary-product: #925063;
+  --primary-comanda: #71303D;
   --primary-hover: #71303D;
   --primary-pressed: #602733;
   --primary-soft: #E7C8CF;
@@ -63,6 +65,14 @@ body {
 
 .bg-primary {
   background-color: var(--primary);
+}
+
+.bg-primary-product {
+  background-color: var(--primary-product);
+}
+
+.bg-primary-comanda {
+  background-color: var(--primary-comanda);
 }
 
 .bg-primary-hover:hover {
