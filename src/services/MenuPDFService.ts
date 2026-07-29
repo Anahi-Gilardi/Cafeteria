@@ -48,7 +48,7 @@ export class MenuPDFService {
       doc.setTextColor(255, 223, 0); // #FFDF00 Gold
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
-      doc.text("RESTO BAR DEL TEATRO", pageWidth / 2, 18, { align: "center" });
+      doc.text("CASTAÑO — RESTO BAR", pageWidth / 2, 18, { align: "center" });
 
       // Subtitle & Address
       doc.setTextColor(253, 251, 247); // White
@@ -227,7 +227,7 @@ export class MenuPDFService {
       doc.setTextColor(212, 175, 55);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "bold");
-      doc.text("RESTO BAR DEL TEATRO • Constitución 944, Río Cuarto • Tel: 358 5042311 / 358 4651847", 12, pageHeight - 4);
+      doc.text("CASTAÑO — RESTO BAR • Constitución 944, Río Cuarto • Tel: 358 5042311 / 358 4651847", 12, pageHeight - 4);
 
       doc.setTextColor(253, 251, 247);
       doc.setFontSize(7.5);
@@ -236,6 +236,6 @@ export class MenuPDFService {
     }
 
     // Save PDF output
-    doc.save("Carta_Oficial_Resto_Bar_Del_Teatro.pdf");
+    doc.save("Carta_Oficial_Castano.pdf");
   }
 }

@@ -33,7 +33,7 @@ export class PresupuestoPDFService {
 
     doc.setTextColor(253, 251, 247);
     doc.setFontSize(12);
-    doc.text("SISTEMA INTEGRAL RESTO BAR DEL TEATRO", pageWidth / 2, 26, { align: "center" });
+    doc.text("SISTEMA INTEGRAL DE GESTIÓN GASTRO — CASTAÑO", pageWidth / 2, 26, { align: "center" });
 
     doc.setTextColor(212, 175, 55);
     doc.setFontSize(9);
@@ -278,7 +278,7 @@ export class PresupuestoPDFService {
       doc.setTextColor(212, 175, 55);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "bold");
-      doc.text("RESTO BAR DEL TEATRO • Presupuesto de Software ERP/POS • Rio Cuarto, Cordoba", 12, pageHeight - 4);
+      doc.text("CASTAÑO — RESTO BAR • Presupuesto de Software ERP/POS • Rio Cuarto, Cordoba", 12, pageHeight - 4);
 
       doc.setTextColor(253, 251, 247);
       doc.setFontSize(7.5);
@@ -287,6 +287,6 @@ export class PresupuestoPDFService {
     }
 
     // Save document
-    doc.save("Presupuesto_Sistema_Resto_Bar_Del_Teatro.pdf");
+    doc.save("Presupuesto_Sistema_Castano.pdf");
   }
 }

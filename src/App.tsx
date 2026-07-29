@@ -899,47 +899,47 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Resto Bar Del Teatro Footer */}
-      <footer className="bg-[#2C1810] text-paper/70 border-t border-[#C2956E]/20 py-12 px-4 mt-auto">
-        <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left">
+      {/* Castaño Footer */}
+      <footer className="bg-[#E8D4C3] text-[#332424] border-t border-[#D1AD95] py-10 px-4 mt-auto">
+        <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           {/* Brand Info */}
           <div>
             <div className="flex items-center justify-center md:justify-start mb-3">
               <RestoBarLogo size="md" />
             </div>
-            <p className="text-xs text-paper/60 leading-relaxed max-w-xs mx-auto md:mx-0">
+            <p className="text-xs text-[#6F5A55] leading-relaxed max-w-xs mx-auto md:mx-0">
               Gastronomía de Autor, Menú Ejecutivo y Cafetería en Río Cuarto. Una propuesta única frente al Teatro Municipal con excelencia y calidez.
             </p>
           </div>
 
           {/* Opening Hours */}
           <div className="flex flex-col items-center md:items-start text-xs font-medium">
-            <h4 className="text-[#F59E0B] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-[#F59E0B]" /> Horarios de Atención
+            <h4 className="text-[#843747] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
+              <Clock className="h-4 w-4 text-[#843747]" /> Horarios de Atención
             </h4>
-            <div className="space-y-1 text-white/80">
-              <p>Lunes a Viernes: <span className="text-white font-semibold">07:30 - 00:30 hs</span></p>
-              <p>Sábados y Domingos: <span className="text-white font-semibold">08:30 - 02:00 hs</span></p>
-              <p className="text-[10px] text-[#F59E0B] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $12.500 (Incluye Entrada, Principal, Bebida y Postre)</p>
+            <div className="space-y-1 text-[#332424]">
+              <p>Lunes a Viernes: <span className="font-semibold">07:30 - 00:30 hs</span></p>
+              <p>Sábados y Domingos: <span className="font-semibold">08:30 - 02:00 hs</span></p>
+              <p className="text-[10px] text-[#843747] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $12.500 (Incluye Entrada, Principal, Bebida y Postre)</p>
             </div>
           </div>
 
           {/* Contact Details */}
           <div className="flex flex-col items-center md:items-start text-xs font-medium">
-            <h4 className="text-[#F59E0B] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-[#F59E0B]" /> Ubicación & Contacto
+            <h4 className="text-[#843747] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-[#843747]" /> Ubicación & Contacto
             </h4>
-            <div className="space-y-1 text-white/80">
-              <p>📍 Constitución 944 (Frente al Teatro Municipal)</p>
-              <p>📍 Río Cuarto, Provincia de Córdoba, Argentina</p>
-              <p>📞 Teléfono / Reservas: 358 5042311 / 4651847</p>
-              <p>📸 Instagram: @restobardelteatro_rio4</p>
+            <div className="space-y-1 text-[#332424]">
+              <p>Constitución 944 (Frente al Teatro Municipal)</p>
+              <p>Río Cuarto, Provincia de Córdoba, Argentina</p>
+              <p>Teléfono / Reservas: 358 5042311 / 4651847</p>
+              <p>Instagram: @castano_restobar</p>
             </div>
           </div>
         </div>
 
-        <div className="mx-auto max-w-7xl border-t border-white/10 mt-10 pt-6 text-center text-[10px] text-paper/40 font-semibold tracking-wider uppercase">
-          © 2026 Resto Bar Del Teatro. Todos los derechos reservados.
+        <div className="mx-auto max-w-7xl border-t border-[#D1AD95] mt-8 pt-4 text-center text-[10px] text-[#6F5A55] font-semibold tracking-wider uppercase">
+          © 2026 Castaño — Resto Bar. Todos los derechos reservados.
         </div>
       </footer>
       </div>

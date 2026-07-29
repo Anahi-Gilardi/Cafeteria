@@ -1,89 +1,113 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+:root {
+  --app-bg: #F3E7DB;
+  --surface: #FFF9F4;
+  --surface-soft: #E8D4C3;
+  --sidebar-bg: #E2C6B0;
+  --sidebar-border: #D1AD95;
+
+  --primary: #843747;
+  --primary-hover: #71303D;
+  --primary-pressed: #602733;
+  --primary-soft: #E7C8CF;
+
+  --text-primary: #332424;
+  --text-secondary: #6F5A55;
+  --text-on-primary: #FFFFFF;
+  --border: #D7BBA8;
+
+  --success: #4F735A;
+  --success-soft: #DFEADF;
+  --warning: #B97932;
+  --warning-soft: #F5E4CC;
+  --danger: #A63F45;
+  --danger-soft: #F4DCDD;
+  --info: #55748A;
+  --info-soft: #DFE8ED;
+
+  --focus-ring: #B76879;
+  --shadow-card: 0 4px 14px rgba(51, 36, 36, 0.08);
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Cinzel", "Marcellus", ui-serif, Georgia, serif;
-  
-  /* Resto Bar Del Teatro Warm Light Brown & Burgundy Palette */
-  --color-warm-bg: #F3E7DB;
-  --color-card-bg: #FFF9F4;
-  --color-surface-sec: #E8D4C3;
-  --color-burgundy-light: #A65363;
-  --color-burgundy: #843747;
-  --color-burgundy-hover: #71303D;
-  --color-text-main: #332424;
-  --color-text-sec: #6F5A55;
-  --color-border-warm: #D7BBA8;
-  --color-status-success: #4F735A;
-  --color-status-warning: #B97932;
-  --color-status-error: #A63F45;
 }
 
-/* Resto Bar Del Teatro Warm Design System Utilities */
-.bg-warm-main {
-  background-color: #F3E7DB;
+/* Castaño Design System Utilities */
+body {
+  background-color: var(--app-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
 }
 
-.bg-card-warm {
-  background-color: #FFF9F4;
+.bg-app {
+  background-color: var(--app-bg);
 }
 
-.bg-surface-sec {
-  background-color: #E8D4C3;
+.bg-surface {
+  background-color: var(--surface);
 }
 
-.bg-burgundy {
-  background-color: #843747;
+.bg-surface-soft {
+  background-color: var(--surface-soft);
 }
 
-.bg-burgundy-hover:hover {
-  background-color: #71303D;
+.bg-sidebar {
+  background-color: var(--sidebar-bg);
 }
 
-.text-burgundy {
-  color: #843747;
+.bg-primary {
+  background-color: var(--primary);
 }
 
-.text-warm-main {
-  color: #332424;
+.bg-primary-hover:hover {
+  background-color: var(--primary-hover);
 }
 
-.text-warm-sec {
-  color: #6F5A55;
+.text-primary {
+  color: var(--primary);
 }
 
-.border-warm {
-  border-color: #D7BBA8;
+.text-main {
+  color: var(--text-primary);
 }
 
-.warm-shadow {
-  box-shadow: 0 4px 18px rgba(132, 55, 71, 0.08);
+.text-secondary {
+  color: var(--text-secondary);
 }
 
-.warm-shadow-lg {
-  box-shadow: 0 8px 25px rgba(132, 55, 71, 0.14);
+.border-main {
+  border-color: var(--border);
 }
 
-/* GPU Accelerated Anti-Lag Utilities */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+/* GPU Accelerated Utilities */
 .gpu-accelerated {
   will-change: transform, opacity;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #F3E7DB;
+  background: var(--app-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D7BBA8;
+  background: var(--border);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #843747;
+  background: var(--primary);
 }

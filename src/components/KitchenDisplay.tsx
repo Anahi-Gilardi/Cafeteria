@@ -1,5 +1,5 @@
 import { Order, OrderStatusType, MenuItem } from "../types";
-import { Clock, Play, CheckCircle2, AlertTriangle, Coffee, BookOpen, X, ChefHat, Eye, Archive } from "lucide-react";
+import { Clock, Play, CheckCircle2, AlertTriangle, Coffee, BookOpen, X, ChefHat, CookingPot, Eye, Archive } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 
@@ -327,12 +327,12 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
             onChange={(e) => setDestinationFilter(e.target.value as any)}
             className="px-3 py-2 rounded-xl bg-[#FFF9F4] border border-[#D7BBA8] text-xs font-bold text-[#332424] shadow-xs outline-none cursor-pointer"
           >
-            <option value="all">🍽️ Todos los Puestos</option>
-            <option value="parrilla">🔥 Parrilla</option>
-            <option value="cocina">🍳 Cocina Caliente</option>
-            <option value="cocina_fria">🥗 Cocina Fría & Postres</option>
-            <option value="barra_tragos">🍸 Barra Tragos & Vinos</option>
-            <option value="barra">☕ Barista & Cafetería</option>
+            <option value="all">Todos los Puestos</option>
+            <option value="parrilla">Parrilla</option>
+            <option value="cocina">Cocina Caliente</option>
+            <option value="cocina_fria">Cocina Fría & Postres</option>
+            <option value="barra_tragos">Barra Tragos & Vinos</option>
+            <option value="barra">Barista & Cafetería</option>
           </select>
 
           <select
@@ -340,10 +340,10 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
             onChange={(e) => setFilterType(e.target.value as any)}
             className="px-3 py-2 rounded-xl bg-[#FFF9F4] border border-[#D7BBA8] text-xs font-bold text-[#332424] shadow-xs outline-none cursor-pointer"
           >
-            <option value="all">📍 Todos los Canales</option>
-            <option value="Salon">🪑 Salón</option>
-            <option value="Takeaway">🛍️ Takeaway</option>
-            <option value="Delivery">🛵 Delivery</option>
+            <option value="all">Todos los Canales</option>
+            <option value="Salon">Salón</option>
+            <option value="Takeaway">Takeaway</option>
+            <option value="Delivery">Delivery</option>
           </select>
         </div>
       </div>
@@ -358,7 +358,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
               : "bg-[#FFF9F4] text-[#6F5A55]"
           }`}
         >
-          📥 Pendientes ({pendingOrders.length})
+          Pendientes ({pendingOrders.length})
         </button>
         <button
           onClick={() => setActiveMobileTab("preparando")}
@@ -368,7 +368,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
               : "bg-[#FFF9F4] text-[#6F5A55]"
           }`}
         >
-          🍳 En Preparación ({inProgressOrders.length})
+          En Preparación ({inProgressOrders.length})
         </button>
         <button
           onClick={() => setActiveMobileTab("finalizadas")}
@@ -378,7 +378,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
               : "bg-[#FFF9F4] text-[#6F5A55]"
           }`}
         >
-          🏁 Finalizadas ({completedOrders.length})
+          Finalizadas ({completedOrders.length})
         </button>
       </div>
 
@@ -389,7 +389,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         <div className={`space-y-4 ${activeMobileTab !== "pendientes" ? "hidden md:block" : "block"}`}>
           <div className="bg-[#E8D4C3] border border-[#D7BBA8] p-3 rounded-2xl flex justify-between items-center shadow-xs">
             <span className="font-serif font-black text-xs uppercase tracking-wider text-[#332424] flex items-center gap-1.5">
-              📥 1. PENDIENTES
+              <ChefHat className="h-4 w-4 text-[#843747]" /> 1. PENDIENTES
             </span>
             <span className="bg-[#843747] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
               {pendingOrders.length}
@@ -411,7 +411,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         <div className={`space-y-4 ${activeMobileTab !== "preparando" ? "hidden md:block" : "block"}`}>
           <div className="bg-[#E8D4C3] border border-[#D7BBA8] p-3 rounded-2xl flex justify-between items-center shadow-xs">
             <span className="font-serif font-black text-xs uppercase tracking-wider text-[#332424] flex items-center gap-1.5">
-              🍳 2. EN PREPARACIÓN
+              <CookingPot className="h-4 w-4 text-[#B97932]" /> 2. EN PREPARACIÓN
             </span>
             <span className="bg-[#B97932] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
               {inProgressOrders.length}
@@ -433,7 +433,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         <div className={`space-y-4 ${activeMobileTab !== "finalizadas" ? "hidden md:block" : "block"}`}>
           <div className="bg-[#E8D4C3] border border-[#D7BBA8] p-3 rounded-2xl flex justify-between items-center shadow-xs">
             <span className="font-serif font-black text-xs uppercase tracking-wider text-[#332424] flex items-center gap-1.5">
-              🏁 3. COMANDAS FINALIZADAS
+              <CheckCircle2 className="h-4 w-4 text-[#4F735A]" /> 3. COMANDAS FINALIZADAS
             </span>
             <span className="bg-[#4F735A] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full">
               {completedOrders.length}

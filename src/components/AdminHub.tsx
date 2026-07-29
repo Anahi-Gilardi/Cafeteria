@@ -1,11 +1,12 @@
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import { MenuItem, Order, OrderStatusType, ClientAccount } from "../types";
 import {
   Coins, ClipboardList, Package, TrendingUp, AlertCircle, Plus, Edit2, Save, 
   Check, DollarSign, ArrowUpRight, Receipt, RefreshCw, Layers, Users, 
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
-  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame, Menu
+  Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame, Menu,
+  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DEFAULT_WEEKLY_MENUS } from "../data/dailyMenus";
@@ -306,6 +307,16 @@ export default function AdminHub({
       return [];
     }
   });
+
+  // Sidebar collapse state & scroll ref
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => localStorage.getItem("castano_sidebar_collapsed") === "true");
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [activeSubTab]);
 
   // Modal open states
   const [isConfigRestaurantOpen, setIsConfigRestaurantOpen] = useState(false);
@@ -7327,17 +7338,17 @@ export default function AdminHub({
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] select-none relative">
       {/* Mobile Top Navigation Header */}
-      <div className="lg:hidden bg-[#2A1713] border-b border-[#843747]/40 px-4 py-3 flex justify-between items-center z-40 text-[#FFF9F4]">
+      <div className="lg:hidden bg-[#E2C6B0] border-b border-[#D1AD95] px-4 py-3 flex justify-between items-center z-40 text-[#332424]">
         <div className="flex items-center gap-3">
           <button 
             type="button"
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="p-2 rounded-xl bg-[#843747] text-white hover:bg-[#71303D] cursor-pointer"
+            className="p-2 rounded-xl bg-[#843747] text-white hover:bg-[#71303D] cursor-pointer shadow-xs"
             aria-label="Abrir menú de navegación"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-serif font-bold text-sm text-[#FFF9F4] uppercase tracking-wider">Resto Bar Del Teatro</span>
+          <span className="font-serif font-black text-sm text-[#332424] uppercase tracking-wider">CASTAÑO</span>
         </div>
         <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#843747] text-white">
           {activeSubTab.toUpperCase()}
@@ -7348,37 +7359,56 @@ export default function AdminHub({
       {isMobileDrawerOpen && (
         <div 
           onClick={() => setIsMobileDrawerOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-xs z-45"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-45"
         />
       )}
 
-      {/* Sidebar Navigation Drawer */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#1C120C] text-[#FDFBF7] flex flex-col justify-between p-6 shrink-0 border-r border-[#D4AF37]/25 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:w-64 ${
-        isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"
-      }`}>
+      {/* Sidebar Navigation Drawer (Desktop Collapsible & Mobile Off-canvas) */}
+      <div className={`fixed inset-y-0 left-0 z-50 bg-[#E2C6B0] text-[#332424] flex flex-col justify-between p-4 shrink-0 border-r border-[#D1AD95] transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static ${
+        isMobileDrawerOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
+      } ${isSidebarCollapsed ? "lg:w-20" : "lg:w-64"}`}>
         <div>
-          {/* Logo brand */}
-          <div className="mb-8 cursor-pointer animate-fade-in flex items-center justify-between" onClick={onClosePanel}>
-            <RestoBarLogo size="md" />
-            <button 
-              type="button"
-              onClick={() => setIsMobileDrawerOpen(false)}
-              className="lg:hidden p-1 text-[#D4AF37] hover:text-white"
-              aria-label="Cerrar menú"
-            >
-              <X className="h-5 w-5" />
-            </button>
+          {/* Logo brand & Desktop Toggle Button */}
+          <div className="mb-6 animate-fade-in flex items-center justify-between">
+            <div onClick={onClosePanel} className="cursor-pointer">
+              <RestoBarLogo size="md" compact={isSidebarCollapsed} />
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button 
+                type="button"
+                onClick={() => {
+                  const nextState = !isSidebarCollapsed;
+                  setIsSidebarCollapsed(nextState);
+                  localStorage.setItem("castano_sidebar_collapsed", String(nextState));
+                }}
+                className="hidden lg:flex p-2 rounded-xl text-[#843747] hover:bg-[#E7C8CF] transition-colors cursor-pointer"
+                title={isSidebarCollapsed ? "Expandir menú" : "Contraer menú"}
+                aria-label={isSidebarCollapsed ? "Expandir menú" : "Contraer menú"}
+              >
+                {isSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="lg:hidden p-1.5 rounded-lg text-[#332424] hover:bg-[#E8D4C3]"
+                aria-label="Cerrar menú"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Navigation Links */}
           <nav className="space-y-1">
             {/* 1. MÓDULOS DE OPERACIÓN DIARIA */}
             {[
-              { id: "pedidos_mozo", label: "Módulo Mozo", icon: ClipboardList, roles: ["administrador", "mesero"] },
-              { id: "kds_cocina", label: "Cocina & Chef", icon: Flame, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
-              { id: "caja", label: "Caja & Comandas", icon: Coins, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
-              { id: "reservas", label: "Reservas", icon: Calendar, badge: adminBookings.length, roles: ["administrador", "mesero"] },
-              { id: "salon", label: "Mapa de Salón", icon: Layers, roles: ["administrador", "mesero"] }
+              { id: "pedidos_mozo", label: "Módulo Mozo", icon: HandPlatter, roles: ["administrador", "mesero"] },
+              { id: "kds_cocina", label: "Cocina & Chef", icon: ChefHat, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
+              { id: "caja", label: "Caja & Comandas", icon: ReceiptText, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
+              { id: "reservas", label: "Reservas", icon: CalendarCheck2, badge: adminBookings.length, roles: ["administrador", "mesero"] },
+              { id: "salon", label: "Mapa de Salón", icon: Armchair, roles: ["administrador", "mesero"] }
             ].filter(link => {
               if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
                 return false;
@@ -7397,22 +7427,23 @@ export default function AdminHub({
               return (
                 <button
                   key={link.id}
+                  title={isSidebarCollapsed ? link.label : undefined}
                   onClick={() => {
                     setActiveSubTab(link.id as any);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"} px-3 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-[#843747] text-white font-black shadow-md border-l-4 border-[#E8D4C3] scale-[1.02]"
-                      : "text-[#FFF9F4]/80 hover:text-white hover:bg-[#843747]/30"
+                      ? "bg-[#843747] text-white font-black shadow-sm"
+                      : "text-[#332424] hover:bg-[#E7C8CF]/50 hover:text-[#71303D]"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className="h-4.5 w-4.5 text-[#E8D4C3]" />
-                    {link.label}
+                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[#843747]"}`} />
+                    {!isSidebarCollapsed && <span>{link.label}</span>}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
-                    <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
+                    <span className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
                       active ? "bg-white text-[#843747]" : "bg-[#A63F45] text-white shadow-xs"
                     }`}>
                       {link.badge}
@@ -7424,21 +7455,23 @@ export default function AdminHub({
 
             {/* Separador Visual Sutil */}
             {(currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "barista") && (
-              <div className="pt-3 pb-1 border-t border-[#D4AF37]/30 my-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#FFDF00] px-2 block">
-                  ADMINISTRACIÓN & GESTIÓN
-                </span>
+              <div className="pt-3 pb-1 border-t border-[#D1AD95] my-2">
+                {!isSidebarCollapsed && (
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] px-2 block">
+                    ADMINISTRACIÓN & GESTIÓN
+                  </span>
+                )}
               </div>
             )}
 
             {/* 2. MÓDULOS DE ADMINISTRACIÓN Y GESTIÓN */}
             {[
               { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador"] },
-              { id: "precios", label: "Carta & Recetas", icon: BookOpen, roles: ["administrador"] },
-              { id: "inventario", label: "Stock & Insumos", icon: Package, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
-              { id: "proveedores", label: "Proveedores", icon: Sliders, roles: ["administrador"] },
-              { id: "personal", label: "Personal", icon: Users, roles: ["administrador", "barista"] },
-              { id: "reportes", label: "Reportes", icon: FileText, roles: ["administrador"] }
+              { id: "precios", label: "Carta & Recetas", icon: BookOpenText, roles: ["administrador"] },
+              { id: "inventario", label: "Stock & Insumos", icon: Boxes, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
+              { id: "proveedores", label: "Proveedores", icon: Truck, roles: ["administrador"] },
+              { id: "personal", label: "Personal", icon: UsersRound, roles: ["administrador", "barista"] },
+              { id: "reportes", label: "Reportes", icon: ChartNoAxesCombined, roles: ["administrador"] }
             ].filter(link => {
               if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
                 return false;
@@ -7457,23 +7490,24 @@ export default function AdminHub({
               return (
                 <button
                   key={link.id}
+                  title={isSidebarCollapsed ? link.label : undefined}
                   onClick={() => {
                     setActiveSubTab(link.id as any);
                     setIsMobileDrawerOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"} px-3 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg gold-glow scale-[1.02]"
-                      : "text-[#FDFBF7] hover:text-white hover:bg-[#2A1B12] hover:border hover:border-[#D4AF37]/30"
+                      ? "bg-[#843747] text-white font-black shadow-sm"
+                      : "text-[#332424] hover:bg-[#E7C8CF]/50 hover:text-[#71303D]"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className="h-4.5 w-4.5 text-[#D4AF37]" />
-                    {link.label}
+                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[#843747]"}`} />
+                    {!isSidebarCollapsed && <span>{link.label}</span>}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
-                    <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-amber-500 text-[#1C120C] shadow-sm"
+                    <span className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
+                      active ? "bg-white text-[#843747]" : "bg-[#B97932] text-white shadow-xs"
                     }`}>
                       {link.badge}
                     </span>
@@ -7485,33 +7519,37 @@ export default function AdminHub({
         </div>
 
         {/* Sidebar Bottom Widgets */}
-        <div className="space-y-3">
-          <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px]">
-            <span className="text-white/40 block font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Estado de Conexión
-            </span>
-            <p className="text-[#FDFBF7]/80 font-semibold">
-              {navigator.onLine ? "• Sincronización Nube Activa (Supabase)" : "• Modo Standalone (Resguardo Local)"}
-            </p>
-            <p className="text-[#FDFBF7]/40 mt-0.5">Servicio en línea - Río Cuarto, Córdoba.</p>
-          </div>
+        <div className="space-y-2 pt-3 border-t border-[#D1AD95]">
+          {!isSidebarCollapsed && (
+            <div className="p-2.5 rounded-xl bg-[#FFF9F4] border border-[#D1AD95] text-[10px]">
+              <span className="text-[#6F5A55] block font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                <Activity className="h-3 w-3 text-[#4F735A] animate-pulse" /> Estado Nube
+              </span>
+              <p className="text-[#332424] font-semibold">
+                {navigator.onLine ? "Sincronizado Supabase" : "Resguardo Local"}
+              </p>
+            </div>
+          )}
 
           <button
             onClick={onClosePanel}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/20 hover:border-red-500 hover:bg-red-500/10 text-xs font-bold text-red-200 hover:text-white transition-all cursor-pointer bg-transparent"
+            title="Cerrar Sesión"
+            className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-center gap-2"} py-2.5 rounded-xl border border-[#A63F45]/30 hover:bg-[#A63F45] text-xs font-bold text-[#A63F45] hover:text-white transition-all cursor-pointer`}
           >
             <LogOut className="h-4 w-4 rotate-180" />
-            Cerrar Sesión
+            {!isSidebarCollapsed && <span>Cerrar Sesión</span>}
           </button>
           
-          <div className="text-[8px] text-white/30 text-center font-bold tracking-wider uppercase">
-            RESTO BAR DEL TEATRO<br />Constitución 944, Río Cuarto (Córdoba)
-          </div>
+          {!isSidebarCollapsed && (
+            <div className="text-[8px] text-[#6F5A55] text-center font-bold tracking-wider uppercase">
+              CASTAÑO — RESTO BAR<br />Constitución 944, Río Cuarto
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 bg-[#F3E7DB] text-[#332424]">
+      <div ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 bg-[#F3E7DB] text-[#332424]">
         <AnimatePresence mode="wait">
           {activeSubTab === "dashboard" && renderDashboard()}
           {activeSubTab === "inventario" && renderInventario()}
