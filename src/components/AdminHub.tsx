@@ -3015,12 +3015,12 @@ export default function AdminHub({
     };
 
     return (
-      <div className="space-y-6 bg-[#1A110B] border-2 border-[#D4AF37]/40 text-[#FDFBF7] rounded-3xl p-6 shadow-2xl gold-glow">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
+      <div className="space-y-6 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase text-[#D4AF37] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
-            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">⭐ Pizarra & Menú del Día (Plato Único)</h3>
-            <p className="text-xs text-[#FDFBF7]/80 italic mt-0.5 font-medium">
+            <span className="text-[10px] font-black uppercase text-[#6F5A55] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
+            <h3 className="font-serif text-2xl font-bold text-[#843747]">Pizarra & Menú del Día (Plato Único)</h3>
+            <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
               Configure el plato estrella del día de Lunes a Domingo. Se sincroniza en vivo con la Portada Publicitaria y Menú Digital.
             </p>
           </div>
@@ -3028,9 +3028,9 @@ export default function AdminHub({
           <button
             type="button"
             onClick={() => handleSaveDailyMenuToSupabase()}
-            className="px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-lg cursor-pointer gold-glow hover:brightness-110 flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
           >
-            💾 GUARDAR MENÚ DEL DÍA ({selectedDayTab})
+            GUARDAR MENÚ DEL DÍA ({selectedDayTab})
           </button>
         </div>
 
@@ -3043,8 +3043,8 @@ export default function AdminHub({
               onClick={() => setSelectedDayTab(day)}
               className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
                 selectedDayTab === day
-                  ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] shadow-xl gold-glow scale-[1.03]"
-                  : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7] hover:bg-[#3D281A]"
+                  ? "bg-[#843747] text-white border-[#843747] shadow-sm scale-[1.03]"
+                  : "bg-[#E8D4C3] border-[#D7BBA8] text-[#843747] hover:bg-[#E7C8CF]"
               }`}
             >
               {day}
@@ -3053,62 +3053,62 @@ export default function AdminHub({
         </div>
 
         {/* Plato Único Form for the selected day */}
-        <form onSubmit={handleSaveDailyMenuToSupabase} className="p-5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-4">
-          <div className="border-b border-[#D4AF37]/20 pb-2">
-            <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Detalles del Plato Único — {selectedDayTab}</span>
+        <form onSubmit={handleSaveDailyMenuToSupabase} className="p-5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-4">
+          <div className="border-b border-[#D7BBA8] pb-2">
+            <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Detalles del Plato Único — {selectedDayTab}</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-8">
-              <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Nombre del Plato del Día *</label>
+              <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Nombre del Plato del Día *</label>
               <input
                 type="text"
                 required
                 value={activeMenu.title}
                 onChange={(e) => updateCurrentDayMenu({ title: e.target.value })}
                 placeholder="Ej. Tallarines Caseros con Tuco de Ternera al Malbec"
-                className="w-full p-3 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-sm font-bold text-[#FDFBF7] outline-none focus:border-[#FFDF00]"
+                className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-sm font-bold text-[#332424] outline-none focus:border-[#843747]"
               />
             </div>
 
             <div className="md:col-span-4">
-              <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Precio Promocional ($ ARS) *</label>
+              <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Precio Promocional ($ ARS) *</label>
               <input
                 type="number"
                 required
                 step="100"
                 value={activeMenu.price}
                 onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 8500 })}
-                className="w-full p-3 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-sm font-mono font-bold text-[#FFDF00] outline-none text-center focus:border-[#FFDF00]"
+                className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-sm font-mono font-bold text-[#843747] outline-none text-center focus:border-[#843747]"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Descripción Gourmet Tentadora *</label>
+            <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Descripción Gourmet Tentadora *</label>
             <textarea
               rows={3}
               required
               value={activeMenu.description}
               onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
               placeholder="Describa la preparación, ingredientes premium y propuesta de maridaje..."
-              className="w-full p-3 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-xs font-medium text-[#FDFBF7] outline-none resize-none leading-relaxed focus:border-[#FFDF00]"
+              className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-medium text-[#332424] outline-none resize-none leading-relaxed focus:border-[#843747]"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-2">
             <div className="md:col-span-7 space-y-2">
-              <label className="text-[10px] font-black uppercase text-[#D4AF37] block">Foto HD del Plato (Subida a Supabase Storage)</label>
+              <label className="text-[10px] font-black uppercase text-[#6F5A55] block">Foto HD del Plato (Subida a Supabase Storage)</label>
               <input
                 type="text"
                 value={activeMenu.image || ""}
                 onChange={(e) => updateCurrentDayMenu({ image: e.target.value })}
                 placeholder="URL pública de la imagen de Unsplash o Supabase Storage..."
-                className="w-full p-2.5 bg-[#1C120C] border border-[#D4AF37]/40 rounded-xl text-xs font-mono text-[#FDFBF7] outline-none"
+                className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono text-[#332424] outline-none"
               />
 
-              <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 rounded-xl space-y-1.5">
-                <label className="text-[9px] font-black uppercase text-[#FFDF00] block">📷 Cargar Foto HD desde Celular / PC</label>
+              <div className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl space-y-1.5">
+                <label className="text-[9px] font-black uppercase text-[#843747] block">📷 Cargar Foto HD desde Celular / PC</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -3128,21 +3128,21 @@ export default function AdminHub({
                       }
                     }
                   }}
-                  className="w-full text-[10px] text-[#D4AF37] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#2A1B12] file:text-[#FFDF00] hover:file:bg-[#3D281A] cursor-pointer"
+                  className="w-full text-[10px] text-[#6F5A55] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#E8D4C3] file:text-[#843747] hover:file:bg-[#E7C8CF] cursor-pointer"
                 />
               </div>
             </div>
 
             <div className="md:col-span-5 text-center">
-              <span className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Vista Previa Portada Publicitaria</span>
+              <span className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Vista Previa Portada Publicitaria</span>
               {activeMenu.image ? (
                 <img
                   src={activeMenu.image}
                   alt="Plato del día"
-                  className="h-36 w-full rounded-2xl object-cover border-2 border-[#D4AF37]/50 shadow-xl gold-glow"
+                  className="h-36 w-full rounded-2xl object-cover border border-[#D7BBA8] shadow-xs"
                 />
               ) : (
-                <div className="h-36 w-full rounded-2xl bg-[#1C120C] border-2 border-dashed border-[#D4AF37]/30 flex items-center justify-center text-xs text-[#FDFBF7]/50 italic">
+                <div className="h-36 w-full rounded-2xl bg-[#E8D4C3]/50 border border-dashed border-[#D7BBA8] flex items-center justify-center text-xs text-[#6F5A55] italic">
                   Sin imagen cargada
                 </div>
               )}
@@ -3152,9 +3152,9 @@ export default function AdminHub({
           <div className="pt-3 flex justify-end">
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-xl cursor-pointer gold-glow hover:brightness-110"
+              className="px-6 py-3 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer"
             >
-              💾 GUARDAR MENÚ DEL DÍA ({selectedDayTab})
+              GUARDAR MENÚ DEL DÍA ({selectedDayTab})
             </button>
           </div>
         </form>
@@ -3170,49 +3170,49 @@ export default function AdminHub({
     };
 
     return (
-      <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow">
+      <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Logística & Despacho</span>
-          <h3 className="font-serif text-2xl font-bold mt-0.5 text-[#FFDF00]">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
-          <p className="text-xs text-[#FDFBF7]/70 italic mt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Logística & Despacho</span>
+          <h3 className="font-serif text-2xl font-bold mt-0.5 text-[#843747]">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
+          <p className="text-xs text-[#6F5A55] italic mt-1">
             Configure la tarifa base de envío para la ciudad de Río Cuarto y el monto de pedido para envío bonificado gratis.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <div className="p-5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">Costo Base de Delivery ($)</label>
+          <div className="p-5 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-2xl space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block">Costo Base de Delivery ($)</label>
             <input
               type="number"
               value={deliveryFeeConfig}
               onChange={(e) => setDeliveryFeeConfig(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-[#D4AF37]/30 rounded-xl text-lg font-mono font-bold bg-[#1C120C] text-[#FFDF00]"
+              className="w-full p-3 border border-[#D7BBA8] rounded-xl text-lg font-mono font-bold bg-[#FFF9F4] text-[#843747]"
             />
-            <span className="text-[10px] text-[#FDFBF7]/60 block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
+            <span className="text-[10px] text-[#6F5A55] block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
           </div>
 
-          <div className="p-5 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block">Envío Gratis a partir de ($)</label>
+          <div className="p-5 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-2xl space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block">Envío Gratis a partir de ($)</label>
             <input
               type="number"
               value={deliveryFreeMinConfig}
               onChange={(e) => setDeliveryFreeMinConfig(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-[#D4AF37]/30 rounded-xl text-lg font-mono font-bold bg-[#1C120C] text-[#FFDF00]"
+              className="w-full p-3 border border-[#D7BBA8] rounded-xl text-lg font-mono font-bold bg-[#FFF9F4] text-[#843747]"
             />
-            <span className="text-[10px] text-[#FDFBF7]/60 block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
+            <span className="text-[10px] text-[#6F5A55] block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
           </div>
         </div>
 
         {/* Río Cuarto Zones Table & WhatsApp Dispatcher */}
-        <div className="border-t border-[#D4AF37]/20 pt-4 space-y-4">
-          <h4 className="font-serif text-lg font-bold text-[#FFDF00]">🗺️ Tarifas por Zona en Río Cuarto & Despacho a Cadete</h4>
+        <div className="border-t border-[#D7BBA8] pt-4 space-y-4">
+          <h4 className="font-serif text-lg font-bold text-[#843747]">🗺️ Tarifas por Zona en Río Cuarto & Despacho a Cadete</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {RIO_CUARTO_ZONES.map((zone) => (
-              <div key={zone.id} className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-2">
-                <strong className="text-xs font-bold text-[#FFDF00] block">{zone.name}</strong>
+              <div key={zone.id} className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-2">
+                <strong className="text-xs font-bold text-[#843747] block">{zone.name}</strong>
                 <div className="flex justify-between items-center font-mono text-xs">
-                  <span className="text-[#D4AF37]">Tarifa: <strong>${zone.fee} ARS</strong></span>
-                  <span className="text-[#FDFBF7]/60">⏱️ {zone.estimatedMinutes} min</span>
+                  <span className="text-[#6F5A55]">Tarifa: <strong>${zone.fee} ARS</strong></span>
+                  <span className="text-[#6F5A55]">⏱️ {zone.estimatedMinutes} min</span>
                 </div>
                 <button
                   onClick={() => {
@@ -3228,7 +3228,7 @@ export default function AdminHub({
                     window.open(link, "_blank");
                     onShowNotification(`🛵 Abriendo WhatsApp de cadetería para envío a ${zone.name}...`, "info");
                   }}
-                  className="w-full mt-2 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full mt-2 py-2 bg-[#4F735A] hover:bg-[#3D5B46] text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   💬 Despachar Cadete WhatsApp
                 </button>
@@ -3240,7 +3240,7 @@ export default function AdminHub({
         <div className="flex justify-end pt-2">
           <button
             onClick={saveDeliverySettings}
-            className="px-6 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs rounded-xl shadow-md cursor-pointer transition-all uppercase tracking-wider gold-glow"
+            className="px-6 py-3 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs rounded-xl shadow-xs cursor-pointer transition-all uppercase tracking-wider"
           >
             Guardar Configuración de Envíos
           </button>
@@ -3261,14 +3261,14 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#FDFBF7]"
+        className="space-y-8 text-[#332424]"
       >
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Ficha Técnica & Rentabilidad</span>
-          <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Carta & Recetas</h2>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Ficha Técnica & Rentabilidad</span>
+          <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Carta & Recetas</h2>
         </div>
 
-        <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#D4AF37]/30 mb-6 scrollbar-thin scrollbar-thumb-[#D4AF37]/40">
+        <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#D7BBA8] mb-6 scrollbar-thin scrollbar-thumb-[#D7BBA8]">
           {[
             { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
@@ -3287,8 +3287,8 @@ export default function AdminHub({
               onClick={() => setSelectedPosCategory(cat.id)}
               className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl whitespace-nowrap transition-all cursor-pointer border ${
                 selectedPosCategory === cat.id 
-                  ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] shadow-lg gold-glow" 
-                  : "bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/25 hover:border-[#D4AF37]/60 hover:text-white"
+                  ? "bg-[#843747] text-white border-[#843747] shadow-sm" 
+                  : "bg-[#E8D4C3] text-[#843747] border-[#D7BBA8] hover:bg-[#E7C8CF]"
               }`}
             >
               {cat.label}
@@ -4105,38 +4105,38 @@ export default function AdminHub({
         className="space-y-8 text-[#FDFBF7]"
       >
         {/* Header Terminal */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] p-6 rounded-3xl shadow-xl gold-glow">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] p-6 rounded-3xl shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] flex items-center justify-center shadow-xs">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center shadow-xs">
               <Receipt className="h-6 w-6 stroke-1.5" />
             </div>
             <div>
-              <h2 className="font-serif text-xl font-bold tracking-tight text-[#FFDF00]">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
-              <p className="text-[10px] text-[#FDFBF7]/70 font-semibold mt-0.5">Gestor de comprobantes de salón • Resto Bar Del Teatro</p>
+              <h2 className="font-serif text-xl font-bold tracking-tight text-[#843747]">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
+              <p className="text-[10px] text-[#6F5A55] font-semibold mt-0.5">Gestor de comprobantes de salón • Castaño — Resto Bar</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button 
               onClick={() => setIsManualArcaModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider gold-glow shadow-md"
+              className="px-3.5 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
             >
-              <Plus className="h-3.5 w-3.5" /> ➕ FACTURACIÓN MANUAL ARCA
+              <Plus className="h-3.5 w-3.5" /> FACTURACIÓN MANUAL ARCA
             </button>
             <button 
               onClick={() => setIsSupabaseSqlModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider gold-glow"
+              className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
-              <Layers className="h-3.5 w-3.5 text-[#D4AF37]" /> 🗄️ SQL SUPABASE
+              <Layers className="h-3.5 w-3.5 text-[#843747]" /> SQL SUPABASE
             </button>
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37] hover:text-white hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+              className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
               <Settings className="h-3.5 w-3.5" /> CONFIGURAR RESTAURANT
             </button>
             <button 
               onClick={() => setIsConfigTicketerisOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37] hover:text-white hover:bg-[#3D281A] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+              className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
               <Printer className="h-3.5 w-3.5" /> CONFIGURACIÓN TICKETERA
             </button>
@@ -4149,16 +4149,16 @@ export default function AdminHub({
           <div className="lg:col-span-4 space-y-6">
             
             {/* Box 1: Flujo Contable Diario */}
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
-              <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
                 <div>
-                  <span className="text-[8px] font-black uppercase tracking-wider text-[#D4AF37] block">Flujo Contable Diario</span>
-                  <h3 className="font-serif text-sm font-bold mt-0.5 text-[#FDFBF7]">Estado de Caja Diaria</h3>
+                  <span className="text-[8px] font-black uppercase tracking-wider text-[#6F5A55] block">Flujo Contable Diario</span>
+                  <h3 className="font-serif text-sm font-bold mt-0.5 text-[#332424]">Estado de Caja Diaria</h3>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider flex items-center gap-1 ${
                   isShiftOpen 
-                    ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-300" 
-                    : "bg-stone-900/80 border-stone-700/50 text-stone-300"
+                    ? "bg-[#DFEADF] border-[#4F735A]/50 text-[#4F735A]" 
+                    : "bg-[#E8D4C3] border-[#D7BBA8] text-[#6F5A55]"
                 }`}>
                   {isShiftOpen ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
                   {isShiftOpen ? "Abierta" : "Cerrada"}
@@ -4167,26 +4167,26 @@ export default function AdminHub({
 
               {!isShiftOpen ? (
                 <div className="space-y-4">
-                  <div className="p-3 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-xl text-center">
-                    <p className="text-[10px] text-[#FDFBF7]/70 font-semibold">No se registran turnos fiscales abiertos</p>
-                    <p className="text-[9px] text-[#D4AF37] mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
+                  <div className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-xl text-center">
+                    <p className="text-[10px] text-[#6F5A55] font-semibold">No se registran turnos fiscales abiertos</p>
+                    <p className="text-[9px] text-[#843747] mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
                   </div>
                   <button 
                     onClick={handleOpenShift}
-                    className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:brightness-110 text-white text-xs font-black shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
+                    className="w-full py-3 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
                   >
                     <Unlock className="h-4 w-4" /> ABRIR CAJA DIARIA
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-3.5 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-xl space-y-2 text-[#FDFBF7]">
-                    <p className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-wider">Turno en curso</p>
+                  <div className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-xl space-y-2 text-[#332424]">
+                    <p className="text-[10px] text-[#843747] font-bold uppercase tracking-wider">Turno en curso</p>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div>Efectivo: <span className="font-mono font-bold text-[#FFDF00]">${cashLedger.cash.toLocaleString()}</span></div>
-                      <div>Tarjeta: <span className="font-mono font-bold text-[#FFDF00]">${cashLedger.card.toLocaleString()}</span></div>
-                      <div>MP: <span className="font-mono font-bold text-[#FFDF00]">${cashLedger.mercadopago.toLocaleString()}</span></div>
-                      <div className="border-t border-[#D4AF37]/20 pt-1 font-bold">Total: <span className="font-mono text-emerald-400">${cashLedger.totalCollected.toLocaleString()}</span></div>
+                      <div>Efectivo: <span className="font-mono font-bold text-[#843747]">${cashLedger.cash.toLocaleString()}</span></div>
+                      <div>Tarjeta: <span className="font-mono font-bold text-[#843747]">${cashLedger.card.toLocaleString()}</span></div>
+                      <div>MP: <span className="font-mono font-bold text-[#843747]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+                      <div className="border-t border-[#D7BBA8] pt-1 font-bold">Total: <span className="font-mono text-[#4F735A]">${cashLedger.totalCollected.toLocaleString()}</span></div>
                     </div>
                   </div>
                   <button 
@@ -4195,7 +4195,7 @@ export default function AdminHub({
                       setCloseShiftNotes("");
                       setIsCloseShiftModalOpen(true);
                     }}
-                    className="w-full py-3 rounded-2xl bg-red-950 text-red-200 border border-red-800/60 text-xs font-bold hover:bg-red-900 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
+                    className="w-full py-3 rounded-2xl bg-[#A63F45] text-white border border-[#A63F45] text-xs font-bold hover:bg-[#8A3338] transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
                   >
                     <Lock className="h-4 w-4" /> CERRAR CAJA DIARIA (Arqueo)
                   </button>
@@ -4204,29 +4204,29 @@ export default function AdminHub({
             </div>
 
             {/* Box 2: Comandas en Salón */}
-            <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl space-y-4 gold-glow">
-              <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
-                <h3 className="font-serif text-sm font-bold flex items-center gap-2 text-[#FDFBF7]">
-                  <ClipboardList className="h-4 w-4 text-[#D4AF37]" /> COMANDAS EN SALÓN
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+                <h3 className="font-serif text-sm font-bold flex items-center gap-2 text-[#332424]">
+                  <ClipboardList className="h-4 w-4 text-[#843747]" /> COMANDAS EN SALÓN
                 </h3>
                 {isShiftOpen && (
-                  <span className="px-2 py-0.5 rounded bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#FFDF00] text-[9px] font-black uppercase font-mono">
+                  <span className="px-2 py-0.5 rounded bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[9px] font-black uppercase font-mono">
                     {pendingOrders.length} pendientes
                   </span>
                 )}
               </div>
 
               {!isShiftOpen ? (
-                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center">
-                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-[#D4AF37]" />
-                  <p className="text-[10px] font-bold text-[#FFDF00] uppercase tracking-widest">Caja Cerrada</p>
-                  <p className="text-[9px] text-[#FDFBF7]/60 mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
+                <div className="text-center py-12 bg-[#E8D4C3]/30 border border-[#D7BBA8] text-[#332424] rounded-2xl flex flex-col items-center justify-center">
+                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-[#843747]" />
+                  <p className="text-[10px] font-bold text-[#843747] uppercase tracking-widest">Caja Cerrada</p>
+                  <p className="text-[9px] text-[#6F5A55] mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
                 </div>
               ) : pendingOrders.length === 0 ? (
-                <div className="text-center py-12 bg-[#2A1B12] border border-[#D4AF37]/20 text-[#FDFBF7] rounded-2xl flex flex-col items-center justify-center">
-                  <CheckCircle className="h-8 w-8 text-emerald-400 mb-2 stroke-1.5" />
-                  <p className="text-[10px] font-bold text-[#FFDF00] uppercase tracking-widest">Sin Pendientes</p>
-                  <p className="text-[9px] text-[#FDFBF7]/60 mt-1">Todas las mesas han cobrado.</p>
+                <div className="text-center py-12 bg-[#E8D4C3]/30 border border-[#D7BBA8] text-[#332424] rounded-2xl flex flex-col items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-[#4F735A] mb-2 stroke-1.5" />
+                  <p className="text-[10px] font-bold text-[#843747] uppercase tracking-widest">Sin Pendientes</p>
+                  <p className="text-[9px] text-[#6F5A55] mt-1">Todas las mesas han cobrado.</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -4234,10 +4234,10 @@ export default function AdminHub({
                     const active = posCheckoutOrder?.id === order.id;
                     const statusText = order.status === "Listo" ? "Listo" : order.status === "Preparando" ? "En Cocina" : "Pendiente";
                     const statusColor = order.status === "Listo" 
-                      ? "bg-amber-950/80 border-amber-500/50 text-amber-300" 
+                      ? "bg-[#DFEADF] border-[#4F735A]/50 text-[#4F735A]" 
                       : order.status === "Preparando"
-                      ? "bg-blue-950/80 border-blue-500/50 text-blue-300"
-                      : "bg-stone-900/80 border-stone-700/50 text-stone-300";
+                      ? "bg-[#D9E6F2] border-[#4A7BB0]/50 text-[#4A7BB0]"
+                      : "bg-[#E8D4C3] border-[#D7BBA8] text-[#6F5A55]";
 
                     return (
                       <div 
@@ -4245,30 +4245,30 @@ export default function AdminHub({
                         onClick={() => openCheckoutPanel(order)}
                         className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between gap-3 ${
                           active 
-                            ? "bg-[#2A1B12] border-2 border-[#FFDF00] text-[#FDFBF7] shadow-lg gold-glow" 
-                            : "bg-[#2A1B12]/70 hover:bg-[#2A1B12] border-[#D4AF37]/20 text-[#FDFBF7]"
+                            ? "bg-[#E8D4C3] border-2 border-[#843747] text-[#332424] shadow-sm" 
+                            : "bg-[#FFF9F4] hover:bg-[#E8D4C3]/40 border-[#D7BBA8] text-[#332424]"
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <strong className="text-xs font-serif text-[#FFDF00] block">
+                            <strong className="text-xs font-serif text-[#843747] block">
                               {order.priceList === "Takeaway" || order.type === "Llevar"
-                                ? `🛍️ RETIRO: ${order.clientAccountName || "Cliente"} - Tel: ${(order as any).customerPhone || "3585042311"}`
+                                ? `RETIRO: ${order.clientAccountName || "Cliente"} - Tel: ${(order as any).customerPhone || "3585042311"}`
                                 : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
-                                ? `🛵 DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944"}`
+                                ? `DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944"}`
                                 : `Mesa ${order.tableNumber?.replace("Mesa ", "") || "1"} (Mozo: ${getMozoName(order.id)})`}
                             </strong>
-                            <span className="text-[9px] font-bold text-[#FDFBF7]/60 block mt-0.5">
+                            <span className="text-[9px] font-bold text-[#6F5A55] block mt-0.5">
                               {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items • #{order.id}
                             </span>
                           </div>
-                          <span className="text-xs font-mono font-black text-[#D4AF37]">${order.total.toLocaleString()}</span>
+                          <span className="text-xs font-mono font-black text-[#843747]">${order.total.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${statusColor}`}>
                             {statusText}
                           </span>
-                          <span className="font-mono text-[8px] font-black text-[#D4AF37]/40">#{order.id.replace("PED-", "")}</span>
+                          <span className="font-mono text-[8px] font-black text-[#6F5A55]">#{order.id.replace("PED-", "")}</span>
                         </div>
                       </div>
                     );
@@ -4281,50 +4281,50 @@ export default function AdminHub({
           {/* Right panel: POS Checkout Panel or Empty State (col-span-8) */}
           <div className="lg:col-span-8">
             {!isShiftOpen || !posCheckoutOrder ? (
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-10 shadow-xl flex flex-col items-center justify-center text-center h-[560px] gold-glow">
-                <div className="h-16 w-16 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-2xl flex items-center justify-center text-[#FFDF00] mb-6 shadow-md">
+              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-10 shadow-sm flex flex-col items-center justify-center text-center h-[560px]">
+                <div className="h-16 w-16 bg-[#E8D4C3] border border-[#D7BBA8] rounded-2xl flex items-center justify-center text-[#843747] mb-6 shadow-xs">
                   <Receipt className="h-8 w-8 stroke-1.5" />
                 </div>
-                <h3 className="font-serif text-xl font-bold text-[#FFDF00]">TERMINAL DE COBRO RESTO BAR DEL TEATRO</h3>
-                <p className="text-xs text-[#FDFBF7]/70 max-w-md mt-2.5 leading-relaxed">
+                <h3 className="font-serif text-xl font-bold text-[#843747]">TERMINAL DE COBRO CASTAÑO RESTO BAR</h3>
+                <p className="text-xs text-[#6F5A55] max-w-md mt-2.5 leading-relaxed">
                   Seleccione una mesa ocupada desde la lista lateral. Se iniciará el panel interactivo de check-out, permitiéndole coordinar pagos mixtos, aplicar deducciones manuales, configurar datos de CUIT, fraccionar saldos por comensales u artículos indivisos, y emitir comprobantes con CAE y QR de ARCA.
                 </p>
                 {!isShiftOpen ? (
-                  <div className="mt-8 p-4 bg-[#2A1B12] border-2 border-[#D4AF37]/40 rounded-2xl flex items-center gap-3 text-left max-w-sm">
-                    <Info className="h-5 w-5 text-[#FFDF00] shrink-0" />
+                  <div className="mt-8 p-4 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-[#843747] shrink-0" />
                     <div>
-                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#FFDF00] block">Caja Cerrada</strong>
-                      <span className="text-[9px] text-[#FDFBF7]/80 mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
+                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">Caja Cerrada</strong>
+                      <span className="text-[9px] text-[#6F5A55] mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-8 p-4 bg-[#2A1B12] border-2 border-blue-500/40 rounded-2xl flex items-center gap-3 text-left max-w-sm">
-                    <Info className="h-5 w-5 text-blue-400 shrink-0" />
+                  <div className="mt-8 p-4 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-[#843747] shrink-0" />
                     <div>
-                      <strong className="text-[10px] font-black uppercase tracking-wider text-blue-300 block">Turno Activo</strong>
-                      <span className="text-[9px] text-[#FDFBF7]/80 mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
+                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">Turno Activo</strong>
+                      <span className="text-[9px] text-[#6F5A55] mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
               // Active POS Checkout Interactive Panel
-              <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 lg:p-8 shadow-2xl space-y-6 gold-glow">
+              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
                 
                 {/* Header panel */}
-                <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-4">
+                <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-4">
                   <div>
                     <button 
                       onClick={() => setPosCheckoutOrder(null)}
-                      className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] hover:text-[#FFDF00] flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
+                      className="text-[9px] font-bold uppercase tracking-wider text-[#843747] hover:underline flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
                     >
                       <ArrowUp className="-rotate-90 h-3.5 w-3.5" /> VOLVER AL TERMINAL
                     </button>
-                    <h3 className="font-serif text-lg font-bold text-[#FFDF00]">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
+                    <h3 className="font-serif text-lg font-bold text-[#843747]">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black uppercase text-[#D4AF37] font-mono block">Orden #{posCheckoutOrder.id}</span>
-                    <div className="text-2xl font-serif font-black text-[#FFDF00] font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
+                    <span className="text-[9px] font-black uppercase text-[#6F5A55] font-mono block">Orden #{posCheckoutOrder.id}</span>
+                    <div className="text-2xl font-serif font-black text-[#843747] font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
                   </div>
                 </div>
 
@@ -4334,28 +4334,28 @@ export default function AdminHub({
                   {/* Left subcolumn: Consumo & Fraccionar */}
                   <div className="space-y-5">
                     {/* Resumen de Consumo */}
-                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-3">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
-                        <Coffee className="h-3.5 w-3.5 text-[#FFDF00]" /> Resumen de Consumo
+                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-3">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5">
+                        <Coffee className="h-3.5 w-3.5 text-[#843747]" /> Resumen de Consumo
                       </h4>
                       <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                         {posCheckoutOrder.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#FDFBF7]">
+                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#332424]">
                             <span className="italic">{item.quantity}x {item.name}</span>
-                            <span className="font-mono text-[#D4AF37]">${(item.price * item.quantity).toLocaleString()}</span>
+                            <span className="font-mono text-[#843747]">${(item.price * item.quantity).toLocaleString()}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="border-t border-[#D4AF37]/20 pt-2.5 flex justify-between text-[10px] font-bold">
-                        <span className="text-[#FDFBF7]">Total Comanda</span>
-                        <span className="font-mono text-[#FFDF00]">${orderTotalOriginal.toLocaleString()}</span>
+                      <div className="border-t border-[#D7BBA8] pt-2.5 flex justify-between text-[10px] font-bold">
+                        <span className="text-[#332424]">Total Comanda</span>
+                        <span className="font-mono text-[#843747]">${orderTotalOriginal.toLocaleString()}</span>
                       </div>
                     </div>
 
                     {/* Fraccionar Cuenta */}
-                    <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] border-b border-[#D4AF37]/20 pb-1.5 flex items-center gap-1.5">
-                        <Scissors className="h-3.5 w-3.5 text-[#FFDF00]" /> Fraccionar Saldo
+                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5">
+                        <Scissors className="h-3.5 w-3.5 text-[#843747]" /> Fraccionar Saldo
                       </h4>
                       
                       <div className="grid grid-cols-3 gap-2">
@@ -4372,8 +4372,8 @@ export default function AdminHub({
                             }}
                             className={`p-2 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer flex flex-col items-center gap-1 justify-center ${
                               splitPaymentType === t.id
-                                ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#FFDF00] shadow-md gold-glow"
-                                : "bg-[#1C120C] border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white"
+                                ? "bg-[#843747] text-white border-[#843747] shadow-xs"
+                                : "bg-[#FFF9F4] border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424]"
                             }`}
                           >
                             <t.icon className="h-3.5 w-3.5" />
@@ -4383,38 +4383,38 @@ export default function AdminHub({
                       </div>
 
                       {splitPaymentType === "comensales" && (
-                        <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl space-y-3">
+                        <div className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-xl space-y-3">
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-[#D4AF37]">Número de Comensales:</span>
+                            <span className="text-[10px] font-bold text-[#6F5A55]">Número de Comensales:</span>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/30 rounded text-xs font-bold text-[#FFDF00] cursor-pointer">-</button>
-                              <strong className="font-mono text-sm w-4 text-center text-[#FDFBF7]">{dinersCount}</strong>
-                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/30 rounded text-xs font-bold text-[#FFDF00] cursor-pointer">+</button>
+                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-[#E8D4C3] border border-[#D7BBA8] rounded text-xs font-bold text-[#843747] cursor-pointer">-</button>
+                              <strong className="font-mono text-sm w-4 text-center text-[#332424]">{dinersCount}</strong>
+                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-[#E8D4C3] border border-[#D7BBA8] rounded text-xs font-bold text-[#843747] cursor-pointer">+</button>
                             </div>
                           </div>
-                          <div className="text-[10px] border-t border-[#D4AF37]/20 pt-2 flex justify-between font-bold">
+                          <div className="text-[10px] border-t border-[#D7BBA8] pt-2 flex justify-between font-bold">
                             <span>Monto por Comensal</span>
-                            <span className="font-mono text-[#FFDF00]">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
+                            <span className="font-mono text-[#843747]">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
                           </div>
                         </div>
                       )}
 
                       {splitPaymentType === "articulos" && (
-                        <div className="p-3 bg-[#1C120C] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-xl space-y-2.5">
-                          <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
+                        <div className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-xl space-y-2.5">
+                          <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
                           <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
                             {posCheckoutOrder.items.map((it, idx) => {
                               const selectedQty = selectedSplitItems[it.name] || 0;
                               return (
-                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-[#D4AF37]/10 pb-1.5">
-                                  <span className="truncate text-[#FDFBF7]">{it.name} (${it.price.toFixed(0)})</span>
+                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-[#D7BBA8]/50 pb-1.5">
+                                  <span className="truncate text-[#332424]">{it.name} (${it.price.toFixed(0)})</span>
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <button 
                                       onClick={() => setSelectedSplitItems(prev => ({
                                         ...prev,
                                         [it.name]: Math.max(0, (prev[it.name] || 0) - 1)
                                       }))}
-                                      className="h-5 w-5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded text-[10px] font-bold text-[#FFDF00] cursor-pointer"
+                                      className="h-5 w-5 bg-[#E8D4C3] border border-[#D7BBA8] rounded text-[10px] font-bold text-[#843747] cursor-pointer"
                                     >
                                       -
                                     </button>
@@ -4842,18 +4842,18 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#FDFBF7]"
+        className="space-y-8 text-[#332424]"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Control de Clientes & Salón</span>
-            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Reservas de Mesas</h2>
-            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione y agende reservas de clientes para el salón de Resto Bar Del Teatro.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control de Clientes & Salón</span>
+            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Reservas de Mesas</h2>
+            <p className="text-xs text-[#6F5A55] mt-1">Gestione y agende reservas de clientes para el salón de Castaño — Resto Bar.</p>
           </div>
           <button
             onClick={() => setIsAddingBooking(!isAddingBooking)}
-            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-2xl shadow-lg hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+            className="flex items-center gap-2 px-5 py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-2xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Agendar Nueva Reserva
           </button>
@@ -4861,44 +4861,44 @@ export default function AdminHub({
 
         {/* KPI Cards Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Reservas Totales</span>
-              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">{adminBookings.length}</span>
+              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Reservas Totales</span>
+              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{adminBookings.length}</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Calendar className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Reservas de Hoy</span>
-              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">{todayBookingsCount}</span>
+              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Reservas de Hoy</span>
+              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{todayBookingsCount}</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Clock className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Total Comensales</span>
-              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">{totalGuests} pers.</span>
+              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Total Comensales</span>
+              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{totalGuests} pers.</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Users className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="p-4 bg-[#1A110B] border border-[#D4AF37]/30 rounded-2xl flex items-center justify-between shadow-md">
+          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block">Mesas Activas Salón</span>
-              <span className="text-2xl font-black font-mono text-[#FFDF00] mt-1 block">
+              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Mesas Activas Salón</span>
+              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">
                 {restaurantTables.filter(t => t.status === "Activo").length}
               </span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 flex items-center justify-center text-[#FFDF00]">
+            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
               <Coffee className="h-5 w-5" />
             </div>
           </div>
@@ -4909,55 +4909,55 @@ export default function AdminHub({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-[#1A110B] border-2 border-[#D4AF37]/40 text-[#FDFBF7] rounded-3xl p-6 shadow-2xl space-y-5 gold-glow"
+            className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-5"
           >
-            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
-              <h3 className="font-serif text-xl font-bold text-[#FFDF00]">📌 Agendar Nueva Reserva de Mesa</h3>
-              <button onClick={() => setIsAddingBooking(false)} className="text-[#D4AF37] hover:text-white font-black text-sm cursor-pointer">✕</button>
+            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+              <h3 className="font-serif text-xl font-bold text-[#843747]">Agendar Nueva Reserva de Mesa</h3>
+              <button onClick={() => setIsAddingBooking(false)} className="text-[#6F5A55] hover:text-[#332424] font-black text-sm cursor-pointer">✕</button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#FDFBF7]">
+            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#332424]">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Nombre del Cliente *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Nombre del Cliente *</label>
                 <input
                   type="text"
                   value={bookingFormName}
                   onChange={(e) => setBookingFormName(e.target.value)}
                   placeholder="Ej: Mariano Closs"
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 focus:border-[#FFDF00] outline-none"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Teléfono Celular *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Teléfono Celular *</label>
                 <input
                   type="text"
                   value={bookingFormPhone}
                   onChange={(e) => setBookingFormPhone(e.target.value)}
                   placeholder="Ej: 3584123456"
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] placeholder-[#FDFBF7]/40 focus:border-[#FFDF00] outline-none font-mono"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Fecha de Reserva *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Fecha de Reserva *</label>
                 <input
                   type="date"
                   value={bookingFormDate}
                   onChange={(e) => setBookingFormDate(e.target.value)}
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none font-mono"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Horario / Turno</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Horario / Turno</label>
                 <select
                   value={bookingFormSlot}
                   onChange={(e) => setBookingFormSlot(e.target.value)}
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none cursor-pointer font-bold"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
                 >
                   <option value="08:00 - 10:00">Desayuno (08:00 - 10:00)</option>
                   <option value="10:00 - 12:00">Media Mañana (10:00 - 12:00)</option>
@@ -4971,11 +4971,11 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Asignar Mesa en Salón</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Asignar Mesa en Salón</label>
                 <select
                   value={bookingFormTableId}
                   onChange={(e) => setBookingFormTableId(e.target.value)}
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none cursor-pointer font-bold"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
                 >
                   {restaurantTables.filter(t => t.status === "Activo").map(t => (
                     <option key={t.id} value={t.id}>{t.name} (Capacidad: {t.capacity} Pers.)</option>
@@ -4984,14 +4984,14 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#D4AF37]">Cantidad de Comensales</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Cantidad de Comensales</label>
                 <input
                   type="number"
                   min="1"
                   max="12"
                   value={bookingFormGuests}
                   onChange={(e) => setBookingFormGuests(parseInt(e.target.value) || 1)}
-                  className="w-full p-3 border border-[#D4AF37]/30 rounded-xl bg-[#2A1B12] text-[#FDFBF7] focus:border-[#FFDF00] outline-none font-mono"
+                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono"
                 />
               </div>
 
@@ -4999,13 +4999,13 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setIsAddingBooking(false)}
-                  className="px-5 py-2.5 border border-[#D4AF37]/30 text-[#FDFBF7]/70 hover:text-white rounded-xl hover:bg-stone-800 cursor-pointer font-bold uppercase tracking-wider text-xs"
+                  className="px-5 py-2.5 border border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold uppercase tracking-wider text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] rounded-xl shadow-lg cursor-pointer font-black uppercase tracking-wider text-xs gold-glow"
+                  className="px-6 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider text-xs"
                 >
                   Guardar Reserva
                 </button>
@@ -5017,23 +5017,23 @@ export default function AdminHub({
         {/* Filter & Search Bar */}
         <div className="w-full max-w-lg">
           <div className="relative">
-            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#D4AF37]" />
+            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#843747]" />
             <input
               type="text"
               value={bookingSearchQuery}
               onChange={(e) => setBookingSearchQuery(e.target.value)}
               placeholder="Buscar por cliente, teléfono, mesa o código..."
-              className="w-full rounded-2xl border border-[#D4AF37]/30 bg-[#1A110B] py-3 pr-4 pl-11 shadow-md outline-none transition-all focus:border-[#FFDF00] text-xs font-bold text-[#FDFBF7] placeholder-[#FDFBF7]/40"
+              className="w-full rounded-2xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pr-4 pl-11 shadow-sm outline-none transition-all focus:border-[#843747] text-xs font-bold text-[#332424] placeholder-[#6F5A55]/50"
             />
           </div>
         </div>
 
         {/* High Contrast Table of Bookings */}
-        <div className="bg-[#1A110B] border-2 border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-2xl gold-glow">
+        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs font-medium">
               <thead>
-                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/30 text-[10px] uppercase tracking-widest text-[#D4AF37]">
+                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[10px] uppercase tracking-widest text-[#6F5A55]">
                   <th className="p-4 font-black">Cliente</th>
                   <th className="p-4 font-black">Teléfono</th>
                   <th className="p-4 font-black">Fecha</th>
@@ -5044,7 +5044,7 @@ export default function AdminHub({
                   <th className="p-4 font-black text-center">Acciones & WhatsApp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D4AF37]/15">
+              <tbody className="divide-y divide-[#D7BBA8]">
                 {filteredBookings.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-12 text-center text-[#FDFBF7]/60 italic font-medium">
@@ -5766,7 +5766,7 @@ export default function AdminHub({
           </div>
           <button
             onClick={() => setIsAddingProv(!isAddingProv)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Agregar Proveedor
           </button>
@@ -5774,36 +5774,36 @@ export default function AdminHub({
 
         {/* KPI Metric Summary Bar */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex items-center justify-between gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] block">Proveedores Registrados</span>
-              <strong className="font-serif text-2xl font-black text-[#FFDF00] block mt-1">{proveedores.length}</strong>
-              <span className="text-[9px] text-[#FDFBF7]/60">Contactos comerciales activos</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Proveedores Registrados</span>
+              <strong className="font-serif text-2xl font-black text-[#843747] block mt-1">{proveedores.length}</strong>
+              <span className="text-[9px] text-[#6F5A55]">Contactos comerciales activos</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] flex items-center justify-center shadow-md">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center shadow-xs">
               <Users className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex items-center justify-between gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] block">Proveedores Activos</span>
-              <strong className="font-serif text-2xl font-black text-emerald-400 block mt-1">{proveedores.filter(p => p.status === "ACTIVO").length}</strong>
-              <span className="text-[9px] text-emerald-300/70 font-mono">Disponibles para pedidos</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Proveedores Activos</span>
+              <strong className="font-serif text-2xl font-black text-[#4F735A] block mt-1">{proveedores.filter(p => p.status === "ACTIVO").length}</strong>
+              <span className="text-[9px] text-[#4F735A] font-mono">Disponibles para pedidos</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#2A1B12] border border-emerald-500/40 text-emerald-400 flex items-center justify-center shadow-md">
+            <div className="h-12 w-12 rounded-2xl bg-[#DFEADF] border border-[#4F735A]/40 text-[#4F735A] flex items-center justify-center shadow-xs">
               <CheckCircle className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-5 shadow-xl flex items-center justify-between gold-glow">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#D4AF37] block">Canal Directo de Compras</span>
-              <strong className="font-serif text-lg font-black text-[#FFDF00] block mt-1">1-Click WhatsApp</strong>
-              <span className="text-[9px] text-[#FDFBF7]/60">Envío automático de reposición</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Canal Directo de Compras</span>
+              <strong className="font-serif text-lg font-black text-[#843747] block mt-1">1-Click WhatsApp</strong>
+              <span className="text-[9px] text-[#6F5A55]">Envío automático de reposición</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#D4AF37] flex items-center justify-center shadow-md">
-              <PhoneCall className="h-6 w-6 text-emerald-400" />
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center shadow-xs">
+              <PhoneCall className="h-6 w-6 text-[#4F735A]" />
             </div>
           </div>
         </div>
@@ -5813,62 +5813,62 @@ export default function AdminHub({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-[#1A110B] border-2 border-[#D4AF37]/40 text-[#FDFBF7] rounded-3xl p-6 shadow-2xl space-y-4 gold-glow"
+            className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4"
           >
-            <h3 className="font-serif text-lg font-bold text-[#FFDF00]">Nuevo Proveedor de Compra</h3>
-            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#FDFBF7]">
+            <h3 className="font-serif text-lg font-bold text-[#843747]">Nuevo Proveedor de Compra</h3>
+            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#332424]">
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Nombre / Razón Social *</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Nombre / Razón Social *</label>
                 <input
                   type="text"
                   value={provFormName}
                   onChange={(e) => setProvFormName(e.target.value)}
                   placeholder="Ej: Distribuidora Sur"
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Teléfono / WhatsApp *</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Teléfono / WhatsApp *</label>
                 <input
                   type="text"
                   value={provFormPhone}
                   onChange={(e) => setProvFormPhone(e.target.value)}
                   placeholder="Ej: 358 444-1234"
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Correo de Ventas</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Correo de Ventas</label>
                 <input
                   type="email"
                   value={provFormContact}
                   onChange={(e) => setProvFormContact(e.target.value)}
                   placeholder="Ej: ventas@proveedor.com"
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Insumos Abastecidos</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Insumos Abastecidos</label>
                 <input
                   type="text"
                   value={provFormItems}
                   onChange={(e) => setProvFormItems(e.target.value)}
                   placeholder="Ej: Harina 0000, Muzzarella, Fernet Branca, Café"
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none font-semibold"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] block mb-1">Estado Comercial</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Estado Comercial</label>
                 <select
                   value={provFormStatus}
                   onChange={(e) => setProvFormStatus(e.target.value)}
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl bg-[#1C120C] text-[#FDFBF7] outline-none cursor-pointer font-bold"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer font-bold focus:border-[#843747]"
                 >
                   <option value="ACTIVO">ACTIVO</option>
                   <option value="PENDIENTE">PENDIENTE</option>
@@ -5879,13 +5879,13 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setIsAddingProv(false)}
-                  className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7]/70 rounded-xl hover:bg-[#2A1B12] cursor-pointer font-bold"
+                  className="px-4 py-2 border border-[#D7BBA8] text-[#6F5A55] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] rounded-xl shadow-md cursor-pointer font-black uppercase tracking-wider gold-glow"
+                  className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider"
                 >
                   Guardar Proveedor
                 </button>
@@ -5895,11 +5895,11 @@ export default function AdminHub({
         )}
 
         {/* Suppliers Table */}
-        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl overflow-hidden shadow-xl gold-glow">
+        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#2A1B12] border-b border-[#D4AF37]/30 text-[10px] font-black uppercase tracking-wider text-[#FFDF00]">
+                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[10px] font-black uppercase tracking-wider text-[#6F5A55]">
                   <th className="p-4">Proveedor</th>
                   <th className="p-4">Insumos Abastecidos</th>
                   <th className="p-4">Contacto Ventas</th>
@@ -5908,13 +5908,13 @@ export default function AdminHub({
                   <th className="p-4 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D4AF37]/15 text-xs">
+              <tbody className="divide-y divide-[#D7BBA8] text-xs">
                 {proveedores.map((prov, idx) => (
-                  <tr key={idx} className="hover:bg-[#2A1B12]/80 transition-colors">
-                    <td className="p-4 font-serif font-bold text-[#FFDF00] text-sm">{prov.name}</td>
-                    <td className="p-4 text-[#FDFBF7] font-medium">{prov.items}</td>
-                    <td className="p-4 font-mono font-semibold text-[#D4AF37]">{prov.contact}</td>
-                    <td className="p-4 font-mono font-bold text-[#FFDF00]">{prov.phone.startsWith("+") ? prov.phone : "+" + prov.phone.replace(/\D/g, "")}</td>
+                  <tr key={idx} className="hover:bg-[#E8D4C3]/40 transition-colors">
+                    <td className="p-4 font-serif font-bold text-[#843747] text-sm">{prov.name}</td>
+                    <td className="p-4 text-[#332424] font-medium">{prov.items}</td>
+                    <td className="p-4 font-mono font-semibold text-[#6F5A55]">{prov.contact}</td>
+                    <td className="p-4 font-mono font-bold text-[#843747]">{prov.phone.startsWith("+") ? prov.phone : "+" + prov.phone.replace(/\D/g, "")}</td>
                     <td className="p-4 text-center">
                       <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-full tracking-wider border font-mono ${
                         prov.status === "ACTIVO" 
@@ -5998,11 +5998,11 @@ export default function AdminHub({
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
-              <div className="lg:col-span-5 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
+              <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
                 <div>
-                  <div className="mb-4 border-b border-[#D4AF37]/20 pb-2">
-                    <h3 className="font-serif text-base font-bold text-[#FFDF00]">Ficha de Calibración Diaria</h3>
-                    <p className="text-[10px] text-[#FDFBF7]/60 mt-0.5">Control de extracción obligatorio para Baristas de Resto Bar Del Teatro.</p>
+                  <div className="mb-4 border-b border-[#D7BBA8] pb-2">
+                    <h3 className="font-serif text-base font-bold text-[#843747]">Ficha de Calibración Diaria</h3>
+                    <p className="text-[10px] text-[#6F5A55] mt-0.5">Control de extracción obligatorio para Baristas de Castaño — Resto Bar.</p>
                   </div>
 
                   <form
@@ -6024,57 +6024,57 @@ export default function AdminHub({
                         onShowNotification("⚠️ Error al guardar calibración en la nube.", "warning");
                       }
                     }}
-                    className="space-y-4 text-xs font-semibold text-[#FDFBF7]"
+                    className="space-y-4 text-xs font-semibold text-[#332424]"
                   >
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Dosis (In)</label>
+                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Dosis (In)</label>
                         <input
                           type="number"
                           step="0.1"
                           value={calibrationData.gramosIn}
                           onChange={(e) => setCalibrationData({ ...calibrationData, gramosIn: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Rendimiento (Out)</label>
+                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Rendimiento (Out)</label>
                         <input
                           type="number"
                           value={calibrationData.mililitrosOut}
                           onChange={(e) => setCalibrationData({ ...calibrationData, mililitrosOut: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Tiempo (seg)</label>
+                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Tiempo (seg)</label>
                         <input
                           type="number"
                           value={calibrationData.tiempo}
                           onChange={(e) => setCalibrationData({ ...calibrationData, tiempo: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
                         />
                       </div>
                       <div>
-                        <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Temperatura (°C)</label>
+                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Temperatura (°C)</label>
                         <input
                           type="number"
                           value={calibrationData.temperatura}
                           onChange={(e) => setCalibrationData({ ...calibrationData, temperatura: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FFDF00] outline-none"
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Clima / Humedad</label>
+                      <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Clima / Humedad</label>
                       <select
                         value={calibrationData.clima}
                         onChange={(e) => setCalibrationData({ ...calibrationData, clima: e.target.value })}
-                        className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl font-bold bg-[#2A1B12] text-[#FDFBF7] outline-none cursor-pointer"
+                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer focus:border-[#843747]"
                       >
                         <option value="Despejado y Seco">Despejado y Seco (Estable)</option>
                         <option value="Lluvioso y Húmedo">Lluvioso y Húmedo (Ajustar Molienda)</option>
@@ -6085,7 +6085,7 @@ export default function AdminHub({
 
                     <button
                       type="submit"
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black uppercase transition-all cursor-pointer tracking-wider shadow-md gold-glow"
+                      className="w-full py-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase transition-all cursor-pointer tracking-wider shadow-xs"
                     >
                       ✓ Guardar & Calibrar
                     </button>
@@ -6093,15 +6093,15 @@ export default function AdminHub({
                 </div>
               </div>
 
-              <div className="lg:col-span-7 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
+              <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
                 <div className="mb-4">
-                  <h3 className="font-serif text-base font-bold text-[#2C1810]">Historial de Calibraciones Recientes</h3>
-                  <p className="text-[10px] text-[#2C1810]/50">Monitoreo de molienda y estabilidad de caldera.</p>
+                  <h3 className="font-serif text-base font-bold text-[#843747]">Historial de Calibraciones Recientes</h3>
+                  <p className="text-[10px] text-[#6F5A55]">Monitoreo de molienda y estabilidad de caldera.</p>
                 </div>
 
                 <div className="space-y-3 text-xs">
                   {calibrationsHistory.length === 0 ? (
-                    <div className="text-center py-8 text-stone-400 font-medium italic border border-dashed border-[#2C1810]/10 rounded-2xl">
+                    <div className="text-center py-8 text-[#6F5A55] font-medium italic border border-dashed border-[#D7BBA8] rounded-2xl">
                       No hay calibraciones registradas en el historial.
                     </div>
                   ) : (
@@ -6110,20 +6110,20 @@ export default function AdminHub({
                         ? new Date(log.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
                         : "Reciente";
                       return (
-                        <div key={log.id || idx} className={`p-4 rounded-2xl border ${idx === 0 ? "border-[#C2956E] bg-amber-50/20" : "border-[#2C1810]/10 bg-stone-50/50"} space-y-1.5`}>
+                        <div key={log.id || idx} className={`p-4 rounded-2xl border ${idx === 0 ? "border-[#843747] bg-[#E8D4C3]/50" : "border-[#D7BBA8] bg-[#FFF9F4]"} space-y-1.5`}>
                           <div className="flex justify-between items-center">
-                            <span className="font-bold text-[#2C1810]">Fecha: {fechaStr}</span>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${idx === 0 ? "bg-[#C2956E] text-white" : "bg-stone-200 text-stone-600"}`}>
+                            <span className="font-bold text-[#332424]">Fecha: {fechaStr}</span>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${idx === 0 ? "bg-[#843747] text-white" : "bg-[#E8D4C3] text-[#6F5A55]"}`}>
                               {idx === 0 ? "Activa (Perfil actual)" : "Archivada"}
                             </span>
                           </div>
-                          <div className="grid grid-cols-4 gap-2 font-mono text-[11px] text-[#2C1810]/70 pt-1">
-                            <div>In: <strong className="text-[#2C1810]">{log.gramos_in}g</strong></div>
-                            <div>Out: <strong className="text-[#2C1810]">{log.mililitros_out}ml</strong></div>
-                            <div>Tiempo: <strong className="text-[#2C1810]">{log.tiempo}s</strong></div>
-                            <div>Temp: <strong className="text-[#2C1810]">{log.temperatura}°C</strong></div>
+                          <div className="grid grid-cols-4 gap-2 font-mono text-[11px] text-[#6F5A55] pt-1">
+                            <div>In: <strong className="text-[#843747]">{log.gramos_in}g</strong></div>
+                            <div>Out: <strong className="text-[#843747]">{log.mililitros_out}ml</strong></div>
+                            <div>Tiempo: <strong className="text-[#843747]">{log.tiempo}s</strong></div>
+                            <div>Temp: <strong className="text-[#843747]">{log.temperatura}°C</strong></div>
                           </div>
-                          <div className="text-[9px] text-[#2C1810]/50 italic pt-1 border-t border-[#2C1810]/5 mt-1">
+                          <div className="text-[9px] text-[#6F5A55] italic pt-1 border-t border-[#D7BBA8] mt-1">
                             Condición ambiental: {log.clima}
                           </div>
                         </div>
@@ -6141,12 +6141,12 @@ export default function AdminHub({
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6"
+              className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6"
             >
               <div>
-                <h3 className="font-serif text-base font-bold text-[#2C1810]">💳 Mesa Colaborador (Consumos de Empleados)</h3>
-                <p className="text-[10px] text-[#2C1810]/50 mt-0.5 leading-relaxed">
-                  El manual operativo de <strong>Resto Bar Del Teatro</strong> otorga un subsidio diario de consumo de hasta $12,00 por colaborador de turno para alimentación o refrigerio (Art. 9).
+                <h3 className="font-serif text-base font-bold text-[#843747]">💳 Mesa Colaborador (Consumos de Empleados)</h3>
+                <p className="text-[10px] text-[#6F5A55] mt-0.5 leading-relaxed">
+                  El manual operativo de <strong>Castaño — Resto Bar</strong> otorga un subsidio diario de consumo de hasta $12,00 por colaborador de turno para alimentación o refrigerio (Art. 9).
                 </p>
               </div>
 
@@ -6154,11 +6154,11 @@ export default function AdminHub({
                 {staffConsumptions.map((staff) => {
                   const limitReached = staff.consumedToday >= staff.limit;
                   return (
-                    <div key={staff.id} className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl flex flex-col justify-between h-36">
+                    <div key={staff.id} className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex flex-col justify-between h-36">
                       <div>
-                        <strong className="text-xs font-bold text-[#2C1810] block">{staff.name}</strong>
-                        <span className="text-[9px] text-[#2C1810]/40 font-bold block mt-0.5">{staff.rol}</span>
-                        <div className="text-sm font-mono font-bold text-[#2C1810]/70 mt-3">
+                        <strong className="text-xs font-bold text-[#332424] block">{staff.name}</strong>
+                        <span className="text-[9px] text-[#6F5A55] font-bold block mt-0.5">{staff.rol}</span>
+                        <div className="text-sm font-mono font-bold text-[#843747] mt-3">
                           ${staff.consumedToday.toFixed(2)} / ${staff.limit.toFixed(2)}
                         </div>
                       </div>
@@ -6167,8 +6167,8 @@ export default function AdminHub({
                         disabled={limitReached}
                         className={`w-full py-1.5 rounded-lg text-[9px] font-bold tracking-wider transition-all cursor-pointer uppercase mt-3 ${
                           limitReached 
-                            ? "bg-red-50 border border-red-200 text-red-700 cursor-not-allowed"
-                            : "bg-[#2C1810] hover:bg-[#3d2217] text-white"
+                            ? "bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] cursor-not-allowed"
+                            : "bg-[#843747] hover:bg-[#71303D] text-white"
                         }`}
                       >
                         {limitReached ? "Subsidio Excedido" : "+$2.50 Consumo"}
@@ -6190,33 +6190,33 @@ export default function AdminHub({
             >
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div className="lg:col-span-5 space-y-6">
-                  <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs">
-                    <div className="mb-4 border-b border-[#2C1810]/15 pb-2 flex items-center justify-between">
+                  <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
+                    <div className="mb-4 border-b border-[#D7BBA8] pb-2 flex items-center justify-between">
                       <div>
-                        <h3 className="font-serif text-base font-bold text-[#2C1810]">Billetera de Propinas</h3>
-                        <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Fondo Colectivo de Propinas Digitales (Sec. III.2)</p>
+                        <h3 className="font-serif text-base font-bold text-[#843747]">Billetera de Propinas</h3>
+                        <p className="text-[10px] text-[#6F5A55] mt-0.5">Fondo Colectivo de Propinas Digitales (Sec. III.2)</p>
                       </div>
-                      <Coins className="h-5 w-5 text-[#C2956E]" />
+                      <Coins className="h-5 w-5 text-[#843747]" />
                     </div>
 
-                    <div className="p-4 bg-[#FDFBF7] border border-[#2C1810]/10 rounded-2xl text-center space-y-1">
-                      <span className="text-[10px] text-[#2C1810]/50 uppercase font-bold block">Fondo Acumulado</span>
-                      <span className="font-serif text-3xl font-black text-[#2C1810] block font-mono">${tipPool.toFixed(0)}</span>
-                      <p className="text-[8px] text-[#2C1810]/40 italic leading-tight pt-1">
+                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-center space-y-1">
+                      <span className="text-[10px] text-[#6F5A55] uppercase font-bold block">Fondo Acumulado</span>
+                      <span className="font-serif text-3xl font-black text-[#843747] block font-mono">${tipPool.toFixed(0)}</span>
+                      <p className="text-[8px] text-[#6F5A55] italic leading-tight pt-1">
                         * Reparto digital semanal equitativo entre todos los miembros de turno.
                       </p>
                     </div>
 
                     {/* Tip Splitter Tool */}
-                    <div className="pt-3 border-t border-[#2C1810]/5 space-y-2.5">
-                      <h4 className="text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/50">
+                    <div className="pt-3 border-t border-[#D7BBA8] space-y-2.5">
+                      <h4 className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
                         Seleccionar personal en turno ({selectedTipStaff.length})
                       </h4>
                       <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                         {activeTipEmployees.map(name => {
                           const isChecked = selectedTipStaff.includes(name);
                           return (
-                            <label key={name} className="flex items-center gap-2 text-[10px] font-semibold text-[#2C1810]/80 cursor-pointer select-none">
+                            <label key={name} className="flex items-center gap-2 text-[10px] font-semibold text-[#332424] cursor-pointer select-none">
                               <input 
                                 type="checkbox"
                                 checked={isChecked}
@@ -6225,16 +6225,16 @@ export default function AdminHub({
                                     isChecked ? prev.filter(n => n !== name) : [...prev, name]
                                   );
                                 }}
-                                className="h-3.5 w-3.5 rounded border-stone-300 text-[#2C1810] focus:ring-[#2C1810]/30 cursor-pointer"
+                                className="h-3.5 w-3.5 rounded border-[#D7BBA8] text-[#843747] focus:ring-[#843747]/30 cursor-pointer"
                               />
                               <span>{name}</span>
                             </label>
                           );
                         })}
                       </div>
-                      <div className="p-3 bg-stone-50 border border-stone-150 rounded-xl flex justify-between items-center text-[10px]">
-                        <span className="font-bold text-[#2C1810]/60">Monto por Persona:</span>
-                        <strong className="text-xs font-mono text-emerald-800">
+                      <div className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-xl flex justify-between items-center text-[10px]">
+                        <span className="font-bold text-[#6F5A55]">Monto por Persona:</span>
+                        <strong className="text-xs font-mono text-[#4F735A]">
                           ${selectedTipStaff.length > 0 ? (tipPool / selectedTipStaff.length).toFixed(0) : "0"} c/u
                         </strong>
                       </div>
@@ -6260,20 +6260,20 @@ export default function AdminHub({
                           console.error("Error clearing tip pool on Supabase:", err);
                         }
                       }}
-                      className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer mt-4 uppercase tracking-wider"
+                      className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer mt-4 uppercase tracking-wider"
                     >
                       💸 Repartir Propinas Colectivas
                     </button>
                   </div>
                 </div>
 
-                <div className="lg:col-span-7 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
-                  <div className="mb-2 border-b border-[#2C1810]/15 pb-2 flex items-center justify-between">
+                <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
+                  <div className="mb-2 border-b border-[#D7BBA8] pb-2 flex items-center justify-between">
                     <div>
-                      <h3 className="font-serif text-base font-bold text-[#2C1810]">Profit-Sharing Semestral</h3>
-                      <p className="text-[10px] text-[#2C1810]/50 mt-0.5">Distribución de utilidades (Marzo y Septiembre) - Sec. III.3</p>
+                      <h3 className="font-serif text-base font-bold text-[#843747]">Profit-Sharing Semestral</h3>
+                      <p className="text-[10px] text-[#6F5A55] mt-0.5">Distribución de utilidades (Marzo y Septiembre) - Sec. III.3</p>
                     </div>
-                    <TrendingUp className="h-5 w-5 text-[#C2956E]" />
+                    <TrendingUp className="h-5 w-5 text-[#843747]" />
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -6585,10 +6585,10 @@ export default function AdminHub({
               )}
 
               {/* Users list */}
-              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6" : "lg:col-span-12 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-6"}>
-                <div className="border-b border-[#2C1810]/15 pb-2">
-                  <h3 className="font-serif text-base font-bold text-[#2C1810]">Cuentas Registradas</h3>
-                  <p className="text-[10px] text-[#2C1810]/50 mt-0.5">
+              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6" : "lg:col-span-12 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6"}>
+                <div className="border-b border-[#D7BBA8] pb-2">
+                  <h3 className="font-serif text-base font-bold text-[#843747]">Cuentas Registradas</h3>
+                  <p className="text-[10px] text-[#6F5A55] mt-0.5">
                     {(currentUser.role === "administrador" || currentUser.role === "dueño") 
                       ? "Listado completo de accesos, datos salariales y permisos del personal." 
                       : "Directorio de contacto de colaboradores en turno."}
@@ -7143,54 +7143,54 @@ export default function AdminHub({
 
         {/* Top 4 KPI Metrics Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-5 bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl shadow-xl gold-glow flex items-center justify-between">
+          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Ventas Totales</span>
-              <strong className="font-serif text-2xl font-black text-[#FFDF00] font-mono block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Ventas Totales</span>
+              <strong className="font-serif text-2xl font-black text-[#843747] font-mono block">
                 ${totalSalesSum.toLocaleString("es-AR")}
               </strong>
-              <span className="text-[9px] text-emerald-400 font-bold block">↑ +18.4% vs mes anterior</span>
+              <span className="text-[9px] text-[#4F735A] font-bold block">↑ +18.4% vs mes anterior</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#FFDF00]/10 border border-[#FFDF00]/30 flex items-center justify-center text-[#FFDF00] text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747] text-xl">
               💰
             </div>
           </div>
 
-          <div className="p-5 bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl shadow-xl gold-glow flex items-center justify-between">
+          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Ticket Promedio</span>
-              <strong className="font-serif text-2xl font-black text-[#FFDF00] font-mono block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Ticket Promedio</span>
+              <strong className="font-serif text-2xl font-black text-[#843747] font-mono block">
                 ${avgTicket.toFixed(0)}
               </strong>
-              <span className="text-[9px] text-[#FDFBF7]/60 font-semibold block">{countCompleted} comandas cerradas</span>
+              <span className="text-[9px] text-[#6F5A55] font-semibold block">{countCompleted} comandas cerradas</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#FFDF00]/10 border border-[#FFDF00]/30 flex items-center justify-center text-[#FFDF00] text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747] text-xl">
               🧾
             </div>
           </div>
 
-          <div className="p-5 bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl shadow-xl gold-glow flex items-center justify-between">
+          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Producto Más Vendido</span>
-              <strong className="font-serif text-sm font-bold text-[#FDFBF7] block line-clamp-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Producto Más Vendido</span>
+              <strong className="font-serif text-sm font-bold text-[#332424] block line-clamp-1">
                 {topSellingDish}
               </strong>
-              <span className="text-[9px] text-amber-300 font-bold block">⭐ Máxima rotación</span>
+              <span className="text-[9px] text-[#843747] font-bold block">⭐ Máxima rotación</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#FFDF00]/10 border border-[#FFDF00]/30 flex items-center justify-center text-[#FFDF00] text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747] text-xl">
               🍱
             </div>
           </div>
 
-          <div className="p-5 bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl shadow-xl gold-glow flex items-center justify-between">
+          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#D4AF37] block">Costo de Mermas</span>
-              <strong className="font-serif text-2xl font-black text-rose-400 font-mono block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Costo de Mermas</span>
+              <strong className="font-serif text-2xl font-black text-[#A63F45] font-mono block">
                 ${totalMermaCost.toLocaleString("es-AR")}
               </strong>
-              <span className="text-[9px] text-emerald-400 font-bold block">✓ Bajo límite 2% anual</span>
+              <span className="text-[9px] text-[#4F735A] font-bold block">✓ Bajo límite 2% anual</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-rose-950/40 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#F4DCDD] border border-[#A63F45]/30 flex items-center justify-center text-[#A63F45] text-xl">
               📉
             </div>
           </div>
@@ -7200,19 +7200,19 @@ export default function AdminHub({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Sales performance chart */}
-          <div className="lg:col-span-8 bg-[#1A110B] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow">
-            <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-3">
+          <div className="lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
+            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
               <div>
-                <h3 className="font-serif text-lg font-bold text-[#FFDF00]">📈 Facturación Mensual Histórica</h3>
-                <p className="text-[10px] text-[#FDFBF7]/60">Evolución de ingresos netos por mes comercial en $ ARS</p>
+                <h3 className="font-serif text-lg font-bold text-[#843747]">📈 Facturación Mensual Histórica</h3>
+                <p className="text-[10px] text-[#6F5A55]">Evolución de ingresos netos por mes comercial en $ ARS</p>
               </div>
-              <span className="text-xs font-mono font-bold text-[#FFDF00] bg-[#2A1B12] px-3 py-1 rounded-xl border border-[#D4AF37]/30">
+              <span className="text-xs font-mono font-bold text-[#843747] bg-[#E8D4C3] px-3 py-1 rounded-xl border border-[#D7BBA8]">
                 2026 AUDIT
               </span>
             </div>
             
             {/* CSS Chart */}
-            <div className="flex justify-between items-end h-52 px-4 border-b border-[#D4AF37]/20 pb-4 pt-6 bg-[#2A1B12]/50 rounded-2xl">
+            <div className="flex justify-between items-end h-52 px-4 border-b border-[#D7BBA8] pb-4 pt-6 bg-[#E8D4C3]/30 rounded-2xl">
               {[
                 { label: "Ene", val: "$1.2M", height: "65%" },
                 { label: "Feb", val: "$1.4M", height: "75%" },
@@ -7223,39 +7223,39 @@ export default function AdminHub({
                 { label: "Jul", val: "$2.4M", height: "100%" }
               ].map((bar, idx) => (
                 <div key={idx} className="flex flex-col items-center group w-12 cursor-pointer">
-                  <span className="text-[9px] font-black text-[#FFDF00] group-hover:scale-110 transition-transform mb-1.5 font-mono">{bar.val}</span>
-                  <div style={{ height: bar.height }} className="w-8 bg-gradient-to-t from-[#996515] via-[#D4AF37] to-[#FFDF00] hover:brightness-125 transition-all rounded-t-lg duration-300 shadow-md"></div>
-                  <span className="text-[10px] font-bold text-[#FDFBF7] mt-2 font-mono">{bar.label}</span>
+                  <span className="text-[9px] font-black text-[#843747] group-hover:scale-110 transition-transform mb-1.5 font-mono">{bar.val}</span>
+                  <div style={{ height: bar.height }} className="w-8 bg-[#843747] hover:bg-[#71303D] transition-all rounded-t-lg duration-300 shadow-xs"></div>
+                  <span className="text-[10px] font-bold text-[#332424] mt-2 font-mono">{bar.label}</span>
                 </div>
               ))}
             </div>
 
-            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl text-xs font-semibold flex justify-between text-[#FDFBF7]">
-              <div>Facturación Período: <strong className="text-[#FFDF00] font-mono text-sm shadow-sm">${totalSalesSum.toLocaleString("es-AR")}</strong></div>
-              <div>Ticket Promedio: <strong className="text-[#FFDF00] font-mono text-sm shadow-sm">${avgTicket.toFixed(2)}</strong></div>
+            <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-xs font-semibold flex justify-between text-[#332424]">
+              <div>Facturación Período: <strong className="text-[#843747] font-mono text-sm shadow-xs">${totalSalesSum.toLocaleString("es-AR")}</strong></div>
+              <div>Ticket Promedio: <strong className="text-[#843747] font-mono text-sm shadow-xs">${avgTicket.toFixed(2)}</strong></div>
             </div>
           </div>
 
           {/* Payment method distribution */}
-          <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-6 gold-glow flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
             <div>
-              <div className="border-b border-[#D4AF37]/20 pb-3">
-                <h3 className="font-serif text-lg font-bold text-[#FFDF00]">💳 Desglose por Método de Pago</h3>
-                <p className="text-[10px] text-[#FDFBF7]/60">Distribución porcentual de cobranzas en caja</p>
+              <div className="border-b border-[#D7BBA8] pb-3">
+                <h3 className="font-serif text-lg font-bold text-[#843747]">💳 Desglose por Método de Pago</h3>
+                <p className="text-[10px] text-[#6F5A55]">Distribución porcentual de cobranzas en caja</p>
               </div>
               
               <div className="space-y-5 py-4">
                 {[
-                  { name: "Efectivo", share: "35%", amount: "$169.750", color: "bg-emerald-500" },
-                  { name: "Tarjetas (Débito/Crédito)", share: "45%", amount: "$218.250", color: "bg-amber-400" },
-                  { name: "Mercado Pago / QR", share: "20%", amount: "$97.000", color: "bg-sky-400" }
+                  { name: "Efectivo", share: "35%", amount: "$169.750", color: "bg-[#4F735A]" },
+                  { name: "Tarjetas (Débito/Crédito)", share: "45%", amount: "$218.250", color: "bg-[#843747]" },
+                  { name: "Mercado Pago / QR", share: "20%", amount: "$97.000", color: "bg-[#4A7BB0]" }
                 ].map((method, idx) => (
                   <div key={idx} className="space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold text-[#FDFBF7]">
-                      <span className="text-[#FDFBF7] font-semibold">{method.name}</span>
-                      <span className="font-mono text-[#FFDF00]">{method.amount} ({method.share})</span>
+                    <div className="flex justify-between items-center text-xs font-bold text-[#332424]">
+                      <span className="text-[#332424] font-semibold">{method.name}</span>
+                      <span className="font-mono text-[#843747]">{method.amount} ({method.share})</span>
                     </div>
-                    <div className="w-full h-3 bg-[#2A1B12] rounded-full overflow-hidden border border-[#D4AF37]/20 p-0.5">
+                    <div className="w-full h-3 bg-[#E8D4C3] rounded-full overflow-hidden border border-[#D7BBA8] p-0.5">
                       <div className={`h-full ${method.color} rounded-full transition-all duration-500`} style={{ width: method.share }}></div>
                     </div>
                   </div>
@@ -7263,7 +7263,7 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="p-4 bg-[#2A1B12] border border-[#D4AF37]/20 rounded-2xl text-[10px] text-[#FDFBF7]/70 italic">
+            <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-[10px] text-[#6F5A55] italic">
               * Datos sincronizados en vivo con el Libro Diario de Caja y comprobantes emitidos.
             </div>
           </div>
@@ -7272,26 +7272,26 @@ export default function AdminHub({
         {/* Bottom Section: Mermas & Cash Ledger */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Merma Logs */}
-          <div className="bg-[#1A110B] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
-            <h3 className="font-serif text-lg font-bold text-[#FFDF00] uppercase tracking-wider border-b border-[#D4AF37]/20 pb-3">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="font-serif text-lg font-bold text-[#843747] uppercase tracking-wider border-b border-[#D7BBA8] pb-3">
               📊 Historial de Mermas & Descarte de Materia Prima
             </h3>
-            <p className="text-[10px] text-[#FDFBF7]/70 leading-relaxed font-semibold">
+            <p className="text-[10px] text-[#6F5A55] leading-relaxed font-semibold">
               Descarte de insumos registrado bajo protocolo de auditoría de cocina. Límite máximo: 2% mensual.
             </p>
             <div className="space-y-3 text-xs">
               {mermaLogs.map((merma) => (
-                <div key={merma.id} className="p-3.5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl flex justify-between items-center font-semibold text-[#FDFBF7] shadow-sm">
+                <div key={merma.id} className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex justify-between items-center font-semibold text-[#332424] shadow-xs">
                   <div>
                     <div className="flex items-center gap-2">
-                      <strong className="text-xs font-bold text-[#FFDF00]">{merma.name} ({merma.qty})</strong>
-                      <span className="text-[9px] text-[#D4AF37] font-mono font-bold block">{merma.date}</span>
+                      <strong className="text-xs font-bold text-[#843747]">{merma.name} ({merma.qty})</strong>
+                      <span className="text-[9px] text-[#6F5A55] font-mono font-bold block">{merma.date}</span>
                     </div>
-                    <span className="text-[10px] text-[#FDFBF7]/70 block mt-0.5">{merma.reason}</span>
+                    <span className="text-[10px] text-[#6F5A55] block mt-0.5">{merma.reason}</span>
                   </div>
                   <div className="text-right">
-                    <strong className="text-xs font-mono text-rose-400 block font-bold">{merma.cost}</strong>
-                    <span className="text-[9px] text-[#FDFBF7]/50 block">Auditor: {merma.auditor}</span>
+                    <strong className="text-xs font-mono text-[#A63F45] block font-bold">{merma.cost}</strong>
+                    <span className="text-[9px] text-[#6F5A55] block">Auditor: {merma.auditor}</span>
                   </div>
                 </div>
               ))}
@@ -7299,26 +7299,26 @@ export default function AdminHub({
           </div>
 
           {/* Cash Ledger Transactions */}
-          <div className="bg-[#1A110B] border border-[#D4AF37]/30 text-[#FDFBF7] rounded-3xl p-6 shadow-xl space-y-4 gold-glow">
-            <h3 className="font-serif text-lg font-bold text-[#FFDF00] uppercase tracking-wider border-b border-[#D4AF37]/20 pb-3">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="font-serif text-lg font-bold text-[#843747] uppercase tracking-wider border-b border-[#D7BBA8] pb-3">
               📋 Historial Reciente de Cobranzas en Caja
             </h3>
             <div className="space-y-3 text-xs">
               {cashLedger.transactions.length === 0 ? (
-                <div className="text-center py-8 text-[#FDFBF7]/50 italic font-medium">
+                <div className="text-center py-8 text-[#6F5A55] italic font-medium">
                   No hay cobranzas registradas en el turno actual.
                 </div>
               ) : (
                 cashLedger.transactions.slice(0, 5).map((tx: any, idx: number) => (
-                  <div key={idx} className="p-3.5 bg-[#2A1B12] border border-[#D4AF37]/30 rounded-2xl flex justify-between items-center font-semibold text-[#FDFBF7] shadow-sm">
+                  <div key={idx} className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex justify-between items-center font-semibold text-[#332424] shadow-xs">
                     <div>
                       <div className="flex items-center gap-2">
-                        <strong className="text-xs font-bold text-[#FFDF00]">{tx.type}</strong>
-                        <span className="px-2 py-0.5 text-[9px] font-black rounded bg-[#FFDF00]/10 text-[#FFDF00] font-mono border border-[#FFDF00]/30">{tx.orderId}</span>
+                        <strong className="text-xs font-bold text-[#843747]">{tx.type}</strong>
+                        <span className="px-2 py-0.5 text-[9px] font-black rounded bg-[#E8D4C3] text-[#843747] font-mono border border-[#D7BBA8]">{tx.orderId}</span>
                       </div>
-                      <span className="text-[10px] text-[#FDFBF7]/60 block mt-0.5">{tx.timestamp} vía {tx.method}</span>
+                      <span className="text-[10px] text-[#6F5A55] block mt-0.5">{tx.timestamp} vía {tx.method}</span>
                     </div>
-                    <strong className="text-sm font-mono text-[#FFDF00] font-bold">${tx.total.toFixed(0)}</strong>
+                    <strong className="text-sm font-mono text-[#843747] font-bold">${tx.total.toFixed(0)}</strong>
                   </div>
                 ))
               )}
@@ -7330,7 +7330,7 @@ export default function AdminHub({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] select-none relative">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F3E7DB] font-sans text-[#332424] select-none relative">
       {/* Mobile Top Navigation Header */}
       <div className="lg:hidden bg-[#E2C6B0] border-b border-[#D1AD95] px-4 py-3 flex justify-between items-center z-40 text-[#332424]">
         <div className="flex items-center gap-3">
@@ -7572,40 +7572,40 @@ export default function AdminHub({
 
       {/* Automated Purchase Orders (US-2.3) Modal */}
       {isAutoOrderModalOpen && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl p-6 w-full max-w-2xl shadow-2xl relative text-xs font-semibold text-[#FDFBF7] flex flex-col max-h-[90vh] gold-glow">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-2xl shadow-xl relative text-xs font-semibold text-[#332424] flex flex-col max-h-[90vh]">
             <button 
               onClick={() => setIsAutoOrderModalOpen(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424] cursor-pointer border-none bg-transparent"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="border-b border-[#D4AF37]/20 pb-3 mb-4">
-              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Reabastecimiento Inteligente</span>
-              <h4 className="font-serif text-lg font-bold text-[#FFDF00]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
+            <div className="border-b border-[#D7BBA8] pb-3 mb-4">
+              <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Reabastecimiento Inteligente</span>
+              <h4 className="font-serif text-lg font-bold text-[#843747]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
             </div>
 
             <div className="overflow-y-auto space-y-6 flex-1 pr-1">
-              <p className="text-xs text-[#FDFBF7]/70 italic leading-relaxed">
+              <p className="text-xs text-[#6F5A55] italic leading-relaxed">
                 El sistema detectó insumos en nivel de seguridad crítico y agrupó las cantidades necesarias de reposición por proveedor. Puede copiar el mensaje directo para enviarlo por WhatsApp o Correo Electrónico.
               </p>
 
               {Object.keys(draftOrders).length === 0 ? (
-                <p className="text-xs text-center py-6 font-bold italic text-[#2C1810]/40">No hay borradores para generar.</p>
+                <p className="text-xs text-center py-6 font-bold italic text-[#6F5A55]">No hay borradores para generar.</p>
               ) : (
                 <div className="space-y-6">
                   {Object.keys(draftOrders).map((prov) => {
                     const order = draftOrders[prov];
                     const whatsappUrl = `https://wa.me/${order.phone.replace(/[+\s-]/g, "")}?text=${encodeURIComponent(order.message)}`;
-                    const mailtoUrl = `mailto:${order.email}?subject=Pedido%20Reposicion%20-%20Resto%20Bar%20Del%20Teatro&body=${encodeURIComponent(order.message)}`;
+                    const mailtoUrl = `mailto:${order.email}?subject=Pedido%20Reposicion%20-%20Castano%20Resto%20Bar&body=${encodeURIComponent(order.message)}`;
 
                     return (
-                      <div key={prov} className="border border-[#D4AF37]/30 rounded-2xl p-4 bg-[#2A1B12] space-y-4 shadow-lg">
-                        <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-2">
+                      <div key={prov} className="border border-[#D7BBA8] rounded-2xl p-4 bg-[#E8D4C3]/40 space-y-4 shadow-xs">
+                        <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-2">
                           <div>
-                            <span className="font-serif text-sm font-black text-[#FFDF00]">{prov}</span>
-                            <span className="text-[10px] text-[#FDFBF7]/80 block font-mono">Tel: {order.phone} • Email: {order.email}</span>
+                            <span className="font-serif text-sm font-black text-[#843747]">{prov}</span>
+                            <span className="text-[10px] text-[#6F5A55] block font-mono">Tel: {order.phone} • Email: {order.email}</span>
                           </div>
                           <div className="flex gap-2">
                             <a
@@ -7615,7 +7615,7 @@ export default function AdminHub({
                               onClick={() => {
                                 onShowNotification(`📱 Redirigiendo a WhatsApp para ${prov}`, "info");
                               }}
-                              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-md"
+                              className="px-3.5 py-2 bg-[#4F735A] hover:bg-[#3D5B46] text-white rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-xs"
                             >
                               📱 WhatsApp
                             </a>
@@ -7624,7 +7624,7 @@ export default function AdminHub({
                               onClick={() => {
                                 onShowNotification(`📧 Abriendo cliente de correo para ${prov}`, "info");
                               }}
-                              className="px-3.5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-md gold-glow"
+                              className="px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-xs"
                             >
                               📧 Email
                             </a>
@@ -7632,12 +7632,12 @@ export default function AdminHub({
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[9px] font-black text-[#D4AF37] uppercase tracking-wider block">Borrador del Pedido</label>
+                          <label className="text-[9px] font-black text-[#6F5A55] uppercase tracking-wider block">Borrador del Pedido</label>
                           <textarea
                             readOnly
                             value={order.message}
                             rows={6}
-                            className="w-full text-xs font-mono p-3 bg-[#1C120C] border border-[#D4AF37]/40 text-[#FFDF00] rounded-xl resize-none outline-none font-bold leading-relaxed shadow-inner"
+                            className="w-full text-xs font-mono p-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#843747] rounded-xl resize-none outline-none font-bold leading-relaxed shadow-inner"
                           />
                         </div>
                       </div>
@@ -7647,10 +7647,10 @@ export default function AdminHub({
               )}
             </div>
 
-            <div className="border-t border-[#D4AF37]/20 pt-4 mt-4 flex justify-end">
+            <div className="border-t border-[#D7BBA8] pt-4 mt-4 flex justify-end">
               <button
                 onClick={() => setIsAutoOrderModalOpen(false)}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider gold-glow hover:brightness-110"
+                className="px-6 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider"
               >
                 ENTENDIDO
               </button>
@@ -7661,53 +7661,53 @@ export default function AdminHub({
 
       {/* Modal ➕ Crear Nuevo Insumo / Materia Prima */}
       {isNewInsumoModalOpen && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1A110B] border-2 border-[#D4AF37]/50 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#FDFBF7] space-y-4 gold-glow">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-lg shadow-xl relative text-xs font-semibold text-[#332424] space-y-4">
             <button 
               type="button"
               onClick={() => setIsNewInsumoModalOpen(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white cursor-pointer border-none bg-transparent"
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424] cursor-pointer border-none bg-transparent"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="border-b border-[#D4AF37]/20 pb-2">
-              <span className="text-[9px] font-black uppercase text-[#D4AF37] tracking-widest block">Gestión de Inventario</span>
-              <h4 className="font-serif text-xl font-bold text-[#FFDF00]">➕ Crear Nuevo Insumo / Materia Prima</h4>
+            <div className="border-b border-[#D7BBA8] pb-2">
+              <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Gestión de Inventario</span>
+              <h4 className="font-serif text-xl font-bold text-[#843747]">➕ Crear Nuevo Insumo / Materia Prima</h4>
             </div>
 
             <form onSubmit={handleCreateNewInsumo} className="space-y-4">
               <div>
-                <label className="text-[10px] font-black uppercase text-[#D4AF37] block mb-1">Nombre de la Materia Prima *</label>
+                <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Nombre de la Materia Prima *</label>
                 <input
                   type="text"
                   required
                   value={newInsumoName}
                   onChange={(e) => setNewInsumoName(e.target.value)}
                   placeholder="Ej. Harina 0000 Masa Madre, Queso Muzzarella..."
-                  className="w-full p-3 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none focus:border-[#FFDF00]"
+                  className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Cantidad Inicial *</label>
+                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Cantidad Inicial *</label>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={newInsumoQuantity}
                     onChange={(e) => setNewInsumoQuantity(e.target.value)}
-                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-mono font-bold text-[#FFDF00] outline-none text-center"
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#843747] outline-none text-center focus:border-[#843747]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Unidad *</label>
+                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Unidad *</label>
                   <select
                     value={newInsumoUnit}
                     onChange={(e) => setNewInsumoUnit(e.target.value)}
-                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none cursor-pointer"
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none cursor-pointer focus:border-[#843747]"
                   >
                     <option value="kg">kg (Kilogramos)</option>
                     <option value="L">L (Litros)</option>
@@ -7719,54 +7719,54 @@ export default function AdminHub({
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Stock Mínimo *</label>
+                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Stock Mínimo *</label>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={newInsumoMinLimit}
                     onChange={(e) => setNewInsumoMinLimit(e.target.value)}
-                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-mono font-bold text-[#FDFBF7] outline-none text-center"
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#332424] outline-none text-center focus:border-[#843747]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Proveedor Designado</label>
+                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Proveedor Designado</label>
                   <input
                     type="text"
                     value={newInsumoProvider}
                     onChange={(e) => setNewInsumoProvider(e.target.value)}
                     placeholder="Ej. Distribuidora Sur, Lácteos del Campo"
-                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-bold text-[#FDFBF7] outline-none"
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#D4AF37] block mb-1">Fecha de Vencimiento</label>
+                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Fecha de Vencimiento</label>
                   <input
                     type="date"
                     value={newInsumoExpDate}
                     onChange={(e) => setNewInsumoExpDate(e.target.value)}
-                    className="w-full p-2.5 bg-[#2A1B12] border border-[#D4AF37]/40 rounded-xl text-xs font-mono text-[#FDFBF7] outline-none"
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono text-[#332424] outline-none focus:border-[#843747]"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#D4AF37]/20 flex justify-end gap-3">
+              <div className="pt-3 border-t border-[#D7BBA8] flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsNewInsumoModalOpen(false)}
-                  className="px-4 py-2 border border-[#D4AF37]/40 text-[#FDFBF7] rounded-xl hover:bg-stone-800 cursor-pointer font-bold text-xs"
+                  className="px-4 py-2 border border-[#D7BBA8] text-[#6F5A55] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-xl cursor-pointer gold-glow hover:brightness-110"
+                  className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer"
                 >
-                  ➕ REGISTRAR EN SUPABASE
+                  REGISTRAR EN SUPABASE
                 </button>
               </div>
             </form>
@@ -7776,20 +7776,20 @@ export default function AdminHub({
 
       {/* Unified Movement Registration Modal */}
       {isMovementModalOpen && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1A110B] border border-[#D4AF37]/30 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#FDFBF7] gold-glow">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
             <button 
               onClick={() => setIsMovementModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#3D281A] text-[#D4AF37] hover:text-white"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <h4 className="font-serif text-lg font-bold text-[#FFDF00] mb-4">Registrar Movimiento de Stock</h4>
+            <h4 className="font-serif text-lg font-bold text-[#843747] mb-4">Registrar Movimiento de Stock</h4>
 
             <div className="space-y-4">
               <div>
-                <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-wider block mb-1.5">Tipo de Ajuste</span>
+                <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block mb-1.5">Tipo de Ajuste</span>
                 <div className="grid grid-cols-2 gap-3">
                   {["Ingreso", "Egreso"].map((t) => (
                     <button
@@ -7798,8 +7798,8 @@ export default function AdminHub({
                       onClick={() => setMovType(t as any)}
                       className={`p-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
                         movType === t 
-                          ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] border-[#D4AF37] font-black shadow-md gold-glow" 
-                          : "bg-[#2A1B12] border-[#D4AF37]/30 text-[#FDFBF7] hover:bg-[#3D281A]"
+                          ? "bg-[#843747] text-white border-[#843747] font-black shadow-xs" 
+                          : "bg-[#FFF9F4] border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424]"
                       }`}
                     >
                       {t === "Ingreso" ? "📥 Ingreso (Recibo)" : "📤 Egreso (Merma/Ajuste)"}
@@ -7809,11 +7809,11 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Materia Prima / Insumo</label>
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Materia Prima / Insumo</label>
                 <select 
                   value={movInsumoId}
                   onChange={(e) => setMovInsumoId(e.target.value)}
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] font-bold cursor-pointer"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer focus:border-[#843747]"
                 >
                   {insumos.map(i => (
                     <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
@@ -7822,25 +7822,25 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Cantidad a Ajustar</label>
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Cantidad a Ajustar</label>
                 <input 
                   type="number"
                   placeholder="Ingrese el valor numérico"
                   value={movQty}
                   onChange={(e) => setMovQty(e.target.value)}
-                  className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FFDF00] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none font-bold font-mono"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold font-mono"
                 />
               </div>
 
               {movType === "Egreso" && (
                 <div>
-                  <label className="text-[9px] font-bold text-[#D4AF37] uppercase block mb-1">Motivo / Descripción de la Merma</label>
+                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Motivo / Descripción de la Merma</label>
                   <textarea 
                     placeholder="Escriba el motivo del descarte..."
                     value={movReason}
                     onChange={(e) => setMovReason(e.target.value)}
                     rows={2}
-                    className="w-full p-2.5 border border-[#D4AF37]/30 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] focus:ring-1 focus:ring-[#D4AF37] focus:outline-none font-bold resize-none"
+                    className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold resize-none"
                   />
                 </div>
               )}
@@ -7899,32 +7899,32 @@ export default function AdminHub({
       )}
       {/* Configurar Restaurant Modal */}
       {isConfigRestaurantOpen && (
-        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
             <button 
               onClick={() => setIsConfigRestaurantOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Configurar Restaurant</h4>
-            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Personalice los datos de su restaurante para el ticket fiscal.</p>
+            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Configurar Restaurant</h4>
+            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Personalice los datos de su restaurante para el ticket fiscal.</p>
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Nombre Comercial</label>
-                <input type="text" defaultValue="Resto Bar Del Teatro" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Nombre Comercial</label>
+                <input type="text" defaultValue="Castaño — Resto Bar" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Dirección Física</label>
-                <input type="text" defaultValue="Calle 50 nro 600, La Plata" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Dirección Física</label>
+                <input type="text" defaultValue="Constitución 944, Río Cuarto" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">CUIT Comercial</label>
-                <input type="text" defaultValue="30-71458925-9" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">CUIT Comercial</label>
+                <input type="text" defaultValue="30-71458925-9" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
               </div>
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigRestaurantOpen(false); onShowNotification("✅ Configuración de restaurante guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md cursor-pointer">Guardar</button>
+                <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => { setIsConfigRestaurantOpen(false); onShowNotification("✅ Configuración de restaurante guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
               </div>
             </div>
           </div>
@@ -7933,39 +7933,39 @@ export default function AdminHub({
 
       {/* Configuración Ticketera Modal */}
       {isConfigTicketerisOpen && (
-        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
             <button 
               onClick={() => setIsConfigTicketerisOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Configurar Ticketera</h4>
-            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
+            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Configurar Ticketera</h4>
+            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Interfaz de Conexión</label>
-                <select className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold cursor-pointer">
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Interfaz de Conexión</label>
+                <select className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
                   <option>USB Thermal Printer (Predeterminado)</option>
                   <option>Bluetooth clover-thermal-58</option>
                   <option>Ethernet (IP: 192.168.1.150)</option>
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Ancho de Papel</label>
-                <select className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold cursor-pointer">
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Ancho de Papel</label>
+                <select className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
                   <option>80 mm (Recomendado)</option>
                   <option>58 mm</option>
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Texto de Pie de Página</label>
-                <input type="text" defaultValue="¡Gracias por su visita! Café de Especialidad" className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-white font-bold" />
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Texto de Pie de Página</label>
+                <input type="text" defaultValue="¡Gracias por su visita! Castaño — Resto Bar" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
               </div>
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-xs font-bold shadow-md cursor-pointer">Guardar</button>
+                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
               </div>
             </div>
           </div>
@@ -7974,50 +7974,50 @@ export default function AdminHub({
 
       {/* Cerrar Turno de Caja Modal */}
       {isCloseShiftModalOpen && (
-        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
             <button 
               onClick={() => setIsCloseShiftModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Cerrar Turno de Caja Diaria</h4>
-            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
+            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Cerrar Turno de Caja Diaria</h4>
+            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
             
-            <div className="my-4 p-4 bg-stone-50 border border-stone-150 rounded-2xl">
-              <span className="text-[9px] font-bold text-[#2C1810]/50 uppercase tracking-wider block">Ventas Turno Teórico</span>
-              <div className="text-2xl font-serif font-black text-[#2C1810] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#2C1810]/60 font-bold border-t border-[#2C1810]/10 pt-2.5">
-                <div>Efectivo: <span className="font-mono text-[#2C1810]">${cashLedger.cash.toLocaleString()}</span></div>
-                <div>Tarjeta: <span className="font-mono text-[#2C1810]">${cashLedger.card.toLocaleString()}</span></div>
-                <div>MP: <span className="font-mono text-[#2C1810]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+            <div className="my-4 p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
+              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Ventas Turno Teórico</span>
+              <div className="text-2xl font-serif font-black text-[#843747] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#6F5A55] font-bold border-t border-[#D7BBA8] pt-2.5">
+                <div>Efectivo: <span className="font-mono text-[#843747]">${cashLedger.cash.toLocaleString()}</span></div>
+                <div>Tarjeta: <span className="font-mono text-[#843747]">${cashLedger.card.toLocaleString()}</span></div>
+                <div>MP: <span className="font-mono text-[#843747]">${cashLedger.mercadopago.toLocaleString()}</span></div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Monto Real en Caja ($)</label>
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Monto Real en Caja ($)</label>
                 <input 
                   type="number" 
                   placeholder="Ingrese el monto físico contado" 
                   value={closeShiftRealCash} 
                   onChange={(e) => setCloseShiftRealCash(e.target.value)}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-bold font-mono" 
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold font-mono" 
                 />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Observaciones</label>
+                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Observaciones</label>
                 <textarea 
                   placeholder="Facturación normal del turno, diferencias de arqueo, etc." 
                   value={closeShiftNotes} 
                   onChange={(e) => setCloseShiftNotes(e.target.value)}
                   rows={3}
-                  className="w-full p-2.5 border border-[#2C1810]/20 rounded-xl text-xs bg-[#2A1B12] text-[#FDFBF7] border-[#D4AF37]/30 focus:ring-1 focus:ring-[#C2956E] focus:outline-none font-semibold resize-none"
+                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] focus:ring-1 focus:ring-[#843747] focus:outline-none font-semibold resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-stone-200 text-xs font-bold text-[#2C1810]/60 hover:bg-stone-100 transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
                 <button 
                   onClick={() => {
                     const realCash = parseFloat(closeShiftRealCash);
@@ -8029,7 +8029,7 @@ export default function AdminHub({
                     setCloseShiftRealCash("");
                     setCloseShiftNotes("");
                   }} 
-                  className="w-1/2 py-2.5 rounded-xl bg-red-650 hover:bg-red-750 text-white text-xs font-bold shadow-md cursor-pointer"
+                  className="w-1/2 py-2.5 rounded-xl bg-[#A63F45] hover:bg-[#8A3338] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   Confirmar Arqueo ✓
                 </button>
