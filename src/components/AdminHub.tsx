@@ -7326,20 +7326,20 @@ export default function AdminHub({
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] select-none relative">
-      {/* Mobile Sticky Header Bar (<1024px) */}
-      <div className="lg:hidden sticky top-0 z-40 bg-[#1C120C] border-b border-[#D4AF37]/30 px-4 py-3 flex items-center justify-between shadow-md">
+      {/* Mobile Top Navigation Header */}
+      <div className="lg:hidden bg-[#2A1713] border-b border-[#843747]/40 px-4 py-3 flex justify-between items-center z-40 text-[#FFF9F4]">
         <div className="flex items-center gap-3">
-          <button
+          <button 
             type="button"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            className="p-2 rounded-xl bg-[#843747] text-white hover:bg-[#71303D] cursor-pointer"
             aria-label="Abrir menú de navegación"
-            onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
-            className="p-2 rounded-xl bg-[#2A1B12] border border-[#D4AF37]/30 text-[#FFDF00] hover:bg-[#3D281A] cursor-pointer"
           >
-            {isMobileDrawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <Menu className="h-5 w-5" />
           </button>
-          <span className="font-serif font-bold text-sm text-[#FFDF00] uppercase tracking-wider">Resto Bar Del Teatro</span>
+          <span className="font-serif font-bold text-sm text-[#FFF9F4] uppercase tracking-wider">Resto Bar Del Teatro</span>
         </div>
-        <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#2A1B12] border border-[#D4AF37]/30 text-[#D4AF37]">
+        <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#843747] text-white">
           {activeSubTab.toUpperCase()}
         </span>
       </div>
@@ -7403,17 +7403,17 @@ export default function AdminHub({
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-lg gold-glow scale-[1.02]"
-                      : "text-[#FDFBF7] hover:text-white hover:bg-[#2A1B12] hover:border hover:border-[#D4AF37]/30"
+                      ? "bg-[#843747] text-white font-black shadow-md border-l-4 border-[#E8D4C3] scale-[1.02]"
+                      : "text-[#FFF9F4]/80 hover:text-white hover:bg-[#843747]/30"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className="h-4.5 w-4.5 text-[#D4AF37]" />
+                    <Icon className="h-4.5 w-4.5 text-[#E8D4C3]" />
                     {link.label}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
                     <span className={`h-4 w-4 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                      active ? "bg-[#1C120C] text-[#FFDF00]" : "bg-red-600 text-white shadow-sm"
+                      active ? "bg-white text-[#843747]" : "bg-[#A63F45] text-white shadow-xs"
                     }`}>
                       {link.badge}
                     </span>
@@ -7511,7 +7511,7 @@ export default function AdminHub({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-8 lg:p-10 bg-[#0F0A07] text-[#FDFBF7]">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 bg-[#F3E7DB] text-[#332424]">
         <AnimatePresence mode="wait">
           {activeSubTab === "dashboard" && renderDashboard()}
           {activeSubTab === "inventario" && renderInventario()}

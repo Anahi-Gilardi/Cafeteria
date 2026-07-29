@@ -237,7 +237,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 </div>
                 <button
                   onClick={() => addToCart(item)}
-                  className="w-full mt-3 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-black shadow-md hover:brightness-110 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                  className="w-full mt-3 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-sm active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
                 >
                   <Plus className="h-4 w-4" /> Agregar al Pedido
                 </button>
@@ -249,7 +249,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
       {/* Main Menu Categories & Self-Ordering List */}
       <section className="max-w-6xl mx-auto py-6 px-6 space-y-6">
-        <div className="flex border-b border-[#E2D4C3] pb-3 gap-3 overflow-x-auto text-xs font-bold">
+        <div className="flex border-b border-[#D7BBA8] pb-3 gap-3 overflow-x-auto text-xs font-bold">
           {[
             { id: "all", label: "🍽️ Ver Todo" },
             { id: "executive", label: "⭐ Menú Diario ($12.500)" },
@@ -267,8 +267,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap uppercase tracking-wider ${
                 selectedCategory === cat.id
-                  ? "bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white font-black shadow-md"
-                  : "bg-white border border-[#E2D4C3] text-[#5C4A3E] hover:text-[#1C120C] hover:bg-[#FAF8F5]"
+                  ? "bg-[#843747] text-white font-black shadow-md"
+                  : "bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
               }`}
             >
               {cat.label}

@@ -172,7 +172,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
             </div>
 
             <p className="text-xs text-espresso/70 leading-normal mb-5 italic">
-              Cada mesa en nuestra cafetería de Café Puglia tiene un QR único. Seleccione su mesa abajo para simular que está sentado allí:
+              Cada mesa en Resto Bar Del Teatro tiene un QR único. Seleccione su mesa abajo para simular que está sentado allí:
             </p>
 
             <div className="space-y-3 text-left">
