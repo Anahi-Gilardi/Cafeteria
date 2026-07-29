@@ -23,7 +23,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         { name: "Empanada Salteña Jugosa", price: 2800, quantity: 1 }
       ],
       total: 5600,
-      status: "Listo",
+      status: "Recibido",
       createdAt: new Date(Date.now() - 34 * 60000).toISOString(),
       tableNumber: "Delivery",
       clientAccountName: "AGUSTIN",
@@ -37,7 +37,7 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
       ],
       total: 14975,
-      status: "Listo",
+      status: "Preparando",
       createdAt: new Date(Date.now() - 55 * 60000).toISOString(),
       tableNumber: "Mesa 1",
       clientAccountName: "CONSUMIDOR FINAL",
@@ -58,6 +58,52 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
       estimatedMinutes: 20
     }
   ]);
+
+  const handleResetDemoOrders = () => {
+    const freshId = `PED-${Math.floor(1000 + Math.random() * 9000)}`;
+    setDemoOrdersState([
+      {
+        id: freshId,
+        items: [
+          { name: "Café Doble Espresso & Medialunas", price: 4500, quantity: 2 },
+          { name: "Tostado de Miga Especial Jamón y Queso", price: 6200, quantity: 1 }
+        ],
+        total: 10700,
+        status: "Recibido",
+        createdAt: new Date().toISOString(),
+        tableNumber: "Mesa 3",
+        clientAccountName: "Mariano Closs",
+        priceList: "Salon",
+        estimatedMinutes: 15
+      },
+      {
+        id: "PED-7362",
+        items: [
+          { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
+        ],
+        total: 14975,
+        status: "Preparando",
+        createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
+        tableNumber: "Mesa 1",
+        clientAccountName: "CONSUMIDOR FINAL",
+        priceList: "Salon",
+        estimatedMinutes: 20
+      },
+      {
+        id: "PED-9413",
+        items: [
+          { name: "Limonada Menta y Jengibre & Sándwich Milanesa", price: 12500, quantity: 1 }
+        ],
+        total: 12500,
+        status: "Listo",
+        createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
+        tableNumber: "Mesa 2",
+        clientAccountName: "CONSUMIDOR FINAL",
+        priceList: "Salon",
+        estimatedMinutes: 20
+      }
+    ]);
+  };
 
   const handleUpdateStatus = (order: Order, newStatus: OrderStatusType) => {
     onOrderStatusUpdate(order.id, newStatus);
@@ -333,6 +379,15 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
             <option value="Takeaway">Takeaway</option>
             <option value="Delivery">Delivery</option>
           </select>
+
+          <button
+            type="button"
+            onClick={handleResetDemoOrders}
+            className="px-3.5 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer uppercase tracking-wider transition-all flex items-center gap-1.5"
+            title="Restaurar comandas de prueba en tablero"
+          >
+            🔄 Comandas Demo
+          </button>
         </div>
       </div>
 
