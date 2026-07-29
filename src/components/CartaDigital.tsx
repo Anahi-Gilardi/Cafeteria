@@ -106,12 +106,14 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <button
             onClick={async () => {
+              onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
               const { MenuPDFService } = await import("../services/MenuPDFService");
-              MenuPDFService.generateMenuPDF(menuItems);
+              await MenuPDFService.generateMenuPDF(menuItems);
+              onShowNotification("✅ Carta PDF descargada correctamente.", "success");
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer gold-glow uppercase tracking-wider"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
-            <FileText className="h-4 w-4" /> Descargar Carta PDF Oficial
+            <FileText className="h-4 w-4 text-white" /> Descargar Carta PDF Oficial
           </button>
 
           <button

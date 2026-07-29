@@ -157,9 +157,10 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   }, [viewMode]);
 
   const handleDownloadPDF = async () => {
+    onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
     const { MenuPDFService } = await import("../services/MenuPDFService");
-    MenuPDFService.generateMenuPDF(menuItems);
-    onShowNotification("Descargando la carta oficial actualizada.", "info");
+    await MenuPDFService.generateMenuPDF(menuItems);
+    onShowNotification("✅ Carta oficial descargada correctamente.", "success");
   };
 
   if (viewMode === "digital_menu") {

@@ -261,12 +261,14 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
           <div className="flex flex-wrap gap-3">
             <button
               onClick={async () => {
+                onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
                 const { MenuPDFService } = await import("../services/MenuPDFService");
-                MenuPDFService.generateMenuPDF(menuItems);
+                await MenuPDFService.generateMenuPDF(menuItems);
+                onShowNotification("✅ Carta oficial descargada correctamente.", "success");
               }}
-              className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]/40"
+              className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]/40 cursor-pointer"
             >
-              <FileText className="h-4 w-4" /> Carta PDF
+              <FileText className="h-4 w-4 text-[#843747]" /> Carta PDF
             </button>
             <a
               href="https://instagram.com/restobardelteatro_rio4"

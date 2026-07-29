@@ -4,10 +4,48 @@ import { MENU_ITEMS } from "../data/menu";
 
 export class MenuPDFService {
   /**
-   * Generates and downloads a complete, multi-page PDF of the active menu catalog
+   * Helper to load an image URL or Base64 into a clean Data URL for jsPDF
    */
-  public static generateMenuPDF(inputMenuItems: MenuItem[]): void {
-    // Merge input menu items with master MENU_ITEMS to ensure 2026 prices
+  private static loadImageBase64(url: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      if (!url) {
+        resolve(null);
+        return;
+      }
+
+      if (url.startsWith("data:image")) {
+        resolve(url);
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 160;
+          canvas.height = 160;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.85));
+            return;
+          }
+        } catch {
+          // Ignore CORS or canvas errors silently
+        }
+        resolve(null);
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  /**
+   * Generates and downloads a complete, multi-page PDF of the active menu catalog with Photos & QR Code
+   */
+  public static async generateMenuPDF(inputMenuItems: MenuItem[]): Promise<void> {
+    // Merge input menu items with master MENU_ITEMS to ensure updated prices
     const baseItems = inputMenuItems && inputMenuItems.length > 0 ? inputMenuItems : MENU_ITEMS;
     const menuItems = baseItems.map(item => {
       const catalogItem = MENU_ITEMS.find(m => m.id === item.id);
@@ -17,11 +55,35 @@ export class MenuPDFService {
           price: Math.max(item.price, catalogItem.price),
           offerPrice: catalogItem.offerPrice || item.offerPrice,
           takeawayPrice: catalogItem.takeawayPrice || item.takeawayPrice,
-          deliveryPrice: catalogItem.deliveryPrice || item.deliveryPrice
+          deliveryPrice: catalogItem.deliveryPrice || item.deliveryPrice,
+          image: item.image || catalogItem.image
         };
       }
       return item;
     });
+
+    // Digital Menu Web Link for QR Code
+    const digitalMenuUrl = typeof window !== "undefined" && window.location.origin
+      ? `${window.location.origin}/`
+      : "https://cafeteria-ten-pied.vercel.app/";
+
+    // Preload QR Code and Product Images
+    const qrCodeApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(digitalMenuUrl)}`;
+    const qrCodeBase64Promise = this.loadImageBase64(qrCodeApiUrl);
+
+    // Preload top product images to keep PDF export fast (< 2.5 seconds max)
+    const imageMap = new Map<string, string | null>();
+    const imagePromises = menuItems.map(async (item) => {
+      if (item.image) {
+        const b64 = await this.loadImageBase64(item.image);
+        imageMap.set(item.id, b64);
+      }
+    });
+
+    const [qrCodeBase64] = await Promise.all([
+      qrCodeBase64Promise,
+      Promise.all(imagePromises)
+    ]);
 
     const doc = new jsPDF({
       orientation: "portrait",
@@ -33,54 +95,84 @@ export class MenuPDFService {
     const pageHeight = doc.internal.pageSize.getHeight();
     let currentY = 0;
 
-    // Helper to render Page 1 Cover Banner
+    // Helper to render Page 1 Cover Header Banner with QR Code
     const drawCoverHeader = () => {
-      // Header Background (Dark Chocolate #1A110B)
-      doc.setFillColor(26, 17, 11);
-      doc.rect(0, 0, pageWidth, 44, "F");
+      // Header Background (Bordó Teatral #843747)
+      doc.setFillColor(132, 55, 71); // #843747
+      doc.rect(0, 0, pageWidth, 48, "F");
 
-      // Gold decorative border box
-      doc.setDrawColor(212, 175, 55); // #D4AF37
-      doc.setLineWidth(0.8);
-      doc.rect(6, 6, pageWidth - 12, 32, "S");
+      // Double decorative border in soft cream #D7BBA8
+      doc.setDrawColor(215, 187, 168);
+      doc.setLineWidth(0.7);
+      doc.rect(5, 5, pageWidth - 10, 38, "S");
 
-      // Main Title (No Emojis for clean Helvetica rendering)
-      doc.setTextColor(255, 223, 0); // #FFDF00 Gold
+      // Main Restaurant Title
+      doc.setTextColor(255, 255, 255); // White
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      doc.text("CASTAÑO — RESTO BAR", pageWidth / 2, 18, { align: "center" });
+      doc.setFontSize(21);
+      doc.text("CASTAÑO — RESTO BAR", 12, 18);
 
       // Subtitle & Address
-      doc.setTextColor(253, 251, 247); // White
-      doc.setFontSize(9.5);
+      doc.setTextColor(243, 231, 219); // Light cream #F3E7DB
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text("CONSTITUCIÓN 944 • RÍO CUARTO, CÓRDOBA", pageWidth / 2, 25, { align: "center" });
+      doc.text("CONSTITUCIÓN 944 • RÍO CUARTO, CÓRDOBA", 12, 25);
 
-      // Highlight Promo Badge
-      doc.setTextColor(212, 175, 55);
-      doc.setFontSize(8.5);
+      // Promo Badge Box (Cream Background #FFF9F4)
+      doc.setFillColor(255, 249, 244);
+      doc.rect(12, 29, 135, 10, "F");
+      doc.setDrawColor(215, 187, 168);
+      doc.setLineWidth(0.4);
+      doc.rect(12, 29, 135, 10, "S");
+
+      doc.setTextColor(132, 55, 71); // Bordó
+      doc.setFontSize(7.5);
       doc.setFont("helvetica", "bold");
-      doc.text("MENÚ EJECUTIVO DEL DÍA: $12.500 (ENTRADA + PRINCIPAL + BEBIDA + POSTRE)", pageWidth / 2, 32, { align: "center" });
+      doc.text("MENÚ EJECUTIVO DEL DÍA: $12.500 (ENTRADA + PRINCIPAL + BEBIDA + POSTRE)", 15, 35.5);
 
-      currentY = 52;
+      // QR Code Box on Top Right (x = pageWidth - 46mm, y = 6mm, size = 38mm x 36mm)
+      doc.setFillColor(255, 249, 244);
+      doc.rect(pageWidth - 46, 7, 38, 34, "F");
+      doc.setDrawColor(215, 187, 168);
+      doc.setLineWidth(0.5);
+      doc.rect(pageWidth - 46, 7, 38, 34, "S");
+
+      if (qrCodeBase64) {
+        try {
+          doc.addImage(qrCodeBase64, "JPEG", pageWidth - 43, 8.5, 21, 21);
+        } catch {
+          // Fallback if image embedding fails
+        }
+      }
+
+      doc.setTextColor(132, 55, 71);
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "bold");
+      doc.text("📱 CARTA DIGITAL", pageWidth - 27, 32.5, { align: "center" });
+      doc.setFontSize(5.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(111, 90, 85);
+      doc.text("Escaneá para fotos HD", pageWidth - 27, 36.5, { align: "center" });
+
+      currentY = 54;
     };
 
     // Helper to render Page 2+ Headers
     const drawSecondaryHeader = () => {
-      doc.setFillColor(26, 17, 11);
+      doc.setFillColor(132, 55, 71);
       doc.rect(0, 0, pageWidth, 16, "F");
 
-      doc.setTextColor(255, 223, 0);
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("RESTO BAR DEL TEATRO — CARTA OFICIAL", 12, 11);
+      doc.setFontSize(10.5);
+      doc.text("CASTAÑO — RESTO BAR (CARTA OFICIAL)", 12, 11);
 
-      doc.setTextColor(212, 175, 55);
+      doc.setTextColor(243, 231, 219);
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text("Constitución 944, Río Cuarto", pageWidth - 12, 11, { align: "right" });
+      doc.text("Constitución 944, Río Cuarto • Carta Digital Online", pageWidth - 12, 11, { align: "right" });
 
-      doc.setDrawColor(212, 175, 55);
+      doc.setDrawColor(215, 187, 168);
       doc.setLineWidth(0.5);
       doc.line(0, 16, pageWidth, 16);
 
@@ -149,87 +241,125 @@ export class MenuPDFService {
 
       const titleText = (categoryLabels[catKey] || catKey.toUpperCase().replace(/_/g, " "));
 
-      // Check if space left for category header + at least 1 item (~25mm)
-      if (currentY + 25 > pageHeight - 20) {
+      // Check if space left for category header + at least 1 item (~28mm)
+      if (currentY + 28 > pageHeight - 16) {
         doc.addPage();
         drawSecondaryHeader();
       }
 
-      // Render Category Section Bar
-      doc.setFillColor(42, 27, 18); // Dark brown accent #2A1B12
-      doc.rect(10, currentY, pageWidth - 20, 8, "F");
+      // Render Category Section Bar (Bordó #843747 with Cream Border)
+      doc.setFillColor(132, 55, 71);
+      doc.rect(10, currentY, pageWidth - 20, 8.5, "F");
 
-      doc.setDrawColor(212, 175, 55);
+      doc.setDrawColor(215, 187, 168);
       doc.setLineWidth(0.4);
-      doc.rect(10, currentY, pageWidth - 20, 8, "S");
+      doc.rect(10, currentY, pageWidth - 20, 8.5, "S");
 
-      doc.setTextColor(255, 223, 0); // Gold
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9.5);
-      doc.text(titleText, 14, currentY + 5.5);
+      doc.text(titleText, 14, currentY + 5.8);
 
-      currentY += 13;
+      currentY += 14;
 
-      // Render items in category
+      // Render items in category with photo thumbnails
       itemsInCat.forEach(item => {
-        // Calculate item height requirement
         const priceStr = `$${(item.offerPrice || item.price).toLocaleString("es-AR")}`;
-        const descLines = item.description ? doc.splitTextToSize(item.description, pageWidth - 35) : [];
-        const requiredHeight = 6 + (descLines.length * 3.5) + 4;
+        const itemImgB64 = imageMap.get(item.id);
 
-        if (currentY + requiredHeight > pageHeight - 20) {
+        // Product text wrap calculation (leaving 22mm for left photo thumbnail)
+        const textStartX = 32;
+        const textWidth = pageWidth - textStartX - 14;
+        const descLines = item.description ? doc.splitTextToSize(item.description, textWidth) : [];
+        const requiredHeight = Math.max(17, 7 + (descLines.length * 3.5) + 3);
+
+        if (currentY + requiredHeight > pageHeight - 16) {
           doc.addPage();
           drawSecondaryHeader();
         }
 
-        // Product Name
-        doc.setTextColor(26, 17, 11);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(item.name, 14, currentY);
+        // Render Photo Thumbnail (15mm x 15mm)
+        const photoX = 12;
+        const photoY = currentY - 1;
+        const photoSize = 15;
 
-        // Price (Right aligned)
-        doc.setTextColor(153, 101, 21); // Dark gold
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(priceStr, pageWidth - 14, currentY, { align: "right" });
-
-        // Description
-        if (descLines.length > 0) {
-          doc.setTextColor(90, 80, 75);
-          doc.setFont("helvetica", "italic");
-          doc.setFontSize(8);
-          doc.text(descLines, 14, currentY + 4);
-          currentY += 4 + (descLines.length * 3.5);
+        if (itemImgB64) {
+          try {
+            doc.addImage(itemImgB64, "JPEG", photoX, photoY, photoSize, photoSize);
+            doc.setDrawColor(215, 187, 168);
+            doc.setLineWidth(0.4);
+            doc.rect(photoX, photoY, photoSize, photoSize, "S");
+          } catch {
+            // Fallback placeholder
+            doc.setFillColor(232, 212, 195);
+            doc.rect(photoX, photoY, photoSize, photoSize, "F");
+            doc.setTextColor(132, 55, 71);
+            doc.setFontSize(7);
+            doc.text("📷", photoX + 5, photoY + 9);
+          }
         } else {
-          currentY += 5;
+          // Placeholder badge for items without custom photos
+          doc.setFillColor(232, 212, 195);
+          doc.rect(photoX, photoY, photoSize, photoSize, "F");
+          doc.setDrawColor(215, 187, 168);
+          doc.setLineWidth(0.3);
+          doc.rect(photoX, photoY, photoSize, photoSize, "S");
+
+          doc.setTextColor(132, 55, 71);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(7.5);
+          const initials = item.name.substring(0, 2).toUpperCase();
+          doc.text(initials, photoX + 5, photoY + 9.5);
         }
 
-        // Dotted separator line
-        doc.setDrawColor(225, 215, 205);
+        // Product Name (Cacao #332424)
+        doc.setTextColor(51, 36, 36);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(item.name, textStartX, currentY + 3);
+
+        // Price (Right aligned in Bordó #843747)
+        doc.setTextColor(132, 55, 71);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10.5);
+        doc.text(priceStr, pageWidth - 14, currentY + 3, { align: "right" });
+
+        // Description (Subtitle #6F5A55)
+        if (descLines.length > 0) {
+          doc.setTextColor(111, 90, 85);
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(7.8);
+          doc.text(descLines, textStartX, currentY + 7.5);
+          currentY += Math.max(17, 7.5 + (descLines.length * 3.5));
+        } else {
+          currentY += 17;
+        }
+
+        // Dotted separator line between items
+        doc.setDrawColor(215, 187, 168);
         doc.setLineWidth(0.15);
-        doc.line(14, currentY + 1, pageWidth - 14, currentY + 1);
-        currentY += 4.5;
+        doc.line(12, currentY - 1, pageWidth - 14, currentY - 1);
+        currentY += 3.5;
       });
 
       currentY += 3;
     });
 
-    // Footers on all pages (with total page count)
+    // Footers on all pages (with page count and QR reminder)
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       
-      // Bottom Footer Bar
-      doc.setFillColor(26, 17, 11);
+      // Bottom Footer Bar (Bordó #843747)
+      doc.setFillColor(132, 55, 71);
       doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
 
-      doc.setTextColor(212, 175, 55);
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "bold");
-      doc.text("CASTAÑO — RESTO BAR • Constitución 944, Río Cuarto • Tel: 358 5042311 / 358 4651847", 12, pageHeight - 4);
+      doc.text("CASTAÑO — RESTO BAR • Constitución 944, Río Cuarto • Tel: 358 5042311 • Carta Digital Online", 12, pageHeight - 4);
 
-      doc.setTextColor(253, 251, 247);
+      doc.setTextColor(243, 231, 219);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
       doc.text(`Página ${i} de ${totalPages}`, pageWidth - 12, pageHeight - 4, { align: "right" });
@@ -239,3 +369,4 @@ export class MenuPDFService {
     doc.save("Carta_Oficial_Castano.pdf");
   }
 }
+
