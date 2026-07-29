@@ -39,13 +39,13 @@ export class AuthService {
 
     // 2. Local role fallback for initial demo/offline mode
     const cleanUser = emailInput.trim().toLowerCase();
-    if (cleanUser === "admin" || cleanUser === "admin@cafepuglia.com" || cleanUser === "pablo@cafepuglia.com") {
+    if (cleanUser === "admin" || cleanUser === "admin@restobardelteatro.com" || cleanUser === "pablo@restobardelteatro.com") {
       if (passwordInput === "1998" || passwordInput === "pablo123") {
         return {
           success: true,
           user: {
             id: "usr-admin",
-            email: "admin@restobardelteatro.com.ar",
+            email: "admin@restobardelteatro.com",
             name: "Administrador Teatro",
             role: "administrador"
           }
@@ -53,13 +53,13 @@ export class AuthService {
       }
     }
 
-    if (cleanUser === "barista" || cleanUser === "rami@cafepuglia.com") {
+    if (cleanUser === "barista" || cleanUser === "rami@restobardelteatro.com") {
       if (passwordInput === "barista123" || passwordInput === "2222") {
         return {
           success: true,
           user: {
             id: "usr-barista",
-            email: "barista@restobardelteatro.com.ar",
+            email: "barista@restobardelteatro.com",
             name: "Barista Principal",
             role: "barista"
           }
@@ -67,7 +67,7 @@ export class AuthService {
       }
     }
 
-    if (cleanUser === "mesero" || cleanUser === "silvana@cafepuglia.com") {
+    if (cleanUser === "mesero" || cleanUser === "silvana@restobardelteatro.com") {
       if (passwordInput === "mesero123" || passwordInput === "3333") {
         return {
           success: true,

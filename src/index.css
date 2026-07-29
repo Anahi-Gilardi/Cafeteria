@@ -4,51 +4,65 @@
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Cinzel", "Marcellus", ui-serif, Georgia, serif;
-  --color-paper: #FDFBF7;
-  --color-espresso: #2C1810;
-  --color-caramel: #D4AF37;
-  --color-coffee: rgba(212, 175, 55, 0.15);
   
-  /* Teatro Premium Color Palette */
-  --color-gold-lux: #D4AF37;
-  --color-gold-bright: #FFDF00;
-  --color-gold-dark: #996515;
-  --color-choco-dark: #1C120C;
-  --color-choco-medium: #2A1B12;
-  --color-theater-black: #0F0A07;
-  --color-card-surface: #1A110B;
+  /* Resto Bar Del Teatro Warm Light Brown & Burgundy Palette */
+  --color-warm-bg: #F3E7DB;
+  --color-card-bg: #FFF9F4;
+  --color-surface-sec: #E8D4C3;
+  --color-burgundy-light: #A65363;
+  --color-burgundy: #843747;
+  --color-burgundy-hover: #71303D;
+  --color-text-main: #332424;
+  --color-text-sec: #6F5A55;
+  --color-border-warm: #D7BBA8;
+  --color-status-success: #4F735A;
+  --color-status-warning: #B97932;
+  --color-status-error: #A63F45;
 }
 
-/* Teatro Premium Design System Utilities */
-.bg-gold-gradient {
-  background: linear-gradient(135deg, #FFDF00 0%, #D4AF37 50%, #996515 100%);
+/* Resto Bar Del Teatro Warm Design System Utilities */
+.bg-warm-main {
+  background-color: #F3E7DB;
 }
 
-.bg-theater-black {
-  background-color: #0F0A07;
+.bg-card-warm {
+  background-color: #FFF9F4;
 }
 
-.text-gold-gradient {
-  background: linear-gradient(135deg, #FFF099 0%, #D4AF37 50%, #AA7A1E 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.bg-surface-sec {
+  background-color: #E8D4C3;
 }
 
-.gold-glow {
-  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.28);
+.bg-burgundy {
+  background-color: #843747;
 }
 
-.gold-glow-lg {
-  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.45);
+.bg-burgundy-hover:hover {
+  background-color: #71303D;
 }
 
-.gold-border {
-  border: 1px solid rgba(212, 175, 55, 0.25);
+.text-burgundy {
+  color: #843747;
 }
 
-.gold-border-focus:focus {
-  border-color: #D4AF37;
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+.text-warm-main {
+  color: #332424;
+}
+
+.text-warm-sec {
+  color: #6F5A55;
+}
+
+.border-warm {
+  border-color: #D7BBA8;
+}
+
+.warm-shadow {
+  box-shadow: 0 4px 18px rgba(132, 55, 71, 0.08);
+}
+
+.warm-shadow-lg {
+  box-shadow: 0 8px 25px rgba(132, 55, 71, 0.14);
 }
 
 /* GPU Accelerated Anti-Lag Utilities */
@@ -58,88 +72,18 @@
   backface-visibility: hidden;
 }
 
-/* Custom Gold Scrollbar for Compact Comanda Digital */
-.custom-gold-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #D4AF37 #1A110B;
-}
-
-.custom-gold-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-gold-scrollbar::-webkit-scrollbar-track {
-  background: #1A110B;
-  border-radius: 8px;
-}
-
-.custom-gold-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #FFDF00 0%, #D4AF37 50%, #996515 100%);
-  border-radius: 8px;
-}
-
-.custom-gold-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #FFDF00;
-}
-
-/* Premium Scrollbars */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #FDFBF7;
+  background: #F3E7DB;
 }
 ::-webkit-scrollbar-thumb {
-  background: #C2956E;
+  background: #D7BBA8;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2C1810;
-}
-
-/* Glassmorphism Effect */
-.glass-morphic {
-  background: rgba(253, 251, 247, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(44, 24, 16, 0.08);
-}
-
-/* Premium Gold Text Gradient */
-.text-gold-gradient {
-  background: linear-gradient(135deg, #2C1810 0%, #C2956E 50%, #2C1810 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Coffee Steam Micro-animation */
-@keyframes steamEffect {
-  0% {
-    transform: translateY(0) scaleX(0.8) rotate(0deg);
-    opacity: 0.1;
-  }
-  50% {
-    transform: translateY(-4px) scaleX(1) rotate(5deg);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translateY(-8px) scaleX(0.8) rotate(-5deg);
-    opacity: 0;
-  }
-}
-
-.animate-steam {
-  animation: steamEffect 2.8s infinite ease-in-out;
-}
-
-/* Smooth transition for active tab content */
-.tab-fade-enter {
-  opacity: 0;
-  transform: translateY(5px);
-}
-.tab-fade-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  background: #843747;
 }

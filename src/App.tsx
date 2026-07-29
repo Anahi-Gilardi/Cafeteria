@@ -244,9 +244,9 @@ export default function App() {
         const { data: userData } = await supabase.from("users_accounts").select("*");
         if (!userData || userData.length === 0) {
           const defaultUsers = [
-            { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@cafepuglia.com", password: "pablo123", role: "administrador", pin: "1111" },
-            { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@cafepuglia.com", password: "barista123", role: "barista", pin: "2222" },
-            { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@cafepuglia.com", password: "mesero123", role: "mesero", pin: "3333" }
+            { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@restobardelteatro.com", password: "pablo123", role: "administrador", pin: "1111" },
+            { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@restobardelteatro.com", password: "barista123", role: "barista", pin: "2222" },
+            { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@restobardelteatro.com", password: "mesero123", role: "mesero", pin: "3333" }
           ];
           await supabase.from("users_accounts").insert(defaultUsers);
         }

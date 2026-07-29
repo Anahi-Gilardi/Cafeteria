@@ -2,6 +2,7 @@ import React, { useState, FormEvent } from "react";
 import { Order } from "../types";
 import { ReportingService, CashClosureAudit } from "../services/ReportingService";
 import { formatARS } from "../utils/formatters";
+import { PresupuestoPDFService } from "../services/PresupuestoPDFService";
 import { Calculator, Download, FileText, TrendingUp, DollarSign, Award, AlertCircle, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -40,12 +41,23 @@ export default function ReportingModule({ orders, onShowNotification }: Reportin
             Balance por turno, arqueo de billetes en caja, análisis de productos más vendidos y exportación contable.
           </p>
         </div>
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 cursor-pointer uppercase tracking-wider gold-glow"
-        >
-          <Download className="h-4 w-4" /> Exportar CSV para Contador
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => PresupuestoPDFService.generatePresupuestoPDF()}
+            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#2A1B12] border border-[#D4AF37]/40 text-[#FFDF00] text-xs font-bold shadow-md hover:brightness-125 cursor-pointer uppercase tracking-wider"
+          >
+            <FileText className="h-4 w-4" /> Presupuesto Comercial PDF
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 cursor-pointer uppercase tracking-wider gold-glow"
+          >
+            <Download className="h-4 w-4" /> Exportar CSV para Contador
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

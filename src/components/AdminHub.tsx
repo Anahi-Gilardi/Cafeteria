@@ -6461,7 +6461,7 @@ export default function AdminHub({
                         type="email"
                         value={newUserEmail}
                         onChange={(e) => setNewUserEmail(e.target.value)}
-                        placeholder="juan@cafepuglia.com"
+                        placeholder="juan@restobardelteatro.com"
                         className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
                         required
                       />
@@ -6470,10 +6470,10 @@ export default function AdminHub({
                     <div className="space-y-1">
                       <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Contraseña de Acceso</label>
                       <input
-                        type="text"
+                        type="password"
                         value={newUserPassword}
                         onChange={(e) => setNewUserPassword(e.target.value)}
-                        placeholder="Min. 6 caracteres"
+                        placeholder="••••••••"
                         className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
                         required
                       />
@@ -6653,7 +6653,7 @@ export default function AdminHub({
                               </span>
                             </td>
                             {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                              <td className="p-3 text-center font-mono font-bold text-caramel">{user.pin}</td>
+                              <td className="p-3 text-center font-mono font-bold text-caramel">••••</td>
                             )}
                             {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
                               <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -7486,14 +7486,6 @@ export default function AdminHub({
 
         {/* Sidebar Bottom Widgets */}
         <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => PresupuestoPDFService.generatePresupuestoPDF()}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-[10px] font-black uppercase tracking-wider shadow-md hover:brightness-110 cursor-pointer gold-glow"
-          >
-            <FileText className="h-3.5 w-3.5" /> Presupuesto PDF ($2M / 12 Cuotas)
-          </button>
-
           <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px]">
             <span className="text-white/40 block font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Activity className="h-3 w-3 text-emerald-500 animate-pulse" /> Estado de Conexión

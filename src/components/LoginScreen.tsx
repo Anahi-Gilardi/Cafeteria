@@ -11,10 +11,10 @@ interface LoginScreenProps {
 
 const DEFAULT_USERS = [
   { id: "usr-admin", name: "Admin (Administrador)", email: "admin", password: "1998", role: "administrador", pin: "1998" },
-  { id: "usr-admin-full", name: "Admin (Administrador)", email: "admin@cafepuglia.com", password: "1998", role: "administrador", pin: "1998" },
-  { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@cafepuglia.com", password: "pablo123", role: "administrador", pin: "1111" },
-  { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@cafepuglia.com", password: "barista123", role: "barista", pin: "2222" },
-  { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@cafepuglia.com", password: "mesero123", role: "mesero", pin: "3333" }
+  { id: "usr-admin-full", name: "Admin (Administrador)", email: "admin@restobardelteatro.com", password: "1998", role: "administrador", pin: "1998" },
+  { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@restobardelteatro.com", password: "pablo123", role: "administrador", pin: "1111" },
+  { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@restobardelteatro.com", password: "barista123", role: "barista", pin: "2222" },
+  { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@restobardelteatro.com", password: "mesero123", role: "mesero", pin: "3333" }
 ];
 
 export default function LoginScreen({ onLoginSuccess, onShowNotification }: LoginScreenProps) {
