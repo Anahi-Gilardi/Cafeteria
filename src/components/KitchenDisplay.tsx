@@ -15,9 +15,53 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
   const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos">("all");
   const [activeMobileTab, setActiveMobileTab] = useState<"pendientes" | "preparando" | "finalizadas">("pendientes");
   const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
+  const [demoOrdersState, setDemoOrdersState] = useState<Order[]>(() => [
+    {
+      id: "PED-6487",
+      items: [
+        { name: "Empanada Criolla Cordobesa a Cuchillo", price: 2800, quantity: 1 },
+        { name: "Empanada Salteña Jugosa", price: 2800, quantity: 1 }
+      ],
+      total: 5600,
+      status: "Listo",
+      createdAt: new Date(Date.now() - 34 * 60000).toISOString(),
+      tableNumber: "Delivery",
+      clientAccountName: "AGUSTIN",
+      priceList: "Delivery",
+      fulfillmentType: "delivery",
+      estimatedMinutes: 20
+    },
+    {
+      id: "PED-7362",
+      items: [
+        { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
+      ],
+      total: 14975,
+      status: "Listo",
+      createdAt: new Date(Date.now() - 55 * 60000).toISOString(),
+      tableNumber: "Mesa 1",
+      clientAccountName: "CONSUMIDOR FINAL",
+      priceList: "Salon",
+      estimatedMinutes: 20
+    },
+    {
+      id: "PED-9413",
+      items: [
+        { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
+      ],
+      total: 14975,
+      status: "Listo",
+      createdAt: new Date(Date.now() - 21 * 60000).toISOString(),
+      tableNumber: "Mesa 2",
+      clientAccountName: "CONSUMIDOR FINAL",
+      priceList: "Salon",
+      estimatedMinutes: 20
+    }
+  ]);
 
   const handleUpdateStatus = (order: Order, newStatus: OrderStatusType) => {
     onOrderStatusUpdate(order.id, newStatus);
+    setDemoOrdersState(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
 
     if (newStatus === "Listo" && (order.priceList === "Takeaway" || order.type === "Llevar")) {
       WhatsAppNotificationService.sendReadyForPickupNotification({
@@ -70,71 +114,15 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
     return items.filter(it => getItemDestination(it.name) === destinationFilter);
   };
 
-  // Demo Seed Comandas when any column is empty
-  const demoSeedOrders: Order[] = useMemo(() => [
-    {
-      id: "PED-9413",
-      items: [
-        { name: "Bife de Chorizo a las Brasas con Papas", price: 28500, quantity: 2 },
-        { name: "Empanada Criolla Cordobesa a Cuchillo", price: 2800, quantity: 4 }
-      ],
-      total: 68200,
-      status: "Recibido",
-      createdAt: new Date(Date.now() - 6 * 60000).toISOString(),
-      tableNumber: "Mesa 4",
-      clientAccountName: "Carlos Gómez",
-      priceList: "Salon",
-      estimatedMinutes: 20
-    },
-    {
-      id: "PED-9414",
-      items: [
-        { name: "Sorrentinos de Jamón y Queso con Tuco", price: 17500, quantity: 1 },
-        { name: "Limonada Fresca con Menta y Jengibre (1L)", price: 6800, quantity: 1 }
-      ],
-      total: 24300,
-      status: "Preparando",
-      createdAt: new Date(Date.now() - 14 * 60000).toISOString(),
-      tableNumber: "Mesa 2",
-      clientAccountName: "Lucía Fernández",
-      priceList: "Salon",
-      estimatedMinutes: 15
-    },
-    {
-      id: "PED-9415",
-      items: [
-        { name: "Milanesa Napolitana Completa XL", price: 22500, quantity: 1 },
-        { name: "Chopp Cerveza Tirada Artesanal (500cc)", price: 7200, quantity: 2 }
-      ],
-      total: 36900,
-      status: "Listo",
-      createdAt: new Date(Date.now() - 28 * 60000).toISOString(),
-      tableNumber: "Mesa 7",
-      clientAccountName: "Marcos Juárez",
-      priceList: "Salon",
-      estimatedMinutes: 20
-    }
-  ], []);
-
-  // Merged Active Orders
+  // Merged Active Orders (excluding "Completado")
   const mergedOrders = useMemo(() => {
-    const realOrders = orders.filter(o => filterType === "all" || o.type === filterType);
-    if (realOrders.length === 0) {
-      return demoSeedOrders;
+    const activeReal = orders.filter(o => o.status !== "Completado" && (filterType === "all" || o.type === filterType || o.priceList === filterType));
+    if (activeReal.length > 0) {
+      return activeReal;
     }
-    
-    // Ensure all 3 states have at least 1 order for demo completeness
-    const result = [...realOrders];
-    const hasPendiente = result.some(o => o.status === "Recibido");
-    const hasPreparando = result.some(o => o.status === "Preparando");
-    const hasListo = result.some(o => o.status === "Listo" || o.status === "Completado");
-
-    if (!hasPendiente) result.push(demoSeedOrders[0]);
-    if (!hasPreparando) result.push(demoSeedOrders[1]);
-    if (!hasListo) result.push(demoSeedOrders[2]);
-
-    return result;
-  }, [orders, filterType, demoSeedOrders]);
+    // Fallback to demo orders state excluding archived
+    return demoOrdersState.filter(o => o.status !== "Completado" && (filterType === "all" || o.type === filterType || o.priceList === filterType));
+  }, [orders, filterType, demoOrdersState]);
 
   // Filtered Orders by Destination
   const activeOrders = useMemo(() => {
@@ -146,10 +134,10 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }, [mergedOrders, destinationFilter]);
 
-  // Split orders into 3 Kanban Columns
-  const pendingOrders = useMemo(() => activeOrders.filter(o => o.status === "Recibido"), [activeOrders]);
+  // Split active orders into 3 Kanban Columns (exclusively excluding "Completado")
+  const pendingOrders = useMemo(() => activeOrders.filter(o => o.status === "Recibido" || o.status === "Pendiente"), [activeOrders]);
   const inProgressOrders = useMemo(() => activeOrders.filter(o => o.status === "Preparando"), [activeOrders]);
-  const completedOrders = useMemo(() => activeOrders.filter(o => o.status === "Listo" || o.status === "Completado"), [activeOrders]);
+  const completedOrders = useMemo(() => activeOrders.filter(o => o.status === "Listo"), [activeOrders]);
 
   // Audio Notification
   useEffect(() => {
