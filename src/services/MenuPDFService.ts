@@ -316,7 +316,12 @@ export class MenuPDFService {
         doc.setTextColor(51, 36, 36);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
-        doc.text(item.name, textStartX, currentY + 3);
+
+        let displayName = item.name;
+        if (item.isOffer) displayName += "  [OFERTA DEL DÍA]";
+        else if (item.tags && item.tags.length > 0) displayName += `  [${item.tags[0].toUpperCase()}]`;
+
+        doc.text(displayName, textStartX, currentY + 3);
 
         // Price (Right aligned in Bordó #843747)
         doc.setTextColor(132, 55, 71);

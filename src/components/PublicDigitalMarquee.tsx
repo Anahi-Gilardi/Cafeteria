@@ -238,18 +238,18 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
     <div className="min-h-screen bg-[#F3E7DB] text-[#332424] font-sans pb-28">
       {/* Top Banner Marquee */}
       <div className="border-b border-white/10 bg-[#71303D] px-4 py-2.5 text-center text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-xs">
-        Carta actualizada · pedido directo a cocina · Constitución 944
+        📖 Carta Digital Informativa · Constitución 944 · Su mozo tomará el pedido en su mesa
       </div>
 
       {/* Hero Header */}
-      <header className="relative border-b border-[#D7BBA8] bg-[#FFF9F4] px-6 pb-9 pt-20">
+      <header className="relative border-b border-[#D7BBA8] bg-[#FFF9F4] px-6 pb-8 pt-16">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-7 md:flex-row">
           <div className="space-y-3 text-center md:text-left">
             <RestoBarLogo size="lg" className="justify-center md:justify-start" />
             <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#843747]">Carta digital</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#843747]">Carta digital informativa</span>
               <h1 className="mt-2 font-serif text-3xl font-black tracking-tight text-[#332424] md:text-5xl">
-                Elegí. Pedí. Disfrutá.
+                Conocé nuestra gastronomía.
               </h1>
             </div>
             <p className="flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#6F5A55] md:justify-start">
@@ -268,7 +268,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               }}
               className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]/40 cursor-pointer"
             >
-              <FileText className="h-4 w-4 text-[#843747]" /> Carta PDF
+              <FileText className="h-4 w-4 text-[#843747]" /> Descargar Carta PDF
             </button>
             <a
               href="https://instagram.com/restobardelteatro_rio4"
@@ -278,6 +278,16 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             >
               <Instagram className="h-4 w-4" /> Instagram
             </a>
+          </div>
+        </div>
+
+        {/* Read-Only Safety Notice Banner */}
+        <div className="mx-auto max-w-6xl mt-6 p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex items-center justify-between gap-3 text-xs text-[#332424]">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base shrink-0">📖</span>
+            <p className="text-[11px] font-semibold text-[#6F5A55]">
+              <strong className="text-[#843747]">Carta en Modo Lectura:</strong> Esta pantalla es de consulta visual de platos, fotos y precios. Su mozo registrará su pedido en la mesa para garantizar la precisión de la comanda en cocina.
+            </p>
           </div>
         </div>
       </header>
@@ -450,12 +460,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 <p className="text-xs text-[#6F5A55] leading-tight line-clamp-2">{item.description}</p>
                 <span className="text-sm font-black text-[#843747] block font-mono mt-1">${item.price.toLocaleString("es-AR")}</span>
               </div>
-              <button
-                onClick={() => addToCart(item)}
-                className="h-10 w-10 rounded-xl bg-[#E7C8CF] border border-[#843747] text-[#843747] hover:bg-[#843747] hover:text-white flex items-center justify-center cursor-pointer transition-all shrink-0"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
+              <span className="px-3 py-1.5 bg-[#E8D4C3]/60 border border-[#D7BBA8] rounded-xl text-[10px] font-bold text-[#843747] uppercase tracking-wider shrink-0">
+                Pedir al mozo
+              </span>
             </div>
           ))}
         </div>

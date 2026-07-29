@@ -280,9 +280,9 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
             {/* Simulated App Header inside Phone */}
             <div className="bg-[#2C1810] text-white pt-9 pb-5 px-5 text-center relative z-20 border-b border-[#C2956E]/20">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-[9px] font-mono tracking-wider text-[#F59E0B]">CARTA DIGITAL</span>
-                <span className="text-[9px] bg-emerald-600 px-2 py-0.5 rounded-full text-white font-bold animate-pulse">
-                  CONEXIÓN MESA
+                <span className="text-[9px] font-mono tracking-wider text-[#E8D4C3]">CARTA DIGITAL</span>
+                <span className="text-[9px] bg-[#843747] px-2.5 py-0.5 rounded-full text-white font-black tracking-wider uppercase">
+                  📖 SOLO LECTURA
                 </span>
               </div>
               <div className="flex justify-center mb-2">
@@ -432,21 +432,14 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
                           <div className="mt-2 flex items-center justify-between gap-2">
                             {/* Stock Indicator */}
                             <span className="text-[8px] font-mono font-medium uppercase text-espresso/50">
-                              {item.stock !== undefined ? `${item.stock} disponibles` : "Stock libre"}
+                              {item.stock !== undefined ? `${item.stock} disponibles` : "Disponible en mesa"}
                             </span>
 
-                            <button
-                              disabled={isOutOfStock}
-                              aria-label={`Pedir ${item.name} para su mesa`}
-                              onClick={() => {
-                                onAddToBag(item, { size: "M", milk: "Regular", sweetness: "100%" });
-                                onShowNotification(`🛒 Añadió ${item.name} para su Mesa.`, "success");
-                              }}
-                              className="rounded-full bg-espresso hover:bg-caramel text-paper font-bold text-[9px] px-3 py-1.5 transition-all shadow-xs cursor-pointer flex items-center gap-1 shrink-0"
+                            <span
+                              className="rounded-full bg-[#E8D4C3] text-[#843747] font-bold text-[9px] px-3 py-1 border border-[#D7BBA8] uppercase tracking-wider shrink-0"
                             >
-                              <span>Pedir</span>
-                              <Utensils className="h-2.5 w-2.5" />
-                            </button>
+                              Pedir al mozo
+                            </span>
                           </div>
                         </div>
                       </div>
