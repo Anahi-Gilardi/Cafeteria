@@ -7282,25 +7282,25 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 animate-fade-in text-[#FDFBF7]"
+        className="space-y-8 animate-fade-in text-[#332424]"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Análisis de Negocio & Auditoría POS</span>
-            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Reportes e Informes Ejecutivos</h2>
-            <p className="text-xs text-[#FDFBF7]/70 mt-1">Estadísticas reales de facturación, desglose por canal de pago, mermas y auditoría de comandas.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Análisis de Negocio & Auditoría POS</span>
+            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Reportes e Informes Ejecutivos</h2>
+            <p className="text-xs text-[#6F5A55] font-medium mt-1">Estadísticas reales de facturación, desglose por canal de pago, mermas y auditoría de comandas.</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider border-none"
             >
               <FileText className="h-4 w-4" /> Exportar Auditoría (.PDF)
             </button>
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black rounded-xl shadow-md hover:brightness-110 transition-all cursor-pointer uppercase tracking-wider gold-glow"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#E8D4C3] hover:bg-[#E7C8CF] text-[#843747] border border-[#D7BBA8] text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
             >
               <Download className="h-4 w-4" /> Exportar Auditoría (.csv)
             </button>
