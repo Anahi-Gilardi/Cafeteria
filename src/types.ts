@@ -131,16 +131,24 @@ export interface FiscalDetails {
   customerCuit?: string;
   customerName?: string;
   qrCodeUrl?: string;
+  issuerCuit?: string;
+  issuerName?: string;
+  issuerAddress?: string;
+  status?: "draft" | "authorizing" | "authorized" | "observed" | "rejected" | "uncertain";
+  observations?: string[];
+  errors?: string[];
 }
 
 export interface Order {
   id: string;
   items: {
+    itemId?: string;
     name: string;
     quantity: number;
     customizationSummary: string;
     price: number;
     customization?: MenuItemCustomization;
+    vatRate?: 0 | 10.5 | 21 | 27;
   }[];
   subtotal: number;
   tax: number;
@@ -165,7 +173,7 @@ export interface Order {
   customerPhone?: string;
   clientPhone?: string;
   whatsappMessageId?: string;
-  source?: "qr_mesa" | "public_menu" | "mozo" | "takeaway" | "delivery";
+  source?: "qr_mesa" | "public_menu" | "mozo" | "takeaway" | "delivery" | "offline_sync";
 }
 
 export interface ClientAccount {

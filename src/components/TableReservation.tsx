@@ -1,42 +1,50 @@
-import { useState, useMemo, FormEvent } from "react";
-import { TABLES_DATA } from "../data/menu";
+import { useState, useMemo, useEffect, FormEvent } from "react";
 import { Table, BookingTimeSlot, Reservation } from "../types";
 import { Calendar, Clock, Users, MapPin, Check, Phone, User, Landmark, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface TableReservationProps {
   bookings: Reservation[];
-  onConfirmReservation: (reservation: Reservation) => void;
+  onConfirmReservation: (
+    reservation: Reservation
+  ) => void | boolean | Promise<void | boolean>;
 }
 
 export default function TableReservation({ bookings = [], onConfirmReservation }: TableReservationProps) {
-  // Dynamic tables list loaded from configured layout
-  const tables = useMemo(() => {
-    try {
-      const saved = localStorage.getItem("puglia_tables");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((t: any) => t && t.status === "Activo").map((t: any, idx: number) => {
-            const defaultTable = TABLES_DATA[idx] || TABLES_DATA[idx % TABLES_DATA.length];
-            const cap = t.capacity || 2;
-            return {
-              id: t.id,
-              name: t.name || `Mesa ${idx + 1}`,
-              capacity: cap,
-              type: defaultTable?.type || "table",
-              description: defaultTable?.description || `Mesa de salón para ${cap} comensales.`,
-              coordX: defaultTable?.coordX || (20 + (idx * 15) % 60),
-              coordY: defaultTable?.coordY || (20 + Math.floor(idx / 4) * 20),
-              status: "Libre" as const
-            };
-          });
+  const [tables, setTables] = useState<Table[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("restaurant_tables")
+      .select("id,name,capacity")
+      .eq("active", true)
+      .order("name")
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error("No se pudieron cargar las mesas disponibles:", error.message);
+          setTables([]);
+          return;
         }
-      }
-    } catch (e) {
-      console.error("Error loading dynamic tables for reservation:", e);
-    }
-    return TABLES_DATA;
+        const tableTypes: Table["type"][] = ["window", "sofa", "bar", "terrace", "reading"];
+        setTables(
+          (data || []).map((table, index) => ({
+            id: table.id,
+            name: table.name,
+            capacity: Number(table.capacity),
+            type: tableTypes[index % tableTypes.length],
+            description: `Mesa de salón para ${table.capacity} comensales.`,
+            coordX: 18 + (index % 4) * 18,
+            coordY: 22 + Math.floor(index / 4) * 26,
+            status: "Libre"
+          }))
+        );
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Input states
@@ -90,7 +98,7 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
   }, [selectedTableId, tables]);
 
   // Handle reserve submission
-  const handleSubmitBooking = (e: FormEvent) => {
+  const handleSubmitBooking = async (e: FormEvent) => {
     e.preventDefault();
     setFormError("");
 
@@ -110,11 +118,7 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
     const matchedTable = tables.find(t => t.id === selectedTableId)!;
     
     // Generate a unique reference
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let ref = "REF-";
-    for (let i = 0; i < 6; i++) {
-      ref += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const ref = `REF-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 
     const booking: Reservation = {
       id: "res-" + Date.now(),
@@ -129,7 +133,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
       referenceCode: ref
     };
 
-    onConfirmReservation(booking);
+    const result = await onConfirmReservation(booking);
+    if (result === false) return;
     setRecentBooking(booking);
     setIsBooked(true);
   };
@@ -219,8 +224,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
 
                   {/* Guests */}
                   <div>
-                    <label htmlFor="booking-guests-selector" className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1.5 font-semibold">Personas</label>
-                    <div id="booking-guests-selector" className="flex items-center space-x-1.5 rounded-xl bg-[#2A1B12] p-1 border border-[#D4AF37]/30">
+                    <label htmlFor="booking-guests-selector" className="text-xs font-bold uppercase tracking-wider text-[#843747] block mb-1.5 font-semibold">Personas</label>
+                    <div id="booking-guests-selector" className="flex items-center space-x-1.5 rounded-xl bg-[#71303D] p-1 border border-[#843747]/30">
                       {[1, 2, 4, 6].map((num) => (
                         <button
                           type="button"
@@ -232,8 +237,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                           }}
                           className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                             selectedGuests === num
-                              ? "bg-gradient-to-r from-[#FFDF00] to-[#D4AF37] text-[#1C120C] font-black shadow-sm"
-                              : "text-[#FDFBF7]/70 hover:text-[#FDFBF7] bg-[#1C120C]"
+                              ? "bg-gradient-to-r from-[#E7C8CF] to-[#843747] text-[#332424] font-black shadow-sm"
+                              : "text-[#FFF9F4]/70 hover:text-[#FFF9F4] bg-[#332424]"
                           }`}
                         >
                           {num === 1 ? "1p" : num === 2 ? "2p" : num === 4 ? "4p" : "6p+"}
@@ -325,6 +330,11 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                     </div>
 
                     {/* Map Tables Placement */}
+                    {tables.length === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center text-center text-xs text-espresso/60 px-8">
+                        No hay mesas activas disponibles para reserva.
+                      </div>
+                    )}
                     {tables.map((table) => {
                       const isUnavailable = unavailableTableIds.includes(table.id);
                       const isSelected = selectedTableId === table.id;
@@ -387,16 +397,16 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Name */}
                     <div>
-                      <label htmlFor="booking-name-input" className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1.5 font-semibold">Nombre Completo *</label>
+                      <label htmlFor="booking-name-input" className="text-xs font-bold uppercase tracking-wider text-[#843747] block mb-1.5 font-semibold">Nombre Completo *</label>
                       <div className="relative">
-                        <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#D4AF37]" />
+                        <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#843747]" />
                         <input
                           type="text"
                           id="booking-name-input"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
                           placeholder="Ingrese su nombre"
-                          className="w-full rounded-xl border border-[#D4AF37]/30 bg-[#1C120C] py-2.5 pr-4 pl-10 text-sm outline-none focus:border-[#FFDF00] text-[#FDFBF7] font-medium"
+                          className="w-full rounded-xl border border-[#843747]/30 bg-[#332424] py-2.5 pr-4 pl-10 text-sm outline-none focus:border-[#E7C8CF] text-[#FFF9F4] font-medium"
                           required
                         />
                       </div>
@@ -404,16 +414,16 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
 
                     {/* Phone */}
                     <div>
-                      <label htmlFor="booking-phone-input" className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] block mb-1.5 font-semibold">Teléfono Móvil *</label>
+                      <label htmlFor="booking-phone-input" className="text-xs font-bold uppercase tracking-wider text-[#843747] block mb-1.5 font-semibold">Teléfono Móvil *</label>
                       <div className="relative">
-                        <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#D4AF37]" />
+                        <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#843747]" />
                         <input
                           type="tel"
                           id="booking-phone-input"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
                           placeholder="ej: +54 358 504 2311"
-                          className="w-full rounded-xl border border-[#D4AF37]/30 bg-[#1C120C] py-2.5 pr-4 pl-10 text-sm outline-none focus:border-[#FFDF00] text-[#FDFBF7] font-medium"
+                          className="w-full rounded-xl border border-[#843747]/30 bg-[#332424] py-2.5 pr-4 pl-10 text-sm outline-none focus:border-[#E7C8CF] text-[#FFF9F4] font-medium"
                           required
                         />
                       </div>
@@ -424,11 +434,11 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                     <p className="text-xs font-bold text-rose-300 bg-rose-950/80 border border-rose-500/50 p-2.5 rounded-lg">{formError}</p>
                   )}
 
-                  <div className="pt-4 border-t border-[#D4AF37]/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="text-xs text-[#FDFBF7]/70 leading-snug">
+                  <div className="pt-4 border-t border-[#843747]/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="text-xs text-[#FFF9F4]/70 leading-snug">
                       {selectedTable ? (
                         <>
-                          Reservando: <strong className="text-[#FFDF00] font-bold">{selectedTable.name}</strong> para {selectedGuests} personas el {selectedDate} ({selectedTimeSlot}).
+                          Reservando: <strong className="text-[#E7C8CF] font-bold">{selectedTable.name}</strong> para {selectedGuests} personas el {selectedDate} ({selectedTimeSlot}).
                         </>
                       ) : (
                         "Selecciona una mesa en el plano de arriba para continuar."
@@ -437,9 +447,9 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                     <button
                       type="submit"
                       id="confirm-booking-submit-btn"
-                      className={`rounded-full px-8 py-3 text-xs font-black uppercase tracking-wider text-[#1C120C] shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer ${
+                      className={`rounded-full px-8 py-3 text-xs font-black uppercase tracking-wider text-[#332424] shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer ${
                         selectedTableId && customerName.trim() && customerPhone.trim()
-                          ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] hover:brightness-110 gold-glow" 
+                          ? "bg-gradient-to-r from-[#925063] via-[#843747] to-[#71303D] hover:brightness-110 text-white"
                           : "bg-gray-700/40 text-gray-400 border border-gray-600/30 cursor-not-allowed"
                       }`}
                       disabled={!selectedTableId || !customerName.trim() || !customerPhone.trim()}
@@ -578,7 +588,7 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Reserva Activa</span>
                 </div>
-                <span>Ubicación: Calle 50 nro 600, La Plata</span>
+                <span>Ubicación: consulte el domicilio publicado del comercio</span>
               </div>
             </div>
 

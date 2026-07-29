@@ -1,3 +1,5 @@
+import { supabase } from "../lib/supabase";
+
 export interface WaiterCall {
   id: string;
   tableNumber: string;
@@ -7,63 +9,76 @@ export interface WaiterCall {
   status: "pending" | "attended";
 }
 
+function mapCall(row: any): WaiterCall {
+  return {
+    id: row.id,
+    tableNumber: row.table_name,
+    type: row.call_type,
+    customerName: row.customer_name || undefined,
+    timestamp: new Date(row.created_at).toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit"
+    }),
+    status: row.status
+  };
+}
+
 class WaiterCallService {
-  private static instance: WaiterCallService;
-  private calls: WaiterCall[] = [];
-
-  private constructor() {
-    try {
-      const saved = localStorage.getItem("puglia_waiter_calls");
-      if (saved) {
-        this.calls = JSON.parse(saved);
+  public async requestAttention(
+    tableNumber: string,
+    type: "call_waiter" | "request_bill",
+    customerName?: string
+  ): Promise<WaiterCall> {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+    if (!session) {
+      const { data, error } = await supabase.functions.invoke("create-waiter-call", {
+        body: { tableName: tableNumber, type, customerName }
+      });
+      if (error || !data?.call) {
+        throw new Error(error?.message || data?.error || "No se pudo enviar la solicitud.");
       }
-    } catch (e) {
-      console.error("Error loading waiter calls:", e);
+      return mapCall(data.call);
     }
+    const { data, error } = await supabase
+      .from("waiter_calls")
+      .insert({
+        table_name: tableNumber,
+        call_type: type,
+        customer_name: customerName || null,
+        status: "pending"
+      })
+      .select("*")
+      .single();
+    if (error) throw error;
+    return mapCall(data);
   }
 
-  public static getInstance(): WaiterCallService {
-    if (!WaiterCallService.instance) {
-      WaiterCallService.instance = new WaiterCallService();
-    }
-    return WaiterCallService.instance;
+  public async markAttended(callId: string): Promise<void> {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("waiter_calls")
+      .update({
+        status: "attended",
+        attended_by: user?.id || null,
+        attended_at: new Date().toISOString()
+      })
+      .eq("id", callId);
+    if (error) throw error;
   }
 
-  public requestAttention(tableNumber: string, type: "call_waiter" | "request_bill", customerName?: string): WaiterCall {
-    const newCall: WaiterCall = {
-      id: "CALL-" + Date.now(),
-      tableNumber,
-      type,
-      customerName: customerName || "Cliente",
-      timestamp: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-      status: "pending"
-    };
-
-    this.calls.unshift(newCall);
-    this.save();
-
-    // Dispatch event for real-time update
-    window.dispatchEvent(new CustomEvent("waiter_call_event", { detail: newCall }));
-    return newCall;
-  }
-
-  public markAttended(callId: string): void {
-    this.calls = this.calls.map(c => c.id === callId ? { ...c, status: "attended" } : c);
-    this.save();
-    window.dispatchEvent(new Event("waiter_calls_updated"));
-  }
-
-  public getPendingCalls(): WaiterCall[] {
-    return this.calls.filter(c => c.status === "pending");
-  }
-
-  private save(): void {
-    try {
-      localStorage.setItem("puglia_waiter_calls", JSON.stringify(this.calls));
-    } catch (e) {
-      console.error("Error saving waiter calls:", e);
-    }
+  public async getPendingCalls(): Promise<WaiterCall[]> {
+    const { data, error } = await supabase
+      .from("waiter_calls")
+      .select("*")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data || []).map(mapCall);
   }
 }
 
-export default WaiterCallService.getInstance();
+export default new WaiterCallService();

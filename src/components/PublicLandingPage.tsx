@@ -1,33 +1,65 @@
-import React, { useState, useEffect } from "react";
-import { 
-  Sparkles, 
-  FileText, 
-  Utensils, 
-  Clock, 
-  MapPin, 
-  PhoneCall, 
-  Lock, 
-  Star, 
-  ShieldCheck,
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
   Calendar,
+  CheckCircle2,
+  Clock,
+  Coffee,
+  ExternalLink,
+  FileText,
+  Lock,
+  MapPin,
   Menu,
-  X,
-  ExternalLink
+  PhoneCall,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Utensils,
+  X
 } from "lucide-react";
-import { MenuItem } from "../types";
-import { MENU_ITEMS } from "../data/menu";
-import { MenuPDFService } from "../services/MenuPDFService";
-import { getTodayExecutiveMenu } from "../data/dailyMenus";
+import { DailyExecutiveMenu, MenuItem } from "../types";
 import RestoBarLogo from "./RestoBarLogo";
 import LoginScreen from "./LoginScreen";
 import TableReservation from "./TableReservation";
 import { PublicDigitalMarquee } from "./PublicDigitalMarquee";
+import { ReservationService } from "../services/ReservationService";
+import { supabase } from "../lib/supabase";
 
 interface PublicLandingPageProps {
   menuItems: MenuItem[];
   onLoginSuccess: (user: { id: string; name: string; email: string; role: string; pin?: string }) => void;
   onShowNotification: (message: string, type: "success" | "info" | "warning") => void;
 }
+
+const formatPrice = (value: number) => `$${value.toLocaleString("es-AR")}`;
+
+const CatalogImage: React.FC<{
+  src?: string;
+  alt: string;
+  className: string;
+  loading?: "eager" | "lazy";
+}> = ({ src, alt, className, loading = "lazy" }) => {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-gradient-to-br from-[#E7C8CF] via-[#D1AD95] to-[#843747]`}>
+        <div className="rounded-2xl border border-white/25 bg-[#332424]/80 px-4 py-3 text-center text-[#FFF9F4] backdrop-blur-sm">
+          <Coffee className="mx-auto h-5 w-5 text-[#E7C8CF]" />
+          <span className="mt-2 block text-[9px] font-black uppercase tracking-[0.16em]">Castaño</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading={loading}
+      onError={() => setFailed(true)}
+      className={className}
+    />
+  );
+};
 
 export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   menuItems,
@@ -38,35 +70,80 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"landing" | "digital_menu">("landing");
-  const [todayMenu, setTodayMenu] = useState(() => getTodayExecutiveMenu());
+  const [todayMenu, setTodayMenu] = useState<DailyExecutiveMenu | null>(null);
+
+  const publicItems = useMemo(
+    () =>
+      [...menuItems]
+        .filter((item) => item.price > 0 && (item.stock === undefined || item.stock > 0))
+        .sort((a, b) => {
+          const offerDifference = Number(Boolean(b.isOffer)) - Number(Boolean(a.isOffer));
+          if (offerDifference !== 0) return offerDifference;
+          const executiveDifference = Number(b.category === "executive") - Number(a.category === "executive");
+          if (executiveDifference !== 0) return executiveDifference;
+          return a.name.localeCompare(b.name, "es");
+        }),
+    [menuItems]
+  );
+  const heroItem = publicItems[0];
+  const supportingVisuals = publicItems.slice(1, 3);
+  const featuredPublicItems = publicItems.slice(0, todayMenu ? 2 : 3);
 
   useEffect(() => {
-    const handleUpdate = () => {
-      setTodayMenu(getTodayExecutiveMenu());
+    const loadTodayMenu = async () => {
+      const days: DailyExecutiveMenu["dayOfWeek"][] = [
+        "Domingo",
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado"
+      ];
+      const dayOfWeek = days[new Date().getDay()];
+      const { data, error } = await supabase
+        .from("daily_menu")
+        .select("*")
+        .eq("day_of_week", dayOfWeek)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("No se pudo cargar el menú diario desde Supabase:", error.message);
+        return;
+      }
+      if (!data) {
+        setTodayMenu(null);
+        return;
+      }
+      setTodayMenu({
+        dayOfWeek: data.day_of_week,
+        title: data.title,
+        description: data.description || "",
+        price: Number(data.price),
+        image: data.image || undefined,
+        starters: data.starters || [],
+        mains: data.mains || [],
+        drinks: data.drinks || [],
+        desserts: data.desserts || [],
+        active: data.active
+      });
     };
+
+    const handleUpdate = () => void loadTodayMenu();
+    void loadTodayMenu();
     window.addEventListener("daily_menus_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("daily_menus_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
+    return () => window.removeEventListener("daily_menus_updated", handleUpdate);
   }, []);
 
-  // Lock scroll and handle escape key when modal is open
   useEffect(() => {
-    const isAnyModalOpen = isReservationModalOpen || isLoginModalOpen;
-    if (isAnyModalOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsReservationModalOpen(false);
-        setIsLoginModalOpen(false);
-        setIsMobileMenuOpen(false);
-      }
+    const hasOpenModal = isReservationModalOpen || isLoginModalOpen;
+    document.body.style.overflow = hasOpenModal ? "hidden" : "";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsReservationModalOpen(false);
+      setIsLoginModalOpen(false);
+      setIsMobileMenuOpen(false);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
@@ -75,468 +152,572 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
     };
   }, [isReservationModalOpen, isLoginModalOpen]);
 
-  const handleDownloadPDF = () => {
-    const activeItems = menuItems && menuItems.length > 0 ? menuItems : MENU_ITEMS;
-    MenuPDFService.generateMenuPDF(activeItems);
-    onShowNotification("📄 Descargando Carta PDF Oficial de Resto Bar Del Teatro...", "info");
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [viewMode]);
+
+  const handleDownloadPDF = async () => {
+    const { MenuPDFService } = await import("../services/MenuPDFService");
+    MenuPDFService.generateMenuPDF(menuItems);
+    onShowNotification("Descargando la carta oficial actualizada.", "info");
   };
 
   if (viewMode === "digital_menu") {
     return (
-      <div className="relative min-h-screen bg-[#FAF8F5]">
-        <div className="fixed top-4 left-4 z-50">
+      <div className="relative min-h-screen bg-[#F3E7DB]">
+        <div className="fixed left-4 top-4 z-50 sm:left-6 sm:top-6">
           <button
+            type="button"
             onClick={() => setViewMode("landing")}
-            className="px-5 py-2.5 rounded-2xl bg-white border-2 border-[#D4AF37] text-[#1C120C] text-xs font-black shadow-xl hover:bg-[#FAF8F5] transition-all cursor-pointer flex items-center gap-2 uppercase tracking-wider"
-            aria-label="Volver a Portada Publicitaria"
+            className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-[#FFF9F4]/95 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#843747] shadow-xl backdrop-blur-md transition-colors hover:bg-white"
+            aria-label="Volver a la portada"
           >
-            ← Volver a Portada Publicitaria
+            <ArrowRight className="h-4 w-4 rotate-180" />
+            Volver
           </button>
         </div>
-        <PublicDigitalMarquee
-          menuItems={menuItems.length > 0 ? menuItems : MENU_ITEMS}
-          onShowNotification={onShowNotification}
-        />
+        <PublicDigitalMarquee menuItems={menuItems} onShowNotification={onShowNotification} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#1C120C] font-sans selection:bg-[#D4AF37] selection:text-white pb-24 sm:pb-16">
-      {/* Top Marketing Banner */}
-      <div className="bg-gradient-to-r from-[#D4AF37] via-[#C59B27] to-[#996515] text-white py-2.5 px-4 text-center font-black text-xs uppercase tracking-widest shadow-md flex items-center justify-center gap-2">
-        <Sparkles className="h-4 w-4 animate-spin shrink-0" />
-        <span>🎭 RESTO BAR DEL TEATRO • MENÚ EJECUTIVO PROMOCIONAL $12.500 • CONSTITUCIÓN 944, RÍO CUARTO</span>
-        <Sparkles className="h-4 w-4 animate-spin shrink-0" />
+    <div className="min-h-screen overflow-x-hidden bg-[#F3E7DB] pb-20 font-sans text-[#332424] selection:bg-[#843747] selection:text-white sm:pb-0">
+      <div className="border-b border-white/10 bg-[#71303D] px-4 py-2.5 text-center text-[10px] font-black uppercase tracking-[0.16em] text-[#FFF9F4] sm:text-xs">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#E7C8CF]" />
+          <span>
+            {todayMenu
+              ? `${todayMenu.title} · ${formatPrice(todayMenu.price)} · disponible hoy`
+              : "Carta digital y reservas · Constitución 944 · Río Cuarto"}
+          </span>
+        </div>
       </div>
 
-      {/* Modern Luminous Header */}
-      <nav className="border-b border-[#E2D4C3] bg-white/95 backdrop-blur-md sticky top-0 z-40 px-6 py-4 shadow-xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <RestoBarLogo size="md" />
+      <nav className="sticky top-0 z-40 border-b border-[#D7BBA8]/80 bg-[#FFF9F4]/95 px-4 backdrop-blur-xl sm:px-6">
+        <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-4">
+          <a href="#inicio" className="rounded-xl" aria-label="Ir al inicio">
+            <RestoBarLogo size="lg" />
+          </a>
+
+          <div className="hidden items-center gap-7 text-[10px] font-black uppercase tracking-[0.14em] text-[#6F5A55] lg:flex">
+            <a href="#carta" className="transition-colors hover:text-[#843747]">La carta</a>
+            <a href="#experiencia" className="transition-colors hover:text-[#843747]">La experiencia</a>
+            <a href="#visitanos" className="transition-colors hover:text-[#843747]">Visitanos</a>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 text-xs font-black uppercase tracking-widest text-[#4A3B32]">
-            <a href="#promos" className="hover:text-[#B8860B] transition-colors">Promociones</a>
-            <a href="#experiencia" className="hover:text-[#B8860B] transition-colors">Experiencia</a>
-            <a href="#horarios" className="hover:text-[#B8860B] transition-colors">Horarios & Ubicación</a>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleDownloadPDF}
-              className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#D4AF37] text-[#1C120C] text-xs font-bold shadow-xs hover:bg-[#FAF8F5] transition-all cursor-pointer"
-              aria-label="Descargar Carta PDF Oficial"
-            >
-              <FileText className="h-4 w-4 text-[#B8860B]" /> Carta PDF
-            </button>
-
-            <button
-              onClick={() => setIsLoginModalOpen(true)}
-              className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-black shadow-md hover:brightness-110 active:scale-98 transition-all cursor-pointer uppercase tracking-wider"
-              aria-label="Acceso a POS y Personal"
-            >
-              <Lock className="h-4 w-4" /> Acceso POS / Personal
-            </button>
-
-            {/* Mobile Hamburger Toggle Button */}
+          <div className="hidden items-center gap-2 sm:flex">
             <button
               type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl bg-[#FAF8F5] border border-[#D4AF37] text-[#1C120C] hover:bg-white"
-              aria-label="Abrir menú de navegación móvil"
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]/50"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6 text-[#B8860B]" /> : <Menu className="h-6 w-6 text-[#B8860B]" />}
+              <FileText className="h-4 w-4" />
+              Carta PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsLoginModalOpen(true)}
+              aria-label="Acceso a POS y Personal"
+              className="flex items-center gap-2 rounded-full bg-[#843747] px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-[#71303D]"
+            >
+              <Lock className="h-4 w-4" />
+              Personal
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+            className="rounded-xl border border-[#D7BBA8] bg-white p-2.5 text-[#843747] sm:hidden"
+            aria-label="Abrir menú de navegación móvil"
+            aria-expanded={isMobileMenuOpen}
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
 
-        {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div className="md:hidden pt-4 pb-2 border-t border-[#E2D4C3] mt-3 space-y-3 font-bold text-xs uppercase tracking-wider text-[#4A3B32]">
-            <a href="#promos" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-2 hover:bg-[#FAF8F5] rounded-lg">Promociones</a>
-            <a href="#experiencia" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-2 hover:bg-[#FAF8F5] rounded-lg">Experiencia</a>
-            <a href="#horarios" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 px-2 hover:bg-[#FAF8F5] rounded-lg">Horarios & Ubicación</a>
-            <button 
-              onClick={() => { setIsMobileMenuOpen(false); handleDownloadPDF(); }}
-              className="w-full text-left py-2 px-2 text-[#B8860B] font-black flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" /> Descargar Carta PDF Oficial
-            </button>
-            <button 
-              onClick={() => { setIsMobileMenuOpen(false); setIsLoginModalOpen(true); }}
-              className="w-full text-left py-2.5 px-3 bg-[#1C120C] text-[#FFDF00] rounded-xl font-black flex items-center gap-2"
-            >
-              <Lock className="h-4 w-4 text-[#D4AF37]" /> Acceso POS / Personal
-            </button>
+          <div className="mx-auto max-w-7xl space-y-1 border-t border-[#D7BBA8] py-3 text-xs font-bold text-[#332424] sm:hidden">
+            {[
+              ["#carta", "La carta"],
+              ["#experiencia", "La experiencia"],
+              ["#visitanos", "Visitanos"]
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block rounded-xl px-3 py-2.5 hover:bg-[#E7C8CF]/40"
+              >
+                {label}
+              </a>
+            ))}
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  void handleDownloadPDF();
+                }}
+                className="rounded-xl border border-[#D7BBA8] bg-white px-3 py-2.5 text-[#843747]"
+              >
+                Carta PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsLoginModalOpen(true);
+                }}
+                className="rounded-xl bg-[#843747] px-3 py-2.5 text-white"
+              >
+                Acceso personal
+              </button>
+            </div>
           </div>
         )}
       </nav>
 
-      {/* Hero Section - Luminous Gastronomic Marketing */}
-      <header className="relative py-16 md:py-20 px-6 overflow-hidden bg-gradient-to-b from-white via-[#FAF8F5] to-[#FAF8F5] border-b border-[#E2D4C3]">
-        <div className="max-w-5xl mx-auto text-center space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FFF8E7] border border-[#F3E5C8] text-[#B8860B] text-xs font-black tracking-widest uppercase shadow-xs">
-            <Star className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" /> Gastronomía de Autor Frente al Teatro Municipal <Star className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
-          </div>
-
-          <h1 className="font-serif text-5xl md:text-7xl font-extrabold text-[#1C120C] tracking-tight leading-tight">
-            RESTO BAR <span className="bg-gradient-to-r from-[#D4AF37] via-[#B8860B] to-[#996515] bg-clip-text text-transparent">DEL TEATRO</span>
-          </h1>
-
-          <p className="text-base md:text-xl text-[#4A3B32] max-w-3xl mx-auto font-normal leading-relaxed">
-            Cafetería de especialidad por las mañanas, Menú Ejecutivo gourmet al mediodía y la mejor cocina de autor por las noches. Una experiencia gastronómica distinguida e inolvidable en Río Cuarto.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4 pt-4">
-            <button
-              onClick={() => setViewMode("digital_menu")}
-              className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-[#C59B27] to-[#996515] text-white font-black text-sm uppercase tracking-wider shadow-xl hover:scale-102 active:scale-98 transition-all cursor-pointer"
-              aria-label="Ver Menú Digital y Pedir por WhatsApp"
-            >
-              <Utensils className="h-5 w-5" /> Ver Menú Digital & Pedir por WhatsApp
-            </button>
-
-            <button
-              onClick={handleDownloadPDF}
-              className="flex items-center gap-3 px-7 py-4 rounded-2xl bg-white border-2 border-[#D4AF37] text-[#1C120C] font-black text-sm uppercase tracking-wider shadow-md hover:bg-[#FAF8F5] transition-all cursor-pointer"
-              aria-label="Descargar Carta PDF Oficial"
-            >
-              <FileText className="h-5 w-5 text-[#B8860B]" /> Descargar Carta PDF Oficial
-            </button>
-          </div>
-
-          {/* HIGH-IMPACT MARKETING SHOWCASE: MENÚ DEL DÍA ($12.500) */}
-          <div className="mt-8 max-w-4xl mx-auto bg-gradient-to-br from-[#1C120C] via-[#2A1B12] to-[#1C120C] text-[#FDFBF7] border-2 border-[#D4AF37] rounded-3xl p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden text-left gold-glow">
-            <div className="flex flex-wrap justify-between items-center gap-3 border-b border-[#D4AF37]/30 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#FFDF00] bg-[#FFDF00]/10 px-3 py-1 rounded-full border border-[#FFDF00]/30 font-mono">
-                  🔥 OFERTA DEL MEDIODÍA • {todayMenu.dayOfWeek.toUpperCase()}
-                </span>
+      <main>
+        <header id="inicio" className="relative isolate border-b border-[#D7BBA8] bg-[#FFF9F4]">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(231,200,207,0.55),transparent_34%),radial-gradient(circle_at_92%_82%,rgba(209,173,149,0.35),transparent_30%)]" />
+          <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-14 sm:px-6 sm:py-18 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16 lg:py-20">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#843747]/15 bg-[#E7C8CF]/55 px-3.5 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-[#843747] sm:text-[10px]">
+                <Star className="h-3.5 w-3.5 fill-[#843747]" />
+                Gastronomía frente al Teatro Municipal
               </div>
-              <div className="flex items-center gap-2 text-xs text-[#D4AF37] font-bold">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>Vianda del Día • <strong>$12.500 ARS</strong></span>
-              </div>
-            </div>
 
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-serif text-2xl md:text-3xl font-extrabold text-[#FFDF00] tracking-tight">
-                  ⭐ MENÚ DEL DÍA
-                </h3>
-                <span className="text-2xl md:text-3xl font-black font-mono text-[#FFDF00] bg-[#2A1B12] px-5 py-2 rounded-2xl border-2 border-[#D4AF37] shadow-xl gold-glow">
-                  $12.500
-                </span>
-              </div>
-              <p className="text-xs text-[#FDFBF7]/80 italic font-medium">
-                Plato fresco y abundante elaborado en el día por nuestro Chef. Listo para consumir en el local o llevar en vianda.
-              </p>
-            </div>
-
-            <div className="bg-[#130B07]/90 p-5 rounded-2xl border border-[#D4AF37]/30 space-y-2">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] block">🍱 OPICIONES DE VIANDA / PLATO PRINCIPAL DEL DÍA ($12.500)</span>
-              <p className="text-sm text-[#FDFBF7] font-serif font-bold leading-relaxed">
-                {todayMenu.mains.join(" • ")}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                onClick={() => {
-                  const message = `Hola Resto Bar Del Teatro, quiero encargar el Menú del Día (${todayMenu.dayOfWeek}) por $12.500.`;
-                  window.open(`https://wa.me/543585042311?text=${encodeURIComponent(message)}`, "_blank");
-                  onShowNotification("📱 Abriendo chat de WhatsApp para pedir el Menú del Día ($12.500)...", "success");
-                }}
-                className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-700 hover:brightness-110 text-white font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-              >
-                💬 Pedir Menú del Día por WhatsApp ($12.500)
-              </button>
-              <button
-                onClick={() => setViewMode("digital_menu")}
-                className="py-4 px-6 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110 cursor-pointer gold-glow flex items-center justify-center gap-2"
-              >
-                🍽️ Ver Menú Digital & Pedir
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Featured Promo Cards Section */}
-      <section id="promos" className="max-w-7xl mx-auto py-12 px-6 space-y-8">
-        <div className="text-center space-y-2">
-          <span className="text-xs font-black uppercase tracking-widest text-[#B8860B]">Propuestas Gastronómicas</span>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#1C120C]">Especialidades de la Casa</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Card 1: Menú Ejecutivo */}
-          <div className="bg-white border-2 border-[#D4AF37] rounded-3xl p-6 space-y-5 shadow-xl flex flex-col justify-between hover:shadow-2xl transition-all relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-gradient-to-l from-[#D4AF37] to-[#B8860B] text-white text-[9px] font-black px-4 py-1 rounded-bl-2xl uppercase tracking-widest">
-              Conectado en Vivo
-            </div>
-            <div className="space-y-3 pt-2">
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full bg-[#FFF8E7] border border-[#F3E5C8] text-[#B8860B] text-[10px] font-black uppercase tracking-wider">
-                  Menú del {todayMenu.dayOfWeek}
-                </span>
-              </div>
-              <h3 className="font-serif text-2xl font-bold text-[#1C120C]">⭐ {todayMenu.title}</h3>
-              <p className="text-xs text-[#5C4A3E] leading-relaxed italic">
-                "{todayMenu.description}"
+              <h1 className="mt-7 font-serif text-[2.8rem] font-black leading-[0.98] tracking-[-0.045em] text-[#332424] sm:text-6xl lg:text-7xl">
+                El sabor también
+                <span className="mt-2 block text-[#843747]">sale a escena.</span>
+              </h1>
+              <p className="mt-6 max-w-xl text-sm leading-7 text-[#6F5A55] sm:text-base">
+                Cafetería, cocina y encuentros en un espacio con identidad propia. Elegí tu
+                mesa, explorá la carta actualizada y hacé tu pedido desde el mismo lugar.
               </p>
 
-              <div className="bg-[#FAF8F5] p-3 rounded-2xl border border-[#E2D4C3] space-y-1.5 text-[11px]">
-                <p className="text-[#1C120C] font-semibold">
-                  <strong className="text-[#B8860B]">🥟 Entradas:</strong> {todayMenu.starters.join(" • ")}
-                </p>
-                <p className="text-[#1C120C] font-semibold">
-                  <strong className="text-[#B8860B]">🥩 Principales:</strong> {todayMenu.mains.join(" • ")}
-                </p>
-                <p className="text-[#1C120C] font-semibold">
-                  <strong className="text-[#B8860B]">🍷 Bebidas:</strong> {todayMenu.drinks.join(" • ")}
-                </p>
-                <p className="text-[#1C120C] font-semibold">
-                  <strong className="text-[#B8860B]">🍰 Postres:</strong> {todayMenu.desserts.join(" • ")}
-                </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("digital_menu")}
+                  className="group flex items-center justify-center gap-3 rounded-2xl bg-[#843747] px-6 py-4 text-xs font-black uppercase tracking-[0.1em] text-white shadow-[0_14px_35px_rgba(132,55,71,0.25)] transition-all hover:-translate-y-0.5 hover:bg-[#71303D]"
+                >
+                  <Utensils className="h-4.5 w-4.5" />
+                  Ver carta y pedir
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsReservationModalOpen(true)}
+                  className="flex items-center justify-center gap-3 rounded-2xl border border-[#843747]/30 bg-white px-6 py-4 text-xs font-black uppercase tracking-[0.1em] text-[#843747] transition-colors hover:bg-[#E7C8CF]/35"
+                >
+                  <Calendar className="h-4.5 w-4.5" />
+                  Reservar una mesa
+                </button>
+              </div>
+
+              <div className="mt-8 grid max-w-xl grid-cols-3 divide-x divide-[#D7BBA8] border-y border-[#D7BBA8] py-4">
+                <div className="pr-3">
+                  <strong className="block font-serif text-xl text-[#843747]">{publicItems.length}</strong>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">Propuestas</span>
+                </div>
+                <div className="px-3">
+                  <strong className="block font-serif text-xl text-[#843747]">En vivo</strong>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">Precios y stock</span>
+                </div>
+                <div className="pl-3">
+                  <strong className="block font-serif text-xl text-[#843747]">944</strong>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">Constitución</span>
+                </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#E2D4C3] flex items-center justify-between">
+            <div className="relative mx-auto w-full max-w-2xl lg:mx-0">
+              <div className="absolute -left-5 -top-5 h-24 w-24 rounded-full border border-[#843747]/15 bg-[#E7C8CF]/60" />
+              <div className="relative grid h-[430px] grid-cols-[1fr_0.43fr] gap-3 sm:h-[540px]">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("digital_menu")}
+                  className="group relative overflow-hidden rounded-[2rem] bg-[#332424] text-left shadow-[0_28px_70px_rgba(51,36,36,0.2)]"
+                  aria-label={heroItem ? `Ver ${heroItem.name} en la carta` : "Ver la carta digital"}
+                >
+                  {heroItem?.image ? (
+                    <CatalogImage
+                      src={heroItem.image}
+                      alt={heroItem.name}
+                      loading="eager"
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full bg-gradient-to-br from-[#843747] to-[#332424]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#241819] via-transparent to-black/5" />
+                  <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-7">
+                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#E7C8CF]">
+                      Selección de la casa
+                    </span>
+                    <strong className="mt-2 block font-serif text-xl leading-tight sm:text-3xl">
+                      {heroItem?.name || "Carta Castaño"}
+                    </strong>
+                    {heroItem && (
+                      <span className="mt-3 inline-flex rounded-full bg-[#FFF9F4] px-3 py-1.5 text-xs font-black text-[#843747]">
+                        {formatPrice(heroItem.isOffer && heroItem.offerPrice ? heroItem.offerPrice : heroItem.price)}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                <div className="grid grid-rows-2 gap-3">
+                  {supportingVisuals.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setViewMode("digital_menu")}
+                      className="group relative overflow-hidden rounded-[1.5rem] bg-[#E8D4C3]"
+                      aria-label={`Ver ${item.name} en la carta`}
+                    >
+                      <CatalogImage
+                        src={item.image}
+                        alt={item.name}
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#332424]/80 via-transparent to-transparent" />
+                      <span className="absolute inset-x-0 bottom-0 line-clamp-2 p-3 text-left text-[10px] font-black leading-tight text-white sm:p-4 sm:text-xs">
+                        {item.name}
+                      </span>
+                    </button>
+                  ))}
+                  {supportingVisuals.length < 2 && (
+                    <div className="flex items-center justify-center rounded-[1.5rem] bg-[#71303D] p-4 text-center text-[#FFF9F4]">
+                      <div>
+                        <Coffee className="mx-auto h-6 w-6 text-[#E7C8CF]" />
+                        <span className="mt-2 block text-[10px] font-black uppercase tracking-wider">
+                          Café, cocina y teatro
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="absolute -bottom-5 left-5 right-5 flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-[#FFF9F4]/95 p-4 shadow-xl backdrop-blur-lg sm:left-8 sm:right-8">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E7C8CF] text-[#843747]">
+                    <ShieldCheck className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <strong className="block text-xs text-[#332424]">Carta conectada</strong>
+                    <span className="text-[10px] text-[#6F5A55]">Productos y valores reales</span>
+                  </div>
+                </div>
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-[#4F735A]" />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {todayMenu && (
+          <section className="bg-[#71303D] px-5 py-6 text-[#FFF9F4] sm:px-6">
+            <div className="mx-auto flex max-w-7xl flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex max-w-3xl items-start gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E7C8CF] text-[#843747]">
+                  <Utensils className="h-5 w-5" />
+                </span>
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#E7C8CF]">
+                    Menú activo · {todayMenu.dayOfWeek}
+                  </span>
+                  <h2 className="mt-1 font-serif text-xl font-black sm:text-2xl">{todayMenu.title}</h2>
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#FFF9F4]/70">
+                    {todayMenu.description || todayMenu.mains.join(" · ")}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-5 border-t border-white/15 pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <strong className="font-serif text-2xl text-[#E7C8CF]">{formatPrice(todayMenu.price)}</strong>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("digital_menu")}
+                  className="rounded-full bg-[#FFF9F4] px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]"
+                >
+                  Ver opciones
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section id="carta" className="px-5 py-20 sm:px-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <span className="text-xs text-[#8C7A6B] block font-bold">Combo Completo</span>
-                <span className="text-2xl font-black font-mono text-[#B8860B]">${todayMenu.price.toLocaleString("es-AR")}</span>
-              </div>
-              <button
-                onClick={() => setViewMode("digital_menu")}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-white text-xs font-black uppercase tracking-wider shadow-md hover:brightness-110 transition-all cursor-pointer"
-              >
-                Ver Menú y Pedir 📱
-              </button>
-            </div>
-          </div>
-
-          {/* Card 2: Cafetería Bariloche */}
-          <div className="bg-white border-2 border-[#E2D4C3] rounded-3xl p-6 space-y-5 shadow-lg flex flex-col justify-between hover:border-[#D4AF37] hover:shadow-2xl transition-all">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full bg-[#FFF8E7] border border-[#F3E5C8] text-[#B8860B] text-[10px] font-black uppercase tracking-wider">
-                  Desayunos & Meriendas
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#843747]">
+                  Elegidos de la carta
                 </span>
-              </div>
-              <h3 className="font-serif text-2xl font-bold text-[#1C120C]">☕ Submarino Bariloche & Dulces</h3>
-              <p className="text-xs text-[#5C4A3E] leading-relaxed">
-                Leche entera espumada en jarro térmico con barra de chocolate amargo Bariloche 70% y medialunas recién horneadas.
-              </p>
-            </div>
-            <div className="pt-4 border-t border-[#E2D4C3] flex items-center justify-between">
-              <div>
-                <span className="text-xs text-[#8C7A6B] block font-bold">Especialidad</span>
-                <span className="text-2xl font-black font-mono text-[#B8860B]">$4.500</span>
+                <h2 className="mt-3 max-w-2xl font-serif text-3xl font-black leading-tight text-[#332424] sm:text-5xl">
+                  Propuestas que hablan por nuestra cocina.
+                </h2>
               </div>
               <button
+                type="button"
                 onClick={() => setViewMode("digital_menu")}
-                className="px-5 py-2.5 rounded-xl bg-white border border-[#D4AF37] text-[#1C120C] text-xs font-black uppercase tracking-wider hover:bg-[#FAF8F5] transition-all cursor-pointer"
+                className="group flex w-fit items-center gap-2 border-b border-[#843747] pb-1 text-xs font-black uppercase tracking-wider text-[#843747]"
               >
-                Ver Opciones ☕
+                Explorar toda la carta
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
-          </div>
 
-          {/* Card 3: Noches de Teatro */}
-          <div className="bg-white border-2 border-[#E2D4C3] rounded-3xl p-6 space-y-5 shadow-lg flex flex-col justify-between hover:border-[#D4AF37] hover:shadow-2xl transition-all">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="px-3 py-1 rounded-full bg-[#FFF8E7] border border-[#F3E5C8] text-[#B8860B] text-[10px] font-black uppercase tracking-wider">
-                  Almuerzos & Cenas
-                </span>
+            <div className={`mt-10 grid gap-5 ${featuredPublicItems.length > 2 ? "lg:grid-cols-3" : "md:grid-cols-2"}`}>
+              {featuredPublicItems.map((item, index) => {
+                const displayPrice = item.isOffer && item.offerPrice ? item.offerPrice : item.price;
+                return (
+                  <article
+                    key={item.id}
+                    className="group overflow-hidden rounded-[1.75rem] border border-[#D7BBA8] bg-[#FFF9F4] shadow-[0_12px_35px_rgba(51,36,36,0.07)] transition-all hover:-translate-y-1 hover:border-[#843747]/45"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("digital_menu")}
+                      className="block w-full text-left"
+                      aria-label={`Ver ${item.name} en la carta`}
+                    >
+                      <div className="relative h-64 overflow-hidden bg-[#E8D4C3]">
+                        <CatalogImage
+                          src={item.image}
+                          alt={item.name}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#332424]/45 via-transparent to-transparent" />
+                        <span className="absolute left-4 top-4 rounded-full bg-[#FFF9F4]/95 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#843747]">
+                          {item.isOffer ? "Oferta vigente" : "Selección Castaño"}
+                        </span>
+                      </div>
+                      <div className="p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <h3 className="font-serif text-xl font-black leading-tight text-[#332424]">
+                            {item.name}
+                          </h3>
+                          <strong className="shrink-0 text-sm font-black text-[#843747]">
+                            {formatPrice(displayPrice)}
+                          </strong>
+                        </div>
+                        <p className="mt-3 line-clamp-3 text-xs leading-6 text-[#6F5A55]">{item.description}</p>
+                        <span className="mt-5 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-[#843747]">
+                          Ver detalle <ArrowRight className="h-3.5 w-3.5" />
+                        </span>
+                      </div>
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="experiencia" className="px-5 pb-20 sm:px-6">
+          <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2.25rem] bg-[#332424] text-[#FFF9F4] shadow-[0_25px_70px_rgba(51,36,36,0.2)] lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="relative min-h-[340px] overflow-hidden bg-[#71303D] lg:min-h-[540px]">
+              {publicItems[3]?.image || heroItem?.image ? (
+                <CatalogImage
+                  src={publicItems[3]?.image || heroItem?.image}
+                  alt={publicItems[3]?.name || heroItem?.name || "Experiencia Castaño"}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#332424]/80 via-transparent to-transparent lg:bg-gradient-to-r" />
+              <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/15 bg-[#332424]/75 p-4 backdrop-blur-md sm:bottom-8 sm:left-8 sm:right-auto sm:max-w-xs">
+                <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#E7C8CF]">Nuestra casa</span>
+                <p className="mt-2 text-xs leading-5 text-white/80">
+                  Un punto de encuentro entre la vida cultural de la ciudad y una cocina hecha con dedicación.
+                </p>
               </div>
-              <h3 className="font-serif text-2xl font-bold text-[#1C120C]">🥩 Cocina de Autor & Bodega</h3>
-              <p className="text-xs text-[#5C4A3E] leading-relaxed">
-                Cortes de carne a las brasas, pastas elaboradas en el día, pescados y una completa carta de tragos y vinos.
+            </div>
+
+            <div className="flex flex-col justify-center p-7 sm:p-10 lg:p-14">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#E7C8CF]">
+                La experiencia
+              </span>
+              <h2 className="mt-4 font-serif text-3xl font-black leading-tight sm:text-5xl">
+                Antes o después de la función, la mesa ya está servida.
+              </h2>
+              <p className="mt-6 text-sm leading-7 text-[#FFF9F4]/70">
+                Frente al Teatro Municipal de Río Cuarto, combinamos cafetería, platos para compartir
+                y atención cercana en un salón pensado para quedarse.
               </p>
-            </div>
-            <div className="pt-4 border-t border-[#E2D4C3] flex items-center justify-between">
-              <div>
-                <span className="text-xs text-[#8C7A6B] block font-bold">Carta Nocturna</span>
-                <span className="text-xs font-bold text-[#B8860B] font-mono">Consulte Carta</span>
+
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {[
+                  ["Café y sobremesa", "Una pausa cálida durante todo el día."],
+                  ["Cocina con identidad", "Productos reales y una carta en movimiento."],
+                  ["Reserva directa", "Elegí tu mesa desde la página."],
+                  ["Ubicación central", "Constitución 944, frente al teatro."]
+                ].map(([title, copy]) => (
+                  <div key={title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <CheckCircle2 className="h-4 w-4 text-[#E7C8CF]" />
+                    <strong className="mt-3 block text-xs">{title}</strong>
+                    <span className="mt-1 block text-[10px] leading-5 text-white/55">{copy}</span>
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={() => setViewMode("digital_menu")}
-                className="px-5 py-2.5 rounded-xl bg-white border border-[#D4AF37] text-[#1C120C] text-xs font-black uppercase tracking-wider hover:bg-[#FAF8F5] transition-all cursor-pointer"
-              >
-                Ver Carta 🍽️
-              </button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Experiencia Section (Target for #experiencia anchor) */}
-      <section id="experiencia" className="max-w-7xl mx-auto py-16 px-6 border-t border-[#E2D4C3]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <span className="text-xs font-black uppercase tracking-widest text-[#B8860B] block">Experiencia Frente al Teatro</span>
-            <h2 className="font-serif text-3xl md:text-5xl font-extrabold text-[#1C120C] leading-tight">
-              Una Tradición Gastronómica en el Corazón de Río Cuarto
-            </h2>
-            <p className="text-sm text-[#5C4A3E] leading-relaxed">
-              Ubicado estratégicamente frente al emblemático Teatro Municipal de Río Cuarto (Constitución 944), Resto Bar Del Teatro combina el encanto de la cafetería tradicional con la excelencia de la cocina contemporánea.
+        <section id="visitanos" className="border-y border-[#D7BBA8] bg-[#FFF9F4] px-5 py-20 sm:px-6">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#843747]">Visitanos</span>
+              <h2 className="mt-3 font-serif text-3xl font-black leading-tight sm:text-5xl">
+                En el corazón cultural de Río Cuarto.
+              </h2>
+              <p className="mt-5 text-sm leading-7 text-[#6F5A55]">
+                Estamos en Constitución 944, frente al Teatro Municipal. Reservá online o escribinos
+                para coordinar tu pedido.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Constituci%C3%B3n+944%2C+R%C3%ADo+Cuarto%2C+C%C3%B3rdoba"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-full bg-[#843747] px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white transition-colors hover:bg-[#71303D]"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Cómo llegar
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setIsReservationModalOpen(true)}
+                  className="flex items-center gap-2 rounded-full border border-[#843747]/30 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#843747]"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Reservar
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                {
+                  icon: MapPin,
+                  eyebrow: "Dirección",
+                  title: "Constitución 944",
+                  body: "Frente al Teatro Municipal · Río Cuarto, Córdoba"
+                },
+                {
+                  icon: Clock,
+                  eyebrow: "Horarios",
+                  title: "Todos los días",
+                  body: "Lun. a sáb. 07:30–01:00 · Dom. 08:30–00:00"
+                },
+                {
+                  icon: PhoneCall,
+                  eyebrow: "Contacto",
+                  title: "Reservas y pedidos",
+                  body: "WhatsApp 358 5042311 · Instagram @restobardelteatro_rio4"
+                }
+              ].map(({ icon: Icon, eyebrow, title, body }) => (
+                <div key={eyebrow} className="rounded-[1.75rem] border border-[#D7BBA8] bg-white p-6">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E7C8CF] text-[#843747]">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="mt-5 block text-[9px] font-black uppercase tracking-[0.16em] text-[#843747]">{eyebrow}</span>
+                  <strong className="mt-2 block font-serif text-lg text-[#332424]">{title}</strong>
+                  <p className="mt-3 text-[11px] leading-5 text-[#6F5A55]">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-[#71303D] px-5 py-10 text-[#FFF9F4] sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <RestoBarLogo
+              size="lg"
+              className="[&_span:first-child]:!text-[#FFF9F4] [&_span:last-child]:!text-[#E7C8CF]"
+            />
+            <p className="mt-4 max-w-md text-[11px] leading-5 text-white/60">
+              Cafetería y cocina frente al Teatro Municipal de Río Cuarto.
             </p>
-            <div className="grid grid-cols-2 gap-4 text-xs font-bold text-[#1C120C]">
-              <div className="p-4 bg-white rounded-2xl border border-[#E2D4C3]">
-                <strong className="text-[#B8860B] block text-base font-serif font-black mb-1">☕ Especialidad</strong>
-                Grano seleccionado y tostado artesanal para espresso perfecto.
-              </div>
-              <div className="p-4 bg-white rounded-2xl border border-[#E2D4C3]">
-                <strong className="text-[#B8860B] block text-base font-serif font-black mb-1">🎭 Ubicación</strong>
-                Frente al Teatro Municipal de Río Cuarto.
-              </div>
-            </div>
           </div>
-
-          <div className="bg-[#1C120C] border-2 border-[#D4AF37] rounded-3xl p-8 text-[#FDFBF7] space-y-6 shadow-2xl gold-glow">
-            <h3 className="font-serif text-2xl font-bold text-[#FFDF00]">📍 Cómo Llegar & Contacto Directo</h3>
-            <p className="text-xs text-[#FDFBF7]/80 leading-relaxed">
-              Visitanos en Constitución 944, Río Cuarto (Córdoba). Contamos con ambiente climatizado, salón principal, rincón de lectura y atención personalizada.
-            </p>
-            <div className="space-y-3 pt-2">
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=Constituci%C3%B3n+944%2C+R%C3%ADo+Cuarto%2C+C%C3%B3rdoba"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:brightness-110 flex items-center justify-center gap-2 cursor-pointer gold-glow"
-              >
-                <MapPin className="h-4 w-4" /> Abrir en Google Maps (Cómo Llegar) <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href="https://instagram.com/restobardelteatro_rio4"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3.5 px-4 bg-[#2A1B12] hover:bg-[#3D281A] border border-[#D4AF37]/40 text-[#FFDF00] font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer"
-              >
-                📸 Instagram Oficial @restobardelteatro_rio4 <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-[10px] font-black uppercase tracking-wider text-[#E7C8CF]">
+            <button type="button" onClick={() => setViewMode("digital_menu")}>Carta digital</button>
+            <button type="button" onClick={() => setIsReservationModalOpen(true)}>Reservas</button>
+            <button type="button" onClick={() => setIsLoginModalOpen(true)}>Acceso personal</button>
           </div>
-        </div>
-      </section>
-
-      {/* Compact Info & Location Section */}
-      <section id="horarios" className="bg-white border-t border-b border-[#E2D4C3] py-8 px-6 shadow-xs">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-start gap-3 p-4 bg-[#FAF8F5] rounded-2xl border border-[#E2D4C3]">
-            <div className="h-8 w-8 rounded-xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center shrink-0 mt-0.5">
-              <MapPin className="h-4 w-4" />
-            </div>
-            <div>
-              <strong className="text-xs font-extrabold text-[#1C120C] block">Ubicación Privilegiada</strong>
-              <p className="text-xs text-[#5C4A3E] leading-tight mt-1">
-                Constitución 944 (Frente al Teatro Municipal)<br />
-                Río Cuarto, Provincia de Córdoba
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-4 bg-[#FAF8F5] rounded-2xl border border-[#E2D4C3]">
-            <div className="h-8 w-8 rounded-xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center shrink-0 mt-0.5">
-              <Clock className="h-4 w-4" />
-            </div>
-            <div>
-              <strong className="text-xs font-extrabold text-[#1C120C] block">Horarios de Atención</strong>
-              <p className="text-xs text-[#5C4A3E] leading-tight mt-1">
-                Lunes a Sábados: 07:30 a 01:00 hs<br />
-                Domingos: 08:30 a 00:00 hs
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 p-4 bg-[#FAF8F5] rounded-2xl border border-[#E2D4C3]">
-            <div className="h-8 w-8 rounded-xl bg-[#FFF8E7] text-[#B8860B] flex items-center justify-center shrink-0 mt-0.5">
-              <PhoneCall className="h-4 w-4" />
-            </div>
-            <div>
-              <strong className="text-xs font-extrabold text-[#1C120C] block">Reservas & Pedidos</strong>
-              <p className="text-xs text-[#5C4A3E] leading-tight mt-1">
-                WhatsApp: 358 5042311 / 358 4651847<br />
-                Instagram: @restobardelteatro_rio4
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-8 px-6 bg-[#1C120C] text-[#FAF8F5] text-center text-xs space-y-3 border-t border-[#D4AF37]/30">
-        <p className="font-serif text-base font-bold text-[#D4AF37]">RESTO BAR DEL TEATRO</p>
-        <p className="text-[#A59585] text-[11px]">Constitución 944, frente al Teatro Municipal • Río Cuarto, Córdoba.</p>
-        <div className="pt-2">
-          <button 
-            onClick={() => setIsLoginModalOpen(true)}
-            className="text-[10px] text-[#D4AF37]/60 hover:text-[#D4AF37] uppercase font-mono font-bold transition-colors cursor-pointer border-b border-dashed border-[#D4AF37]/30 pb-0.5"
-          >
-            🔒 Acceso Exclusivo para Personal / POS
-          </button>
         </div>
       </footer>
 
-      {/* Floating Table Reservation Button */}
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
+      <div className="fixed inset-x-3 bottom-3 z-40 sm:hidden">
         <button
+          type="button"
           onClick={() => setIsReservationModalOpen(true)}
-          className="flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black text-xs uppercase tracking-wider shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-white gold-glow"
-          aria-label="Reservar Mesa Frente al Teatro"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#843747] px-5 py-4 text-[10px] font-black uppercase tracking-wider text-white shadow-2xl"
+          aria-label="Reservar mesa"
         >
-          <Calendar className="h-5 w-5" />
-          <span>🎟️ Reservar Mesa Frente al Teatro</span>
+          <Calendar className="h-4 w-4" />
+          Reservar una mesa
         </button>
       </div>
 
-      {/* Public Table Reservation Accessible Modal */}
       {isReservationModalOpen && (
-        <div 
-          className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#241819]/90 p-3 backdrop-blur-md sm:p-6"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="modal-reservation-title"
+          aria-label="Reserva de mesa"
         >
-          <div className="relative w-full max-w-4xl my-auto bg-[#1A110B] border-2 border-[#D4AF37] rounded-3xl p-6 shadow-2xl gold-glow">
+          <div className="relative my-auto w-full max-w-4xl rounded-[2rem] border border-[#E7C8CF]/30 bg-[#332424] p-4 shadow-2xl sm:p-6">
             <button
+              type="button"
               onClick={() => setIsReservationModalOpen(false)}
-              className="absolute -top-3 -right-3 z-50 h-10 w-10 rounded-full bg-[#2A1B12] border-2 border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] flex items-center justify-center text-sm font-black cursor-pointer shadow-2xl gold-glow"
-              aria-label="Cerrar ventana de reserva"
+              className="absolute right-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-[#71303D] text-white shadow-xl hover:bg-[#843747]"
+              aria-label="Cerrar reserva"
             >
-              ✕
+              <X className="h-4 w-4" />
             </button>
             <TableReservation
               bookings={[]}
-              onConfirmReservation={(res) => {
+              onConfirmReservation={async (reservation) => {
+                const result = await ReservationService.createPublic(reservation);
+                if (!result.success || !result.reservation) {
+                  onShowNotification(result.error || "No se pudo confirmar la reserva.", "warning");
+                  return false;
+                }
                 setIsReservationModalOpen(false);
-                onShowNotification(`🎟️ ¡Reserva confirmada para ${res.customerName}! Te esperamos el ${res.date} (${res.timeSlot}).`, "success");
+                onShowNotification(
+                  `Reserva ${result.reservation.referenceCode} confirmada para ${result.reservation.customerName}.`,
+                  "success"
+                );
+                return true;
               }}
             />
           </div>
         </div>
       )}
 
-      {/* Staff Login Accessible Modal */}
       {isLoginModalOpen && (
-        <div 
-          className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[#241819]/90 p-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="modal-login-title"
+          aria-label="Acceso del personal"
         >
-          <div className="relative w-full max-w-lg my-auto">
+          <div className="relative my-auto w-full max-w-lg">
             <button
+              type="button"
               onClick={() => setIsLoginModalOpen(false)}
-              className="absolute -top-3 -right-3 z-50 h-10 w-10 rounded-full bg-[#2A1B12] border-2 border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] flex items-center justify-center text-sm font-black cursor-pointer shadow-2xl gold-glow"
-              aria-label="Cerrar ventana de login"
+              className="absolute -right-2 -top-2 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-[#71303D] text-white shadow-xl hover:bg-[#843747]"
+              aria-label="Cerrar acceso"
             >
-              ✕
+              <X className="h-4 w-4" />
             </button>
             <LoginScreen
               onLoginSuccess={(user) => {

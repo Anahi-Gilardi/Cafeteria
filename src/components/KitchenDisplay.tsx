@@ -1,130 +1,80 @@
 import { Order, OrderStatusType, MenuItem } from "../types";
-import { Clock, Play, CheckCircle2, AlertTriangle, Coffee, BookOpen, X, ChefHat, CookingPot, Eye, Archive } from "lucide-react";
+import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, RefreshCw, Search } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
+import { ArchivedOrderRecord, SupabaseSyncService } from "../services/SupabaseSyncService";
 
 interface KitchenDisplayProps {
   orders: Order[];
   menuItems: MenuItem[];
   onOrderStatusUpdate: (orderId: string, status: OrderStatusType) => void;
+  onArchiveOrder: (orderId: string) => Promise<boolean>;
 }
 
-export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate }: KitchenDisplayProps) {
+export default function KitchenDisplay({
+  orders,
+  menuItems,
+  onOrderStatusUpdate,
+  onArchiveOrder
+}: KitchenDisplayProps) {
   const [selectedItemForRecipe, setSelectedItemForRecipe] = useState<MenuItem | null>(null);
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
   const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos">("all");
   const [activeMobileTab, setActiveMobileTab] = useState<"pendientes" | "preparando" | "finalizadas">("pendientes");
   const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
-  const [demoOrdersState, setDemoOrdersState] = useState<Order[]>(() => [
-    {
-      id: "PED-6487",
-      items: [
-        { name: "Empanada Criolla Cordobesa a Cuchillo", price: 2800, quantity: 1 },
-        { name: "Empanada Salteña Jugosa", price: 2800, quantity: 1 }
-      ],
-      total: 5600,
-      status: "Recibido",
-      createdAt: new Date(Date.now() - 34 * 60000).toISOString(),
-      tableNumber: "Delivery",
-      clientAccountName: "AGUSTIN",
-      priceList: "Delivery",
-      fulfillmentType: "delivery",
-      estimatedMinutes: 20
-    },
-    {
-      id: "PED-7362",
-      items: [
-        { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
-      ],
-      total: 14975,
-      status: "Preparando",
-      createdAt: new Date(Date.now() - 55 * 60000).toISOString(),
-      tableNumber: "Mesa 1",
-      clientAccountName: "CONSUMIDOR FINAL",
-      priceList: "Salon",
-      estimatedMinutes: 20
-    },
-    {
-      id: "PED-9413",
-      items: [
-        { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
-      ],
-      total: 14975,
-      status: "Listo",
-      createdAt: new Date(Date.now() - 21 * 60000).toISOString(),
-      tableNumber: "Mesa 2",
-      clientAccountName: "CONSUMIDOR FINAL",
-      priceList: "Salon",
-      estimatedMinutes: 20
-    }
-  ]);
+  const [showArchive, setShowArchive] = useState(false);
+  const [archivedOrders, setArchivedOrders] = useState<ArchivedOrderRecord[]>([]);
+  const [archiveSearch, setArchiveSearch] = useState("");
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [archiveError, setArchiveError] = useState("");
+  const [archivingOrderId, setArchivingOrderId] = useState<string | null>(null);
 
-  const handleResetDemoOrders = () => {
-    const freshId = `PED-${Math.floor(1000 + Math.random() * 9000)}`;
-    setDemoOrdersState([
-      {
-        id: freshId,
-        items: [
-          { name: "Café Doble Espresso & Medialunas", price: 4500, quantity: 2 },
-          { name: "Tostado de Miga Especial Jamón y Queso", price: 6200, quantity: 1 }
-        ],
-        total: 10700,
-        status: "Recibido",
-        createdAt: new Date().toISOString(),
-        tableNumber: "Mesa 3",
-        clientAccountName: "Mariano Closs",
-        priceList: "Salon",
-        estimatedMinutes: 15
-      },
-      {
-        id: "PED-7362",
-        items: [
-          { name: "Menú Ejecutivo Promocional (4 Pasos)", price: 14975, quantity: 1 }
-        ],
-        total: 14975,
-        status: "Preparando",
-        createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
-        tableNumber: "Mesa 1",
-        clientAccountName: "CONSUMIDOR FINAL",
-        priceList: "Salon",
-        estimatedMinutes: 20
-      },
-      {
-        id: "PED-9413",
-        items: [
-          { name: "Limonada Menta y Jengibre & Sándwich Milanesa", price: 12500, quantity: 1 }
-        ],
-        total: 12500,
-        status: "Listo",
-        createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
-        tableNumber: "Mesa 2",
-        clientAccountName: "CONSUMIDOR FINAL",
-        priceList: "Salon",
-        estimatedMinutes: 20
-      }
-    ]);
+  const loadArchive = async () => {
+    setArchiveLoading(true);
+    const result = await SupabaseSyncService.fetchArchivedOrders();
+    setArchiveLoading(false);
+    if (result.error) {
+      setArchiveError(result.error);
+      return;
+    }
+    setArchiveError("");
+    setArchivedOrders(result.archivedOrders);
+  };
+
+  useEffect(() => {
+    void loadArchive();
+  }, []);
+
+  const handleArchiveOrder = async (order: Order) => {
+    if (archivingOrderId) return;
+    setArchivingOrderId(order.id);
+    const archived = await onArchiveOrder(order.id);
+    if (archived) {
+      await loadArchive();
+    }
+    setArchivingOrderId(null);
   };
 
   const handleUpdateStatus = (order: Order, newStatus: OrderStatusType) => {
     onOrderStatusUpdate(order.id, newStatus);
-    setDemoOrdersState(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
 
-    if (newStatus === "Listo" && (order.priceList === "Takeaway" || order.type === "Llevar")) {
+    const customerPhone = order.customerPhone || order.clientPhone;
+    if (customerPhone && newStatus === "Listo" && (order.priceList === "Takeaway" || order.type === "Llevar")) {
       WhatsAppNotificationService.sendReadyForPickupNotification({
         id: order.id,
         customerName: order.clientAccountName || "Cliente",
-        customerPhone: (order as any).customerPhone || "3585042311",
+        customerPhone,
         total: order.total,
         type: "Takeaway"
       });
     }
 
-    if (newStatus === "Completado" && (order.priceList === "Delivery" || order.fulfillmentType === "delivery")) {
+    if (customerPhone && order.deliveryAddress && newStatus === "Completado" && (order.priceList === "Delivery" || order.fulfillmentType === "delivery")) {
       WhatsAppNotificationService.sendDeliveryEnCaminoNotification({
         id: order.id,
         customerName: order.clientAccountName || "Cliente",
-        customerPhone: (order as any).customerPhone || "3585042311",
-        deliveryAddress: order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944",
+        customerPhone,
+        deliveryAddress: `${order.deliveryAddress.street} ${order.deliveryAddress.number}`,
         total: order.total,
         type: "Delivery"
       });
@@ -160,15 +110,10 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
     return items.filter(it => getItemDestination(it.name) === destinationFilter);
   };
 
-  // Merged Active Orders (excluding "Completado")
+  // Active orders come exclusively from the synchronized order stream.
   const mergedOrders = useMemo(() => {
-    const activeReal = orders.filter(o => o.status !== "Completado" && (filterType === "all" || o.type === filterType || o.priceList === filterType));
-    if (activeReal.length > 0) {
-      return activeReal;
-    }
-    // Fallback to demo orders state excluding archived
-    return demoOrdersState.filter(o => o.status !== "Completado" && (filterType === "all" || o.type === filterType || o.priceList === filterType));
-  }, [orders, filterType, demoOrdersState]);
+    return orders.filter(o => o.status !== "Completado" && (filterType === "all" || o.type === filterType || o.priceList === filterType));
+  }, [orders, filterType]);
 
   // Filtered Orders by Destination
   const activeOrders = useMemo(() => {
@@ -184,6 +129,24 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
   const pendingOrders = useMemo(() => activeOrders.filter(o => o.status === "Recibido" || o.status === "Pendiente"), [activeOrders]);
   const inProgressOrders = useMemo(() => activeOrders.filter(o => o.status === "Preparando"), [activeOrders]);
   const completedOrders = useMemo(() => activeOrders.filter(o => o.status === "Listo"), [activeOrders]);
+  const visibleArchivedOrders = useMemo(() => {
+    const query = archiveSearch.trim().toLowerCase();
+    if (!query) return archivedOrders;
+    return archivedOrders.filter(({ order }) => {
+      const searchable = [
+        order.id,
+        order.tableNumber,
+        order.customerName,
+        order.clientAccountName,
+        order.paymentMethod,
+        ...order.items.map((item) => item.name)
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return searchable.includes(query);
+    });
+  }, [archiveSearch, archivedOrders]);
 
   // Audio Notification
   useEffect(() => {
@@ -328,10 +291,16 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
           {currentColumn === "finalizadas" && (
             <button
               type="button"
-              onClick={() => handleUpdateStatus(order, "Completado")}
-              className="w-full py-2 px-3 rounded-xl bg-[#E8D4C3] hover:bg-[#D7BBA8] text-[#332424] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              onClick={() => void handleArchiveOrder(order)}
+              disabled={archivingOrderId === order.id}
+              className="w-full py-2 px-3 rounded-xl bg-[#E8D4C3] hover:bg-[#D7BBA8] disabled:opacity-60 disabled:cursor-wait text-[#332424] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
-              <Archive className="h-4 w-4" /> Archivar
+              {archivingOrderId === order.id ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Archive className="h-4 w-4" />
+              )}
+              {archivingOrderId === order.id ? "Archivando…" : "Archivar en Supabase"}
             </button>
           )}
         </div>
@@ -382,15 +351,125 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
 
           <button
             type="button"
-            onClick={handleResetDemoOrders}
-            className="px-3.5 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer uppercase tracking-wider transition-all flex items-center gap-1.5"
-            title="Restaurar comandas de prueba en tablero"
+            onClick={() => setShowArchive((current) => !current)}
+            className={`px-3 py-2 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+              showArchive
+                ? "bg-[#843747] border-[#843747] text-white"
+                : "bg-[#FFF9F4] border-[#D7BBA8] text-[#843747] hover:bg-[#E8D4C3]"
+            }`}
           >
-            🔄 Comandas Demo
+            <Archive className="h-4 w-4" />
+            Archivo ({archivedOrders.length})
           </button>
         </div>
       </div>
 
+      {showArchive ? (
+        <section className="space-y-4" aria-label="Archivo de comandas">
+          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-5 md:p-6 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#843747]">
+                  Historial permanente
+                </span>
+                <h2 className="font-serif text-xl font-black text-[#332424] mt-1">
+                  Archivo de comandas
+                </h2>
+                <p className="text-xs text-[#6F5A55] mt-1">
+                  Cada registro conserva la orden completa y sus renglones normalizados en Supabase.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadArchive()}
+                disabled={archiveLoading}
+                className="px-3 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-xs font-black flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                <RefreshCw className={`h-4 w-4 ${archiveLoading ? "animate-spin" : ""}`} />
+                Actualizar archivo
+              </button>
+            </div>
+
+            <div className="relative mt-5">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#843747]" />
+              <input
+                type="search"
+                value={archiveSearch}
+                onChange={(event) => setArchiveSearch(event.target.value)}
+                placeholder="Buscar por comanda, mesa, cliente, medio de pago o producto"
+                className="w-full rounded-xl border border-[#D7BBA8] bg-white py-2.5 pl-10 pr-4 text-xs text-[#332424] outline-none focus:border-[#843747]"
+              />
+            </div>
+          </div>
+
+          {archiveError ? (
+            <div className="rounded-2xl border border-[#A63F45]/40 bg-[#F4DCDD] p-5 text-xs font-bold text-[#843747]">
+              No se pudo consultar el archivo: {archiveError}
+            </div>
+          ) : archiveLoading && archivedOrders.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#D7BBA8] bg-[#FFF9F4] p-10 text-center text-xs text-[#6F5A55]">
+              Cargando comandas archivadas…
+            </div>
+          ) : visibleArchivedOrders.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#D7BBA8] bg-[#FFF9F4] p-10 text-center">
+              <Archive className="mx-auto h-8 w-8 text-[#843747]/50" />
+              <p className="mt-3 text-xs font-bold text-[#843747]">
+                {archiveSearch ? "No hay resultados para esta búsqueda." : "Todavía no hay comandas archivadas."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {visibleArchivedOrders.map(({ orderId, archivedAt, order }) => (
+                <article
+                  key={orderId}
+                  className="rounded-2xl border border-[#D7BBA8] bg-[#FFF9F4] p-5 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4 border-b border-[#D7BBA8]/60 pb-3">
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-[#6F5A55]">
+                        Archivada {new Date(archivedAt).toLocaleString("es-AR")}
+                      </span>
+                      <h3 className="mt-1 font-mono text-sm font-black text-[#843747]">
+                        {formatOrderId(orderId)}
+                      </h3>
+                      <p className="mt-1 text-[11px] font-bold text-[#332424]">
+                        {order.tableNumber || order.customerName || order.clientAccountName || order.type}
+                      </p>
+                    </div>
+                    <strong className="font-mono text-base text-[#843747]">
+                      ${order.total.toLocaleString("es-AR")}
+                    </strong>
+                  </div>
+                  <div className="mt-3 space-y-1.5">
+                    {order.items.map((item, index) => (
+                      <div
+                        key={`${orderId}-${item.itemId || item.name}-${index}`}
+                        className="flex justify-between gap-3 text-xs text-[#332424]"
+                      >
+                        <span>{item.quantity}x {item.name}</span>
+                        <span className="font-mono font-bold text-[#6F5A55]">
+                          ${(item.quantity * item.price).toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 border-t border-[#D7BBA8]/60 pt-3 text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
+                    <span className="rounded-full bg-[#E8D4C3] px-2.5 py-1">
+                      Original: {new Date(order.createdAt).toLocaleString("es-AR")}
+                    </span>
+                    {order.paymentMethod && (
+                      <span className="rounded-full bg-[#E8D4C3] px-2.5 py-1">
+                        {order.paymentMethod}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
       {/* Mobile Tab Selector (<768px) */}
       <div className="md:hidden flex border-b border-[#D7BBA8] mb-4 gap-2">
         <button
@@ -495,6 +574,8 @@ export default function KitchenDisplay({ orders, menuItems, onOrderStatusUpdate 
         </div>
 
       </div>
+        </>
+      )}
 
       {/* Recipe Modal Popup */}
       {selectedItemForRecipe && (

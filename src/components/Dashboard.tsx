@@ -11,6 +11,7 @@ interface Insumo {
   minLimit: number;
   expiryDate: string;
   provider: string;
+  costPerUnit: number;
 }
 
 interface DashboardProps {
@@ -39,8 +40,9 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
           quantity: Number(i.quantity),
           unit: i.unit,
           minLimit: Number(i.min_limit),
-          expiryDate: i.expiry_date,
-          provider: i.provider
+          expiryDate: i.expiration_date,
+          provider: i.provider,
+          costPerUnit: Number(i.cost_per_unit || 0)
         })));
         if (data.length > 0 && !movInsumoId) {
           setMovInsumoId(data[0].id);
@@ -55,50 +57,39 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
     loadInsumos();
   }, []);
 
-  const handleAdjustInsumo = async (id: string, delta: number) => {
+  const handleAdjustInsumo = async (id: string, delta: number): Promise<boolean> => {
     const target = insumos.find(i => i.id === id);
-    if (!target) return;
-
-    const newQty = Math.max(0, parseFloat((target.quantity + delta).toFixed(2)));
+    if (!target) return false;
 
     try {
-      const { error } = await supabase
-        .from("insumos")
-        .update({ quantity: newQty })
-        .eq("id", id);
+      const { data, error } = await supabase.rpc("adjust_inventory_stock", {
+        p_insumo_id: id,
+        p_delta: delta,
+        p_reason: delta < 0 ? "Ajuste manual desde dashboard" : "Ingreso manual desde dashboard",
+        p_estimated_cost: delta < 0 ? Math.abs(delta) * target.costPerUnit : 0
+      });
 
       if (error) throw error;
 
+      const newQty = Number(data.quantity);
       setInsumos(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
+      return true;
     } catch (err) {
       console.error("Error adjusting insumos on Supabase:", err);
       onShowNotification("❌ Error al guardar el movimiento en la base de datos.", "warning");
+      return false;
     }
   };
 
   // ----------------------------------------------------
   // DYNAMIC SALES & COST CALCULATIONS FROM SUPABASE
   // ----------------------------------------------------
-  const INSUMO_UNIT_COSTS: Record<string, { price: number; unit: string }> = {
-    "ins-cafe": { price: 38000, unit: "kg" },
-    "ins-leche": { price: 1200, unit: "L" },
-    "ins-almendras": { price: 2800, unit: "L" },
-    "ins-ddl": { price: 4200, unit: "kg" },
-    "ins-manteca": { price: 6500, unit: "kg" },
-    "ins-harina": { price: 950, unit: "kg" },
-    "ins-azucar": { price: 1100, unit: "kg" },
-    "ins-chocolate": { price: 14500, unit: "kg" },
-    "ins-huevo": { price: 180, unit: "unidades" },
-    "ins-yerba": { price: 3200, unit: "kg" }
-  };
-
   const getRecipeCost = (itemName: string) => {
     const item = menuItems.find(m => m.name === itemName);
-    if (!item) return 480;
-    if (!item.recipe || item.recipe.length === 0) return 480;
+    if (!item || !item.recipe || item.recipe.length === 0) return 0;
     let total = 0;
     item.recipe.forEach((r: any) => {
-      const unitCost = INSUMO_UNIT_COSTS[r.ingredientId]?.price || 1500;
+      const unitCost = insumos.find((insumo) => insumo.id === r.ingredientId)?.costPerUnit || 0;
       total += r.amount * unitCost;
     });
     return parseFloat(total.toFixed(2));
@@ -109,7 +100,7 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
   todayStart.setHours(0, 0, 0, 0);
 
   const todayOrders = orders.filter(o => {
-    const oDate = new Date(o.timestamp);
+    const oDate = new Date(o.createdAt);
     return oDate >= todayStart && o.status === "Completado";
   });
 
@@ -124,17 +115,16 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
     return sum + orderCost;
   }, 0);
 
-  // Fallbacks if fresh system with zero transactions
-  const displaySalesToday = salesToday > 0 ? salesToday : 185400;
-  const displayCostToday = salesToday > 0 ? costToday : 58401;
-  const displayMarginToday = salesToday > 0 ? ((salesToday - costToday) / salesToday) * 100 : 68.5;
-  const displaySalesCount = todayOrders.length > 0 ? todayOrders.length : 24;
+  const displaySalesToday = salesToday;
+  const displayCostToday = costToday;
+  const displayMarginToday = salesToday > 0 ? ((salesToday - costToday) / salesToday) * 100 : 0;
+  const displaySalesCount = todayOrders.length;
 
   // Group weekly sales dynamically by day of week
   const weekdaySales = [0, 0, 0, 0, 0, 0, 0]; // Sun to Sat
   orders.forEach(o => {
     if (o.status === "Completado") {
-      const oDate = new Date(o.timestamp);
+      const oDate = new Date(o.createdAt);
       const day = oDate.getDay();
       weekdaySales[day] += o.total;
     }
@@ -151,15 +141,7 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
   ];
 
   const hasSalesHistory = chartDays.some(d => d.value > 0);
-  const finalChartDays = hasSalesHistory ? chartDays : [
-    { label: "Lunes", value: 150000 },
-    { label: "Martes", value: 170000 },
-    { label: "Miércoles", value: 160000 },
-    { label: "Jueves", value: 200000 },
-    { label: "Viernes", value: 240000 },
-    { label: "Sábado", value: 300000 },
-    { label: "Domingo", value: 280000 }
-  ];
+  const finalChartDays = chartDays;
 
   const maxVal = Math.max(...finalChartDays.map(d => d.value), 1);
 
@@ -167,7 +149,7 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
   const alerts = insumos.filter(i => i.quantity <= i.minLimit);
   const coveragePercent = insumos.length > 0 
     ? Math.round(((insumos.length - alerts.length) / insumos.length) * 100) 
-    : 100;
+    : 0;
 
   return (
     <motion.div
@@ -230,7 +212,7 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
               ${displayCostToday.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </div>
             <span className="text-[10px] text-[#FDFBF7]/60 font-semibold block mt-1.5">
-              Ratio de Costo: {((displayCostToday / displaySalesToday) * 100).toFixed(1)}%
+              Ratio de Costo: {displaySalesToday > 0 ? ((displayCostToday / displaySalesToday) * 100).toFixed(1) : "0.0"}%
             </span>
           </div>
           <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
@@ -264,14 +246,14 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
                 <p className="text-[10px] text-[#FDFBF7]/60 font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
               </div>
               <span className="text-[9px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
-                {hasSalesHistory ? "Datos Reales en Vivo" : "Datos Históricos Estimados"}
+                {hasSalesHistory ? "Datos Reales en Vivo" : "Sin ventas registradas"}
               </span>
             </div>
 
             {/* Custom CSS Bars */}
             <div className="flex justify-between items-end h-64 px-4 border-b border-[#D4AF37]/20 pb-2">
               {finalChartDays.map((bar, idx) => {
-                const heightPct = `${Math.max(8, Math.round((bar.value / maxVal) * 100))}%`;
+                const heightPct = `${bar.value > 0 ? Math.max(8, Math.round((bar.value / maxVal) * 100)) : 0}%`;
                 const formattedVal = bar.value >= 1000 ? `$${(bar.value / 1000).toFixed(0)}k` : `$${bar.value}`;
 
                 return (
@@ -425,14 +407,15 @@ export default function Dashboard({ onGoToCaja, onGoToInventario, onShowNotifica
                   Cancelar
                 </button>
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     const val = parseFloat(movQty);
                     if (isNaN(val) || val <= 0) {
                       onShowNotification("⚠️ Ingrese una cantidad válida mayor a cero.", "warning");
                       return;
                     }
                     const multiplier = movType === "Ingreso" ? 1 : -1;
-                    handleAdjustInsumo(movInsumoId, val * multiplier);
+                    const saved = await handleAdjustInsumo(movInsumoId, val * multiplier);
+                    if (!saved) return;
                     setIsMovementModalOpen(false);
                     onShowNotification(`📦 Ajuste realizado: Se registró ${movType.toLowerCase()} de ${val} unidades.`, "success");
                   }}

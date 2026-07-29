@@ -3,7 +3,7 @@ import { Order, FiscalDetails, ClientAccount } from "../types";
 import { X, Printer, Download, QrCode, CreditCard, DollarSign, Users, AlertTriangle, CheckCircle, Plus, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "../lib/supabase";
-import { arcaAdapter, ARCAResponse } from "../services/ARCAAdapter";
+import { SupabaseSyncService } from "../services/SupabaseSyncService";
 
 interface TicketPreviewModalProps {
   order: Order | null;
@@ -41,11 +41,6 @@ export default function TicketPreviewModal({
   const [splitType, setSplitType] = useState<"none" | "equal" | "items">("none");
   const [splitCount, setSplitCount] = useState<number>(2);
   const [selectedItemIndexes, setSelectedItemIndexes] = useState<number[]>([]);
-
-  // Simulation steps - Non-fiscal draft state by default until real WSAA/WSMTXCA Backend
-  const [isCaeAuthorized, setIsCaeAuthorized] = useState<boolean>(false);
-  const [simulatedCae, setSimulatedCae] = useState<string>("SIN_AUTORIZACION_FISCAL");
-  const [simulatedCaeVto, setSimulatedCaeVto] = useState<string>("-");
 
   const ticketRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +111,13 @@ export default function TicketPreviewModal({
   }, [order]);
 
   if (!order) return null;
+  const isCaeAuthorized = Boolean(
+    order.fiscal?.cae &&
+      order.fiscal.cae !== "SIN_AUTORIZACION_FISCAL" &&
+      ["authorized", "observed"].includes(order.fiscal.status || "")
+  );
+  const authorizedCae = isCaeAuthorized ? order.fiscal?.cae || "" : "";
+  const authorizedCaeVto = isCaeAuthorized ? order.fiscal?.caeExpiration || "" : "";
 
   // Adapt prices based on order's original price list (or let it fall back)
   const isTakeaway = order.priceList === "Takeaway";
@@ -147,32 +149,38 @@ export default function TicketPreviewModal({
     return total;
   }, [splitType, total, splitEqualAmount, splitItemsTotal]);
 
-  // IVA tax calculation according to AFIP guidelines
+  // Tax detail is shown only from the explicit fiscal classification of each item.
   const afipCalculations = useMemo(() => {
-    // Standard AFIP IVA rates: 21% for beverages/general, 10.5% for basic pastries/bakery
-    // We break down the current bill's total into Neto, 21% IVA, and 10.5% IVA
-    const netoFactor = 1.21;
-    const estimatedNeto = Number((activeBillTotal / netoFactor).toFixed(2));
-    const estimatedIva21 = Number((activeBillTotal - estimatedNeto).toFixed(2));
-    
-    // Simulate some items having 10.5% instead of 21%
-    const hasPastries = order.items.some(it => it.name.toLowerCase().includes("medialuna") || it.name.toLowerCase().includes("tarta") || it.name.toLowerCase().includes("alfajor"));
-    const iva105Basis = hasPastries ? Number((activeBillTotal * 0.3).toFixed(2)) : 0;
-    const iva21Basis = activeBillTotal - iva105Basis;
-
-    const net105 = Number((iva105Basis / 1.105).toFixed(2));
-    const tax105 = Number((iva105Basis - net105).toFixed(2));
-
-    const net21 = Number((iva21Basis / 1.21).toFixed(2));
-    const tax21 = Number((iva21Basis - net21).toFixed(2));
+    const selectedItems = splitType === "items"
+      ? order.items.filter((_, index) => selectedItemIndexes.includes(index))
+      : order.items;
+    const proportion = splitType === "equal" && total > 0 ? activeBillTotal / total : 1;
+    if (selectedItems.some((item) => item.vatRate === undefined)) {
+      return { classified: false, neto: 0, iva21: 0, iva105: 0, iva27: 0 };
+    }
+    let neto = 0;
+    let iva21 = 0;
+    let iva105 = 0;
+    let iva27 = 0;
+    selectedItems.forEach((item) => {
+      const gross = item.price * item.quantity * proportion;
+      const rate = Number(item.vatRate || 0);
+      const net = gross / (1 + rate / 100);
+      const tax = gross - net;
+      neto += net;
+      if (rate === 10.5) iva105 += tax;
+      if (rate === 21) iva21 += tax;
+      if (rate === 27) iva27 += tax;
+    });
 
     return {
-      neto: Number((net21 + net105).toFixed(2)),
-      iva21: tax21,
-      iva105: tax105,
-      total: activeBillTotal
+      classified: true,
+      neto: Number(neto.toFixed(2)),
+      iva21: Number(iva21.toFixed(2)),
+      iva105: Number(iva105.toFixed(2)),
+      iva27: Number(iva27.toFixed(2))
     };
-  }, [activeBillTotal, order.items]);
+  }, [activeBillTotal, order.items, selectedItemIndexes, splitType, total]);
 
   // Cash change calculator
   const cashChange = useMemo(() => {
@@ -184,7 +192,7 @@ export default function TicketPreviewModal({
   }, [receivedCash, activeBillTotal]);
 
   // Handle adding a new fiado client
-  const handleAddClient = () => {
+  const handleAddClient = async () => {
     if (!newClientName || !newClientCuit) {
       onShowNotification("⚠️ Por favor ingresa Nombre y CUIT del cliente.", "warning");
       return;
@@ -193,10 +201,23 @@ export default function TicketPreviewModal({
       id: "client-" + Date.now(),
       name: newClientName,
       cuit: newClientCuit,
-      phone: newClientPhone || "No especificado",
+      phone: newClientPhone || undefined,
       balance: 0,
-      creditLimit: 50000 // default $50k credit limit in ARS/USD relative limits
+      creditLimit: 0
     };
+    const { error } = await supabase.from("client_accounts").insert({
+      id: newClient.id,
+      name: newClient.name,
+      cuit: newClient.cuit,
+      phone: newClient.phone || null,
+      balance: 0,
+      credit_limit: 0
+    });
+    if (error) {
+      console.error("Error creating client account:", error);
+      onShowNotification("⚠️ No se pudo crear la cuenta corriente en Supabase.", "warning");
+      return;
+    }
     onUpdateClientAccounts([...clientAccounts, newClient]);
     setSelectedClientAccountId(newClient.id);
     setNewClientName("");
@@ -206,80 +227,50 @@ export default function TicketPreviewModal({
     onShowNotification(`👤 Cuenta de confianza creada para '${newClient.name}'.`, "success");
   };
 
-  // Process payment simulation
-  const handleConfirmReceiptPayment = () => {
+  const handleConfirmReceiptPayment = async () => {
     if (paymentMethod === "Fiado / Cta Cte" && !selectedClientAccountId) {
       onShowNotification("⚠️ Debes seleccionar un cliente para registrar el fiado.", "warning");
       return;
     }
 
-    if (paymentMethod === "Fiado / Cta Cte") {
-      const client = clientAccounts.find(c => c.id === selectedClientAccountId);
-      if (client) {
-        // Debit the balance
-        const updatedAccounts = clientAccounts.map(c => {
-          if (c.id === selectedClientAccountId) {
-            const newBal = c.balance - activeBillTotal;
-            if (Math.abs(newBal) > c.creditLimit) {
-              onShowNotification(`🚨 Límite de crédito excedido: El límite es de $${c.creditLimit}.`, "warning");
-            }
-            return { ...c, balance: newBal };
-          }
-          return c;
-        });
-        onUpdateClientAccounts(updatedAccounts);
-        onShowNotification(`📝 Fiado registrado en la cuenta de ${client.name}. Saldo: -$${Math.abs(client.balance - activeBillTotal).toFixed(2)}`, "success");
-      }
-    } else if (paymentMethod === "Tarjeta" && !posCoupon) {
+    if (paymentMethod === "Tarjeta" && !posCoupon) {
       onShowNotification("⚠️ Registra el número de cupón del POSNET/Clover para conciliar la tarjeta.", "warning");
       return;
-    } else if (paymentMethod === "Tarjeta") {
-      onShowNotification(`💳 Cupón POSNET #${posCoupon} registrado con éxito.`, "success");
-    } else if (paymentMethod === "Efectivo") {
+    }
+    if (paymentMethod === "Efectivo") {
       if (receivedCash && parseFloat(receivedCash) < activeBillTotal) {
         onShowNotification("⚠️ El monto recibido es menor al total a pagar.", "warning");
         return;
       }
-      onShowNotification(`💵 Pago recibido con éxito. Cambio a devolver: $${cashChange.toFixed(2)}`, "success");
-    } else if (paymentMethod === "MercadoPago") {
-      onShowNotification("📱 QR Dinámico Mercado Pago escaneado y acreditado instantáneamente.", "success");
     }
-
-    // Add transaction ledger entry
-    (async () => {
-      try {
-        const { data: cashData } = await supabase.from("cash_ledger").select("*").eq("id", "current").single();
-        const savedLedger = cashData || { total_collected: 0, cash: 0, card: 0, mercadopago: 0, transactions: [] };
-        
-        const updatedLedger = {
-          total_collected: Number(savedLedger.total_collected || 0) + activeBillTotal,
-          cash: Number(savedLedger.cash || 0) + (paymentMethod === "Efectivo" ? activeBillTotal : 0),
-          card: Number(savedLedger.card || 0) + (paymentMethod === "Tarjeta" ? activeBillTotal : 0),
-          mercadopago: Number(savedLedger.mercadopago || 0) + (paymentMethod === "MercadoPago" ? activeBillTotal : 0),
-          transactions: [
-            {
-              id: "tx-" + Date.now(),
-              type: "Cobro POS",
-              orderId: `PED-${order.id.substring(order.id.length - 4).toUpperCase()}`,
-              total: activeBillTotal,
-              method: paymentMethod,
-              timestamp: "Hace instantes"
-            },
-            ...(savedLedger.transactions || [])
-          ]
-        };
-        await supabase.from("cash_ledger").upsert({ id: "current", ...updatedLedger });
-        localStorage.setItem("origen_cash_ledger", JSON.stringify({
-          totalCollected: updatedLedger.total_collected,
-          cash: updatedLedger.cash,
-          card: updatedLedger.card,
-          mercadopago: updatedLedger.mercadopago,
-          transactions: updatedLedger.transactions
-        }));
-      } catch (err) {
-        console.error("Error updating cash ledger on Supabase:", err);
-      }
-    })();
+    const transactionId = paymentMethod === "Tarjeta"
+      ? `pos-${order.id}-${posCoupon.trim()}`
+      : `ticket-${crypto.randomUUID()}`;
+    const result = await SupabaseSyncService.recordPayment(
+      order.id,
+      activeBillTotal,
+      paymentMethod,
+      transactionId,
+      0,
+      paymentMethod === "Fiado / Cta Cte" ? selectedClientAccountId : undefined
+    );
+    if (!result.success) {
+      onShowNotification(`⚠️ No se registró el cobro: ${result.error}`, "warning");
+      return;
+    }
+    if (paymentMethod === "Fiado / Cta Cte") {
+      onUpdateClientAccounts(clientAccounts.map((client) =>
+        client.id === selectedClientAccountId
+          ? { ...client, balance: client.balance - activeBillTotal }
+          : client
+      ));
+    }
+    onShowNotification(
+      paymentMethod === "Efectivo"
+        ? `💵 Pago registrado. Cambio: $${cashChange.toFixed(2)}`
+        : `✅ Cobro de $${activeBillTotal.toFixed(2)} registrado y auditado.`,
+      "success"
+    );
 
     // If split bill, show separate notification or reset division
     if (splitType !== "none") {
@@ -358,9 +349,11 @@ export default function TicketPreviewModal({
       msg += `• ${it.quantity}x ${it.name} ($${(it.price * it.quantity).toFixed(2)})\n`;
     });
     msg += `-----------------------------------\n`;
-    msg += `*TOTAL FISCAL: $${activeBillTotal.toFixed(2)}*\n`;
-    if (invoiceType !== "No Fiscal") {
-      msg += `CAE ARCA: ${simulatedCae} (Vto: ${simulatedCaeVto})\n`;
+    msg += `*TOTAL: $${activeBillTotal.toFixed(2)}*\n`;
+    if (isCaeAuthorized) {
+      msg += `CAE ARCA: ${authorizedCae} (Vto: ${authorizedCaeVto})\n`;
+    } else {
+      msg += `Documento no fiscal / sin autorización ARCA\n`;
     }
     msg += `\n¡Gracias por elegir Resto Bar Del Teatro! 🍷`;
 
@@ -371,16 +364,16 @@ export default function TicketPreviewModal({
   // Generate plain-text file download simulating a high fidelity virtual PDF/Ticket download
   const handleDownloadPDF = () => {
     let text = `================================================\n`;
-    text += `           RESTO BAR DEL TEATRO\n`;
-    text += `   Constitución 944 (Frente Teatro Municipal)\n`;
-    text += `      Río Cuarto, Provincia de Córdoba\n`;
-    text += `       Tel: 358 5042311 / 358 4651847\n`;
-    text += `       Instagram: @restobardelteatro_rio4\n`;
-    text += `       CUIT: 30-71234567-8 - IVA Resp. Inscripto\n`;
+    text += `           ${order.fiscal?.issuerName || "RESTO BAR DEL TEATRO"}\n`;
+    if (isCaeAuthorized) {
+      text += `   ${order.fiscal?.issuerAddress || "Domicilio no informado"}\n`;
+      text += `   CUIT: ${order.fiscal?.issuerCuit || "No informado"}\n`;
+    } else {
+      text += `           DOCUMENTO NO FISCAL\n`;
+    }
     text += `================================================\n`;
     text += `FECHA: ${new Date(order.createdAt).toLocaleString("es-AR")}\n`;
-    text += `TIENDA: Sucursal Central La Plata\n`;
-    text += `TICKET COMPROBANTE Nro: 0001-${order.id.substring(order.id.length - 8).toUpperCase()}\n`;
+    text += `TICKET COMPROBANTE Nro: ${order.fiscal?.invoiceNumber || order.id}\n`;
     text += `CANAL DE VENTA: ${order.priceList.toUpperCase()}\n`;
     if (order.tableNumber) {
       text += `UBICACIÓN: ${order.tableNumber}\n`;
@@ -408,11 +401,12 @@ export default function TicketPreviewModal({
     }
     text += `================================================\n`;
     if (isCaeAuthorized) {
-      text += `COMPROBANTE AUTORIZADO POR AFIP\n`;
+      text += `COMPROBANTE AUTORIZADO POR ARCA\n`;
       text += `TIPO COMPROBANTE: FACTURA ${invoiceType}\n`;
-      text += `CAE: ${simulatedCae}\n`;
-      text += `VENCIMIENTO CAE: ${simulatedCaeVto}\n`;
-      text += `Cód. Barras AFIP: 30112233449010001${simulatedCae.substring(4, 12)}20260710\n`;
+      text += `CAE: ${authorizedCae}\n`;
+      text += `VENCIMIENTO CAE: ${authorizedCaeVto}\n`;
+    } else {
+      text += `DOCUMENTO NO FISCAL - SIN CAE/CAEA\n`;
     }
     text += `================================================\n`;
     text += `      ¡Gracias por elegir Café Puglia!\n`;
@@ -427,7 +421,12 @@ export default function TicketPreviewModal({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    onShowNotification("📥 Ticket de compra descargado en formato fiscal digital (.txt / PDF alternativo)", "success");
+    onShowNotification(
+      isCaeAuthorized
+        ? "📥 Comprobante fiscal autorizado descargado."
+        : "📥 Ticket no fiscal descargado.",
+      "success"
+    );
   };
 
   return (
@@ -616,11 +615,17 @@ export default function TicketPreviewModal({
 
                 {invoiceType !== "No Fiscal" && (
                   <div className="bg-stone-50 p-3 rounded-xl border border-stone-200/80 flex items-center justify-between text-xs">
-                    <span className="font-bold text-emerald-800 flex items-center gap-1.5">
-                      <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
-                      WSFE AFIP Conectado
+                    <span className={`font-bold flex items-center gap-1.5 ${isCaeAuthorized ? "text-emerald-800" : "text-amber-800"}`}>
+                      {isCaeAuthorized ? (
+                        <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                      )}
+                      {isCaeAuthorized ? "Autorización ARCA verificada" : "Vista previa no fiscal"}
                     </span>
-                    <span className="font-mono text-[10px] text-espresso/50 font-bold">CAE AUTORIZADO</span>
+                    <span className="font-mono text-[10px] text-espresso/50 font-bold">
+                      {isCaeAuthorized ? "CAE AUTORIZADO" : "SIN CAE"}
+                    </span>
                   </div>
                 )}
               </div>
@@ -812,13 +817,14 @@ export default function TicketPreviewModal({
                 <div className="absolute bottom-0 left-0 right-0 h-2 bg-stone-100" style={{ backgroundImage: "linear-gradient(-45deg, white 4px, transparent 0), linear-gradient(45deg, white 4px, transparent 0)", backgroundSize: "8px 8px" }} />
 
                 <div className="text-center mb-4 leading-normal">
-                  <h5 className="font-bold text-sm tracking-tight m-0 uppercase">RESTO BAR DEL TEATRO</h5>
+                  <h5 className="font-bold text-sm tracking-tight m-0 uppercase">{order.fiscal?.issuerName || "RESTO BAR DEL TEATRO"}</h5>
                   <p className="text-[9px] text-stone-600 m-0 leading-tight">
-                    Constitución 944 (Frente al Teatro)<br />
-                    Río Cuarto, Córdoba<br />
-                    Tel: 358 5042311 / 4651847<br />
-                    IG: @restobardelteatro_rio4<br />
-                    CUIT: 30-71234567-8 • IVA Resp. Inscripto
+                    {isCaeAuthorized ? (
+                      <>
+                        {order.fiscal?.issuerAddress || "Domicilio no informado"}<br />
+                        CUIT: {order.fiscal?.issuerCuit || "No informado"}
+                      </>
+                    ) : "Documento no fiscal"}
                   </p>
                 </div>
 
@@ -826,8 +832,7 @@ export default function TicketPreviewModal({
 
                 <div className="text-[9px] text-stone-600 space-y-0.5">
                   <div>Fecha: {new Date(order.createdAt).toLocaleString("es-AR")}</div>
-                  <div>Comprobante: Nro. 0001-{order.id.substring(order.id.length - 8).toUpperCase()}</div>
-                  <div>Punto de Venta: 0001 (La Plata)</div>
+                  <div>Comprobante: {order.fiscal?.invoiceNumber || order.id}</div>
                   <div>Canal de Precios: {order.priceList.toUpperCase()}</div>
                   {order.tableNumber && <div className="font-bold text-stone-800">Ubicación: {order.tableNumber}</div>}
                   {invoiceType === "A" && customerName && (
@@ -873,7 +878,7 @@ export default function TicketPreviewModal({
                     <span>SUBTOTAL:</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
-                  {invoiceType !== "No Fiscal" && (
+                  {isCaeAuthorized && afipCalculations.classified && (
                     <>
                       <div className="flex justify-between text-[9px] text-stone-600">
                         <span>Gravado (Neto):</span>
@@ -887,6 +892,12 @@ export default function TicketPreviewModal({
                         <div className="flex justify-between text-[9px] text-stone-600">
                           <span>IVA 10.50%:</span>
                           <span>${afipCalculations.iva105.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {afipCalculations.iva27 > 0 && (
+                        <div className="flex justify-between text-[9px] text-stone-600">
+                          <span>IVA 27.00%:</span>
+                          <span>${afipCalculations.iva27.toFixed(2)}</span>
                         </div>
                       )}
                     </>
@@ -908,23 +919,18 @@ export default function TicketPreviewModal({
                   </div>
                 )}
 
-                {/* AFIP BOX */}
+                {/* ARCA authorization box: rendered only with a persisted, verified CAE. */}
                 {invoiceType !== "No Fiscal" && isCaeAuthorized && (
                   <div className="mt-4 pt-3 border-t border-double border-stone-400 text-center text-[8px] text-stone-700 space-y-1">
                     <div className="flex items-center justify-center font-bold gap-1 text-stone-900 border border-stone-400 p-1 bg-stone-50 rounded">
-                      <span className="bg-stone-900 text-white px-1 text-[7px] font-mono leading-none">AFIP</span>
+                      <span className="bg-stone-900 text-white px-1 text-[7px] font-mono leading-none">ARCA</span>
                       <span>COMPROBANTE AUTORIZADO</span>
                     </div>
-                    <div className="font-mono text-center select-none py-1">
-                      {/* Fake barcode structure */}
-                      || | |||| | || | ||| |||| | | ||| | ||| || ||
-                      <div className="text-[6px] tracking-tight text-stone-500 mt-0.5">30112233449010001{simulatedCae.substring(4, 12)}20260710</div>
-                    </div>
                     <div className="flex justify-between pt-0.5 border-t border-stone-200">
-                      <span>CAE: {simulatedCae}</span>
+                      <span>CAE: {authorizedCae}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>VTO CAE: {simulatedCaeVto}</span>
+                      <span>VTO CAE: {authorizedCaeVto}</span>
                     </div>
                   </div>
                 )}

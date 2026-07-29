@@ -1,55 +1,105 @@
 import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 
-const supabaseUrl = "https://idjecovmqlyjhflfakfr.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkamVjb3ZtcWx5amhmbGZha2ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NDgzMDYsImV4cCI6MjA5ODUyNDMwNn0.ERhlMTS-ElRhghi10ZNXPi8IvUw9N3O-p8yuPJk6GIY";
+dotenv.config({ path: ".env.development.local", override: true });
+dotenv.config({ path: ".env", override: false });
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-async function testApp() {
-  console.log("====================================================");
-  console.log("   CAFÉ PUGLIA PRO - SUITE DE TEST INTEGRADO (DB)   ");
-  console.log("====================================================");
-  console.log("Fecha/Hora:", new Date().toLocaleString("es-AR"));
-  console.log("URL de Conexión:", supabaseUrl);
-  console.log("----------------------------------------------------\n");
-
-  const tables = [
-    { name: "users_accounts", desc: "Cuentas del personal y roles" },
-    { name: "menu_items", desc: "Carta de productos y stock" },
-    { name: "product_images", desc: "Fotos de platos y productos locales" },
-    { name: "orders", desc: "Comandas y estados" },
-    { name: "client_accounts", desc: "Cuentas corrientes (Fiado)" },
-    { name: "reservations", desc: "Reservas de mesas del salón" },
-    { name: "barista_calibrations", desc: "Calibración diaria del barista" },
-    { name: "system_settings", desc: "Configuraciones globales" }
-  ];
-
-  let successCount = 0;
-
-  for (const table of tables) {
-    process.stdout.write(`Testing [${table.name}] (${table.desc})... `);
-    try {
-      const { data, error } = await supabase.from(table.name).select("*").limit(1);
-      if (error) {
-        if (table.name === "product_images" && error.message.includes("public.product_images")) {
-          console.log(`⚠️ REQUERIDO: La tabla 'product_images' no existe en Supabase. Ejecute la migración en supabase_schema.sql en el dashboard de Supabase.`);
-        } else {
-          console.log(`❌ ERROR: ${error.message}`);
-        }
-      } else {
-        const { count, error: countError } = await supabase.from(table.name).select("*", { count: 'exact', head: true });
-        const size = countError ? "?" : count;
-        console.log(`✅ OK (${size} registros)`);
-        successCount++;
-      }
-    } catch (err) {
-      console.log(`❌ EXCEPCIÓN: ${err.message}`);
-    }
-  }
-
-  console.log("\n----------------------------------------------------");
-  console.log(`RESULTADO FINAL: ${successCount}/${tables.length} tablas verificadas con éxito.`);
-  console.log("====================================================");
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("Faltan VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY.");
+  process.exit(1);
 }
 
-testApp();
+const projectRef = new URL(supabaseUrl).hostname.split(".")[0];
+const expectedRef = process.env.EXPECTED_SUPABASE_PROJECT_REF || "qavpleanmjbxbwfzismp";
+if (projectRef !== expectedRef) {
+  console.error(`Proyecto incorrecto: ${projectRef}. Se esperaba ${expectedRef}.`);
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
+const publicTables = [
+  ["business_profile", "id"],
+  ["daily_menu", "day_of_week,active"],
+  ["menu_items", "id,name,price,stock,is_available,recipe"],
+  ["product_images", "id,product_id"],
+  ["restaurant_tables", "id,name,capacity,active"]
+];
+const protectedTables = [
+  "insumos",
+  "suppliers",
+  "inventory_movements",
+  "inventory_audits",
+  "client_accounts",
+  "users_accounts",
+  "orders",
+  "order_items",
+  "archived_orders",
+  "reservations",
+  "waiter_calls",
+  "cash_ledger",
+  "cash_closures",
+  "barista_calibrations",
+  "system_settings",
+  "staff_attendance",
+  "audit_logs",
+  "fiscal_invoices",
+  "public_order_rate_limits"
+];
+
+let failures = 0;
+console.log(`Supabase canónico: ${projectRef}`);
+
+for (const [table, columns] of publicTables) {
+  const { error } = await supabase.from(table).select(columns).limit(1);
+  if (error) {
+    failures += 1;
+    console.error(
+      `❌ ${table}: ${error.code || "sin-código"} ${error.message || JSON.stringify(error)}`
+    );
+  } else {
+    const { count } = await supabase
+      .from(table)
+      .select("*", { count: "exact", head: true });
+    console.log(`✅ ${table}: accesible (${count ?? 0} registros)`);
+  }
+}
+
+for (const table of protectedTables) {
+  const { error } = await supabase.from(table).select("*").limit(1);
+  if (!error) {
+    failures += 1;
+    console.error(`❌ ${table}: lectura anónima habilitada; RLS/grants inseguros`);
+  } else if (["PGRST205", "42P01"].includes(error.code)) {
+    failures += 1;
+    console.error(`❌ ${table}: tabla ausente`);
+  } else {
+    console.log(`✅ ${table}: existe y bloquea lectura anónima`);
+  }
+}
+
+const { data: exposedUsers, error: sensitiveError } = await supabase
+  .from("users_accounts")
+  .select("password,pin")
+  .limit(1);
+if (!sensitiveError && exposedUsers?.length) {
+  failures += 1;
+  console.error("❌ users_accounts expone password/pin al cliente anónimo");
+} else {
+  console.log("✅ users_accounts no expone credenciales heredadas");
+}
+
+const { count: menuCount, error: menuError } = await supabase
+  .from("menu_items")
+  .select("id", { count: "exact", head: true });
+if (menuError || !menuCount) {
+  failures += 1;
+  console.error("❌ La carta canónica está vacía o no responde");
+}
+
+console.log(`\nResultado: ${failures === 0 ? "LISTO" : `${failures} bloqueo(s)`}`);
+process.exitCode = failures === 0 ? 0 : 1;

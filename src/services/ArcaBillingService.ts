@@ -62,22 +62,19 @@ export class ArcaBillingService {
     const ptoVta = "00005";
     const draftNumber = "BORRADOR-" + order.id.slice(-6).toUpperCase();
 
-    // Compute Tax Breakdown (Neto vs IVA 21% incluido)
-    const total = order.total;
-    const neto = parseFloat((total / 1.21).toFixed(2));
-    const iva21 = parseFloat((total - neto).toFixed(2));
-
     return {
       invoiceType,
       invoiceNumber: `${ptoVta}-${draftNumber}`,
       cae: "SIN_AUTORIZACION_FISCAL",
       caeExpiration: "-",
-      neto,
-      iva21,
+      neto: 0,
+      iva21: 0,
       iva105: 0,
       customerCuit: cleanCuit || "00000000",
       customerName: customer.nameOrReason || "Consumidor Final",
-      qrCodeUrl: "" // No QR code generated without real ARCA authorization
+      qrCodeUrl: "",
+      status: "draft",
+      errors: ["Clasificación fiscal y autorización ARCA pendientes."]
     };
   }
 

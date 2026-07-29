@@ -2,8 +2,12 @@ node_modules/
 build/
 dist/
 coverage/
+test-results/
+playwright-report/
+backups/
 .DS_Store
 *.log
 .env*
 !.env.example
 .vite/
+supabase/.temp/

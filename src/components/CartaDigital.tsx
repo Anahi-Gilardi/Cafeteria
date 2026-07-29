@@ -1,11 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import RestoBarLogo from "./RestoBarLogo";
 import { MenuItem, Table } from "../types";
-import { TABLES_DATA } from "../data/menu";
-import { MenuPDFService } from "../services/MenuPDFService";
 import WaiterCallService from "../services/WaiterCallService";
 import { Smartphone, QrCode, Bell, Sparkles, Coffee, Heart, Info, ArrowLeftRight, Check, HeartCrack, HelpCircle, Utensils, FileText, CreditCard } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface CartaDigitalProps {
   menuItems: MenuItem[];
@@ -14,37 +13,44 @@ interface CartaDigitalProps {
 }
 
 export default function CartaDigital({ menuItems, onAddToBag, onShowNotification }: CartaDigitalProps) {
-  const [selectedTable, setSelectedTable] = useState<string>("mesa-1");
+  const [selectedTable, setSelectedTable] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Dynamic tables list loaded from configured layout
-  const tables = useMemo(() => {
-    try {
-      const saved = localStorage.getItem("puglia_tables");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((t: any) => t && t.status === "Activo").map((t: any, idx: number) => {
-            const defaultTable = TABLES_DATA[idx] || TABLES_DATA[idx % TABLES_DATA.length];
-            return {
-              id: t.id,
-              name: t.name,
-              capacity: t.capacity,
-              type: defaultTable?.type || "table",
-              description: defaultTable?.description || `Mesa de salón para ${t.capacity} comensales.`,
-              coordX: defaultTable?.coordX || 20,
-              coordY: defaultTable?.coordY || 20,
-              status: "Libre" as const
-            };
-          });
+  const [tables, setTables] = useState<Table[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("restaurant_tables")
+      .select("id,name,capacity")
+      .eq("active", true)
+      .order("name")
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error("No se pudieron cargar las mesas:", error.message);
+          setTables([]);
+          return;
         }
-      }
-    } catch (e) {
-      console.error("Error reading tables in CartaDigital:", e);
-    }
-    return TABLES_DATA;
+        const tableTypes: Table["type"][] = ["window", "sofa", "bar", "terrace", "reading"];
+        const mapped = (data || []).map((table, index) => ({
+          id: table.id,
+          name: table.name,
+          capacity: Number(table.capacity),
+          type: tableTypes[index % tableTypes.length],
+          description: `Mesa de salón para ${table.capacity} comensales.`,
+          coordX: 0,
+          coordY: 0,
+          status: "Libre" as const
+        }));
+        setTables(mapped);
+        setSelectedTable((current) => current || mapped[0]?.id || "");
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Find the selected table details
@@ -99,31 +105,50 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
 
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <button
-            onClick={() => MenuPDFService.generateMenuPDF(menuItems)}
+            onClick={async () => {
+              const { MenuPDFService } = await import("../services/MenuPDFService");
+              MenuPDFService.generateMenuPDF(menuItems);
+            }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black shadow-md hover:brightness-110 transition-all cursor-pointer gold-glow uppercase tracking-wider"
           >
             <FileText className="h-4 w-4" /> Descargar Carta PDF Oficial
           </button>
 
           <button
-            onClick={() => {
-              const currentTableObj = TABLES_DATA.find(t => t.id === selectedTable);
-              const tNum = currentTableObj ? currentTableObj.name : "1";
-              WaiterCallService.requestAttention(tNum, "call_waiter");
-              onShowNotification(`🔔 Solicitud enviada al mozo para ${tNum}.`, "success");
+            onClick={async () => {
+              if (!tableDetails) {
+                onShowNotification("⚠️ Seleccione una mesa activa.", "warning");
+                return;
+              }
+              try {
+                await WaiterCallService.requestAttention(tableDetails.name, "call_waiter");
+                onShowNotification(`🔔 Solicitud enviada al mozo para ${tableDetails.name}.`, "success");
+              } catch (error) {
+                console.error("Error requesting waiter:", error);
+                onShowNotification("⚠️ No se pudo enviar la solicitud.", "warning");
+              }
             }}
+            disabled={!tableDetails}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
             <Bell className="h-4 w-4" /> 🔔 Llamar al Mozo
           </button>
 
           <button
-            onClick={() => {
-              const currentTableObj = TABLES_DATA.find(t => t.id === selectedTable);
-              const tNum = currentTableObj ? currentTableObj.name : "1";
-              WaiterCallService.requestAttention(tNum, "request_bill");
-              onShowNotification(`💳 Pedido de cuenta enviado para ${tNum}.`, "info");
+            onClick={async () => {
+              if (!tableDetails) {
+                onShowNotification("⚠️ Seleccione una mesa activa.", "warning");
+                return;
+              }
+              try {
+                await WaiterCallService.requestAttention(tableDetails.name, "request_bill");
+                onShowNotification(`💳 Pedido de cuenta enviado para ${tableDetails.name}.`, "info");
+              } catch (error) {
+                console.error("Error requesting bill:", error);
+                onShowNotification("⚠️ No se pudo solicitar la cuenta.", "warning");
+              }
             }}
+            disabled={!tableDetails}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#2A1B12] border border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider gold-glow"
           >
             <CreditCard className="h-4 w-4" /> 💳 Pedir la Cuenta

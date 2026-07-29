@@ -29,9 +29,9 @@ export class ReceiptPDFService {
     currentY += 4.5;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
-    doc.text("Constitución 944 • Río Cuarto, Córdoba", centerX, currentY, { align: "center" });
+    doc.text("Datos comerciales según perfil registrado", centerX, currentY, { align: "center" });
     doc.text("Tel: 358 5042311 / 358 4651847", centerX, currentY + 3.5, { align: "center" });
-    doc.text("CUIT: 30-71234567-8", centerX, currentY + 7, { align: "center" });
+    doc.text("COMPROBANTE NO FISCAL", centerX, currentY + 7, { align: "center" });
 
     currentY += 12;
     doc.setFont("helvetica", "bold");
@@ -189,13 +189,13 @@ export class ReceiptPDFService {
     doc.setTextColor(26, 17, 11);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("RESTO BAR DEL TEATRO", 15, 20);
+    doc.text(fiscal.issuerName || "EMISOR NO INFORMADO", 15, 20);
 
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text("Razón Social: RESTO BAR DEL TEATRO S.A.", 15, 26);
-    doc.text("Domicilio Comercial: Constitución 944, Río Cuarto", 15, 30);
-    doc.text("Condición IVA: Responsable Inscripto", 15, 34);
+    doc.text(`Razón Social: ${fiscal.issuerName || "No informada"}`, 15, 26);
+    doc.text(`Domicilio Comercial: ${fiscal.issuerAddress || "No informado por ARCA"}`, 15, 30);
+    doc.text("Condición IVA: según configuración fiscal ARCA", 15, 34);
 
     // Right Header (Invoice Details)
     doc.setFontSize(12);
@@ -207,7 +207,7 @@ export class ReceiptPDFService {
     doc.setFont("helvetica", "normal");
     doc.text(`N° Comprobante: ${fiscal.invoiceNumber}`, pageWidth - 15, 26, { align: "right" });
     doc.text(`Fecha Emisión: ${new Date(order.createdAt).toLocaleDateString("es-AR")}`, pageWidth - 15, 30, { align: "right" });
-    doc.text(`CUIT Emisor: 30-71234567-8`, pageWidth - 15, 34, { align: "right" });
+    doc.text(`CUIT Emisor: ${fiscal.issuerCuit || "No informado"}`, pageWidth - 15, 34, { align: "right" });
 
     currentY = 50;
 

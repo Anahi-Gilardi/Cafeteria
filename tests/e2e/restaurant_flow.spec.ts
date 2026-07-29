@@ -1,70 +1,94 @@
-// @ts-nocheck
-import { test, expect } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-test.describe('Resto Bar Del Teatro - Suite de Pruebas E2E & Alta Concurrencia POS/ERP', () => {
+test.describe("Resto Bar Del Teatro", () => {
+  test("carga la portada y abre la carta pública sin errores de consola", async ({ page }) => {
+    const errors: string[] = [];
+    // UI E2E is deterministic; the separate test:db suite owns the live schema contract.
+    await page.route("**/rest/v1/daily_menu?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "content-range": "0-0/0" },
+        body: "[]"
+      });
+    });
+    await page.route("**/rest/v1/restaurant_tables?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "content-range": "0-0/0" },
+        body: "[]"
+      });
+    });
+    await page.route("**/rest/v1/business_profile?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "content-range": "0-0/0" },
+        body: "[]"
+      });
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        const location = message.location().url;
+        errors.push(`${message.text()}${location ? ` (${location})` : ""}`);
+      }
+    });
 
-  test.beforeEach(async ({ page }) => {
-    // 1. Navegar a la aplicación e iniciar sesión como Administrador
-    await page.goto('http://localhost:5173');
-    
-    // Login con credenciales oficiales
-    await page.fill('input[type="text"]', 'admin');
-    await page.fill('input[type="password"]', '1998');
-    await page.click('button:has-text("INICIAR SESIÓN")');
-
-    // Confirmar que ingresó al Dashboard o Panel Principal
-    await expect(page.locator('text=Control de Operaciones')).toBeVisible({ timeout: 5000 });
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "El sabor también sale a escena." })
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Ver carta y pedir" })
+      .click();
+    await expect(
+      page.getByRole("button", { name: /Volver a la portada/i })
+    ).toBeVisible();
+    expect(errors).toEqual([]);
   });
 
-  test('TC-01: Flujo Completo - Crear Pedido, Ruteo KDS, Descuento de Stock y Facturación ARCA', async ({ page }) => {
-    // Step 1: Abrir la Carta Digital / POS de Pedidos
-    await page.click('button:has-text("Carta & Recetas")');
-    await expect(page.locator('text=Menú Disponible')).toBeVisible();
+  test("la experiencia publicitaria es responsive y conserva la paleta del sistema", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route("**/rest/v1/daily_menu?**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "content-range": "0-0/0" },
+        body: "[]"
+      });
+    });
 
-    // Step 2: Navegar al Mapa de Salón e Iniciar Comanda en Mesa 2
-    await page.click('button:has-text("Mapa de Salón")');
-    await page.click('text=Mesa 2');
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Abrir menú de navegación móvil" })).toBeVisible();
+    await expect(page.getByText("Propuestas", { exact: true })).toBeVisible();
+    await expect(page.getByText(/\$0(?:\D|$)/)).toHaveCount(0);
 
-    // Step 3: Seleccionar Modalidad Salón e Ingresar Productos
-    // Agregar 1 Submarino de Chocolate Bariloche y 1 Bife de Chorizo
-    await page.click('button:has-text("Tomar Pedido / Abrir Comanda")');
-    
-    // Step 4: Confirmar la Comanda en el Carrito (CartDrawer)
-    await page.click('button:has-text("CONFIRMAR PEDIDO")');
-    await expect(page.locator('text=Comanda #')).toBeVisible();
-
-    // Step 5: Verificar Ruteo Inteligente en KDS (Cocina y Barra)
-    await page.click('button:has-text("Caja & Comandas")');
-    await expect(page.locator('text=Submarino de Chocolate Bariloche')).toBeVisible();
-    await expect(page.locator('text=Bife de Chorizo')).toBeVisible();
-
-    // Step 6: Cobro en Caja con Facturación Fiscal ARCA
-    await page.click('button:has-text("Cobrar / Facturar")');
-    await page.click('button:has-text("Efectivo")');
-    await page.click('button:has-text("AUTORIZAR CON ARCA / AFIP")');
-
-    // Validar generación de CAE de 14 dígitos y Código QR
-    await expect(page.locator('text=CAE:')).toBeVisible();
-    await expect(page.locator('text=www.arca.gob.ar')).toBeVisible();
+    await page
+      .getByRole("button", { name: "Ver carta y pedir" })
+      .click();
+    await expect(page.getByRole("heading", { name: "Destacados de la Carta" })).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+    ).toBe(true);
   });
 
-  test('TC-02: Manejo de Resiliencia Offline Queue ante Pérdida de Conexión Wi-Fi', async ({ page, context }) => {
-    // Simular Network Offline Throttling
-    await context.setOffline(true);
+  test("el acceso del personal exige email y no ofrece credenciales rápidas", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Acceso a POS y Personal" }).click();
+    await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+    await expect(page.locator("#staff-password")).toBeVisible();
+    await expect(page.getByText(/PIN rápido|admin.*1998/i)).toHaveCount(0);
+  });
 
-    // Tomar pedido en modo offline
-    await page.click('button:has-text("Mapa de Salón")');
-    await page.click('text=Mesa 1');
-    await page.click('button:has-text("Tomar Pedido / Abrir Comanda")');
-    await page.click('button:has-text("CONFIRMAR PEDIDO")');
-
-    // Verificar encolamiento en Offline Queue local
-    await expect(page.locator('text=Servidor Local Offline Activo')).toBeVisible();
-
-    // Restablecer señal Wi-Fi
-    await context.setOffline(false);
-
-    // Verificar sincronización automática e idempotente
-    await expect(page.locator('text=Sincronizado')).toBeVisible({ timeout: 10000 });
+  test("un login inválido no concede acceso administrativo", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Acceso a POS y Personal" }).click();
+    await page.getByLabel("Correo electrónico").fill("invalid@example.com");
+    await page.locator("#staff-password").fill("invalid-password");
+    await page.getByRole("button", { name: "Ingresar al sistema POS" }).click();
+    await expect(page.getByText(/credenciales|iniciar sesión|error/i).first()).toBeVisible();
+    await expect(page.getByText("Control de Operaciones")).toHaveCount(0);
   });
 });

@@ -1,71 +1,95 @@
 import { Order } from "../types";
-import { supabase } from "../lib/supabase";
+import { SupabaseSyncService } from "./SupabaseSyncService";
 
 export interface PendingOfflineOrder {
   id: string;
   order: Order;
   timestamp: string;
   retryCount: number;
+  nextRetryAt: string;
+  lastError?: string;
 }
 
-export class OfflineQueueService {
-  private queueKey = "puglia_offline_orders_queue";
+const MAX_RETRIES = 8;
 
-  public getPendingQueue(): PendingOfflineOrder[] {
+export class OfflineQueueService {
+  private readonly queueKey = "castano_offline_orders_v2";
+
+  getPendingQueue(): PendingOfflineOrder[] {
     try {
       const saved = localStorage.getItem(this.queueKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
       return [];
     }
   }
 
-  public enqueueOrder(order: Order): void {
+  enqueueOrder(order: Order, reason?: string): void {
     const queue = this.getPendingQueue();
+    if (queue.some((entry) => entry.id === order.id)) return;
     queue.push({
       id: order.id,
-      order,
+      order: { ...order, source: order.source || "offline_sync" },
       timestamp: new Date().toISOString(),
-      retryCount: 0
+      retryCount: 0,
+      nextRetryAt: new Date().toISOString(),
+      lastError: reason
     });
-    localStorage.setItem(this.queueKey, JSON.stringify(queue));
+    this.persist(queue);
   }
 
-  public async syncPendingQueue(onSyncedItem?: (orderId: string) => void): Promise<number> {
+  async syncPendingQueue(
+    onSyncedItem?: (orderId: string) => void
+  ): Promise<{ synced: number; pending: number }> {
     const queue = this.getPendingQueue();
-    if (queue.length === 0) return 0;
-
-    let syncedCount = 0;
-    const remainingQueue: PendingOfflineOrder[] = [];
-
-    for (const item of queue) {
-      try {
-        const { error } = await supabase.from("orders").insert({
-          id: item.order.id,
-          subtotal: item.order.subtotal,
-          tax: item.order.tax,
-          total: item.order.total,
-          type: item.order.type,
-          status: item.order.status,
-          created_at: item.order.createdAt,
-          items: item.order.items,
-          table_number: item.order.tableNumber,
-          payment_method: item.order.paymentMethod
-        });
-
-        if (!error) {
-          syncedCount++;
-          if (onSyncedItem) onSyncedItem(item.order.id);
-        } else {
-          remainingQueue.push({ ...item, retryCount: item.retryCount + 1 });
-        }
-      } catch (err) {
-        remainingQueue.push({ ...item, retryCount: item.retryCount + 1 });
-      }
+    if (queue.length === 0 || !navigator.onLine) {
+      return { synced: 0, pending: queue.length };
     }
 
-    localStorage.setItem(this.queueKey, JSON.stringify(remainingQueue));
-    return syncedCount;
+    let synced = 0;
+    const remaining: PendingOfflineOrder[] = [];
+    const now = Date.now();
+
+    for (const item of queue) {
+      if (new Date(item.nextRetryAt).getTime() > now) {
+        remaining.push(item);
+        continue;
+      }
+
+      const result = await SupabaseSyncService.saveOrder(item.order);
+      if (result.success) {
+        synced += 1;
+        onSyncedItem?.(item.id);
+        continue;
+      }
+
+      const retryCount = item.retryCount + 1;
+      const delayMinutes = Math.min(60, 2 ** Math.min(retryCount, 6));
+      remaining.push({
+        ...item,
+        retryCount,
+        nextRetryAt: new Date(now + delayMinutes * 60_000).toISOString(),
+        lastError:
+          retryCount >= MAX_RETRIES
+            ? `Requiere revisión manual: ${result.error || "error desconocido"}`
+            : result.error
+      });
+    }
+
+    this.persist(remaining);
+    return { synced, pending: remaining.length };
+  }
+
+  remove(orderId: string): void {
+    this.persist(this.getPendingQueue().filter((item) => item.id !== orderId));
+  }
+
+  private persist(queue: PendingOfflineOrder[]): void {
+    localStorage.setItem(this.queueKey, JSON.stringify(queue));
+    window.dispatchEvent(
+      new CustomEvent("castano:offline-queue", { detail: { pending: queue.length } })
+    );
   }
 }
 

@@ -24,7 +24,7 @@ export class OrderService {
    * Crea una nueva comanda atómica, calcula los ítems y los distribuye en tiempo real.
    */
   static async createOrder(payload: CreateOrderPayload): Promise<Order> {
-    const orderId = "ord-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7);
+    const orderId = `ord-${crypto.randomUUID()}`;
     
     // 1. Mapeo de ítems con desglose de modificadores y destinos
     const orderItems = payload.items.map(i => ({

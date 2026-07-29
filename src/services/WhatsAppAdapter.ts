@@ -77,7 +77,8 @@ ${pickupInstructions}
   }
 
   /**
-   * Enqueue a WhatsApp message for asynchronous dispatch
+   * Enqueue a message so the application can prepare a wa.me handoff.
+   * Automatic delivery requires a server-side WhatsApp provider.
    */
   public enqueueMessage(payload: WhatsAppMessagePayload): void {
     console.log(`[WhatsAppAdapter] Enqueuing ${payload.type} for ${payload.to}`);
@@ -86,7 +87,7 @@ ${pickupInstructions}
   }
 
   /**
-   * Process pending message queue with resilience and idempotency
+   * Process pending link-generation work without claiming external delivery.
    */
   private async processQueue(): Promise<void> {
     if (this.isProcessingQueue || this.messageQueue.length === 0) return;
@@ -108,32 +109,20 @@ ${pickupInstructions}
   }
 
   /**
-   * Dispatch Message via Webhook / Meta API / Direct wa.me fallback
+   * Prepare a direct wa.me URL. This does not send the message automatically.
    */
   private async dispatchMessage(msg: WhatsAppMessagePayload): Promise<void> {
-    console.log(`[WhatsAppAdapter] Dispatching ${msg.type} to ${msg.to}...`);
+    console.log(`[WhatsAppAdapter] Preparing ${msg.type} handoff for ${msg.to}...`);
 
-    // 1. Clean phone number
     const cleanPhone = msg.to.replace(/\D/g, "");
     const formattedPhone = cleanPhone.startsWith("54") ? cleanPhone : "54" + cleanPhone;
-
-    // 2. Simulated Webhook POST payload to Meta WhatsApp Cloud API / Baileys bridge
-    const payload = {
-      messaging_product: "whatsapp",
-      to: formattedPhone,
-      type: "text",
-      text: { body: msg.body }
-    };
-
-    // 3. Fallback: Generate wa.me URL for instant browser redirect when clicked by staff
     const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg.body)}`;
 
-    // Store waUrl on window for quick action if running in browser
     if (typeof window !== "undefined") {
       (window as any).__lastWhatsAppUrl = waUrl;
     }
 
-    console.log(`[WhatsAppAdapter] Dispatched successfully! Webhook URL: ${waUrl}`);
+    console.log(`[WhatsAppAdapter] WhatsApp handoff prepared for order ${msg.orderId}.`);
   }
 
   /**

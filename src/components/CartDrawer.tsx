@@ -1,4 +1,4 @@
-import { useState, useMemo, ChangeEvent, FormEvent } from "react";
+import { useState, useMemo, useEffect, FormEvent } from "react";
 import { CartItem, Order, Reservation, OrderStatusType, ClientAccount } from "../types";
 import { X, Trash2, Plus, Minus, ShoppingBag, CreditCard, ArrowRight, Table, Coffee, Truck, MapPin, User, Phone, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -10,7 +10,7 @@ interface CartDrawerProps {
   cartItems: CartItem[];
   onUpdateQuantity: (cartItemId: string, newQty: number) => void;
   onRemoveItem: (cartItemId: string) => void;
-  onCheckout: (order: Order) => void;
+  onCheckout: (order: Order) => void | Promise<void>;
   activeBookings: Reservation[];
   clientAccounts?: ClientAccount[];
 }
@@ -44,15 +44,32 @@ export default function CartDrawer({
   const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte">("Tarjeta");
   const [receivedCash, setReceivedCash] = useState<string>("");
   const [selectedClientAccountId, setSelectedClientAccountId] = useState<string>("");
-  const [cardName, setCardName] = useState<string>("");
-  const [cardNumber, setCardNumber] = useState<string>("");
-  const [cardExpiry, setCardExpiry] = useState<string>("");
-  const [cardCVV, setCardCVV] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [tipPercent, setTipPercent] = useState<number>(10);
   const [customTip, setCustomTip] = useState<string>("");
   const [splitDinersCount, setSplitDinersCount] = useState<number>(1);
+  const [deliveryConfig, setDeliveryConfig] = useState({ fee: 0, freeMinimum: 0 });
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("business_profile")
+      .select("delivery_fee,delivery_free_min")
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data) {
+          setDeliveryConfig({
+            fee: Number(data.delivery_fee || 0),
+            freeMinimum: Number(data.delivery_free_min || 0)
+          });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Helper function to resolve price list channel base price
   const getBaseItemPrice = (menuItem: any, list: "Salon" | "Takeaway" | "Delivery") => {
@@ -66,21 +83,7 @@ export default function CartDrawer({
   };
 
   const getItemPriceWithCustomizations = (item: CartItem, list: "Salon" | "Takeaway" | "Delivery") => {
-    let itemPrice = getBaseItemPrice(item.menuItem, list);
-    
-    if (item.customization.size === "L") itemPrice += 0.50;
-    if (item.customization.size === "XL") itemPrice += 0.90;
-    
-    if (item.customization.milk === "Almendra" || item.customization.milk === "Avena") itemPrice += 0.50;
-    if (item.customization.milk === "Deslactosada") itemPrice += 0.20;
-
-    if (item.customization.extras) {
-      if (item.customization.extras.includes("Extra Espresso Shot")) itemPrice += 0.80;
-      if (item.customization.extras.includes("Sirope de Caramelo")) itemPrice += 0.50;
-      if (item.customization.extras.includes("Crema Batida")) itemPrice += 0.40;
-    }
-
-    return Number(itemPrice.toFixed(2));
+    return Number(getBaseItemPrice(item.menuItem, list).toFixed(2));
   };
 
   const activePriceList = useMemo(() => {
@@ -104,71 +107,21 @@ export default function CartDrawer({
 
   const deliveryFee = useMemo(() => {
     if (fulfillmentMode === "delivery") {
-      const configuredFee = parseFloat(localStorage.getItem("puglia_delivery_fee") || "1200");
-      const freeMin = parseFloat(localStorage.getItem("puglia_delivery_free_min") || "25000");
-      if (subtotal >= freeMin && freeMin > 0) return 0;
-      return configuredFee;
+      if (subtotal >= deliveryConfig.freeMinimum && deliveryConfig.freeMinimum > 0) return 0;
+      return deliveryConfig.fee;
     }
     return 0;
-  }, [fulfillmentMode, subtotal]);
+  }, [fulfillmentMode, subtotal, deliveryConfig]);
 
-  const tax = useMemo(() => Number((subtotal * 0.21).toFixed(2)), [subtotal]); // 21% IVA Argentina
-  const total = useMemo(() => Number((subtotal + tax + tipAmount + deliveryFee).toFixed(2)), [subtotal, tax, tipAmount, deliveryFee]);
+  // Published catalog prices are final consumer prices; VAT is informative and included.
+  const tax = useMemo(() => Number((subtotal - subtotal / 1.21).toFixed(2)), [subtotal]);
+  const total = useMemo(() => Number((subtotal + tipAmount + deliveryFee).toFixed(2)), [subtotal, tipAmount, deliveryFee]);
 
-  // Handle formatted card numbers
-  const handleCardNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    const matches = value.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || "";
-    const parts = [];
-
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-
-    if (parts.length > 0) {
-      setCardNumber(parts.join(" "));
-    } else {
-      setCardNumber(value);
-    }
-  };
-
-  const handleExpiryChange = (e: ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (value.length >= 2) {
-      value = value.substring(0, 2) + "/" + value.substring(2, 4);
-    }
-    setCardExpiry(value.substring(0, 5));
-  };
-
-  const handleCheckoutSubmit = (e: FormEvent) => {
+  const handleCheckoutSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (paymentMethod === "Tarjeta") {
-      if (!cardName.trim()) {
-        setErrorMsg("Introduce el nombre del titular de la tarjeta.");
-        return;
-      }
-      if (cardNumber.replace(/\s/g, "").length < 16) {
-        setErrorMsg("Introduce un número de tarjeta de crédito válido (16 dígitos).");
-        return;
-      }
-      if (cardExpiry.length < 5) {
-        setErrorMsg("Introduce la fecha de caducidad en formato MM/AA.");
-        return;
-      }
-      if (cardCVV.length < 3) {
-        setErrorMsg("Introduce el código CVV (3 dígitos).");
-        return;
-      }
-    } else if (paymentMethod === "Efectivo") {
-      const cashVal = parseFloat(receivedCash) || 0;
-      if (cashVal < total) {
-        setErrorMsg(`El efectivo recibido ($${cashVal}) debe ser igual o mayor al total ($${total}).`);
-        return;
-      }
-    } else if (paymentMethod === "Fiado / Cta Cte") {
+    if (paymentMethod === "Fiado / Cta Cte") {
       if (!selectedClientAccountId) {
         setErrorMsg("Por favor, selecciona un cliente para registrar el fiado.");
         return;
@@ -188,11 +141,9 @@ export default function CartDrawer({
       return;
     }
 
-    // Simulate Payment delay
+    // The order is persisted by the checkout handler; payment is confirmed later by Caja.
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      
+    try {
       const tableValue = orderType === "Mesa"
         ? (selectedTableId ? activeBookings.find(b => b.id === selectedTableId)?.tableName : `Mesa ${customTableNumber}`)
         : undefined;
@@ -223,6 +174,7 @@ export default function CartDrawer({
             parts.push(`1° Entrada: ${ex.starter || '-'} | 2° Principal: ${ex.main || '-'} | 3° Bebida: ${ex.drink || '-'} | 4° Postre: ${ex.dessert || '-'}`);
           }
           return {
+            itemId: item.menuItem.id,
             name: item.menuItem.name,
             quantity: item.quantity,
             customizationSummary: parts.join(" • "),
@@ -241,7 +193,6 @@ export default function CartDrawer({
         estimatedMinutes: fulfillmentMode === "delivery" ? 35 : fulfillmentMode === "takeaway" ? pickupMinutes : 8,
         tipAmount,
         paymentMethod,
-        couponNumber: paymentMethod === "Tarjeta" ? "CUP-" + Math.floor(Math.random() * 900000 + 100000) : undefined,
         clientAccountName: clientObj?.name,
         fulfillmentType: fulfillmentMode,
         deliveryFee: fulfillmentMode === "delivery" ? deliveryFee : 0,
@@ -254,32 +205,16 @@ export default function CartDrawer({
         customerPhone: customerPhone || (clientObj ? clientObj.phone : undefined)
       };
 
-      // Add to digital tip pool in Supabase
-      if (tipAmount > 0) {
-        (async () => {
-          try {
-            const { data } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
-            const currentPool = data ? Number(data.value) : 0;
-            await supabase.from("system_settings").upsert({ key: "tip_pool", value: currentPool + tipAmount });
-            localStorage.setItem("origen_tip_pool", (currentPool + tipAmount).toString());
-          } catch (err) {
-            console.error("Error updating tip pool in Supabase:", err);
-          }
-        })();
-      }
-
-      onCheckout(order);
+      await onCheckout(order);
       // Reset State
       setCheckoutMode("view_cart");
       setPaymentMethod("Tarjeta");
-      setCardName("");
-      setCardNumber("");
-      setCardExpiry("");
-      setCardCVV("");
       setReceivedCash("");
       setSelectedClientAccountId("");
       onClose();
-    }, 1800);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -774,65 +709,13 @@ export default function CartDrawer({
                       </div>
                     </div>
 
-                    {/* Tarjeta Card form */}
+                    {/* Card data is never collected by this application. */}
                     {paymentMethod === "Tarjeta" && (
-                      <div className="border border-coffee rounded-xl bg-white p-4 space-y-3 shadow-xs">
-                        <div className="flex items-center justify-between border-b border-coffee/30 pb-2.5">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-espresso/50 flex items-center gap-1.5 font-semibold">
-                            <CreditCard className="h-3.5 w-3.5 text-caramel" /> Pago de Pruebas Seguro
-                          </span>
-                          <div className="flex gap-1 text-[9px] font-bold bg-emerald-700 text-white px-2.5 py-0.5 rounded shadow-xs uppercase tracking-wider font-mono">
-                            Sandbox
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Nombre en Tarjeta</label>
-                          <input
-                            type="text"
-                            value={cardName}
-                            onChange={(e) => setCardName(e.target.value)}
-                            placeholder="Juan Pérez"
-                            className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs outline-none focus:border-caramel focus:bg-white text-espresso font-medium"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Número de Tarjeta</label>
-                          <input
-                            type="text"
-                            value={cardNumber}
-                            onChange={handleCardNumberChange}
-                            placeholder="4000 1234 5678 9010"
-                            maxLength={19}
-                            className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono outline-none focus:border-caramel focus:bg-white text-espresso"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">Caducidad</label>
-                            <input
-                              type="text"
-                              value={cardExpiry}
-                              onChange={handleExpiryChange}
-                              placeholder="MM/AA"
-                              maxLength={5}
-                              className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono text-center outline-none focus:border-caramel focus:bg-white text-espresso"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-espresso/60 uppercase tracking-wider block mb-1 font-semibold">CVV</label>
-                            <input
-                              type="password"
-                              value={cardCVV}
-                              onChange={(e) => setCardCVV(e.target.value.replace(/[^0-9]/g, "").substring(0, 3))}
-                              placeholder="***"
-                              maxLength={3}
-                              className="w-full rounded-lg border border-coffee bg-paper/30 py-2 px-3 text-xs font-mono text-center outline-none focus:border-caramel focus:bg-white text-espresso"
-                            />
-                          </div>
-                        </div>
+                      <div className="border border-coffee rounded-xl bg-white p-4 shadow-xs flex gap-3">
+                        <CreditCard className="h-5 w-5 text-caramel shrink-0" />
+                        <p className="text-[11px] text-espresso/70 leading-relaxed">
+                          La tarjeta se procesa presencialmente en la terminal de Caja. Esta aplicación no solicita ni almacena número, vencimiento o CVV.
+                        </p>
                       </div>
                     )}
 

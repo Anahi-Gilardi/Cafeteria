@@ -69,9 +69,9 @@ export class AuditPDFService {
     currentY += 8;
 
     // Metrics calculations
-    const totalSalesSum = orders.reduce((acc, curr) => acc + curr.total, 0) || 485000;
     const completedOrders = orders.filter(o => o.status === "Completado");
-    const countCompleted = completedOrders.length || 24;
+    const totalSalesSum = completedOrders.reduce((acc, curr) => acc + curr.total, 0);
+    const countCompleted = completedOrders.length;
     const avgTicket = totalSalesSum / (countCompleted || 1);
     const totalMermaCost = mermaLogs.reduce((acc, m) => {
       const val = parseFloat(m.cost.replace(/[^0-9.]/g, "")) || 0;
@@ -113,15 +113,27 @@ export class AuditPDFService {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
 
-    const cashAmount = (totalSalesSum * 0.35).toLocaleString("es-AR");
-    const cardAmount = (totalSalesSum * 0.45).toLocaleString("es-AR");
-    const mpAmount = (totalSalesSum * 0.20).toLocaleString("es-AR");
-
-    doc.text(`1. Efectivo en Caja: $${cashAmount} (35%)`, 18, currentY);
-    currentY += 6;
-    doc.text(`2. Tarjetas (Débito/Crédito): $${cardAmount} (45%)`, 18, currentY);
-    currentY += 6;
-    doc.text(`3. Mercado Pago / QR: $${mpAmount} (20%)`, 18, currentY);
+    const paymentsByMethod = cashTransactions.reduce<Record<string, number>>((summary, transaction) => {
+      const method = String(transaction.method || "Sin especificar");
+      summary[method] = (summary[method] || 0) + Number(transaction.total || 0);
+      return summary;
+    }, {});
+    const paymentTotal = Object.values(paymentsByMethod).reduce((sum, amount) => sum + amount, 0);
+    const paymentRows = Object.entries(paymentsByMethod);
+    if (paymentRows.length === 0) {
+      doc.text("No hay cobranzas registradas para el período.", 18, currentY);
+      currentY += 6;
+    } else {
+      paymentRows.forEach(([method, amount], index) => {
+        const share = paymentTotal > 0 ? (amount / paymentTotal) * 100 : 0;
+        doc.text(
+          `${index + 1}. ${method}: $${amount.toLocaleString("es-AR")} (${share.toFixed(1)}%)`,
+          18,
+          currentY
+        );
+        currentY += 6;
+      });
+    }
     currentY += 12;
 
     // Mermas Section
@@ -181,13 +193,12 @@ export class AuditPDFService {
     currentY += 8;
 
     doc.setFont("helvetica", "normal");
-    const txList = cashTransactions && cashTransactions.length > 0
-      ? cashTransactions.slice(0, 8)
-      : [
-          { type: "Cobro Comanda", orderId: "PRE-0951", method: "Efectivo", timestamp: "Hace 1 hora", total: 15500 },
-          { type: "Cobro Mesa 4", orderId: "PED-8812", method: "Mercado Pago", timestamp: "Hace 2 horas", total: 24000 },
-          { type: "Cobro Takeaway", orderId: "PED-7731", method: "Tarjeta Débito", timestamp: "Hace 3 horas", total: 8000 }
-        ];
+    const txList = cashTransactions.slice(0, 8);
+
+    if (txList.length === 0) {
+      doc.text("No hay transacciones registradas para el período.", 16, currentY);
+      currentY += 6;
+    }
 
     txList.forEach((tx) => {
       if (currentY > 260) {

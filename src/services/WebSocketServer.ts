@@ -50,7 +50,7 @@ export class WebSocketServerManager {
    * Emite un evento en tiempo real a una sala específica (<100ms latency)
    */
   public broadcast(room: EventRoom, eventType: RealtimeEventPayload["type"], data: any): void {
-    const eventId = "evt-" + Date.now() + "-" + Math.random().toString(36).substring(2, 6);
+    const eventId = `evt-${crypto.randomUUID()}`;
 
     // Evitar procesamiento duplicado (Idempotencia)
     if (this.processedEventIds.has(eventId)) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { MenuItem, MenuItemCustomization, CartItem, Reservation, Order, OrderStatusType, ClientAccount } from "./types";
 import { MENU_ITEMS } from "./data/menu";
 import Navbar from "./components/Navbar";
@@ -6,13 +6,9 @@ import InteractiveMenu from "./components/InteractiveMenu";
 import TableReservation from "./components/TableReservation";
 import CartDrawer from "./components/CartDrawer";
 import OrderStatus from "./components/OrderStatus";
-import BaristaAI from "./components/BaristaAI";
 import HistoryHub from "./components/HistoryHub";
-import AdminHub from "./components/AdminHub";
 import Dashboard from "./components/Dashboard";
 import CartaDigital from "./components/CartaDigital";
-import TicketPreviewModal from "./components/TicketPreviewModal";
-import ManualPuglia from "./components/ManualPuglia";
 import { PublicDigitalMarquee } from "./components/PublicDigitalMarquee";
 import { PublicLandingPage } from "./components/PublicLandingPage";
 import WhatsAppOrderService from "./services/WhatsAppOrderService";
@@ -24,6 +20,19 @@ import LoginScreen from "./components/LoginScreen";
 import KitchenDisplay from "./components/KitchenDisplay";
 import SalonMap from "./components/SalonMap";
 import RestoBarLogo from "./components/RestoBarLogo";
+import { AuthService, UserRoleProfile } from "./services/AuthService";
+import { offlineQueueService } from "./services/OfflineQueueService";
+
+const AdminHub = lazy(() => import("./components/AdminHub"));
+const BaristaAI = lazy(() => import("./components/BaristaAI"));
+const ManualPuglia = lazy(() => import("./components/ManualPuglia"));
+const TicketPreviewModal = lazy(() => import("./components/TicketPreviewModal"));
+
+const ModuleFallback = () => (
+  <div className="min-h-[240px] flex items-center justify-center text-sm font-bold text-[#D4AF37]">
+    Cargando módulo…
+  </div>
+);
 
 interface ToastNotification {
   id: string;
@@ -32,20 +41,20 @@ interface ToastNotification {
 }
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    try {
-      const saved = localStorage.getItem("origen_current_user");
-      return saved ? JSON.parse(saved) : null;
-    } catch (e) {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState<UserRoleProfile | null>(null);
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
 
   // Live dynamic menu items catalog synced with Supabase
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    try {
+      const cached = localStorage.getItem("castano_menu_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Global notification toast states
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
@@ -137,21 +146,30 @@ export default function App() {
     localStorage.setItem("origen_cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Sync currentUser to local storage
+  // Supabase Auth is the only source of truth for staff sessions.
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem("origen_current_user", JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem("origen_current_user");
-    }
-  }, [currentUser]);
+    let active = true;
+    void AuthService.getCurrentUser().then((profile) => {
+      if (active) setCurrentUser(profile);
+    });
+    const unsubscribe = AuthService.onAuthStateChange((profile) => {
+      if (active) setCurrentUser(profile);
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
-  // Load and seed initial data from Supabase
+  // Load initial data from Supabase. Database seeding is migration-only.
   useEffect(() => {
     const loadSupabaseData = async () => {
       try {
-        // 1. Fetch & Seed Menu Items
-        const { data: menuData } = await supabase.from("menu_items").select("*");
+        // 1. Fetch Menu Items
+        const { data: menuData, error: menuError } = await supabase
+          .from("menu_items")
+          .select("*");
+        if (menuError) throw menuError;
         let customImages: any[] = [];
         try {
           const { data: imgData } = await supabase.from("product_images").select("*");
@@ -178,13 +196,13 @@ export default function App() {
             }
           });
           setMenuItems(mapped);
+          localStorage.setItem("castano_menu_cache", JSON.stringify(mapped));
         } else {
-          // Seed default menu items
-          await supabase.from("menu_items").insert(MENU_ITEMS.map(mapMenuItemToDb));
-          setMenuItems(MENU_ITEMS);
+          console.warn("Supabase no devolvió productos; no se publicará un catálogo demostrativo.");
+          setMenuItems([]);
         }
 
-        // 2. Fetch & Seed Client Accounts
+        // 2. Fetch Client Accounts
         const { data: clientData } = await supabase.from("client_accounts").select("*");
         if (clientData && clientData.length > 0) {
           setClientAccounts(clientData.map(c => ({
@@ -196,20 +214,7 @@ export default function App() {
             creditLimit: Number(c.credit_limit)
           })));
         } else {
-          const defaultClients = [
-            { id: "cli-1", name: "Mariano Closs", cuit: "20-33445566-9", phone: "11-4567-8901", balance: -450.00, creditLimit: 20000 },
-            { id: "cli-2", name: "Estela de Carlotto", cuit: "27-05556667-1", phone: "11-9876-5432", balance: 0.00, creditLimit: 50000 },
-            { id: "cli-3", name: "Enzo Francescoli", cuit: "20-99887766-3", phone: "11-2345-6789", balance: -1200.00, creditLimit: 30000 }
-          ];
-          await supabase.from("client_accounts").insert(defaultClients.map(c => ({
-            id: c.id,
-            name: c.name,
-            cuit: c.cuit,
-            phone: c.phone,
-            balance: c.balance,
-            credit_limit: c.creditLimit
-          })));
-          setClientAccounts(defaultClients);
+          setClientAccounts([]);
         }
 
         // 3. Fetch Reservations
@@ -240,16 +245,6 @@ export default function App() {
           console.warn("⚠️ Advertencia al consultar comandas en Supabase:", fetchErr);
         }
 
-        // 5. Fetch & Seed User Accounts
-        const { data: userData } = await supabase.from("users_accounts").select("*");
-        if (!userData || userData.length === 0) {
-          const defaultUsers = [
-            { id: "usr-1", name: "Pablo Madina (Administrador)", email: "pablo@restobardelteatro.com", password: "pablo123", role: "administrador", pin: "1111" },
-            { id: "usr-2", name: "Rami Madina (Barista)", email: "rami@restobardelteatro.com", password: "barista123", role: "barista", pin: "2222" },
-            { id: "usr-3", name: "Silvana Madina (Mesero)", email: "silvana@restobardelteatro.com", password: "mesero123", role: "mesero", pin: "3333" }
-          ];
-          await supabase.from("users_accounts").insert(defaultUsers);
-        }
       } catch (err) {
         console.error("Error loading data from Supabase:", err);
       }
@@ -258,36 +253,58 @@ export default function App() {
     loadSupabaseData();
   }, []);
 
-  // Sync menuItems changes to Supabase
-  useEffect(() => {
-    const syncMenu = async () => {
-      if (menuItems.length === 0) return;
-      await supabase.from("menu_items").upsert(menuItems.map(mapMenuItemToDb));
-    };
-    syncMenu();
-  }, [menuItems]);
-
-  // Sync clientAccounts changes to Supabase
-  useEffect(() => {
-    const syncClients = async () => {
-      if (clientAccounts.length === 0) return;
-      await supabase.from("client_accounts").upsert(clientAccounts.map(c => ({
-        id: c.id,
-        name: c.name,
-        cuit: c.cuit,
-        phone: c.phone,
-        balance: c.balance,
-        credit_limit: c.creditLimit
-      })));
-    };
-    syncClients();
-  }, [clientAccounts]);
-
   // Sync active tracked order
   useEffect(() => {
     const active = orders.find(o => o.status !== "Completado");
     setActiveTrackedOrder(active || null);
   }, [orders]);
+
+  // Keep authenticated staff screens aligned with changes made by other terminals.
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let active = true;
+    const refreshOrders = async () => {
+      const result = await SupabaseSyncService.fetchOrders();
+      if (!active || result.error) return;
+      setOrders(result.orders);
+      localStorage.setItem("resto_bar_orders", JSON.stringify(result.orders));
+    };
+
+    void refreshOrders();
+    const unsubscribe = SupabaseSyncService.subscribeToOrders(
+      () => void refreshOrders(),
+      (status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.warn("El canal realtime de comandas perdió la conexión.");
+        }
+      }
+    );
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [currentUser]);
+
+  // Retry queued orders when connectivity returns and once on application start.
+  useEffect(() => {
+    const syncQueue = async () => {
+      const result = await offlineQueueService.syncPendingQueue();
+      if (result.synced > 0) {
+        const remote = await SupabaseSyncService.fetchOrders();
+        if (!remote.error && remote.orders.length > 0) setOrders(remote.orders);
+        showNotification(
+          `☁️ ${result.synced} pedido${result.synced === 1 ? "" : "s"} pendiente${result.synced === 1 ? "" : "s"} sincronizado${result.synced === 1 ? "" : "s"}.`,
+          "success"
+        );
+      }
+    };
+    const onOnline = () => void syncQueue();
+    window.addEventListener("online", onOnline);
+    void syncQueue();
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   // Handle adding an item to the cart
   const handleAddToBag = (item: MenuItem, customization: MenuItemCustomization) => {
@@ -338,114 +355,59 @@ export default function App() {
     }
   };
 
-  // Complete checkout with live inventory deduction
+  // Persist checkout atomically; enqueue only when the remote write fails.
   const handleCheckoutComplete = async (newOrder: Order) => {
-    try {
-      // Save order to Supabase
-      await supabase.from("orders").insert({
-        id: newOrder.id,
-        items: newOrder.items,
-        subtotal: newOrder.subtotal,
-        tax: newOrder.tax,
-        total: newOrder.total,
-        type: newOrder.type,
-        price_list: newOrder.priceList,
-        table_reservation_id: newOrder.tableReservationId || null,
-        table_number: newOrder.tableNumber || null,
-        status: newOrder.status,
-        created_at: newOrder.createdAt,
-        estimated_minutes: newOrder.estimatedMinutes,
-        payment_method: newOrder.paymentMethod || null,
-        coupon_number: newOrder.couponNumber || null,
-        client_account_name: newOrder.clientAccountName || null,
-        tip_amount: newOrder.tipAmount || 0,
-        fiscal: newOrder.fiscal || null
-      });
-
-      // Deduct stock levels from our dynamic state
-      const updatedMenu = menuItems.map((m) => {
-        const orderedItem = newOrder.items.find((item) => item.name === m.name);
-        if (orderedItem && m.stock !== undefined) {
-          const updatedStock = Math.max(0, m.stock - orderedItem.quantity);
-          if (updatedStock === 0) {
-            showNotification(`⚠️ El producto '${m.name}' se ha agotado en stock.`, "warning");
-          } else if (updatedStock <= 3) {
-            showNotification(`⚠️ Stock crítico: Quedan solo ${updatedStock} unidades de '${m.name}'.`, "warning");
-          }
-          return { ...m, stock: updatedStock };
-        }
-        return m;
-      });
-      setMenuItems(updatedMenu); // This triggers the useEffect which upserts to Supabase
-
-      // Deduct raw materials (insumos) stock by recipe in Supabase
-      const { data: insList } = await supabase.from("insumos").select("*");
-      if (insList) {
-        const updates = insList.map(async (ins: any) => {
-          let consumedAmount = 0;
-          newOrder.items.forEach((orderedItem) => {
-            const menuItem = menuItems.find(m => m.name === orderedItem.name);
-            if (menuItem && menuItem.recipe) {
-              const recipeItem = menuItem.recipe.find(r => r.ingredientId === ins.id);
-              if (recipeItem) {
-                const isKgOrLiters = ins.unit === "kg" || ins.unit === "litros" || ins.unit === "L";
-                const divisor = isKgOrLiters ? 1000 : 1;
-                consumedAmount += (recipeItem.amount / divisor) * orderedItem.quantity;
-              }
-            }
-          });
-
-          if (consumedAmount > 0) {
-            const newQty = Math.max(0, parseFloat((Number(ins.quantity) - consumedAmount).toFixed(2)));
-            if (newQty <= ins.min_limit && ins.quantity > ins.min_limit) {
-              showNotification(`⚠️ Insumo crítico: '${ins.name}' quedó por debajo de su stock de seguridad.`, "warning");
-            }
-            await supabase.from("insumos").update({ quantity: newQty }).eq("id", ins.id);
-          }
-        });
-        await Promise.all(updates);
-      }
-    } catch (err) {
-      console.error("Error writing checkout data to Supabase:", err);
+    const result = await SupabaseSyncService.saveOrder(newOrder);
+    const persistedOrder = result.order || newOrder;
+    if (!result.success) {
+      offlineQueueService.enqueueOrder(newOrder, result.error);
+      showNotification(
+        "⚠️ Pedido guardado en la cola local. Se sincronizará al recuperar la conexión.",
+        "warning"
+      );
+    } else {
+      showNotification("🚀 Pedido sincronizado y enviado a cocina.", "success");
     }
 
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => [persistedOrder, ...prev.filter((order) => order.id !== persistedOrder.id)]);
     setCartItems([]); // Clear cart
-    setOrderToPreview(newOrder);
+    setOrderToPreview(persistedOrder);
     setIsPreviewOpen(true);
-    showNotification("🚀 ¡Pedido realizado con éxito! La cocina ya está preparando su café.", "success");
     setActiveTab("historial"); // Switch to Orders view
   };
 
   // Confirm booking
   const handleConfirmReservation = async (newBooking: Reservation) => {
-    try {
-      await supabase.from("reservations").insert({
-        id: newBooking.id,
-        table_id: newBooking.tableId,
-        table_name: newBooking.tableName,
-        date: newBooking.date,
-        time_slot: newBooking.timeSlot,
-        guests: newBooking.guests,
-        customer_name: newBooking.customerName,
-        customer_phone: newBooking.customerPhone,
-        created_at: newBooking.createdAt,
-        reference_code: newBooking.referenceCode
-      });
-    } catch (err) {
-      console.error("Error creating reservation on Supabase:", err);
+    const { error } = await supabase.from("reservations").insert({
+      id: newBooking.id,
+      table_id: newBooking.tableId,
+      table_name: newBooking.tableName,
+      date: newBooking.date,
+      time_slot: newBooking.timeSlot,
+      guests: newBooking.guests,
+      customer_name: newBooking.customerName,
+      customer_phone: newBooking.customerPhone,
+      created_at: newBooking.createdAt,
+      reference_code: newBooking.referenceCode
+    });
+    if (error) {
+      console.error("Error creating reservation on Supabase:", error);
+      showNotification("⚠️ No se pudo confirmar la reserva en la nube.", "warning");
+      return false;
     }
     setBookings((prev) => [newBooking, ...prev]);
     showNotification(`📅 ¡Mesa reservada! ${newBooking.tableName} para el ${newBooking.date} a las ${newBooking.timeSlot}. Cód: ${newBooking.referenceCode}`, "success");
+    return true;
   };
 
   // Cancel booking
   const handleCancelBooking = async (bookingId: string) => {
     const b = bookings.find((bk) => bk.id === bookingId);
-    try {
-      await supabase.from("reservations").delete().eq("id", bookingId);
-    } catch (err) {
-      console.error("Error deleting reservation from Supabase:", err);
+    const { error } = await supabase.from("reservations").delete().eq("id", bookingId);
+    if (error) {
+      console.error("Error deleting reservation from Supabase:", error);
+      showNotification("⚠️ No se pudo cancelar la reserva en la nube.", "warning");
+      return;
     }
     setBookings((prev) => prev.filter((b) => b.id !== bookingId));
     showNotification(`🛑 Reserva cancelada con éxito para la ${b?.tableName || "Mesa"}.`, "info");
@@ -503,10 +465,11 @@ export default function App() {
 
   // Update order status if completed in order Status tracker component
   const handleOrderStatusCompleted = async (orderId: string) => {
-    try {
-      await supabase.from("orders").update({ status: "Completado" }).eq("id", orderId);
-    } catch (err) {
-      console.error("Error updating order status on Supabase:", err);
+    const result = await SupabaseSyncService.updateOrderStatus(orderId, "Completado");
+    if (!result.success) {
+      console.error("Error updating order status on Supabase:", result.error);
+      showNotification("⚠️ El estado no pudo sincronizarse. Intente nuevamente.", "warning");
+      return;
     }
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: "Completado" as OrderStatusType } : o))
@@ -516,12 +479,13 @@ export default function App() {
 
   // Direct backend comanda status modifier for Admin Panel & KDS
   const handleOrderStatusUpdate = async (orderId: string, status: OrderStatusType) => {
-    try {
-      await supabase.from("orders").update({ status }).eq("id", orderId);
-    } catch (err) {
-      console.error("Error updating order status on Supabase:", err);
+    const result = await SupabaseSyncService.updateOrderStatus(orderId, status);
+    if (!result.success) {
+      console.error("Error updating order status on Supabase:", result.error);
+      showNotification("⚠️ El cambio no pudo sincronizarse. Intente nuevamente.", "warning");
+      return;
     }
-    handleUpdateOrdersWithPersist((prev) => {
+    setOrders((prev) => {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
       const targetOrder = updated.find((o) => o.id === orderId);
       if (targetOrder && status === "Listo") {
@@ -532,28 +496,63 @@ export default function App() {
     showNotification(`📋 Pedido #${orderId} actualizado a estado: '${status}'.`, "info");
   };
 
+  const handleArchiveOrder = async (orderId: string): Promise<boolean> => {
+    const result = await SupabaseSyncService.archiveOrder(orderId);
+    if (!result.success) {
+      console.error("Error archiving order on Supabase:", result.error);
+      showNotification("⚠️ La comanda no pudo archivarse. Continúa visible para reintentar.", "warning");
+      return false;
+    }
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status: "Completado" as OrderStatusType } : order
+      )
+    );
+    showNotification(`🗄️ Comanda #${orderId} guardada en el archivo de Supabase.`, "success");
+    return true;
+  };
+
   const handleUpdateOrdersWithPersist = (newOrdersOrUpdater: Order[] | ((prev: Order[]) => Order[])) => {
     setOrders((prev) => {
       const nextOrders = typeof newOrdersOrUpdater === "function" ? newOrdersOrUpdater(prev) : newOrdersOrUpdater;
-      try {
-        localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
-      } catch (e) {}
-      
-      // Async sync each order to Supabase via SupabaseSyncService
-      nextOrders.forEach(async (order) => {
-        const res = await SupabaseSyncService.saveOrder(order);
-        if (!res.success) {
-          console.error(`❌ Error al guardar comanda ${order.id} en Supabase:`, res.error);
-        }
-      });
+      localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
+
+      const previousById = new Map<string, Order>(
+        prev.map((order): [string, Order] => [order.id, order])
+      );
+      void Promise.all(
+        nextOrders.map(async (order) => {
+          const previous = previousById.get(order.id);
+          if (!previous) {
+            const result = await SupabaseSyncService.saveOrder(order);
+            if (!result.success) offlineQueueService.enqueueOrder(order, result.error);
+            return;
+          }
+          if (previous.status !== order.status) {
+            const result = await SupabaseSyncService.updateOrderStatus(order.id, order.status);
+            if (!result.success) {
+              console.error(`No se pudo actualizar ${order.id}:`, result.error);
+            }
+          }
+        })
+      );
       return nextOrders;
     });
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
-    setActiveTab("dashboard");
-    showNotification("👋 Sesión cerrada correctamente.", "info");
+    void AuthService.logout()
+      .catch(() => {
+        showNotification(
+          "⚠️ La sesión local se cerró, pero Supabase no respondió.",
+          "warning"
+        );
+      })
+      .finally(() => {
+        setCurrentUser(null);
+        setActiveTab("dashboard");
+        showNotification("👋 Sesión cerrada correctamente.", "info");
+      });
   };
 
   const renderNotificationStack = () => (
@@ -600,9 +599,18 @@ export default function App() {
     </div>
   );
 
+  if (activeTab === "public_menu") {
+    return (
+      <PublicDigitalMarquee
+        menuItems={menuItems}
+        onShowNotification={showNotification}
+      />
+    );
+  }
+
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7]">
+      <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
         <PublicLandingPage
           menuItems={menuItems}
           onLoginSuccess={(user) => {
@@ -633,51 +641,48 @@ export default function App() {
     );
   }
 
-  if (activeTab === "public_menu") {
-    return (
-      <PublicDigitalMarquee
-        menuItems={menuItems}
-        onShowNotification={showNotification}
-      />
-    );
-  }
-
   if (activeTab === "admin") {
     return (
-      <div className="min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] selection:bg-[#D4AF37] selection:text-[#1C120C]">
-        <AdminHub
-          orders={orders}
-          onOrderStatusUpdate={handleOrderStatusUpdate}
-          onUpdateOrders={setOrders}
-          menuItems={menuItems}
-          onUpdateMenu={setMenuItems}
-          onShowNotification={showNotification}
-          clientAccounts={clientAccounts}
-          onUpdateClientAccounts={setClientAccounts}
-          onClosePanel={() => setActiveTab("dashboard")}
-          currentUser={currentUser}
-          bookings={bookings}
-        />
+      <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+        <Suspense fallback={<ModuleFallback />}>
+          <AdminHub
+            orders={orders}
+            onOrderStatusUpdate={handleOrderStatusUpdate}
+            onArchiveOrder={handleArchiveOrder}
+            onUpdateOrders={handleUpdateOrdersWithPersist}
+            menuItems={menuItems}
+            onUpdateMenu={setMenuItems}
+            onShowNotification={showNotification}
+            clientAccounts={clientAccounts}
+            onUpdateClientAccounts={setClientAccounts}
+            onClosePanel={() => setActiveTab("dashboard")}
+            currentUser={currentUser}
+            bookings={bookings}
+          />
+        </Suspense>
         {renderNotificationStack()}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0F0A07] font-sans text-[#FDFBF7] selection:bg-[#D4AF37] selection:text-[#1C120C]">
-      <AdminHub
-        orders={orders}
-        onOrderStatusUpdate={handleOrderStatusUpdate}
-        onUpdateOrders={setOrders}
-        menuItems={menuItems}
-        onUpdateMenu={setMenuItems}
-        onShowNotification={showNotification}
-        clientAccounts={clientAccounts}
-        onUpdateClientAccounts={setClientAccounts}
-        onClosePanel={handleLogout}
-        currentUser={currentUser}
-        bookings={bookings}
-      />
+    <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+      <Suspense fallback={<ModuleFallback />}>
+        <AdminHub
+          orders={orders}
+          onOrderStatusUpdate={handleOrderStatusUpdate}
+          onArchiveOrder={handleArchiveOrder}
+          onUpdateOrders={handleUpdateOrdersWithPersist}
+          menuItems={menuItems}
+          onUpdateMenu={setMenuItems}
+          onShowNotification={showNotification}
+          clientAccounts={clientAccounts}
+          onUpdateClientAccounts={setClientAccounts}
+          onClosePanel={handleLogout}
+          currentUser={currentUser}
+          bookings={bookings}
+        />
+      </Suspense>
 
       <div className="hidden">
         {/* Sidebar Navigation */}
@@ -771,7 +776,9 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="manual-tab-content"
               >
-                <ManualPuglia />
+                <Suspense fallback={<ModuleFallback />}>
+                  <ManualPuglia />
+                </Suspense>
               </motion.div>
             )}
 
@@ -782,7 +789,9 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="barista-tab-content"
               >
-                <BaristaAI onAddToBag={handleAddToBag} menuItems={menuItems} />
+                <Suspense fallback={<ModuleFallback />}>
+                  <BaristaAI onAddToBag={handleAddToBag} menuItems={menuItems} />
+                </Suspense>
               </motion.div>
             )}
 
@@ -793,19 +802,22 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="admin-tab-content"
               >
-                <AdminHub
-                  orders={orders}
-                  onOrderStatusUpdate={handleOrderStatusUpdate}
-                  onUpdateOrders={handleUpdateOrdersWithPersist}
-                  menuItems={menuItems}
-                  onUpdateMenu={setMenuItems}
-                  onShowNotification={showNotification}
-                  clientAccounts={clientAccounts}
-                  onUpdateClientAccounts={setClientAccounts}
-                  onClosePanel={() => setActiveTab("dashboard")}
-                  currentUser={currentUser}
-                  bookings={bookings}
-                />
+                <Suspense fallback={<ModuleFallback />}>
+              <AdminHub
+                orders={orders}
+                onOrderStatusUpdate={handleOrderStatusUpdate}
+                onArchiveOrder={handleArchiveOrder}
+                    onUpdateOrders={handleUpdateOrdersWithPersist}
+                    menuItems={menuItems}
+                    onUpdateMenu={setMenuItems}
+                    onShowNotification={showNotification}
+                    clientAccounts={clientAccounts}
+                    onUpdateClientAccounts={setClientAccounts}
+                    onClosePanel={() => setActiveTab("dashboard")}
+                    currentUser={currentUser}
+                    bookings={bookings}
+                  />
+                </Suspense>
               </motion.div>
             )}
 
@@ -820,6 +832,7 @@ export default function App() {
                   orders={orders}
                   menuItems={menuItems}
                   onOrderStatusUpdate={handleOrderStatusUpdate}
+                  onArchiveOrder={handleArchiveOrder}
                 />
               </motion.div>
             )}
@@ -946,17 +959,19 @@ export default function App() {
     </div>
 
       {/* Interactive Ticket & AFIP Invoice Preview Modal */}
-      <TicketPreviewModal
-        order={orderToPreview}
-        isOpen={isPreviewOpen}
-        onClose={() => {
-          setIsPreviewOpen(false);
-          setOrderToPreview(null);
-        }}
-        clientAccounts={clientAccounts}
-        onUpdateClientAccounts={setClientAccounts}
-        onShowNotification={showNotification}
-      />
+      <Suspense fallback={null}>
+        <TicketPreviewModal
+          order={orderToPreview}
+          isOpen={isPreviewOpen}
+          onClose={() => {
+            setIsPreviewOpen(false);
+            setOrderToPreview(null);
+          }}
+          clientAccounts={clientAccounts}
+          onUpdateClientAccounts={setClientAccounts}
+          onShowNotification={showNotification}
+        />
+      </Suspense>
 
       {renderNotificationStack()}
     </div>

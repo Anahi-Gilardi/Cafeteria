@@ -1,5 +1,6 @@
 import { Order } from "../types";
 import WhatsAppAdapter from "./WhatsAppAdapter";
+import { SupabaseSyncService } from "./SupabaseSyncService";
 
 export interface CreatePublicOrderDTO {
   customerName: string;
@@ -7,7 +8,13 @@ export interface CreatePublicOrderDTO {
   fulfillmentType: "salon" | "takeaway" | "delivery";
   tableNumber?: string;
   deliveryAddress?: { street: string; number: string; floor?: string; notes?: string };
-  items: { name: string; quantity: number; customizationSummary: string; price: number }[];
+  items: {
+    itemId: string;
+    name: string;
+    quantity: number;
+    customizationSummary: string;
+    price: number;
+  }[];
   subtotal: number;
   tax: number;
   total: number;
@@ -30,7 +37,7 @@ class WhatsAppOrderService {
    * Step A: Process public digital order, inject into system, & send WhatsApp confirmation
    */
   public async createPublicOrder(dto: CreatePublicOrderDTO): Promise<Order> {
-    const orderId = "PED-" + Math.floor(Math.random() * 9000 + 1000).toString();
+    const orderId = `PED-${crypto.randomUUID()}`;
     const newOrder: Order = {
       id: orderId,
       items: dto.items,
@@ -51,16 +58,22 @@ class WhatsAppOrderService {
       source: dto.fulfillmentType === "salon" ? "qr_mesa" : "public_menu"
     };
 
-    // Store order locally
-    this.ordersStore.unshift(newOrder);
+    const persisted = await SupabaseSyncService.saveOrder(newOrder);
+    if (!persisted.success || !persisted.order) {
+      throw new Error(persisted.error || "No se pudo registrar el pedido en Supabase.");
+    }
+    const persistedOrder = persisted.order;
+
+    // Keep a local view only after the server has accepted and priced the order.
+    this.ordersStore.unshift(persistedOrder);
 
     // 1. Format and Enqueue WhatsApp Confirmation (Step A) to Customer
     if (dto.customerPhone) {
-      const customerMsg = WhatsAppAdapter.formatOrderConfirmation(newOrder);
+      const customerMsg = WhatsAppAdapter.formatOrderConfirmation(persistedOrder);
       WhatsAppAdapter.enqueueMessage({
         to: dto.customerPhone,
         body: customerMsg,
-        orderId: newOrder.id,
+        orderId: persistedOrder.id,
         type: "ORDER_CONFIRMATION",
         timestamp: new Date().toISOString()
       });
@@ -68,20 +81,20 @@ class WhatsAppOrderService {
 
     // 2. Enqueue WhatsApp Notification to Restaurant Counter
     const restaurantMsg = `🔔 *NUEVO PEDIDO INGRESADO DESDE MENÚ DIGITAL* 🔔
-Pedido #${newOrder.id} - ${dto.customerName} (${dto.customerPhone})
+Pedido #${persistedOrder.id} - ${dto.customerName} (${dto.customerPhone})
 Modalidad: ${dto.fulfillmentType.toUpperCase()} ${dto.tableNumber ? `(Mesa ${dto.tableNumber})` : ""}
-Total: $${dto.total.toLocaleString("es-AR")}`;
+Total: $${persistedOrder.total.toLocaleString("es-AR")}`;
 
     WhatsAppAdapter.enqueueMessage({
       to: "543585042311", // Resto Bar Del Teatro main WhatsApp
       body: restaurantMsg,
-      orderId: newOrder.id,
+      orderId: persistedOrder.id,
       type: "ORDER_CONFIRMATION",
       timestamp: new Date().toISOString()
     });
 
-    console.log(`[WhatsAppOrderService] Order #${orderId} created & injected into Anti-Gravity events!`);
-    return newOrder;
+    console.log(`[WhatsAppOrderService] Order #${persistedOrder.id} persisted and queued for notification.`);
+    return persistedOrder;
   }
 
   /**

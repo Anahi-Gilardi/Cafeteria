@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Castaño — Resto Bar
 
-# Run and deploy your AI Studio app
+Aplicación web de carta pública, POS, comandas, cocina, caja, inventario y facturación electrónica.
 
-This contains everything you need to run your app locally.
+## Desarrollo local
 
-View your app in AI Studio: https://ai.studio/apps/ff13874f-6cac-435f-9e10-9b099dc3a1bf
+Requisitos: Node.js 20 o superior.
 
-## Run Locally
+```bash
+npm install
+copy .env.example .env.development.local
+npm run dev
+```
 
-**Prerequisites:**  Node.js
+Complete en `.env.development.local` únicamente las variables públicas `VITE_SUPABASE_*`.
+Las claves de servicio, Gemini y ARCA se configuran como secretos de Supabase Edge Functions;
+nunca deben llevar el prefijo `VITE_` ni almacenarse en el navegador.
 
+## Validación
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm run check
+npm run test:db
+npm run test:e2e
+```
+
+- `check`: TypeScript, pruebas unitarias y build.
+- `test:db`: verifica el proyecto canónico `qavpleanmjbxbwfzismp`, las tablas y el aislamiento anónimo.
+- `test:e2e`: comprueba portada, carta y autenticación con Chromium.
+
+## Supabase
+
+La única fuente de verdad del esquema es la secuencia versionada de `supabase/migrations/`.
+Los esquemas heredados con usuarios, PIN o contraseñas locales fueron retirados.
+
+Consulte [DEPLOYMENT.md](./supabase/DEPLOYMENT.md) para aplicar la migración, desplegar las
+funciones y crear el primer administrador.

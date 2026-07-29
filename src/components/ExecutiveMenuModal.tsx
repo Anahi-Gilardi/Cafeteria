@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MenuItem, MenuItemCustomization, DailyExecutiveMenu } from "../types";
-import { getTodayExecutiveMenu } from "../data/dailyMenus";
 import { Utensils, CheckCircle, ChevronRight, ChevronLeft, Wine, Coffee, IceCream, Flame, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface ExecutiveMenuModalProps {
   isOpen: boolean;
@@ -11,19 +11,87 @@ interface ExecutiveMenuModalProps {
 }
 
 export default function ExecutiveMenuModal({ isOpen, onClose, onConfirm }: ExecutiveMenuModalProps) {
-  const dailyConfig = getTodayExecutiveMenu();
-
+  const [dailyConfig, setDailyConfig] = useState<DailyExecutiveMenu | null>(null);
   const [step, setStep] = useState<number>(1);
-  const [selectedStarter, setSelectedStarter] = useState<string>(dailyConfig.starters[0] || "");
-  const [selectedMain, setSelectedMain] = useState<string>(dailyConfig.mains[0] || "");
-  const [selectedDrink, setSelectedDrink] = useState<string>(dailyConfig.drinks[0] || "");
-  const [selectedDessert, setSelectedDessert] = useState<string>(dailyConfig.desserts[0] || "");
+  const [selectedStarter, setSelectedStarter] = useState("");
+  const [selectedMain, setSelectedMain] = useState("");
+  const [selectedDrink, setSelectedDrink] = useState("");
+  const [selectedDessert, setSelectedDessert] = useState("");
 
   const [cookingPoint, setCookingPoint] = useState<"Jugoso" | "A punto" | "Bien cocido">("A punto");
   const [sideDish, setSideDish] = useState<string>("Papas Fritas Provenzal");
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadTodayMenu = async () => {
+      const days: DailyExecutiveMenu["dayOfWeek"][] = [
+        "Domingo",
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado"
+      ];
+      const { data, error } = await supabase
+        .from("daily_menu")
+        .select("*")
+        .eq("day_of_week", days[new Date().getDay()])
+        .eq("active", true)
+        .maybeSingle();
+
+      if (error || !data) {
+        if (error) console.warn("No se pudo cargar el menú diario desde Supabase:", error.message);
+        setDailyConfig(null);
+        return;
+      }
+
+      const loaded: DailyExecutiveMenu = {
+        dayOfWeek: data.day_of_week,
+        title: data.title,
+        description: data.description || "",
+        price: Number(data.price),
+        image: data.image || undefined,
+        starters: data.starters || [],
+        mains: data.mains || [],
+        drinks: data.drinks || [],
+        desserts: data.desserts || [],
+        active: data.active
+      };
+      setDailyConfig(loaded);
+      setSelectedStarter(loaded.starters[0] || "");
+      setSelectedMain(loaded.mains[0] || "");
+      setSelectedDrink(loaded.drinks[0] || "");
+      setSelectedDessert(loaded.desserts[0] || "");
+      setStep(1);
+    };
+
+    void loadTodayMenu();
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  if (!dailyConfig) {
+    return (
+      <div className="fixed inset-0 bg-[#2C1810]/75 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#FDFBF7] border border-[#2C1810]/20 rounded-3xl max-w-md w-full p-6 shadow-2xl text-center space-y-4 text-[#2C1810]">
+          <h3 className="font-serif text-2xl font-bold">Menú ejecutivo no publicado</h3>
+          <p className="text-sm text-[#2C1810]/70">
+            Todavía no hay un menú activo para hoy. Publíquelo desde Administración antes de tomar pedidos.
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl bg-[#2C1810] text-white text-xs font-bold"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleFinish = () => {
     const cust: MenuItemCustomization = {
@@ -55,7 +123,7 @@ export default function ExecutiveMenuModal({ isOpen, onClose, onConfirm }: Execu
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#C2956E] text-[#2C1810]">
-                ⭐ {dailyConfig.dayOfWeek} • Menú del Día ($12.500)
+                ⭐ {dailyConfig.dayOfWeek} • Menú del Día (${dailyConfig.price.toLocaleString("es-AR")})
               </span>
             </div>
             <h3 className="font-serif text-2xl font-bold mt-1 text-[#2C1810]">{dailyConfig.title}</h3>

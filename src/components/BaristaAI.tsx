@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { MENU_ITEMS } from "../data/menu";
 import { MenuItem, MenuItemCustomization } from "../types";
-import { Coffee, Bot, ArrowRight, ArrowLeft, Check, Sparkles, ShoppingBag, Send, Trash2, Key, Info, HelpCircle, RefreshCw } from "lucide-react";
+import { Coffee, Bot, ArrowRight, ArrowLeft, Check, Sparkles, ShoppingBag, Send, Trash2, Info, HelpCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "../lib/supabase";
 
 interface BaristaAIProps {
   onAddToBag: (item: MenuItem, customization: MenuItemCustomization) => void;
@@ -28,14 +29,7 @@ export default function BaristaAI({ onAddToBag, menuItems = MENU_ITEMS }: Barist
   const [isMatching, setIsMatching] = useState<boolean>(false);
   const [showResult, setShowResult] = useState<boolean>(false);
 
-  // Chat States (Gemini)
-  const [apiKey, setApiKey] = useState<string>(() => {
-    // Read from vite defined process.env or localStorage
-    const saved = localStorage.getItem("cst_gemini_api_key") || "";
-    return saved || (process.env.GEMINI_API_KEY as string) || "";
-  });
-  const [inputKey, setInputKey] = useState("");
-  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  // Chat state. Provider credentials remain exclusively in the backend.
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -47,14 +41,6 @@ export default function BaristaAI({ onAddToBag, menuItems = MENU_ITEMS }: Barist
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages, isTyping]);
-
-  // Sync API Key state from env if env changes
-  useEffect(() => {
-    const envKey = (process.env.GEMINI_API_KEY as string) || "";
-    if (envKey && !apiKey) {
-      setApiKey(envKey);
-    }
-  }, []);
 
   // Initialize chat with welcome message if empty
   useEffect(() => {
@@ -69,24 +55,6 @@ export default function BaristaAI({ onAddToBag, menuItems = MENU_ITEMS }: Barist
       ]);
     }
   }, [activeMode, chatMessages]);
-
-  // Save API Key helper
-  const handleSaveApiKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputKey.trim()) {
-      localStorage.setItem("cst_gemini_api_key", inputKey.trim());
-      setApiKey(inputKey.trim());
-      setShowKeyConfig(false);
-      setChatError(null);
-    }
-  };
-
-  const handleClearApiKey = () => {
-    localStorage.removeItem("cst_gemini_api_key");
-    setApiKey("");
-    setInputKey("");
-    setShowKeyConfig(true);
-  };
 
   // Original Quiz Recommendation Logic
   const recommendations = useMemo(() => {
@@ -183,70 +151,20 @@ export default function BaristaAI({ onAddToBag, menuItems = MENU_ITEMS }: Barist
     setIsTyping(true);
 
     try {
-      const activeKey = apiKey || (process.env.GEMINI_API_KEY as string) || "";
-      if (!activeKey) {
-        throw new Error("Clave API de Gemini faltante. Por favor, configúrala haciendo clic en el candado.");
-      }
-
-      // Context of items for the system prompt
-      const menuContext = menuItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        price: item.price,
-        description: item.description,
-        tags: item.tags,
-        inStock: (item.stock === undefined || item.stock > 0)
+      const historyToPass = chatMessages.concat(userMsg).slice(-10).map((message) => ({
+        role: message.role,
+        text: message.text.slice(0, 2_000)
       }));
-
-      const systemInstruction = `Eres el Sommelier & Barista Virtual de 'Resto Bar Del Teatro', un distinguido establecimiento gastronómico frente al Teatro Municipal en la ciudad de Río Cuarto, Provincia de Córdoba.
-Su objetivo es conversar de forma atenta, cordial y servicial con el cliente, recomendarle maridajes ideales, informarle sobre el Menú Ejecutivo del Día y sugerirle productos de nuestro menú.
-
-REGLAS DE IDENTIDAD Y TRATO FUNDAMENTALES:
-1. El trato con los Huéspedes debe ser absolutamente respetuoso, utilizando siempre la forma gramatical de 'Usted' y omitiendo tuteos ('vos', 'tú') o modismos informales (como 'Hola', 'vos', 'chicos', 'che' u 'OK'). Salude formalmente ('Buenas tardes', 'Bienvenido').
-2. Muestre pasión por el café de especialidad de excelencia, su origen y su preparación artesanal.
-3. Si recomienda o sugiere un producto específico del menú, debe incluir al final o dentro de su mensaje el botón de acción en formato de texto especial: \`[COMPRAR: id-del-producto]\` para que el sistema le permita al usuario agregarlo directamente a su bandeja de compra con un solo click. Ejemplo: 'Le sugiero probar nuestro clásico cortado [COMPRAR: arg-cortado] acompañado de dos medialunas de manteca calentitas [COMPRAR: arg-medialuna-manteca].'
-4. No se invente productos. Recomiende únicamente productos que estén en la lista provista.
-5. Responda de forma concisa, atenta y servicial, no más de 2 o 3 párrafos por respuesta.`;
-
-      // API Endpoint URL
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
-
-      // Convert history format to Gemini API format
-      // We take the last 10 messages to keep request context window reasonable
-      const historyToPass = chatMessages.concat(userMsg).slice(-10).map(msg => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.text }]
-      }));
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: historyToPass,
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 800
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || `Error HTTP: ${response.status}`);
+      const { data, error } = await supabase.functions.invoke<{ text?: string; error?: string }>(
+        "barista-assistant",
+        { body: { messages: historyToPass } }
+      );
+      if (error || !data?.text) {
+        throw new Error(
+          data?.error || error?.message || "No se obtuvo una respuesta válida del Barista."
+        );
       }
-
-      const data = await response.json();
-      const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!responseText) {
-        throw new Error("No se obtuvo una respuesta válida del Barista.");
-      }
+      const responseText = data.text;
 
       // Add model response
       setChatMessages(prev => [
@@ -592,7 +510,7 @@ REGLAS DE IDENTIDAD Y TRATO FUNDAMENTALES:
             exit={{ opacity: 0, y: -15 }}
             className="flex flex-col border border-coffee bg-white rounded-3xl overflow-hidden shadow-lg h-[600px]"
           >
-            {/* Top Toolbar / API Key Config Toggle */}
+            {/* Top toolbar */}
             <div className="bg-espresso text-paper px-6 py-4 flex items-center justify-between border-b border-coffee/20">
               <div className="flex items-center space-x-3">
                 <Bot className="h-5 w-5 text-caramel" />
@@ -610,78 +528,14 @@ REGLAS DE IDENTIDAD Y TRATO FUNDAMENTALES:
                 >
                   <RefreshCw className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => setShowKeyConfig(!showKeyConfig)}
-                  className={`p-2 rounded-full transition-all cursor-pointer flex items-center gap-1 ${
-                    apiKey 
-                      ? "text-emerald-400 hover:bg-white/10" 
-                      : "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
-                  }`}
-                  title={apiKey ? "API Key configurada" : "Falta API Key de Gemini"}
+                <span
+                  className="p-2 rounded-full text-emerald-400 bg-white/5"
+                  title="Credenciales protegidas en el servidor"
                 >
-                  <Key className="h-4 w-4" />
-                  {!apiKey && <span className="text-[9px] font-extrabold pr-1">CONFIGURAR</span>}
-                </button>
+                  <ShieldCheck className="h-4 w-4" />
+                </span>
               </div>
             </div>
-
-            {/* API Key Modal/Settings Banner inside the chat */}
-            <AnimatePresence>
-              {showKeyConfig && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="bg-stone-100 border-b border-coffee/20 p-5 text-espresso overflow-hidden shrink-0"
-                >
-                  <div className="max-w-md mx-auto">
-                    <h4 className="text-xs font-bold flex items-center gap-1.5">
-                      <Key className="h-4 w-4 text-caramel" />
-                      Configuración de API Key de Gemini
-                    </h4>
-                    <p className="text-[11px] text-espresso/70 mt-1 leading-normal">
-                      Esta aplicación utiliza la API de Gemini para la conversación. Puede obtener una clave gratuita en{" "}
-                      <a
-                        href="https://aistudio.google.com/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-caramel font-bold underline hover:text-espresso"
-                      >
-                        Google AI Studio
-                      </a>. La clave se almacena de forma segura en su navegador local.
-                    </p>
-
-                    {apiKey ? (
-                      <div className="mt-3 flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-950 p-2.5 rounded-lg text-xs">
-                        <span className="truncate font-mono">Clave configurada: ••••••••••••</span>
-                        <button
-                          onClick={handleClearApiKey}
-                          className="text-[10px] font-bold text-red-700 hover:underline cursor-pointer"
-                        >
-                          Eliminar clave
-                        </button>
-                      </div>
-                    ) : (
-                      <form onSubmit={handleSaveApiKey} className="mt-3 flex gap-2">
-                        <input
-                          type="password"
-                          placeholder="Ingrese su GEMINI_API_KEY..."
-                          value={inputKey}
-                          onChange={(e) => setInputKey(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-coffee bg-white rounded-lg text-xs focus:ring-1 focus:ring-caramel focus:outline-hidden font-mono"
-                        />
-                        <button
-                          type="submit"
-                          className="bg-espresso text-paper text-xs font-bold px-4 py-2 rounded-lg hover:bg-caramel transition-all cursor-pointer shadow-xs"
-                        >
-                          Guardar
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Chat Messages Stream */}
             <div className="flex-1 p-4 overflow-y-auto bg-stone-50/50 flex flex-col gap-3 min-h-0">
@@ -746,14 +600,6 @@ REGLAS DE IDENTIDAD Y TRATO FUNDAMENTALES:
                   <Info className="h-4.5 w-4.5 text-red-700 shrink-0 mt-0.5" />
                   <div className="flex-1 leading-normal font-semibold">
                     {chatError}
-                    {!apiKey && (
-                      <button
-                        onClick={() => setShowKeyConfig(true)}
-                        className="block mt-1 text-caramel hover:underline cursor-pointer font-bold"
-                      >
-                        Configurar API Key ahora
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
@@ -768,15 +614,15 @@ REGLAS DE IDENTIDAD Y TRATO FUNDAMENTALES:
             >
               <input
                 type="text"
-                placeholder={apiKey ? "Escriba su consulta al Barista..." : "Ingrese una API Key para chatear..."}
+                placeholder="Escriba su consulta al Barista..."
                 value={inputMessage}
-                disabled={!apiKey || isTyping}
+                disabled={isTyping}
                 onChange={(e) => setInputMessage(e.target.value)}
                 className="flex-1 px-4 py-2.5 border border-coffee/70 bg-paper/20 rounded-full text-xs focus:ring-1 focus:ring-caramel focus:outline-hidden disabled:bg-stone-100 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                disabled={!inputMessage.trim() || isTyping || !apiKey}
+                disabled={!inputMessage.trim() || isTyping}
                 className="h-9 w-9 rounded-full bg-espresso text-paper hover:bg-caramel active:scale-95 disabled:bg-espresso/15 disabled:text-espresso/30 disabled:scale-100 transition-all flex items-center justify-center shrink-0 shadow-sm cursor-pointer"
               >
                 <Send className="h-4 w-4" />

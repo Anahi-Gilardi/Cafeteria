@@ -54,64 +54,6 @@ export class BillingAdapter {
   }
 
   /**
-   * Generates a complete fiscal Invoice object with CAE authorization and QR code.
-   */
-  public static generateInvoice(
-    order: Order,
-    voucherType: "Factura A" | "Factura B" | "Factura C" | "Ticket Consumidor Final",
-    cuitDni: string,
-    clientName: string = "Consumidor Final"
-  ): Invoice {
-    const randomCAE = "74" + Math.floor(10000000000 + Math.random() * 90000000000).toString();
-    const expDate = new Date();
-    expDate.setDate(expDate.getDate() + 10);
-    const expDateStr = expDate.toISOString().split("T")[0];
-
-    const ptoVta = "0001";
-    const nroComp = Math.floor(1000 + Math.random() * 9000).toString().padStart(8, "0");
-
-    const neto = parseFloat((order.total / 1.21).toFixed(2));
-    const iva = parseFloat((order.total - neto).toFixed(2));
-
-    // Construct ARCA Fiscal QR Link
-    const qrData = {
-      ver: 1,
-      fecha: new Date().toISOString().split("T")[0],
-      cuit: 30712345678,
-      ptoVta: 1,
-      tipoCmp: voucherType === "Factura A" ? 1 : voucherType === "Factura B" ? 6 : 11,
-      nroCmp: parseInt(nroComp),
-      importe: order.total,
-      moneda: "PES",
-      ctz: 1,
-      tipoDocRec: cuitDni.length === 11 ? 80 : 96,
-      nroDocRec: parseInt(cuitDni.replace(/\D/g, "")) || 0,
-      tipoCodAut: "E",
-      codAut: parseInt(randomCAE)
-    };
-
-    const qrBase64 = btoa(JSON.stringify(qrData));
-    const qrCodeUrl = `https://www.arca.gob.ar/fe/qr/?p=${qrBase64}`;
-
-    return {
-      id: "INV-" + Date.now(),
-      orderId: order.id,
-      voucherType,
-      ptoVta,
-      nroComprobante: `${ptoVta}-${nroComp}`,
-      cae: randomCAE,
-      caeExpiration: expDateStr,
-      qrCodeUrl,
-      cuitDni: cuitDni || "20-00000000-0",
-      clientName: clientName || "Consumidor Final",
-      totalAmount: order.total,
-      netAmount: neto,
-      vatAmount: iva,
-      createdAt: new Date().toLocaleDateString("es-AR") + " " + new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
-    };
-  }
-
-  /**
    * Triggers a clean 80mm / 58mm thermal ticket print window for Kitchen, Bar, or Checkout.
    */
   public static printThermalTicket(order: Order, station: "Cocina" | "Barra" | "Caja" | "Cliente", invoice?: Invoice): void {
