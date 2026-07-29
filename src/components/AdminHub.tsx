@@ -1097,6 +1097,8 @@ export default function AdminHub({
   const [bookingFormTableId, setBookingFormTableId] = useState("mesa-1");
   const [bookingFormGuests, setBookingFormGuests] = useState(2);
   const [bookingSearchQuery, setBookingSearchQuery] = useState("");
+  const [selectedCalDate, setSelectedCalDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [calMonthOffset, setCalMonthOffset] = useState<number>(0);
 
   // 2. Proveedores
   const [isAddingProv, setIsAddingProv] = useState(false);
@@ -4803,10 +4805,8 @@ export default function AdminHub({
   };
 
   const renderReservas = () => {
-    // Interactive Calendar View State
+    // Interactive Calendar View Calculation
     const todayStr = new Date().toISOString().split("T")[0];
-    const [selectedCalDate, setSelectedCalDate] = useState<string>(bookingFormDate || todayStr);
-    const [calMonthOffset, setCalMonthOffset] = useState<number>(0);
 
     // Compute Calendar Days
     const currentCalMonth = new Date();
