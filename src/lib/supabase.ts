@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 const DEFAULT_SUPABASE_URL = "https://qavpleanmjbxbwfzismp.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhdnBsZWFubWpieGJ3Znppc21wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MzkyOTgsImV4cCI6MjEwMDUxNTI5OH0.8ch0D-p019xHw17DzIfa-k_2GXT_I49jfd1rAwPjKh4";
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+const rawUrl = typeof import.meta !== "undefined" && import.meta?.env?.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.trim() : undefined;
+const rawKey = typeof import.meta !== "undefined" && import.meta?.env?.VITE_SUPABASE_ANON_KEY ? import.meta.env.VITE_SUPABASE_ANON_KEY.trim() : undefined;
 
 const supabaseUrl = rawUrl && rawUrl.startsWith("http") ? rawUrl : DEFAULT_SUPABASE_URL;
 const supabaseAnonKey = rawKey && rawKey.length > 20 ? rawKey : DEFAULT_SUPABASE_ANON_KEY;
