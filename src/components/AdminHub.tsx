@@ -316,6 +316,7 @@ export default function AdminHub({
   const [floorViewMode, setFloorViewMode] = useState<"map2d" | "cards">("map2d");
   const [selectedTableForModal, setSelectedTableForModal] = useState<any | null>(null);
   const [mergedTableIds, setMergedTableIds] = useState<{ [id: string]: string }>({});
+  const [isMoveModeActive, setIsMoveModeActive] = useState<boolean>(true);
 
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>(currentUser.name);
@@ -7187,12 +7188,66 @@ export default function AdminHub({
         {/* 2D ARCHITECTURAL FLOOR PLAN MAP */}
         {floorViewMode === "map2d" && (
           <div className="bg-[#FFF9F4] border-2 border-[#D7BBA8] rounded-3xl p-6 shadow-md relative space-y-4">
-            {/* Header info */}
-            <div className="flex justify-between items-center text-xs font-bold border-b border-[#D7BBA8] pb-3">
-              <span className="text-[#843747] uppercase tracking-wider font-extrabold flex items-center gap-2">
-                🏛️ PLANO ARQUITECTÓNICO — CASTAÑO RESTO BAR (12 MESAS EN SALÓN)
-              </span>
-              <span className="text-[10px] text-[#6F5A55]">Constitución 944 • Frente al Teatro</span>
+            {/* Header info & Interactive Tool Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs font-bold border-b border-[#D7BBA8] pb-3">
+              <div>
+                <span className="text-[#843747] uppercase tracking-wider font-extrabold flex items-center gap-2">
+                  🏛️ PLANO ARQUITECTÓNICO — CASTAÑO RESTO BAR (12 MESAS EN SALÓN)
+                </span>
+                <span className="text-[10px] text-[#6F5A55]">Constitución 944 • Frente al Teatro Municipal</span>
+              </div>
+
+              {/* Toolbar Actions: Mover, Unir, Eliminar */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoveModeActive(!isMoveModeActive);
+                    onShowNotification(
+                      isMoveModeActive ? "🔒 Arrastre de mesas bloqueado." : "🖐️ Modo arrastre activado: Mueva las mesas libremente.",
+                      "info"
+                    );
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 border ${
+                    isMoveModeActive
+                      ? "bg-[#4F735A] text-white border-emerald-800 shadow-xs"
+                      : "bg-stone-200 text-stone-700 border-stone-400"
+                  }`}
+                >
+                  <span>{isMoveModeActive ? "🖐️ Mover Mesas (Activo)" : "🔒 Mover Mesas (Bloqueado)"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstFree = activeTables.find(t => !mergedTableIds[t.id]);
+                    if (firstFree) {
+                      setSelectedTableForModal({
+                        ...firstFree,
+                        statusBadge: "Libre",
+                        activeOrder: null,
+                        reservation: null
+                      });
+                    } else {
+                      onShowNotification("⚠️ Seleccione una mesa tocándola en el plano para unirla.", "info");
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-[#B97932] text-white border border-amber-800 shadow-xs hover:bg-[#A0672A] transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <span>🔗 Unir Mesas</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetEl = document.getElementById("table-editor-panel");
+                    if (targetEl) targetEl.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-[#843747] text-white border border-red-950 shadow-xs hover:bg-[#71303D] transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <span>🗑️ Eliminar / Crear Mesa</span>
+                </button>
+              </div>
             </div>
 
             {/* Architectural Blueprint Canvas Container */}
@@ -7554,15 +7609,41 @@ export default function AdminHub({
                   </button>
                 )}
 
+                {/* Action 1: Move / Reposition */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoveModeActive(true);
+                    setSelectedTableForModal(null);
+                    onShowNotification(`🖐️ Arrastre ${selectedTableForModal.name} en el plano para moverla.`, "info");
+                  }}
+                  className="w-full py-2.5 rounded-xl border border-[#4F735A] text-[#4F735A] bg-[#FFF9F4] font-bold text-xs hover:bg-[#4F735A] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>🖐️ Mover / Reposicionar Posición</span>
+                </button>
+
+                {/* Action 2: Merge / Group */}
                 <button
                   type="button"
                   onClick={() => {
                     handleMergeTableToggle(selectedTableForModal.id);
                     setSelectedTableForModal(null);
                   }}
-                  className="w-full py-2.5 rounded-xl border border-[#843747] text-[#843747] bg-white font-bold text-xs hover:bg-[#E8D4C3]/50 transition-all cursor-pointer"
+                  className="w-full py-2.5 rounded-xl border border-[#B97932] text-[#B97932] bg-[#FFF9F4] font-bold text-xs hover:bg-[#B97932] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
-                  🔗 {mergedTableIds[selectedTableForModal.id] ? "Desvincular Grupo de Mesas" : "Unir / Combinar con otra Mesa"}
+                  <span>🔗 {mergedTableIds[selectedTableForModal.id] ? "Desvincular Grupo de Mesas" : "Unir / Combinar con otra Mesa"}</span>
+                </button>
+
+                {/* Action 3: Delete */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDeleteTable(selectedTableForModal.id);
+                    setSelectedTableForModal(null);
+                  }}
+                  className="w-full py-2 rounded-xl border border-[#A63F45] text-[#A63F45] bg-[#FFF9F4] font-bold text-xs hover:bg-[#A63F45] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <span>🗑️ Eliminar esta Mesa del Plano</span>
                 </button>
               </div>
             </div>
@@ -7570,7 +7651,7 @@ export default function AdminHub({
         )}
 
         {/* Table Editor Panel */}
-        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
+        <div id="table-editor-panel" className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
           <div className="border-b border-[#D7BBA8] pb-4">
             <h3 className="font-serif text-lg font-bold text-[#843747]">Configuración y Distribución del Salón</h3>
             <p className="text-[10px] text-[#6F5A55] mt-0.5 font-medium">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
