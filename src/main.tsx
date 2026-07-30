@@ -12,6 +12,22 @@ interface State {
   error: Error | null;
 }
 
+// Handle stale chunk dynamic import failures automatically when a new version is deployed
+window.addEventListener("vite:preloadError", () => {
+  window.location.reload();
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  if (
+    event.reason &&
+    typeof event.reason.message === "string" &&
+    (event.reason.message.includes("Failed to fetch dynamically imported module") ||
+     event.reason.message.includes("Importing a module script failed"))
+  ) {
+    window.location.reload();
+  }
+});
+
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -24,6 +40,13 @@ class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught Error caught by App ErrorBoundary:", error, errorInfo);
+    if (
+      error.message &&
+      (error.message.includes("Failed to fetch dynamically imported module") ||
+       error.message.includes("Importing a module script failed"))
+    ) {
+      window.location.reload();
+    }
   }
 
   public render() {
