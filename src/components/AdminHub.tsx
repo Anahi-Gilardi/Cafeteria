@@ -7022,6 +7022,38 @@ export default function AdminHub({
     };
 
   const renderSalon = () => {
+    const defaultCoords = [
+      { x: 14, y: 18 }, { x: 38, y: 18 }, { x: 62, y: 18 }, { x: 84, y: 18 },
+      { x: 14, y: 48 }, { x: 38, y: 48 }, { x: 62, y: 48 }, { x: 84, y: 48 },
+      { x: 14, y: 78 }, { x: 38, y: 78 }, { x: 62, y: 78 }, { x: 84, y: 78 }
+    ];
+
+    const getStoredPos = (id: string, index: number) => {
+      try {
+        const stored = localStorage.getItem(`castano_table_pos_${id}`);
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // Fallback
+      }
+      return defaultCoords[index % defaultCoords.length];
+    };
+
+    const handleSavePos = (id: string, posX: number, posY: number) => {
+      localStorage.setItem(`castano_table_pos_${id}`, JSON.stringify({ x: posX, y: posY }));
+    };
+
+    const activeTables = [...restaurantTables];
+    if (activeTables.length < 12) {
+      for (let i = activeTables.length + 1; i <= 12; i++) {
+        activeTables.push({
+          id: `mesa-${i}`,
+          name: `Mesa ${i}`,
+          capacity: i % 2 === 0 ? 4 : 2,
+          status: "Activo" as const
+        });
+      }
+    }
+
     const handleAddTable = async (e: FormEvent) => {
       e.preventDefault();
       if (!newTableName) return;
