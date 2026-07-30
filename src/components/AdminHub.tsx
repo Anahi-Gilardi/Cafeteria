@@ -7090,155 +7090,447 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="space-y-8 text-[#332424]"
       >
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control en Vivo</span>
-          <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Plano del Salón</h2>
-          <p className="text-xs text-[#6F5A55] mt-1 font-medium">Gestione el estado de las mesas y agilice el cobro en tiempo real.</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control en Vivo</span>
+            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Plano del Salón</h2>
+            <p className="text-xs text-[#6F5A55] mt-1 font-medium">
+              Mapa de arquitectura con 12 mesas arrastrables y estado en tiempo real.
+            </p>
+          </div>
+
+          {/* View Mode Switcher */}
+          <div className="flex items-center gap-2 bg-[#FFF9F4] p-1.5 border border-[#D7BBA8] rounded-2xl shadow-sm">
+            <button
+              type="button"
+              onClick={() => setFloorViewMode("map2d")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                floorViewMode === "map2d"
+                  ? "bg-[#843747] text-white shadow-md font-black"
+                  : "text-[#332424] hover:bg-[#E8D4C3]"
+              }`}
+            >
+              <span>🗺️ Mapa Arquitectónico 2D</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFloorViewMode("cards")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                floorViewMode === "cards"
+                  ? "bg-[#843747] text-white shadow-md font-black"
+                  : "text-[#332424] hover:bg-[#E8D4C3]"
+              }`}
+            >
+              <span>📋 Vista de Tarjetas</span>
+            </button>
+          </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex gap-4 text-xs font-bold text-[#332424] bg-[#FFF9F4] p-4 border border-[#D7BBA8] rounded-2xl shadow-sm">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#4F735A]"></span>
-            <span className="text-[#4F735A] font-bold">Libre</span>
+        {/* Status Legend Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-bold text-[#332424] bg-[#FFF9F4] p-4 border border-[#D7BBA8] rounded-2xl shadow-sm">
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#4F735A] border border-emerald-800 shadow-xs"></span>
+              <span className="text-[#4F735A] font-extrabold">🟢 Libre (Disponible)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#843747] border border-red-900 shadow-xs animate-pulse"></span>
+              <span className="text-[#843747] font-extrabold">🔴 Ocupada (En Consumo)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#B97932] border border-amber-800 shadow-xs"></span>
+              <span className="text-[#B97932] font-extrabold">🟡 Reservada (con Nombre y Hora)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#843747]"></span>
-            <span className="text-[#843747] font-bold">Ocupada</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#B97932]"></span>
-            <span className="text-[#B97932] font-bold">Reservada</span>
-          </div>
+          <span className="text-[10px] text-[#6F5A55] italic font-semibold">
+            💡 Arrastre las mesas dentro del plano para reorganizar la distribución del salón.
+          </span>
         </div>
 
-        {/* Grid of tables */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {restaurantTables.map((table) => {
-            // Find active order for this table (matching string name e.g. "Mesa 1")
-            const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
-            // Find reservation for this table (matching ID e.g. "mesa-1" and date is today)
-            const todayStr = new Date().toISOString().split("T")[0];
-            const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
+        {/* 2D ARCHITECTURAL FLOOR PLAN MAP */}
+        {floorViewMode === "map2d" && (
+          <div className="bg-[#FFF9F4] border-2 border-[#D7BBA8] rounded-3xl p-6 shadow-md relative space-y-4">
+            {/* Header info */}
+            <div className="flex justify-between items-center text-xs font-bold border-b border-[#D7BBA8] pb-3">
+              <span className="text-[#843747] uppercase tracking-wider font-extrabold flex items-center gap-2">
+                🏛️ PLANO ARQUITECTÓNICO — CASTAÑO RESTO BAR (12 MESAS EN SALÓN)
+              </span>
+              <span className="text-[10px] text-[#6F5A55]">Constitución 944 • Frente al Teatro</span>
+            </div>
 
-            let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
-            let colorClasses = "border-[#4F735A]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
-            if (table.status === "Mantenimiento") {
-              status = "Mantenimiento";
-              colorClasses = "border-[#A63F45]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
-            } else if (activeOrder) {
-              status = "Ocupada";
-              colorClasses = "border-[#843747] bg-[#FFF9F4] text-[#332424] shadow-sm";
-            } else if (reservation) {
-              status = "Reservada";
-              colorClasses = "border-[#B97932]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
-            }
+            {/* Architectural Blueprint Canvas Container */}
+            <div 
+              id="architectural-canvas"
+              className="relative w-full h-[540px] bg-[#F8F1E9] border-2 border-dashed border-[#D7BBA8] rounded-2xl overflow-hidden shadow-inner selection:bg-transparent"
+              style={{
+                backgroundImage: "radial-gradient(#D7BBA8 1px, transparent 1px)",
+                backgroundSize: "24px 24px"
+              }}
+            >
+              {/* Architectural Landmark: Main Entrance Door */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-[#843747] text-white px-6 py-1 rounded-b-xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-2 border-b-2 border-x-2 border-[#D7BBA8]">
+                🚪 ENTRADA PRINCIPAL / SALIDA DE SALÓN
+              </div>
 
-            return (
-              <div
-                key={table.id}
-                className={`border rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
-              >
-                <div>
-                  <div className="flex items-center justify-between border-b border-[#D7BBA8] pb-3 mb-3">
-                    <span className="font-serif text-lg font-black text-[#843747]">{table.name}</span>
-                    <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747]">
-                      {table.capacity} Personas
-                    </span>
+              {/* Architectural Landmark: Bar Counter */}
+              <div className="absolute top-4 right-4 z-10 bg-[#E8D4C3] border-2 border-[#843747] p-3 rounded-2xl text-center shadow-md">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">☕ BARRA & CAFETERÍA</span>
+                <span className="text-[8px] text-[#6F5A55] block font-bold">Máquina Espresso & Coctelería</span>
+              </div>
+
+              {/* Architectural Landmark: Theater View Windows */}
+              <div className="absolute bottom-0 inset-x-12 z-10 bg-[#843747]/10 border-t-2 border-dashed border-[#843747] py-1 text-center text-[9px] font-black uppercase tracking-widest text-[#843747]">
+                🎭 VENTANAL A CALLE CONSTITUCIÓN (VISTA AL TEATRO MUNICIPAL)
+              </div>
+
+              {/* Architectural Landmark: Terrace / Garden Outer Edge */}
+              <div className="absolute top-12 left-0 bottom-12 w-8 bg-[#4F735A]/15 border-r-2 border-dashed border-[#4F735A] flex items-center justify-center [writing-mode:vertical-lr] rotate-180 text-[9px] font-black uppercase tracking-widest text-[#4F735A]">
+                🌿 TERRAZA & PATIO EXTERIOR
+              </div>
+
+              {/* Render 12 Draggable Table Tokens */}
+              {activeTables.map((table, index) => {
+                const pos = getStoredPos(table.id, index);
+                const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
+                const todayStr = new Date().toISOString().split("T")[0];
+                const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
+
+                let statusColor = "bg-[#4F735A] border-emerald-800 text-white";
+                let statusBadge = "Libre";
+                if (table.status === "Mantenimiento") {
+                  statusColor = "bg-[#A63F45] border-red-900 text-white opacity-60";
+                  statusBadge = "Mantenimiento";
+                } else if (activeOrder) {
+                  statusColor = "bg-[#843747] border-red-950 text-white animate-pulse";
+                  statusBadge = "Ocupada";
+                } else if (reservation) {
+                  statusColor = "bg-[#B97932] border-amber-900 text-white";
+                  statusBadge = "Reservada";
+                }
+
+                const joinedName = mergedTableIds[table.id];
+
+                return (
+                  <motion.div
+                    key={table.id}
+                    drag
+                    dragMomentum={false}
+                    onDragEnd={(_e, info) => {
+                      const container = document.getElementById("architectural-canvas");
+                      if (container) {
+                        const rect = container.getBoundingClientRect();
+                        const posX = Math.min(88, Math.max(8, ((info.point.x - rect.left) / rect.width) * 100));
+                        const posY = Math.min(88, Math.max(8, ((info.point.y - rect.top) / rect.height) * 100));
+                        handleSavePos(table.id, posX, posY);
+                      }
+                    }}
+                    style={{
+                      left: `${pos.x}%`,
+                      top: `${pos.y}%`
+                    }}
+                    onClick={() => setSelectedTableForModal({ ...table, statusBadge, activeOrder, reservation })}
+                    className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-2xl border-2 shadow-xl flex flex-col justify-between p-2 cursor-grab active:cursor-grabbing transition-shadow hover:scale-105 z-20 ${statusColor}`}
+                  >
+                    {/* Top Row: Name and Capacity */}
+                    <div className="flex justify-between items-center text-[9px] font-black uppercase">
+                      <span className="truncate">{table.name}</span>
+                      <span className="bg-black/30 px-1.5 py-0.5 rounded text-[8px] font-mono">
+                        {table.capacity}p
+                      </span>
+                    </div>
+
+                    {/* Center: Main status text or reservation info */}
+                    <div className="text-center my-auto space-y-0.5">
+                      {statusBadge === "Reservada" && reservation && (
+                        <div className="leading-none">
+                          <span className="text-[9px] font-black block truncate">👤 {reservation.customerName}</span>
+                          <span className="text-[8px] opacity-90 block font-mono">⏰ {reservation.timeSlot}</span>
+                        </div>
+                      )}
+
+                      {statusBadge === "Ocupada" && activeOrder && (
+                        <div className="leading-none">
+                          <span className="text-[9px] font-black block">🛒 Ocupada</span>
+                          <span className="text-[10px] font-black font-mono block">${activeOrder.total.toFixed(0)}</span>
+                        </div>
+                      )}
+
+                      {statusBadge === "Libre" && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider block">🟢 Libre</span>
+                      )}
+
+                      {statusBadge === "Mantenimiento" && (
+                        <span className="text-[8px] font-bold uppercase block">🔧 Taller</span>
+                      )}
+
+                      {joinedName && (
+                        <span className="bg-white/90 text-[#843747] text-[7px] font-black px-1 rounded block">
+                          🔗 + {joinedName}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Bottom Indicator */}
+                    <div className="text-[7px] font-mono text-center opacity-80 uppercase tracking-widest">
+                      Tocar para opciones
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Grid Cards View fallback */}
+        {floorViewMode === "cards" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activeTables.map((table) => {
+              const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
+              const todayStr = new Date().toISOString().split("T")[0];
+              const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
+
+              let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
+              let colorClasses = "border-[#4F735A]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
+              if (table.status === "Mantenimiento") {
+                status = "Mantenimiento";
+                colorClasses = "border-[#A63F45]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
+              } else if (activeOrder) {
+                status = "Ocupada";
+                colorClasses = "border-[#843747] bg-[#FFF9F4] text-[#332424] shadow-sm";
+              } else if (reservation) {
+                status = "Reservada";
+                colorClasses = "border-[#B97932]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
+              }
+
+              return (
+                <div
+                  key={table.id}
+                  className={`border rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between border-b border-[#D7BBA8] pb-3 mb-3">
+                      <span className="font-serif text-lg font-black text-[#843747]">{table.name}</span>
+                      <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747]">
+                        {table.capacity} Personas
+                      </span>
+                    </div>
+
+                    {status === "Mantenimiento" && (
+                      <div className="py-4">
+                        <p className="text-xs text-[#A63F45] italic font-semibold">🔧 Mesa fuera de servicio por mantenimiento.</p>
+                      </div>
+                    )}
+
+                    {status === "Libre" && (
+                      <div className="py-4">
+                        <p className="text-xs text-[#6F5A55] italic font-semibold">Mesa disponible para recibir comensales.</p>
+                      </div>
+                    )}
+
+                    {status === "Reservada" && reservation && (
+                      <div className="space-y-1.5 py-2 text-xs">
+                        <p className="font-bold text-[#B97932]">📌 Reservada por: {reservation.customerName}</p>
+                        <p className="text-[10px] text-[#6F5A55] font-semibold font-mono">Horario: {reservation.timeSlot} • Fecha: {reservation.date}</p>
+                        <p className="text-[10px] text-[#6F5A55] font-semibold">Teléfono: {reservation.customerPhone}</p>
+                      </div>
+                    )}
+
+                    {status === "Ocupada" && activeOrder && (
+                      <div className="space-y-2 py-1 text-xs">
+                        <div className="flex justify-between items-center text-[10px] uppercase font-black text-[#843747]">
+                          <span>Consumo Activo</span>
+                          <span>Total: ${activeOrder.total.toFixed(0)}</span>
+                        </div>
+                        <div className="max-h-[60px] overflow-y-auto pr-1 text-[10px] text-[#6F5A55] space-y-0.5 font-semibold">
+                          {activeOrder.items.map((it: any, idx: number) => (
+                            <div key={idx} className="flex justify-between">
+                              <span>{it.quantity}x {it.name}</span>
+                              <span>${(it.price * it.quantity).toFixed(0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {status === "Mantenimiento" && (
-                    <div className="py-4">
-                      <p className="text-xs text-[#A63F45] italic font-semibold">🔧 Mesa fuera de servicio por mantenimiento.</p>
-                    </div>
-                  )}
+                  <div className="pt-4 border-t border-[#D7BBA8] mt-2">
+                    {status === "Libre" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPosTable(table.name);
+                          setActiveSubTab("caja");
+                          onShowNotification(`✨ Iniciando pedido para la ${table.name}.`, "info");
+                        }}
+                        className="w-full bg-[#4F735A] hover:bg-[#3D5B46] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
+                      >
+                        Abrir Mesa
+                      </button>
+                    )}
 
-                  {status === "Libre" && (
-                    <div className="py-4">
-                      <p className="text-xs text-[#6F5A55] italic font-semibold">Mesa disponible para recibir comensales.</p>
-                    </div>
-                  )}
+                    {status === "Reservada" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPosTable(table.name);
+                          setActiveSubTab("caja");
+                          onShowNotification(`📌 Ocupando mesa reservada para la ${table.name}.`, "info");
+                        }}
+                        className="w-full bg-[#B97932] hover:bg-[#A0672A] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
+                      >
+                        Registrar Arribo
+                      </button>
+                    )}
 
-                  {status === "Reservada" && reservation && (
-                    <div className="space-y-1.5 py-2 text-xs">
-                      <p className="font-bold text-[#B97932]">📌 Reservada por: {reservation.customerName}</p>
-                      <p className="text-[10px] text-[#6F5A55] font-semibold font-mono">Horario: {reservation.timeSlot} • Tel: {reservation.customerPhone}</p>
-                    </div>
-                  )}
-
-                  {status === "Ocupada" && activeOrder && (
-                    <div className="space-y-2 py-1 text-xs">
-                      <div className="flex justify-between items-center text-[10px] uppercase font-black text-[#843747]">
-                        <span>Consumo Activo</span>
-                        <span>Total: ${activeOrder.total.toFixed(0)}</span>
-                      </div>
-                      <div className="max-h-[60px] overflow-y-auto pr-1 text-[10px] text-[#6F5A55] space-y-0.5 font-semibold">
-                        {activeOrder.items.map((it: any, idx: number) => (
-                          <div key={idx} className="flex justify-between">
-                            <span>{it.quantity}x {it.name}</span>
-                            <span>${(it.price * it.quantity).toFixed(0)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    {status === "Ocupada" && activeOrder && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPosCheckoutOrder(activeOrder);
+                          setPaymentMethod("Tarjeta");
+                          setReceivedCashInput("");
+                          setPosCouponInput("");
+                          setActiveSubTab("caja");
+                        }}
+                        className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
+                      >
+                        💵 Cobrar Ticket
+                      </button>
+                    )}
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                <div className="pt-4 border-t border-[#D7BBA8] mt-2">
-                  {status === "Mantenimiento" && (
-                    <button
-                      disabled
-                      className="w-full bg-[#F4DCDD] text-[#A63F45] text-[10px] font-bold py-2 rounded-xl uppercase tracking-wider cursor-not-allowed border border-[#A63F45]/20"
-                    >
-                      Fuera de Servicio
-                    </button>
-                  )}
+        {/* Selected Table Detail Modal Popover */}
+        {selectedTableForModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-xs text-[#332424] relative">
+              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-wider block">Ficha de Mesa en Salón</span>
+                  <h3 className="font-serif text-xl font-bold text-[#332424]">{selectedTableForModal.name}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTableForModal(null)}
+                  className="h-8 w-8 rounded-full bg-[#E8D4C3] text-[#843747] font-bold flex items-center justify-center hover:bg-[#843747] hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
 
-                  {status === "Libre" && (
-                    <button
-                      onClick={() => {
-                        setPosTable(table.name);
-                        setActiveSubTab("caja");
-                        onShowNotification(`✨ Iniciando pedido para la ${table.name}.`, "info");
-                      }}
-                      className="w-full bg-[#4F735A] hover:bg-[#3D5B46] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
-                    >
-                      Abrir Mesa
-                    </button>
-                  )}
-
-                  {status === "Reservada" && (
-                    <button
-                      onClick={() => {
-                        setPosTable(table.name);
-                        setActiveSubTab("caja");
-                        onShowNotification(`📌 Ocupando mesa reservada para la ${table.name}.`, "info");
-                      }}
-                      className="w-full bg-[#B97932] hover:bg-[#A0672A] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
-                    >
-                      Registrar Arribo
-                    </button>
-                  )}
-
-                  {status === "Ocupada" && activeOrder && (
-                    <button
-                      onClick={() => {
-                        setPosCheckoutOrder(activeOrder);
-                        setPaymentMethod("Tarjeta");
-                        setReceivedCashInput("");
-                        setPosCouponInput("");
-                        setActiveSubTab("caja");
-                      }}
-                      className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
-                    >
-                      💵 Cobrar Ticket
-                    </button>
-                  )}
+              {/* Status Badge Banner */}
+              <div className="p-3 rounded-2xl bg-white border border-[#D7BBA8] space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-[#6F5A55]">Estado Actual:</span>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    selectedTableForModal.statusBadge === "Libre" ? "bg-[#4F735A] text-white" :
+                    selectedTableForModal.statusBadge === "Ocupada" ? "bg-[#843747] text-white" :
+                    selectedTableForModal.statusBadge === "Reservada" ? "bg-[#B97932] text-white" : "bg-stone-500 text-white"
+                  }`}>
+                    {selectedTableForModal.statusBadge}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="font-bold text-[#6F5A55]">Capacidad Salón:</span>
+                  <span className="font-mono font-bold text-[#843747]">{selectedTableForModal.capacity} Personas</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Reservation Info if Reserved */}
+              {selectedTableForModal.reservation && (
+                <div className="p-3.5 rounded-2xl bg-[#B97932]/10 border border-[#B97932]/30 space-y-1.5 text-xs text-[#332424]">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#B97932] block">📌 Detalle de Reserva Activa</span>
+                  <p className="font-bold">👤 Comensal: {selectedTableForModal.reservation.customerName}</p>
+                  <p className="font-mono">📅 Fecha: {selectedTableForModal.reservation.date} • Horario: {selectedTableForModal.reservation.timeSlot}</p>
+                  <p className="font-mono">📞 Teléfono: {selectedTableForModal.reservation.customerPhone}</p>
+                </div>
+              )}
+
+              {/* Active Order Info if Occupied */}
+              {selectedTableForModal.activeOrder && (
+                <div className="p-3.5 rounded-2xl bg-[#843747]/10 border border-[#843747]/30 space-y-2 text-xs text-[#332424]">
+                  <div className="flex justify-between items-center text-[#843747] font-black">
+                    <span className="text-[10px] uppercase tracking-wider">🛒 Consumo Activo</span>
+                    <span className="font-mono">Total: ${selectedTableForModal.activeOrder.total.toFixed(0)}</span>
+                  </div>
+                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1 font-semibold text-[11px]">
+                    {selectedTableForModal.activeOrder.items.map((it: any, idx: number) => (
+                      <div key={idx} className="flex justify-between border-b border-[#D7BBA8]/40 pb-0.5">
+                        <span>{it.quantity}x {it.name}</span>
+                        <span>${(it.price * it.quantity).toFixed(0)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="space-y-2 pt-2">
+                {selectedTableForModal.statusBadge === "Libre" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPosTable(selectedTableForModal.name);
+                      setSelectedTableForModal(null);
+                      setActiveSubTab("caja");
+                      onShowNotification(`✨ Abriendo comanda para ${selectedTableForModal.name}.`, "success");
+                    }}
+                    className="w-full py-3 rounded-xl bg-[#4F735A] hover:bg-[#3D5B46] text-white font-black uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    ✨ Abrir Comanda POS para esta Mesa
+                  </button>
+                )}
+
+                {selectedTableForModal.statusBadge === "Reservada" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPosTable(selectedTableForModal.name);
+                      setSelectedTableForModal(null);
+                      setActiveSubTab("caja");
+                      onShowNotification(`📌 Ocupando mesa reservada para ${selectedTableForModal.name}.`, "success");
+                    }}
+                    className="w-full py-3 rounded-xl bg-[#B97932] hover:bg-[#A0672A] text-white font-black uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    📌 Registrar Arribo de Comensales
+                  </button>
+                )}
+
+                {selectedTableForModal.statusBadge === "Ocupada" && selectedTableForModal.activeOrder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPosCheckoutOrder(selectedTableForModal.activeOrder);
+                      setSelectedTableForModal(null);
+                      setPaymentMethod("Tarjeta");
+                      setReceivedCashInput("");
+                      setPosCouponInput("");
+                      setActiveSubTab("caja");
+                    }}
+                    className="w-full py-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white font-black uppercase tracking-wider transition-all cursor-pointer"
+                  >
+                    💵 Ir a Cobrar Ticket a Caja
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleMergeTableToggle(selectedTableForModal.id);
+                    setSelectedTableForModal(null);
+                  }}
+                  className="w-full py-2.5 rounded-xl border border-[#843747] text-[#843747] bg-white font-bold text-xs hover:bg-[#E8D4C3]/50 transition-all cursor-pointer"
+                >
+                  🔗 {mergedTableIds[selectedTableForModal.id] ? "Desvincular Grupo de Mesas" : "Unir / Combinar con otra Mesa"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Table Editor Panel */}
         <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
