@@ -318,6 +318,7 @@ export default function AdminHub({
   const [mergedTableIds, setMergedTableIds] = useState<{ [id: string]: string }>({});
   const [isMoveModeActive, setIsMoveModeActive] = useState<boolean>(true);
   const [tablePositions, setTablePositions] = useState<{ [id: string]: { x: number; y: number } }>({});
+  const [tableStatusFilter, setTableStatusFilter] = useState<"all" | "Libre" | "Ocupada" | "Reservada">("all");
 
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>(currentUser.name);
@@ -593,6 +594,53 @@ export default function AdminHub({
     };
 
     loadSupabaseData();
+
+    // ⚡ REALTIME MULTI-DEVICE SYNCHRONIZATION ENGINE
+    const channel = supabase.channel("castano-realtime-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        async () => {
+          const { data } = await supabase.from("orders").select("*").neq("status", "Completado");
+          if (data) {
+            setOrders(data.map((o: any) => ({
+              id: o.id,
+              items: o.items || [],
+              total: Number(o.total || 0),
+              type: o.type,
+              tableNumber: o.table_number,
+              status: o.status,
+              createdAt: o.created_at
+            })));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "restaurant_tables" },
+        async () => {
+          const { data } = await supabase.from("restaurant_tables").select("*").order("name");
+          if (data) {
+            setRestaurantTables(data.map(t => ({
+              id: t.id,
+              name: t.name,
+              capacity: Number(t.capacity),
+              status: t.active ? "Activo" : "Mantenimiento"
+            })));
+          }
+        }
+      )
+      .on("broadcast", { event: "table_pos_moved" }, (payload) => {
+        if (payload?.payload) {
+          const { id, x, y } = payload.payload;
+          setTablePositions(prev => ({ ...prev, [id]: { x, y } }));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchUsers = async () => {
@@ -7051,6 +7099,11 @@ export default function AdminHub({
       setTablePositions(prev => ({ ...prev, [id]: newPos }));
       try {
         localStorage.setItem(`castano_table_pos_${id}`, JSON.stringify(newPos));
+        supabase.channel("castano-realtime-sync").send({
+          type: "broadcast",
+          event: "table_pos_moved",
+          payload: { id, x: posX, y: posY }
+        });
       } catch (e) {
         console.error("Error saving table position:", e);
       }
@@ -7188,25 +7241,76 @@ export default function AdminHub({
           </div>
         </div>
 
-        {/* Status Legend Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-bold text-[#332424] bg-[#FFF9F4] p-4 border border-[#D7BBA8] rounded-2xl shadow-sm">
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#4F735A] border border-emerald-800 shadow-xs"></span>
-              <span className="text-[#4F735A] font-extrabold">🟢 Libre (Disponible)</span>
+        {/* Realtime KPI Banner & Status Filter Tabs */}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+              <span className="text-2xl">📊</span>
+              <div>
+                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Ocupación Salón</span>
+                <span className="text-sm font-extrabold text-[#843747]">
+                  {Math.round((orders.filter(o => o.status !== "Completado").length / 12) * 100)}%
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#843747] border border-red-900 shadow-xs animate-pulse"></span>
-              <span className="text-[#843747] font-extrabold">🔴 Ocupada (En Consumo)</span>
+
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+              <span className="text-2xl">🟢</span>
+              <div>
+                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Mesas Libres</span>
+                <span className="text-sm font-extrabold text-[#4F735A]">
+                  {12 - orders.filter(o => o.status !== "Completado").length} / 12
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full bg-[#B97932] border border-amber-800 shadow-xs"></span>
-              <span className="text-[#B97932] font-extrabold">🟡 Reservada (con Nombre y Hora)</span>
+
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+              <span className="text-2xl">🔴</span>
+              <div>
+                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Mesas Ocupadas</span>
+                <span className="text-sm font-extrabold text-[#843747]">
+                  {orders.filter(o => o.status !== "Completado").length}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+              <span className="text-2xl">🟡</span>
+              <div>
+                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Reservas Hoy</span>
+                <span className="text-sm font-extrabold text-[#B97932]">
+                  {adminBookings.filter(b => b.date === new Date().toISOString().split("T")[0]).length}
+                </span>
+              </div>
             </div>
           </div>
-          <span className="text-[10px] text-[#6F5A55] italic font-semibold">
-            💡 Arrastre las mesas dentro del plano para reorganizar la distribución del salón.
-          </span>
+
+          {/* Status Filter Selector Tabs */}
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-[#332424] bg-[#FFF9F4] p-3 border border-[#D7BBA8] rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2 flex-wrap">
+              {[
+                { id: "all", label: "Todas las Mesas (12)" },
+                { id: "Libre", label: "🟢 Libres" },
+                { id: "Ocupada", label: "🔴 Ocupadas" },
+                { id: "Reservada", label: "🟡 Reservadas" }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTableStatusFilter(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
+                    tableStatusFilter === tab.id
+                      ? "bg-[#843747] text-white shadow-xs"
+                      : "bg-white border border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-[#6F5A55] italic font-semibold">
+              ⚡ Sincronización en tiempo real multiterminal (PC + Móvil)
+            </span>
+          </div>
         </div>
 
         {/* 2D ARCHITECTURAL FLOOR PLAN MAP */}
@@ -7313,7 +7417,14 @@ export default function AdminHub({
               </div>
 
               {/* Render 12 Draggable Table Tokens */}
-              {activeTables.map((table, index) => {
+              {activeTables.filter(table => {
+                if (tableStatusFilter === "all") return true;
+                const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
+                const todayStr = new Date().toISOString().split("T")[0];
+                const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
+                const currentBadge = activeOrder ? "Ocupada" : reservation ? "Reservada" : "Libre";
+                return currentBadge === tableStatusFilter;
+              }).map((table, index) => {
                 const pos = getStoredPos(table.id, index);
                 const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
                 const todayStr = new Date().toISOString().split("T")[0];

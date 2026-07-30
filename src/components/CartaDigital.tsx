@@ -311,6 +311,30 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
               ))}
             </div>
 
+            {/* Dietary & Allergen Badges Filter Bar */}
+            <div className="bg-[#FFF9F4] border-b border-[#D7BBA8] px-3 py-1.5 flex gap-1.5 overflow-x-auto scrollbar-none z-10 text-[10px]">
+              {[
+                { id: "", label: "Todos", emoji: "🍽️" },
+                { id: "sin-tacc", label: "Sin TACC", emoji: "🌾" },
+                { id: "vegano", label: "Vegano", emoji: "🌱" },
+                { id: "vegetariano", label: "Vegetariano", emoji: "🧀" },
+                { id: "promos", label: "Ofertas", emoji: "🔥" }
+              ].map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => setActiveFilter(tag.id)}
+                  className={`px-2 py-0.5 rounded-lg font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                    activeFilter === tag.id
+                      ? "bg-[#843747] text-white shadow-xs"
+                      : "bg-white border border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                  }`}
+                >
+                  <span>{tag.emoji}</span>
+                  <span>{tag.label}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Phone Screen Body Content */}
             <div className="p-4 flex-1 overflow-y-auto max-h-[500px]">
               {/* Simple Search */}
