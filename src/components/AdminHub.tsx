@@ -312,6 +312,11 @@ export default function AdminHub({
   const [deliveryFeeConfig, setDeliveryFeeConfig] = useState<number>(0);
   const [deliveryFreeMinConfig, setDeliveryFreeMinConfig] = useState<number>(0);
 
+  // Salon 2D Floor Plan states (Top level to respect React rules of hooks)
+  const [floorViewMode, setFloorViewMode] = useState<"map2d" | "cards">("map2d");
+  const [selectedTableForModal, setSelectedTableForModal] = useState<any | null>(null);
+  const [mergedTableIds, setMergedTableIds] = useState<{ [id: string]: string }>({});
+
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>(currentUser.name);
   const [mozoSelectedTable, setMozoSelectedTable] = useState<string | null>(null);
