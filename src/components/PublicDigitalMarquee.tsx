@@ -320,12 +320,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   <h3 className="font-serif text-base font-bold text-[#332424]">{item.name}</h3>
                   <p className="text-xs text-[#6F5A55] line-clamp-2 leading-relaxed mt-1">{item.description}</p>
                 </div>
-                <button
-                  onClick={() => addToCart(item)}
-                  className="w-full mt-3 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-sm active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
-                >
-                  <Plus className="h-4 w-4" /> Agregar al Pedido
-                </button>
+                <span className="w-full mt-3 py-2 rounded-xl bg-[#E8D4C3]/60 border border-[#D7BBA8] text-[#843747] text-[10px] font-bold uppercase tracking-wider text-center block">
+                  Pedir al mozo
+                </span>
               </div>
             </div>
           ))}
@@ -443,12 +440,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={addExecutiveComboToCart}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#843747] to-[#843747] text-white font-black text-xs uppercase tracking-wider shadow-lg hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Plus className="h-4 w-4" /> Agregar Combo Menú Ejecutivo al Pedido (${todayMenu.price.toLocaleString("es-AR")})
-            </button>
+            <div className="w-full py-3 rounded-2xl bg-[#E8D4C3]/60 border border-[#D7BBA8] text-[#843747] font-bold text-[10px] uppercase tracking-wider text-center">
+              📖 Menú de consulta visual · Su mozo tomará la orden en mesa
+            </div>
           </div>
         )}
 
@@ -467,29 +461,6 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
           ))}
         </div>
       </section>
-
-      {/* Floating Order Cart Bar */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-lg px-4">
-          <div className="bg-white border-2 border-[#843747] p-4 rounded-3xl shadow-2xl flex items-center justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-[#E7C8CF] border border-[#843747] flex items-center justify-center font-bold text-[#843747] font-mono">
-                {cart.reduce((s, c) => s + c.qty, 0)}
-              </div>
-              <div>
-                <span className="text-[10px] text-[#6F5A55] uppercase font-black block">Tu Pedido Actual</span>
-                <strong className="text-base font-mono text-[#843747] font-black">${cartTotal.toLocaleString("es-AR")}</strong>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsCheckoutOpen(true)}
-              className="flex items-center gap-2 rounded-2xl bg-[#843747] px-5 py-3 text-white font-black uppercase tracking-wider shadow-lg hover:bg-[#71303D] cursor-pointer"
-            >
-              Revisar pedido <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Public Order Confirmation Modal */}
       {isCheckoutOpen && (
