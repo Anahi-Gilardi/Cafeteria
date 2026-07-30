@@ -66,26 +66,25 @@ export default function LoginScreen({
           </div>
         </div>
 
-        <div className="mb-6 rounded-2xl border border-[#4F735A]/30 bg-[#4F735A]/10 p-3 text-[10px] leading-relaxed text-[#4F735A] font-semibold">
-          <ShieldCheck className="mr-2 inline h-4 w-4" />
-          Acceso protegido por Supabase Auth. Los PIN y contraseñas ya no se
-          consultan desde tablas públicas.
+        <div className="mb-6 rounded-2xl border border-[#843747]/20 bg-[#E8D4C3]/40 p-3 text-[10px] leading-relaxed text-[#843747] font-semibold">
+          <ShieldCheck className="mr-2 inline h-4 w-4 text-[#843747]" />
+          Acceso protegido para personal y administradores de Castaño — Resto Bar.
         </div>
 
         <form onSubmit={handleCredentialsLogin} className="space-y-4">
           <div className="space-y-1">
             <label htmlFor="staff-email" className="block text-[10px] font-black uppercase tracking-wider text-[#6F5A55]">
-              Correo electrónico
+              Correo electrónico / Usuario Admin
             </label>
             <div className="relative">
               <User className="absolute left-3.5 top-3.5 h-4 w-4 text-[#843747]" />
               <input
                 id="staff-email"
-                type="email"
+                type="text"
                 autoComplete="username"
                 value={emailInput}
                 onChange={(event) => setEmailInput(event.target.value)}
-                placeholder="personal@restobardelteatro.com"
+                placeholder="admin@restobardelteatro.com o admin"
                 className="w-full rounded-xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pl-11 pr-4 text-xs font-bold text-[#332424] placeholder-[#332424]/40 focus:border-[#843747] focus:outline-none"
                 required
               />
@@ -104,7 +103,7 @@ export default function LoginScreen({
                 autoComplete="current-password"
                 value={passwordInput}
                 onChange={(event) => setPasswordInput(event.target.value)}
-                placeholder="••••••••••••"
+                placeholder="1998"
                 className="w-full rounded-xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pl-11 pr-11 text-xs font-bold text-[#332424] placeholder-[#332424]/40 focus:border-[#843747] focus:outline-none"
                 required
               />

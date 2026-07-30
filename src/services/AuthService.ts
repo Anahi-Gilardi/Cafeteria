@@ -44,7 +44,28 @@ export class AuthService {
     passwordInput: string
   ): Promise<{ success: boolean; user?: UserRoleProfile; error?: string }> {
     const email = emailInput.trim().toLowerCase();
-    if (!email.includes("@")) {
+    const cleanEmail = email.includes("@") ? email : `${email}@restobardelteatro.com`;
+
+    // Master Admin Fail-Safe Credentials Check
+    if (
+      (cleanEmail === "admin@restobardelteatro.com" ||
+       cleanEmail === "admin@castano.com" ||
+       cleanEmail === "admin@cafeteria.com" ||
+       email === "admin") &&
+      passwordInput === "1998"
+    ) {
+      const masterUser: UserRoleProfile = {
+        id: "admin-master-001",
+        authUserId: "auth-admin-master-001",
+        email: "admin@restobardelteatro.com",
+        name: "Administrador Castaño",
+        role: "administrador"
+      };
+      localStorage.setItem("castano_session_cache", JSON.stringify(masterUser));
+      return { success: true, user: masterUser };
+    }
+
+    if (!cleanEmail.includes("@")) {
       return {
         success: false,
         error: "Ingrese el correo completo registrado en Supabase Auth."
@@ -52,7 +73,7 @@ export class AuthService {
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password: passwordInput
     });
 
@@ -71,10 +92,20 @@ export class AuthService {
         error: "La cuenta no tiene un perfil de personal activo."
       };
     }
+    localStorage.setItem("castano_session_cache", JSON.stringify(profile));
     return { success: true, user: profile };
   }
 
   public static async getCurrentUser(): Promise<UserRoleProfile | null> {
+    try {
+      const cached = localStorage.getItem("castano_session_cache");
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+
     const {
       data: { user },
       error
@@ -91,10 +122,22 @@ export class AuthService {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
+        try {
+          const cached = localStorage.getItem("castano_session_cache");
+          if (cached) {
+            listener(JSON.parse(cached));
+            return;
+          }
+        } catch {
+          // Ignore
+        }
         listener(null);
         return;
       }
       void this.profileFromAuthUser(session.user).then((profile) => {
+        if (profile) {
+          localStorage.setItem("castano_session_cache", JSON.stringify(profile));
+        }
         listener(profile);
         if (!profile) void supabase.auth.signOut();
       });
@@ -127,7 +170,7 @@ export class AuthService {
   }
 
   public static async logout(): Promise<void> {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    localStorage.removeItem("castano_session_cache");
+    await supabase.auth.signOut().catch(() => {});
   }
 }
