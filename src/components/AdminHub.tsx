@@ -7032,7 +7032,12 @@ export default function AdminHub({
     const getStoredPos = (id: string, index: number) => {
       try {
         const stored = localStorage.getItem(`castano_table_pos_${id}`);
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+            return parsed;
+          }
+        }
       } catch {
         // Fallback
       }
@@ -7054,6 +7059,15 @@ export default function AdminHub({
         });
       }
     }
+
+    const handleResetGrid = () => {
+      activeTables.forEach((t, idx) => {
+        const gridPos = defaultCoords[idx % defaultCoords.length];
+        localStorage.setItem(`castano_table_pos_${t.id}`, JSON.stringify(gridPos));
+      });
+      onShowNotification("✨ Cuadrícula de mesas alineada y reordenada en el plano.", "success");
+      setRestaurantTables(prev => [...prev]);
+    };
 
     const handleAddTable = async (e: FormEvent) => {
       e.preventDefault();
@@ -7247,6 +7261,14 @@ export default function AdminHub({
                 >
                   <span>🗑️ Eliminar / Crear Mesa</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetGrid}
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-stone-700 text-white border border-stone-900 shadow-xs hover:bg-stone-800 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <span>🔄 Alinear Grid</span>
+                </button>
               </div>
             </div>
 
@@ -7305,14 +7327,23 @@ export default function AdminHub({
                 return (
                   <motion.div
                     key={table.id}
-                    drag
+                    drag={isMoveModeActive}
                     dragMomentum={false}
-                    onDragEnd={(_e, info) => {
+                    onDragEnd={(e: any, info) => {
                       const container = document.getElementById("architectural-canvas");
                       if (container) {
                         const rect = container.getBoundingClientRect();
-                        const posX = Math.min(88, Math.max(8, ((info.point.x - rect.left) / rect.width) * 100));
-                        const posY = Math.min(88, Math.max(8, ((info.point.y - rect.top) / rect.height) * 100));
+                        const clientX = e.clientX || (e.changedTouches && e.changedTouches[0]?.clientX);
+                        const clientY = e.clientY || (e.changedTouches && e.changedTouches[0]?.clientY);
+                        let posX = pos.x;
+                        let posY = pos.y;
+                        if (clientX && clientY) {
+                          posX = Math.min(88, Math.max(12, ((clientX - rect.left) / rect.width) * 100));
+                          posY = Math.min(85, Math.max(15, ((clientY - rect.top) / rect.height) * 100));
+                        } else {
+                          posX = Math.min(88, Math.max(12, ((info.point.x - rect.left) / rect.width) * 100));
+                          posY = Math.min(85, Math.max(15, ((info.point.y - rect.top) / rect.height) * 100));
+                        }
                         handleSavePos(table.id, posX, posY);
                       }
                     }}
