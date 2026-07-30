@@ -5396,7 +5396,18 @@ export default function AdminHub({
   };
 
   const renderPedidosMozo = () => {
-    const MOZO_TABLES = restaurantTables.filter(t => t.status === "Activo").map(t => t.name);
+    const activeTableObjs = [...restaurantTables];
+    if (activeTableObjs.length < 12) {
+      for (let i = activeTableObjs.length + 1; i <= 12; i++) {
+        activeTableObjs.push({
+          id: `mesa-${i}`,
+          name: `Mesa ${i}`,
+          capacity: i % 2 === 0 ? 4 : 2,
+          status: "Activo" as const
+        });
+      }
+    }
+    const MOZO_TABLES = activeTableObjs.filter(t => t.status === "Activo").map(t => t.name);
     
     const getActiveOrderForTable = (table: string) => {
       return orders.find(o => o.tableNumber === table && o.status !== "Completado");
