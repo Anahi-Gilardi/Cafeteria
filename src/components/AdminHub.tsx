@@ -317,6 +317,7 @@ export default function AdminHub({
   const [selectedTableForModal, setSelectedTableForModal] = useState<any | null>(null);
   const [mergedTableIds, setMergedTableIds] = useState<{ [id: string]: string }>({});
   const [isMoveModeActive, setIsMoveModeActive] = useState<boolean>(true);
+  const [tablePositions, setTablePositions] = useState<{ [id: string]: { x: number; y: number } }>({});
 
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>(currentUser.name);
@@ -7030,6 +7031,7 @@ export default function AdminHub({
     ];
 
     const getStoredPos = (id: string, index: number) => {
+      if (tablePositions[id]) return tablePositions[id];
       try {
         const stored = localStorage.getItem(`castano_table_pos_${id}`);
         if (stored) {
@@ -7045,7 +7047,13 @@ export default function AdminHub({
     };
 
     const handleSavePos = (id: string, posX: number, posY: number) => {
-      localStorage.setItem(`castano_table_pos_${id}`, JSON.stringify({ x: posX, y: posY }));
+      const newPos = { x: posX, y: posY };
+      setTablePositions(prev => ({ ...prev, [id]: newPos }));
+      try {
+        localStorage.setItem(`castano_table_pos_${id}`, JSON.stringify(newPos));
+      } catch (e) {
+        console.error("Error saving table position:", e);
+      }
     };
 
     const activeTables = [...restaurantTables];
@@ -7061,12 +7069,14 @@ export default function AdminHub({
     }
 
     const handleResetGrid = () => {
+      const newMap: { [id: string]: { x: number; y: number } } = {};
       activeTables.forEach((t, idx) => {
         const gridPos = defaultCoords[idx % defaultCoords.length];
+        newMap[t.id] = gridPos;
         localStorage.setItem(`castano_table_pos_${t.id}`, JSON.stringify(gridPos));
       });
+      setTablePositions(newMap);
       onShowNotification("✨ Cuadrícula de mesas alineada y reordenada en el plano.", "success");
-      setRestaurantTables(prev => [...prev]);
     };
 
     const handleAddTable = async (e: FormEvent) => {
@@ -7328,6 +7338,7 @@ export default function AdminHub({
                   <motion.div
                     key={table.id}
                     drag={isMoveModeActive}
+                    dragSnapToOrigin={true}
                     dragMomentum={false}
                     onDragEnd={(e: any, info) => {
                       const container = document.getElementById("architectural-canvas");
