@@ -235,12 +235,25 @@ export default function App() {
           })));
         }
 
-        // 4. Fetch Orders from Supabase
+        // 4. Fetch Orders from Supabase & Merge with Local Cache (Prevents order loss on session change)
         const { orders: remoteOrders, error: fetchErr } = await SupabaseSyncService.fetchOrders();
-        if (remoteOrders && remoteOrders.length > 0) {
-          setOrders(remoteOrders);
+        let currentLocal: Order[] = [];
+        try {
+          const saved = localStorage.getItem("resto_bar_orders");
+          if (saved) currentLocal = JSON.parse(saved);
+        } catch (e) {}
+
+        const mergedMap = new Map<string, Order>();
+        currentLocal.forEach(o => mergedMap.set(o.id, o));
+        (remoteOrders || []).forEach(o => mergedMap.set(o.id, o));
+        const mergedList = Array.from(mergedMap.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        if (mergedList.length > 0) {
+          setOrders(mergedList);
           try {
-            localStorage.setItem("resto_bar_orders", JSON.stringify(remoteOrders));
+            localStorage.setItem("resto_bar_orders", JSON.stringify(mergedList));
           } catch (e) {}
         } else if (fetchErr) {
           console.warn("⚠️ Advertencia al consultar comandas en Supabase:", fetchErr);
@@ -268,8 +281,19 @@ export default function App() {
     const refreshOrders = async () => {
       const result = await SupabaseSyncService.fetchOrders();
       if (!active || result.error) return;
-      setOrders(result.orders);
-      localStorage.setItem("resto_bar_orders", JSON.stringify(result.orders));
+      
+      setOrders(prev => {
+        const map = new Map<string, Order>();
+        prev.forEach(o => map.set(o.id, o));
+        result.orders.forEach(o => map.set(o.id, o));
+        const merged = Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        try {
+          localStorage.setItem("resto_bar_orders", JSON.stringify(merged));
+        } catch (e) {}
+        return merged;
+      });
     };
 
     void refreshOrders();
