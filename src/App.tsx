@@ -22,6 +22,7 @@ import SalonMap from "./components/SalonMap";
 import RestoBarLogo from "./components/RestoBarLogo";
 import { AuthService, UserRoleProfile } from "./services/AuthService";
 import { offlineQueueService } from "./services/OfflineQueueService";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const AdminHub = lazy(() => import("./components/AdminHub"));
 const BaristaAI = lazy(() => import("./components/BaristaAI"));
@@ -601,16 +602,19 @@ export default function App() {
 
   if (activeTab === "public_menu") {
     return (
-      <PublicDigitalMarquee
-        menuItems={menuItems}
-        onShowNotification={showNotification}
-      />
+      <ErrorBoundary>
+        <PublicDigitalMarquee
+          menuItems={menuItems}
+          onShowNotification={showNotification}
+        />
+      </ErrorBoundary>
     );
   }
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
         <PublicLandingPage
           menuItems={menuItems}
           onLoginSuccess={(user) => {
@@ -638,30 +642,33 @@ export default function App() {
         
         {renderNotificationStack()}
       </div>
+      </ErrorBoundary>
     );
   }
 
   if (activeTab === "admin") {
     return (
-      <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
-        <Suspense fallback={<ModuleFallback />}>
-          <AdminHub
-            orders={orders}
-            onOrderStatusUpdate={handleOrderStatusUpdate}
-            onArchiveOrder={handleArchiveOrder}
-            onUpdateOrders={handleUpdateOrdersWithPersist}
-            menuItems={menuItems}
-            onUpdateMenu={setMenuItems}
-            onShowNotification={showNotification}
-            clientAccounts={clientAccounts}
-            onUpdateClientAccounts={setClientAccounts}
-            onClosePanel={() => setActiveTab("dashboard")}
-            currentUser={currentUser}
-            bookings={bookings}
-          />
-        </Suspense>
-        {renderNotificationStack()}
-      </div>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+          <Suspense fallback={<ModuleFallback />}>
+            <AdminHub
+              orders={orders}
+              onOrderStatusUpdate={handleOrderStatusUpdate}
+              onArchiveOrder={handleArchiveOrder}
+              onUpdateOrders={handleUpdateOrdersWithPersist}
+              menuItems={menuItems}
+              onUpdateMenu={setMenuItems}
+              onShowNotification={showNotification}
+              clientAccounts={clientAccounts}
+              onUpdateClientAccounts={setClientAccounts}
+              onClosePanel={() => setActiveTab("dashboard")}
+              currentUser={currentUser}
+              bookings={bookings}
+            />
+          </Suspense>
+          {renderNotificationStack()}
+        </div>
+      </ErrorBoundary>
     );
   }
 

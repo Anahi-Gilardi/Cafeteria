@@ -1,6 +1,6 @@
 export interface PrinterConfig {
   paperWidth: "80mm" | "58mm";
-  printerType: "webusb" | "websocket" | "browser_print";
+  printerType: "webusb" | "webbluetooth" | "websocket" | "browser_print";
   websocketUrl: string;
   autoCut: boolean;
   kickDrawer: boolean;
@@ -33,7 +33,6 @@ export class ThermalPrinterService {
    * Generates ESC/POS byte sequence for opening cash drawer (Kick Drawer)
    */
   public static getDrawerKickCommand(): Uint8Array {
-    // ESC p 0 25 250 (standard ESC/POS pulse command)
     return new Uint8Array([0x1b, 0x70, 0x00, 0x19, 0xfa]);
   }
 
@@ -41,8 +40,32 @@ export class ThermalPrinterService {
    * Generates ESC/POS byte sequence for paper cut
    */
   public static getPaperCutCommand(): Uint8Array {
-    // GS V 66 0 (standard partial cut)
     return new Uint8Array([0x1d, 0x56, 0x42, 0x00]);
+  }
+
+  /**
+   * Connects to Bluetooth ESC/POS printer directly
+   */
+  public static async printDirectBluetooth(textData: string): Promise<boolean> {
+    if (!("bluetooth" in navigator)) {
+      console.warn("WebBluetooth not supported in this browser.");
+      return false;
+    }
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ["00001101-0000-1000-8000-00805f9b34fb"]
+      });
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService("00001101-0000-1000-8000-00805f9b34fb");
+      const characteristic = await service.getCharacteristic("00001101-0000-1000-8000-00805f9b34fb");
+      const encoder = new TextEncoder();
+      await characteristic.writeValue(encoder.encode(textData));
+      return true;
+    } catch (err) {
+      console.error("Bluetooth print error:", err);
+      return false;
+    }
   }
 
   /**
@@ -50,6 +73,11 @@ export class ThermalPrinterService {
    */
   public static async printRawText(text: string, title: string = "Ticket"): Promise<boolean> {
     const config = this.getConfig();
+
+    if (config.printerType === "webbluetooth") {
+      const success = await this.printDirectBluetooth(text);
+      if (success) return true;
+    }
 
     if (config.printerType === "websocket") {
       try {

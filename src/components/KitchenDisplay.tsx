@@ -148,14 +148,37 @@ export default function KitchenDisplay({
     });
   }, [archiveSearch, archivedOrders]);
 
-  // Audio Notification
+  const [isVoiceAlertEnabled, setIsVoiceAlertEnabled] = useState(true);
+
+  // Audio & Voice Speech Notification
   useEffect(() => {
-    const activeCount = orders.filter((o) => o.status === "Recibido").length;
+    const receivedOrders = orders.filter((o) => o.status === "Recibido");
+    const activeCount = receivedOrders.length;
     if (activeCount > previousOrdersCount) {
       playAlertSound();
+      const latestOrder = receivedOrders[0];
+      if (latestOrder) {
+        speakOrderNotification(latestOrder);
+      }
     }
     setPreviousOrdersCount(activeCount);
   }, [orders]);
+
+  const speakOrderNotification = (order: Order) => {
+    if (!isVoiceAlertEnabled || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const tableText = order.tableNumber ? `para Mesa ${order.tableNumber}` : "para Retiro";
+      const itemsText = order.items.slice(0, 3).map(i => `${i.quantity} ${i.name}`).join(", ");
+      const text = `¡Nueva comanda ${tableText}! ${itemsText}`;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "es-AR";
+      utterance.rate = 1.05;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.log("SpeechSynthesis error:", e);
+    }
+  };
 
   const playAlertSound = () => {
     try {
