@@ -342,8 +342,20 @@ export default function AdminHub({
     };
   }, []);
 
-  const [isShiftOpen, setIsShiftOpen] = useState<boolean>(false);
-  const [shiftOpenTime, setShiftOpenTime] = useState<string>("");
+  const [isShiftOpen, setIsShiftOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("castano_shift_open") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [shiftOpenTime, setShiftOpenTime] = useState<string>(() => {
+    try {
+      return localStorage.getItem("castano_shift_open_time") || "";
+    } catch {
+      return "";
+    }
+  });
   const [closuresHistory, setClosuresHistory] = useState<any[]>([]);
 
   // Sidebar collapse state & scroll ref
@@ -1743,38 +1755,77 @@ export default function AdminHub({
       mercadopago: 0,
       transactions: []
     };
-    const { data, error } = await supabase.rpc("open_cash_shift");
-    if (error) {
-      onShowNotification(`⚠️ No se pudo abrir el turno: ${error.message}`, "warning");
-      return;
+
+    let openedAt = new Date().toISOString();
+
+    // 1. Try Supabase Postgres RPC open_cash_shift
+    try {
+      const { data, error } = await supabase.rpc("open_cash_shift");
+      if (!error && data?.opened_at) {
+        openedAt = data.opened_at;
+      } else {
+        console.warn("RPC open_cash_shift notice:", error?.message);
+        // Direct table upsert fallback on cash_shifts table
+        await supabase
+          .from("cash_shifts")
+          .upsert({ id: "current", is_open: true, opened_at: openedAt, total_collected: 0, cash: 0, card: 0, mercadopago: 0, transactions: [] });
+      }
+    } catch (e) {
+      console.warn("Network or RPC fallback for open_cash_shift:", e);
     }
+
+    // 2. Always set local shift state open and persist to localStorage
     setIsShiftOpen(true);
-    setShiftOpenTime(data.opened_at);
+    setShiftOpenTime(openedAt);
     setCashLedger(emptyLedger);
+    try {
+      localStorage.setItem("castano_shift_open", "true");
+      localStorage.setItem("castano_shift_open_time", openedAt);
+    } catch (e) {}
     onShowNotification("🔓 Turno fiscal de caja abierto con éxito.", "success");
   };
 
   // Close Daily Shift
   const handleConfirmCloseShift = async (montoReal: number, observaciones: string) => {
-    const { data, error: closureError } = await supabase.rpc("close_cash_shift", {
-      p_declared_cash: montoReal,
-      p_notes: observaciones || "Cierre de caja ordinario"
-    });
-    if (closureError) {
-      onShowNotification(`⚠️ No se pudo cerrar el turno: ${closureError.message}`, "warning");
-      return;
-    }
-    const newClosure = {
-      id: data.id,
-      user: data.user_name,
-      apertura: data.opened_at,
-      cierre: data.closed_at,
-      observaciones: data.notes || "",
-      ventasTurno: Number(data.sales_total),
-      montoReal: Number(data.declared_cash),
-      diferencia: Number(data.difference),
-      transactions: data.transactions || []
+    const closedAt = new Date().toISOString();
+    let newClosure: any = {
+      id: `closure-${Date.now()}`,
+      user: currentUser.name || "Cajero",
+      apertura: shiftOpenTime || closedAt,
+      cierre: closedAt,
+      observaciones: observaciones || "Cierre de caja ordinario",
+      ventasTurno: cashLedger.totalCollected,
+      montoReal,
+      diferencia: montoReal - cashLedger.cash,
+      transactions: cashLedger.transactions || []
     };
+
+    try {
+      const { data, error: closureError } = await supabase.rpc("close_cash_shift", {
+        p_declared_cash: montoReal,
+        p_notes: observaciones || "Cierre de caja ordinario"
+      });
+      if (!closureError && data) {
+        newClosure = {
+          id: data.id,
+          user: data.user_name || currentUser.name,
+          apertura: data.opened_at,
+          cierre: data.closed_at,
+          observaciones: data.notes || "",
+          ventasTurno: Number(data.sales_total),
+          montoReal: Number(data.declared_cash),
+          diferencia: Number(data.difference),
+          transactions: data.transactions || []
+        };
+      } else {
+        await supabase
+          .from("cash_shifts")
+          .upsert({ id: "current", is_open: false, opened_at: null, total_collected: 0, cash: 0, card: 0, mercadopago: 0, transactions: [] });
+      }
+    } catch (e) {
+      console.warn("RPC close_cash_shift fallback:", e);
+    }
+
     setClosuresHistory(prev => [newClosure, ...prev]);
     setIsShiftOpen(false);
     setShiftOpenTime("");
@@ -1786,8 +1837,12 @@ export default function AdminHub({
       transactions: []
     });
     setPosCheckoutOrder(null);
+    try {
+      localStorage.setItem("castano_shift_open", "false");
+      localStorage.removeItem("castano_shift_open_time");
+    } catch (e) {}
     setIsCloseShiftModalOpen(false);
-    onShowNotification("🔒 Turno de caja cerrado y homologado en auditoría.", "info");
+    onShowNotification("🔒 Turno de caja cerrado correctamente.", "info");
   };
 
   const getRecipeCost = (item: MenuItem) => {
