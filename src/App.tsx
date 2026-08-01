@@ -480,37 +480,65 @@ export default function App() {
 
   // Direct backend comanda status modifier for Admin Panel & KDS
   const handleOrderStatusUpdate = async (orderId: string, status: OrderStatusType) => {
-    const result = await SupabaseSyncService.updateOrderStatus(orderId, status);
-    if (!result.success) {
-      console.error("Error updating order status on Supabase:", result.error);
-      showNotification("⚠️ El cambio no pudo sincronizarse. Intente nuevamente.", "warning");
-      return;
-    }
+    // 1. Optimistic Local State & Cache Update (Guarantees instant UI column shift in KDS)
     setOrders((prev) => {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
+      try {
+        localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
+      } catch (e) {}
       const targetOrder = updated.find((o) => o.id === orderId);
       if (targetOrder && status === "Listo") {
         WhatsAppOrderService.notifyOrderReady(targetOrder);
       }
       return updated;
     });
-    showNotification(`📋 Pedido #${orderId} actualizado a estado: '${status}'.`, "info");
+
+    // 2. Async Network Sync with Supabase (Graceful fallback if unauthenticated or offline)
+    try {
+      const result = await SupabaseSyncService.updateOrderStatus(orderId, status);
+      if (!result.success) {
+        console.warn("Supabase status sync pending:", result.error);
+        const currentOrder = orders.find(o => o.id === orderId);
+        if (currentOrder) {
+          offlineQueueService.enqueueOrder({ ...currentOrder, status }, result.error);
+        }
+        showNotification(`📋 Estado de comanda #${orderId} actualizado localmente.`, "info");
+      } else {
+        showNotification(`📋 Pedido #${orderId} actualizado a estado: '${status}'.`, "success");
+      }
+    } catch (err) {
+      console.warn("Error in handleOrderStatusUpdate sync:", err);
+      showNotification(`📋 Estado de comanda #${orderId} actualizado localmente.`, "info");
+    }
   };
 
   const handleArchiveOrder = async (orderId: string): Promise<boolean> => {
-    const result = await SupabaseSyncService.archiveOrder(orderId);
-    if (!result.success) {
-      console.error("Error archiving order on Supabase:", result.error);
-      showNotification("⚠️ La comanda no pudo archivarse. Continúa visible para reintentar.", "warning");
-      return false;
-    }
-    setOrders((prev) =>
-      prev.map((order) =>
+    // 1. Optimistic Local Update
+    setOrders((prev) => {
+      const updated = prev.map((order) =>
         order.id === orderId ? { ...order, status: "Completado" as OrderStatusType } : order
-      )
-    );
-    showNotification(`🗄️ Comanda #${orderId} guardada en el archivo de Supabase.`, "success");
-    return true;
+      );
+      try {
+        localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    // 2. Background Sync with Supabase Archive
+    try {
+      const result = await SupabaseSyncService.archiveOrder(orderId);
+      if (!result.success) {
+        console.warn("Error archiving order on Supabase, kept in local archive:", result.error);
+        showNotification(`🗄️ Comanda #${orderId} archivada localmente.`, "info");
+        return true;
+      }
+      showNotification(`🗄️ Comanda #${orderId} guardada en el archivo de Supabase.`, "success");
+      return true;
+    } catch (err) {
+      console.warn("Archive error:", err);
+      showNotification(`🗄️ Comanda #${orderId} archivada localmente.`, "info");
+      return true;
+    }
   };
 
   const handleUpdateOrdersWithPersist = (newOrdersOrUpdater: Order[] | ((prev: Order[]) => Order[])) => {
