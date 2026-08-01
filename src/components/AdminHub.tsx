@@ -4516,13 +4516,27 @@ export default function AdminHub({
                                 ? `DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944"}`
                                 : `Mesa ${order.tableNumber?.replace("Mesa ", "") || "1"} (Mozo: ${getMozoName(order.id)})`}
                             </strong>
-                            <span className="text-[9px] font-bold text-[#6F5A55] block mt-0.5">
-                              {order.items.reduce((acc, curr) => acc + curr.quantity, 0)} items • #{order.id}
+                            <span className="text-[9px] font-bold text-[#6F5A55] block mt-0.5 font-mono">
+                              📅 {order.createdAt ? new Date(order.createdAt).toLocaleDateString("es-AR") : new Date().toLocaleDateString("es-AR")} • 🕒 {order.createdAt ? new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
                             </span>
                           </div>
                           <span className="text-xs font-mono font-black text-[#843747]">${order.total.toLocaleString()}</span>
                         </div>
-                        <div className="flex justify-between items-center">
+
+                        {/* Full Itemized Order Detail */}
+                        <div className="bg-[#E8D4C3]/40 border border-[#D7BBA8]/60 p-2 rounded-xl text-[9.5px] space-y-1">
+                          <span className="text-[8px] font-black uppercase text-[#843747] block tracking-wider font-sans">
+                            Detalle del Pedido ({order.items.reduce((acc, curr) => acc + curr.quantity, 0)} ítems):
+                          </span>
+                          {order.items.map((it, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-[#332424] font-semibold">
+                              <span className="truncate pr-1">• {it.quantity}x {it.name}</span>
+                              <span className="font-mono font-bold text-[#843747] shrink-0">${(it.price * it.quantity).toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1 border-t border-[#D7BBA8]/40">
                           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${statusColor}`}>
                             {statusText}
                           </span>
@@ -4935,9 +4949,10 @@ export default function AdminHub({
             <table className="w-full text-left border-collapse text-xs font-semibold text-[#332424]">
               <thead>
                 <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] uppercase tracking-wider text-[#6F5A55]">
+                  <th className="p-3 font-black">Fecha y Hora</th>
                   <th className="p-3 font-black">Comanda ID</th>
                   <th className="p-3 font-black">Mesa / Tipo</th>
-                  <th className="p-3 font-black">Productos</th>
+                  <th className="p-3 font-black">Detalle de Productos</th>
                   <th className="p-3 font-black">Método Pago</th>
                   <th className="p-3 text-right font-black">Total Cobrado</th>
                   <th className="p-3 text-center font-black">Acciones</th>
@@ -4956,7 +4971,7 @@ export default function AdminHub({
                   if (filteredCompletedOrders.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={6} className="p-6 text-center text-[#6F5A55] font-medium italic">
+                        <td colSpan={7} className="p-6 text-center text-[#6F5A55] font-medium italic">
                           No se encontraron comandas cobradas con los filtros seleccionados.
                         </td>
                       </tr>
@@ -4965,14 +4980,28 @@ export default function AdminHub({
 
                   return filteredCompletedOrders.map((o) => (
                     <tr key={o.id} className="hover:bg-[#E8D4C3]/30 transition-colors">
+                      <td className="p-3 font-mono text-[10px] text-[#6F5A55]">
+                        <span className="font-bold block text-[#843747]">
+                          📅 {o.createdAt ? new Date(o.createdAt).toLocaleDateString("es-AR") : new Date().toLocaleDateString("es-AR")}
+                        </span>
+                        <span className="text-[9px] font-mono text-[#6F5A55]">
+                          🕒 {o.createdAt ? new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
+                        </span>
+                      </td>
                       <td className="p-3 font-mono font-bold text-[#843747]">{o.id}</td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-md bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[10px] font-bold">
                           {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
                         </span>
                       </td>
-                      <td className="p-3 text-[#332424] max-w-[200px] truncate">
-                        {o.items.map(it => `${it.quantity}x ${it.name}`).join(", ")}
+                      <td className="p-3 text-[#332424] max-w-[280px]">
+                        <div className="flex flex-wrap gap-1">
+                          {o.items.map((it, idx) => (
+                            <span key={idx} className="inline-block bg-[#E8D4C3]/50 border border-[#D7BBA8] text-[#332424] px-1.5 py-0.5 rounded text-[9px] font-bold">
+                              {it.quantity}x {it.name} (${(it.price * it.quantity).toLocaleString()})
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="p-3">
                         <select
