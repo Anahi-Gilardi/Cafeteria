@@ -85,11 +85,75 @@ export default function AdminHub({
   currentUser,
   bookings = []
 }: AdminHubProps) {
+  const hashMap: Record<string, "dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal" | "reportes"> = {
+    "#mozo": "pedidos_mozo",
+    "#/mozo": "pedidos_mozo",
+    "#cocina": "kds_cocina",
+    "#/cocina": "kds_cocina",
+    "#caja": "caja",
+    "#/caja": "caja",
+    "#reservas": "reservas",
+    "#/reservas": "reservas",
+    "#salon": "salon",
+    "#/salon": "salon",
+    "#dashboard": "dashboard",
+    "#/dashboard": "dashboard",
+    "#carta": "precios",
+    "#/carta": "precios",
+    "#stock": "inventario",
+    "#/stock": "inventario",
+    "#proveedores": "proveedores",
+    "#/proveedores": "proveedores",
+    "#personal": "personal",
+    "#/personal": "personal",
+    "#reportes": "reportes",
+    "#/reportes": "reportes"
+  };
+
+  const getInitialTabFromHash = () => {
+    const hash = window.location.hash.toLowerCase();
+    if (hashMap[hash]) return hashMap[hash];
+    return currentUser.role === "barista" ? "inventario" : "pedidos_mozo";
+  };
+
   const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal" | "reportes">(
-    currentUser.role === "barista" 
-      ? "inventario" 
-      : "pedidos_mozo"
+    getInitialTabFromHash
   );
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hashMap[hash] && hashMap[hash] !== activeSubTab) {
+        setActiveSubTab(hashMap[hash]);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [activeSubTab]);
+
+  useEffect(() => {
+    const reverseMap: Record<typeof activeSubTab, string> = {
+      pedidos_mozo: "#/mozo",
+      kds_cocina: "#/cocina",
+      caja: "#/caja",
+      reservas: "#/reservas",
+      salon: "#/salon",
+      dashboard: "#/dashboard",
+      precios: "#/carta",
+      inventario: "#/stock",
+      proveedores: "#/proveedores",
+      personal: "#/personal",
+      reportes: "#/reportes"
+    };
+    if (reverseMap[activeSubTab]) {
+      window.history.replaceState(null, "", reverseMap[activeSubTab]);
+    }
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [activeSubTab]);
   const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("barista");
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
@@ -252,6 +316,8 @@ export default function AdminHub({
     floorNotes: "",
     deliveryFee: 1200
   });
+  const [stableTakeawayId, setStableTakeawayId] = useState<string>(() => `RET-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [stableDeliveryId, setStableDeliveryId] = useState<string>(() => `DEL-${Math.floor(1000 + Math.random() * 9000)}`);
   const [isSupabaseSqlModalOpen, setIsSupabaseSqlModalOpen] = useState<boolean>(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
 
@@ -3536,7 +3602,8 @@ export default function AdminHub({
                 .map((item, idx) => {
                   const active = currentItem ? currentItem.id === item.id : false;
                   const itemCost = getRecipeCost(item);
-                  const itemMargin = item.price > 0 ? ((item.price - itemCost) / item.price) * 100 : 0;
+                  const isRecipeComplete = itemCost > 0;
+                  const itemMargin = item.price > 0 && isRecipeComplete ? ((item.price - itemCost) / item.price) * 100 : 0;
 
                   return (
                     <div 
@@ -3572,9 +3639,13 @@ export default function AdminHub({
                         <div>
                           <span className="text-sm font-black block text-[#843747]">${item.price.toLocaleString("es-AR")}</span>
                           <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
-                            itemMargin >= 60 ? "bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30" : "bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30"
+                            !isRecipeComplete
+                              ? "bg-[#F4DCDD] text-[#A63F45] border border-[#A63F45]/30"
+                              : itemMargin >= 60 
+                                ? "bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30" 
+                                : "bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30"
                           }`}>
-                            {itemMargin.toFixed(0)}% mrg.
+                            {!isRecipeComplete ? "Receta Incompleta" : `${itemMargin.toFixed(0)}% mrg.`}
                           </span>
                         </div>
                         <button
@@ -3787,16 +3858,24 @@ export default function AdminHub({
                     </div>
                     <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
                       <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Utilidad Bruta</span>
-                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">${utility.toFixed(0)}</div>
+                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">
+                        {directCost > 0 ? `$${utility.toFixed(0)}` : "Sin costo"}
+                      </div>
                       <span className="text-[7px] text-[#6F5A55] block font-semibold mt-1">Sugerido menos costos fijos</span>
                     </div>
                     <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
                       <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Margen de Contribución</span>
-                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">{margin.toFixed(1)}%</div>
+                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">
+                        {directCost > 0 ? `${margin.toFixed(1)}%` : "N/A"}
+                      </div>
                       <span className={`text-[7px] font-bold block mt-1 uppercase text-center ${
-                        margin >= 60 ? "text-[#4F735A] bg-[#DFEADF] border border-[#4F735A]/30 px-1 py-0.5 rounded" : "text-[#B97932] bg-[#F5E4CC] border border-[#B97932]/30 px-1 py-0.5 rounded"
+                        directCost === 0 
+                          ? "text-[#A63F45] bg-[#F4DCDD] border border-[#A63F45]/30 px-1 py-0.5 rounded"
+                          : margin >= 60 
+                            ? "text-[#4F735A] bg-[#DFEADF] border border-[#4F735A]/30 px-1 py-0.5 rounded" 
+                            : "text-[#B97932] bg-[#F5E4CC] border border-[#B97932]/30 px-1 py-0.5 rounded"
                       }`}>
-                        {margin >= 60 ? "EXCELENTE" : "BAJO"}
+                        {directCost === 0 ? "RECETA INCOMPLETA" : margin >= 60 ? "EXCELENTE" : "BAJO"}
                       </span>
                     </div>
                   </div>
@@ -5264,7 +5343,20 @@ export default function AdminHub({
                   onChange={(e) => setBookingFormTableId(e.target.value)}
                   className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
                 >
-                  {restaurantTables.filter(t => t.status === "Activo").map(t => (
+                  {(() => {
+                    const list = [...restaurantTables];
+                    if (list.length < 12) {
+                      for (let i = list.length + 1; i <= 12; i++) {
+                        list.push({
+                          id: `mesa-${i}`,
+                          name: `Mesa ${i}`,
+                          capacity: i % 2 === 0 ? 4 : 2,
+                          status: "Activo" as const
+                        });
+                      }
+                    }
+                    return list.filter(t => t.status === "Activo");
+                  })().map(t => (
                     <option key={t.id} value={t.id}>{t.name} (Capacidad: {t.capacity} Pers.)</option>
                   ))}
                 </select>
@@ -5486,7 +5578,7 @@ export default function AdminHub({
           return;
         }
         const newTakeawayOrder: Order = {
-          id: `RET-${crypto.randomUUID()}`,
+          id: stableTakeawayId,
           items: mozoCart.map(c => ({
             itemId: c.item.id,
             name: c.item.name,
@@ -5511,6 +5603,7 @@ export default function AdminHub({
         }
         onShowNotification(`🛍️ Pedido de Retiro #${newTakeawayOrder.id} enviado a Cocina & Chef.`, "success");
         setMozoCart([]);
+        setStableTakeawayId(`RET-${Math.floor(1000 + Math.random() * 9000)}`);
         return;
       }
 
@@ -5520,7 +5613,7 @@ export default function AdminHub({
           return;
         }
         const newDeliveryOrder: Order = {
-          id: `DEL-${crypto.randomUUID()}`,
+          id: stableDeliveryId,
           items: mozoCart.map(c => ({
             name: c.item.name,
             quantity: c.qty,
@@ -5550,6 +5643,7 @@ export default function AdminHub({
         }
         onShowNotification(`🛵 Pedido de Delivery #${newDeliveryOrder.id} enviado a Cocina & Chef.`, "success");
         setMozoCart([]);
+        setStableDeliveryId(`DEL-${Math.floor(1000 + Math.random() * 9000)}`);
         return;
       }
 
@@ -5911,9 +6005,9 @@ export default function AdminHub({
                         <div>
                           <h4 className="font-serif text-base font-bold text-white">
                             {mozoServiceType === "takeaway"
-                              ? `RETIRO EN LOCAL`
+                              ? `RETIRO LOCAL (#${stableTakeawayId})`
                               : mozoServiceType === "delivery"
-                              ? `DELIVERY A DOMICILIO`
+                              ? `DELIVERY (#${stableDeliveryId})`
                               : `Comanda ${mozoSelectedTable}`}
                           </h4>
                           <span className="text-[10px] font-bold text-white/80 block mt-0.5">
@@ -8993,39 +9087,6 @@ export default function AdminHub({
             </div>
 
             <h5 className="font-bold text-[10px] uppercase tracking-wider text-[#2C1810]/50 mb-2.5">Historial de Transacciones del Turno</h5>
-          </div>
-        </div>
-      )}
-      {/* Configurar Restaurant Modal */}
-      {isConfigRestaurantOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
-            <button 
-              onClick={() => setIsConfigRestaurantOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Configurar Restaurant</h4>
-            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Personalice los datos de su restaurante para el ticket fiscal.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Nombre Comercial</label>
-                <input type="text" defaultValue="Castaño — Resto Bar" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
-              </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Dirección Física</label>
-                <input type="text" defaultValue="Constitución 944, Río Cuarto" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
-              </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">CUIT Comercial</label>
-                <input type="text" defaultValue="30-71458925-9" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
-              </div>
-              <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigRestaurantOpen(false); onShowNotification("✅ Configuración de restaurante guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
-              </div>
-            </div>
           </div>
         </div>
       )}
