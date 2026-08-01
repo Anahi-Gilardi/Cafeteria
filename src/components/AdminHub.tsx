@@ -4052,7 +4052,8 @@ export default function AdminHub({
       selectedPosCategory === "todos" || item.category === selectedPosCategory
     );
 
-    const pendingOrders = orders.filter(o => o.status !== "Completado");
+    // Orders pending payment in Caja include all active orders plus completed orders that haven't been paid yet
+    const pendingOrders = orders.filter(o => !o.paymentMethod || o.status !== "Completado");
 
     const addToPosCart = (item: MenuItem) => {
       setPosCart(prev => {

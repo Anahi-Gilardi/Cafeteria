@@ -181,6 +181,18 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
               )}
 
               <div className="mt-2 flex justify-center gap-1">
+                {isOccupied && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectTable(table.name);
+                    }}
+                    title="Cobrar Mesa en Caja"
+                    className="p-1 bg-emerald-700 hover:bg-emerald-800 text-white font-black rounded-md text-[8px] flex items-center gap-0.5"
+                  >
+                    💳 Cobrar
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
