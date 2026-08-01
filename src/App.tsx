@@ -537,6 +537,8 @@ export default function App() {
   };
 
   const handleArchiveOrder = async (orderId: string): Promise<boolean> => {
+    const targetOrder = orders.find(o => o.id === orderId);
+
     // 1. Optimistic Local Update
     setOrders((prev) => {
       const updated = prev.map((order) =>
@@ -550,7 +552,7 @@ export default function App() {
 
     // 2. Background Sync with Supabase Archive
     try {
-      const result = await SupabaseSyncService.archiveOrder(orderId);
+      const result = await SupabaseSyncService.archiveOrder(orderId, targetOrder);
       if (!result.success) {
         console.warn("Error archiving order on Supabase, kept in local archive:", result.error);
         showNotification(`🗄️ Comanda #${orderId} archivada localmente.`, "info");

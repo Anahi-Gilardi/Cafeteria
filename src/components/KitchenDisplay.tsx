@@ -129,24 +129,45 @@ export default function KitchenDisplay({
   const pendingOrders = useMemo(() => activeOrders.filter(o => o.status === "Recibido" || o.status === "Pendiente"), [activeOrders]);
   const inProgressOrders = useMemo(() => activeOrders.filter(o => o.status === "Preparando"), [activeOrders]);
   const completedOrders = useMemo(() => activeOrders.filter(o => o.status === "Listo"), [activeOrders]);
+  const allArchivedList = useMemo(() => {
+    const map = new Map<string, ArchivedOrderRecord>();
+    archivedOrders.forEach(a => map.set(a.orderId, a));
+
+    // Include completed orders from active orders list
+    orders.filter(o => o.status === "Completado").forEach(o => {
+      if (!map.has(o.id)) {
+        map.set(o.id, {
+          orderId: o.id,
+          archivedAt: o.createdAt || new Date().toISOString(),
+          archiveReason: "completada",
+          order: o
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(b.archivedAt).getTime() - new Date(a.archivedAt).getTime()
+    );
+  }, [archivedOrders, orders]);
+
   const visibleArchivedOrders = useMemo(() => {
     const query = archiveSearch.trim().toLowerCase();
-    if (!query) return archivedOrders;
-    return archivedOrders.filter(({ order }) => {
+    if (!query) return allArchivedList;
+    return allArchivedList.filter(({ order }) => {
       const searchable = [
         order.id,
         order.tableNumber,
         order.customerName,
         order.clientAccountName,
         order.paymentMethod,
-        ...order.items.map((item) => item.name)
+        ...(order.items || []).map((item) => item.name)
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return searchable.includes(query);
     });
-  }, [archiveSearch, archivedOrders]);
+  }, [archiveSearch, allArchivedList]);
 
   const [isVoiceAlertEnabled, setIsVoiceAlertEnabled] = useState(true);
 
@@ -382,7 +403,7 @@ export default function KitchenDisplay({
             }`}
           >
             <Archive className="h-4 w-4" />
-            Archivo ({archivedOrders.length})
+            Archivo ({allArchivedList.length})
           </button>
         </div>
       </div>
