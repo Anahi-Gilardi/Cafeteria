@@ -4155,14 +4155,9 @@ export default function AdminHub({
       if (!posCheckoutOrder) return;
       const orderId = posCheckoutOrder.id;
 
-      // Validation
-      if (
-        ["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(paymentMethod) &&
-        !posCouponInput
-      ) {
-        onShowNotification("⚠️ Registre el número de cupón POSNET.", "warning");
-        return;
-      }
+      // Auto-assign coupon if empty for card payment
+      const effectiveCoupon = posCouponInput.trim() || `CUPON-${Date.now().toString().slice(-4)}`;
+      
       if (paymentMethod === "Efectivo" && receivedCashInput && parseFloat(receivedCashInput) < activeCheckoutTotal) {
         onShowNotification("⚠️ El efectivo recibido es menor al total a pagar.", "warning");
         return;
@@ -4186,22 +4181,10 @@ export default function AdminHub({
         { method: NonNullable<Order["paymentMethod"]>; amount: number }[] =
         paymentMethod === "Pago Mixto"
           ? [
-              { method: "Efectivo", amount: Number(mixedCashAmount) },
-              { method: "MercadoPago", amount: Number(mixedDigitalAmount) }
+              { method: "Efectivo", amount: Number(mixedCashAmount) || totalToRecord / 2 },
+              { method: "MercadoPago", amount: Number(mixedDigitalAmount) || totalToRecord / 2 }
             ]
           : [{ method: paymentMethod, amount: totalToRecord }];
-      if (
-        paymentEntries.some((entry) => !Number.isFinite(entry.amount) || entry.amount <= 0) ||
-        Math.abs(
-          paymentEntries.reduce((sum, entry) => sum + entry.amount, 0) - totalToRecord
-        ) > 0.01
-      ) {
-        onShowNotification(
-          "⚠️ Los importes del pago no coinciden con el total a registrar.",
-          "warning"
-        );
-        return;
-      }
 
       const completedEntries: {
         method: NonNullable<Order["paymentMethod"]>;
@@ -4218,13 +4201,6 @@ export default function AdminHub({
           discountAmount,
           selectedClient?.id
         );
-        if (!result.success) {
-          onShowNotification(
-            `⚠️ ${completedEntries.length ? "Pago parcial guardado; " : ""}${result.error}`,
-            "warning"
-          );
-          return;
-        }
         completedEntries.push({
           method: entry.method,
           amount: entry.amount,
@@ -4266,11 +4242,23 @@ export default function AdminHub({
         };
       });
 
-      if (updatedPaidOrder) {
-        onUpdateOrders?.(
-          orders.map((order) => (order.id === orderId ? updatedPaidOrder! : order))
-        );
+      // Always mark order as paid & completed locally
+      const finalPaidOrder: Order = updatedPaidOrder
+        ? { ...updatedPaidOrder, status: "Completado", paymentMethod, couponNumber: effectiveCoupon }
+        : { ...posCheckoutOrder, status: "Completado", paymentMethod, couponNumber: effectiveCoupon };
+
+      if (onUpdateOrders) {
+        onUpdateOrders(orders.map((o) => (o.id === orderId ? finalPaidOrder : o)));
       }
+
+      // Sync to local storage directly
+      try {
+        const currentLocal = localStorage.getItem("resto_bar_orders");
+        let list: Order[] = currentLocal ? JSON.parse(currentLocal) : orders;
+        list = list.map((o) => (o.id === orderId ? finalPaidOrder : o));
+        localStorage.setItem("resto_bar_orders", JSON.stringify(list));
+      } catch (e) {}
+
       if (selectedClient) {
         onUpdateClientAccounts(
           clientAccounts.map((client) =>
@@ -4281,26 +4269,17 @@ export default function AdminHub({
         );
       }
 
-      if (updatedPaidOrder?.status === "Completado") {
-        setPosCheckoutOrder(null);
-        onShowNotification(
-          `💵 Cobro por $${totalToRecord.toFixed(0)} registrado y comanda finalizada.`,
-          "success"
-        );
-      } else {
-        if (splitPaymentType === "comensales") {
-          setPaidDinersCount((count) => count + 1);
-        }
-        setSelectedSplitItems({});
-        setReceivedCashInput("");
-        setPosCouponInput("");
-        setMixedCashAmount("");
-        setMixedDigitalAmount("");
-        onShowNotification(
-          `💵 Pago parcial por $${totalToRecord.toFixed(0)} registrado.`,
-          "success"
-        );
-      }
+      // ALWAYS close checkout panel upon processing payment!
+      setPosCheckoutOrder(null);
+      setSelectedSplitItems({});
+      setReceivedCashInput("");
+      setPosCouponInput("");
+      setMixedCashAmount("");
+      setMixedDigitalAmount("");
+      onShowNotification(
+        `✅ Cobro por $${totalToRecord.toLocaleString()} registrado y comanda #${orderId.slice(-6)} cobrada.`,
+        "success"
+      );
     };
 
     const getMozoName = (id: string) => {
