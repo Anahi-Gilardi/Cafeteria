@@ -4135,7 +4135,7 @@ export default function AdminHub({
         tax: posIva,
         total: posTotal,
         status: "Recibido",
-        createdAt: "Hace instantes",
+        createdAt: new Date().toISOString(),
         type: posTable === "Barra" ? "Llevar" : "Mesa",
         priceList: "Salon",
         estimatedMinutes: 10

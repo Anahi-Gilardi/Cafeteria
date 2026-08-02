@@ -110,7 +110,7 @@ describe("SupabaseSyncService integrity", () => {
       createdAt: "2026-08-01T12:00:00.000Z",
       estimatedMinutes: 15
     };
-    const single = vi.fn().mockResolvedValue({
+    mocks.rpc.mockResolvedValue({
       error: null,
       data: {
         id: order.id,
@@ -126,17 +126,74 @@ describe("SupabaseSyncService integrity", () => {
         created_at: order.createdAt
       }
     });
-    const select = vi.fn(() => ({ single }));
-    const upsert = vi.fn(() => ({ select }));
-    mocks.from.mockReturnValue({ upsert });
 
     const result = await SupabaseSyncService.saveOrder(order);
 
     expect(result.success).toBe(true);
     expect(result.order?.waiterName).toBe("Personal Real");
-    expect(upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ waiter_name: "Personal Real" }),
-      { onConflict: "id" }
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "persist_order_transaction",
+      expect.objectContaining({
+        p_order: expect.objectContaining({ waiter_name: "Personal Real" }),
+        p_idempotency_key: "order:ORDER-WAITER"
+      })
     );
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("normalizes human-readable local timestamps before the database transaction", async () => {
+    mocks.rpc.mockResolvedValue({
+      error: null,
+      data: {
+        id: "ORDER-DATE",
+        items: [],
+        total: 0,
+        status: "Recibido",
+        created_at: "2026-08-02T12:00:00.000Z"
+      }
+    });
+    const order: Order = {
+      id: "ORDER-DATE",
+      items: [{ itemId: "item-1", name: "Café", quantity: 1, price: 3900, customizationSummary: "" }],
+      subtotal: 3900,
+      tax: 0,
+      total: 3900,
+      type: "Mesa",
+      priceList: "Salon",
+      status: "Recibido",
+      createdAt: "Hace instantes",
+      estimatedMinutes: 15
+    };
+
+    await SupabaseSyncService.saveOrder(order);
+
+    const call = mocks.rpc.mock.calls[0][1];
+    expect(call.p_order.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(call.p_order.created_at).not.toBe("Hace instantes");
+  });
+
+  it("returns an actionable stock error and never bypasses the transaction", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "insufficient stock for item cafe", code: "23514" }
+    });
+    const order: Order = {
+      id: "ORDER-STOCK",
+      items: [{ itemId: "cafe", name: "Café", quantity: 99, price: 3900, customizationSummary: "" }],
+      subtotal: 386100,
+      tax: 0,
+      total: 386100,
+      type: "Mesa",
+      priceList: "Salon",
+      status: "Recibido",
+      createdAt: new Date().toISOString(),
+      estimatedMinutes: 15
+    };
+
+    const result = await SupabaseSyncService.saveOrder(order);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Stock insuficiente");
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 });

@@ -22,9 +22,9 @@ import RestoBarLogo from "./components/RestoBarLogo";
 import { AuthService, UserRoleProfile } from "./services/AuthService";
 import { offlineQueueService } from "./services/OfflineQueueService";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { mapDbMenuItem } from "./services/MenuMappingService";
 import { OrderPersistenceService } from "./services/OrderPersistenceService";
 import PasswordSetupScreen from "./components/PasswordSetupScreen";
+import { MenuSyncService } from "./services/MenuSyncService";
 
 const AdminHub = lazy(() => import("./components/AdminHub"));
 const BaristaAI = lazy(() => import("./components/BaristaAI"));
@@ -128,44 +128,50 @@ export default function App() {
     };
   }, []);
 
-  // Load initial data from Supabase. Database seeding is migration-only.
+  // Keep the public catalog aligned across every device and terminal.
+  useEffect(() => {
+    let active = true;
+    const refreshMenu = async () => {
+      setIsMenuLoading(true);
+      const result = await MenuSyncService.fetchCanonicalMenu();
+      if (!active) return;
+      if (result.error) {
+        console.error("No se pudo actualizar la carta desde Supabase:", result.error);
+        setIsMenuLoading(false);
+        return;
+      }
+      if (result.imageWarning) {
+        console.warn("La carta se cargó sin algunas imágenes personalizadas:", result.imageWarning);
+      }
+      setMenuItems(result.items);
+      try {
+        localStorage.setItem("castano_menu_cache", JSON.stringify(result.items));
+      } catch {}
+      setIsMenuLoading(false);
+    };
+
+    void refreshMenu();
+    const unsubscribe = MenuSyncService.subscribe(
+      () => void refreshMenu(),
+      (status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.warn("El canal realtime de la carta perdió la conexión.");
+        }
+      }
+    );
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // Load private operational data only after Supabase Auth resolves.
   useEffect(() => {
     const loadSupabaseData = async () => {
-      setIsMenuLoading(true);
+      if (!currentUser) return;
       try {
-        // 1. Fetch Menu Items
-        const { data: menuData, error: menuError } = await supabase
-          .from("menu_items")
-          .select("*");
-        if (menuError) throw menuError;
-        let customImages: any[] = [];
-        try {
-          const { data: imgData } = await supabase.from("product_images").select("*");
-          if (imgData) customImages = imgData;
-        } catch (imgErr) {
-          console.error("Error fetching product_images:", imgErr);
-        }
 
-        if (menuData && menuData.length > 0) {
-          const mapped = menuData.map(mapDbMenuItem);
-          customImages.forEach((img: any) => {
-            const match = mapped.find(item => item.id === img.product_id);
-            if (match) {
-              match.image = img.image_base64;
-            }
-          });
-          setMenuItems(mapped);
-          localStorage.setItem("castano_menu_cache", JSON.stringify(mapped));
-        } else {
-          console.warn("Supabase no devolvió productos; no se publicará un catálogo demostrativo.");
-          setMenuItems([]);
-        }
-        setIsMenuLoading(false);
-
-        // Private operational data is fetched only after Supabase Auth resolves.
-        if (!currentUser) return;
-
-        // 2. Fetch Client Accounts
+        // 1. Fetch Client Accounts
         const { data: clientData } = await supabase.from("client_accounts").select("*");
         if (clientData && clientData.length > 0) {
           setClientAccounts(clientData.map(c => ({
@@ -180,7 +186,7 @@ export default function App() {
           setClientAccounts([]);
         }
 
-        // 3. Fetch Reservations
+        // 2. Fetch Reservations
         const { data: bookingsData } = await supabase.from("reservations").select("*");
         if (bookingsData) {
           setBookings(bookingsData.map(b => ({
@@ -197,7 +203,7 @@ export default function App() {
           })));
         }
 
-        // 4. Supabase is canonical. Local data is only an offline fallback.
+        // 3. Supabase is canonical. Local data is only an offline fallback.
         const { orders: remoteOrders, error: fetchErr } = await SupabaseSyncService.fetchOrders();
         if (!fetchErr) {
           setOrders(remoteOrders);
@@ -209,7 +215,6 @@ export default function App() {
         }
 
       } catch (err) {
-        setIsMenuLoading(false);
         console.error("Error loading data from Supabase:", err);
       }
     };

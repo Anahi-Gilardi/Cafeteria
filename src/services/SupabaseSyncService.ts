@@ -21,9 +21,12 @@ export interface ArchivedOrderRecord {
 }
 
 function orderPayload(order: Order) {
+  const createdAt = Date.parse(order.createdAt || "");
   return {
     id: order.id,
-    created_at: order.createdAt || new Date().toISOString(),
+    created_at: Number.isFinite(createdAt)
+      ? new Date(createdAt).toISOString()
+      : new Date().toISOString(),
     source: order.source === "public_menu" ? "public_menu" : "pos",
     order_type:
       order.priceList === "Delivery" || order.fulfillmentType === "delivery"
@@ -142,38 +145,46 @@ export class SupabaseSyncService {
     order: Order
   ): Promise<{ success: boolean; order?: Order; error?: string }> {
     const payload = orderPayload(order);
-    
-    // Only report success after Supabase confirms the canonical write.
-    const { data: upsertData, error: upsertError } = await supabase
-      .from("orders")
-      .upsert(payload, { onConflict: "id" })
-      .select("*")
-      .single();
 
-    if (!upsertError && upsertData) {
-      return { success: true, order: mapOrder(upsertData) };
-    }
-
-    let rpcErrorMessage: string | undefined;
+    // Creation and revision share one database transaction. This guarantees that
+    // stock, recipes, order_items and the order snapshot cannot diverge.
     try {
       const idempotencyKey = `order:${order.id}`;
-      const { data: rpcData, error: rpcError } = await supabase.rpc("save_order_transaction", {
+      const { data: rpcData, error: rpcError } = await supabase.rpc("persist_order_transaction", {
         p_order: payload,
         p_idempotency_key: idempotencyKey
       });
       if (!rpcError && rpcData) {
         return { success: true, order: mapOrder(rpcData) };
       }
-      if (rpcError) rpcErrorMessage = `${rpcError.message} (${rpcError.code})`;
+      if (rpcError) {
+        const detail = `${rpcError.message} (${rpcError.code || "sin código"})`;
+        if (rpcError.code === "23514") {
+          return {
+            success: false,
+            error: `Stock insuficiente o comanda no editable: ${detail}`
+          };
+        }
+        if (rpcError.code === "42501") {
+          return {
+            success: false,
+            error: `La cuenta actual no tiene permisos para guardar comandas: ${detail}`
+          };
+        }
+        return { success: false, error: detail };
+      }
     } catch (error) {
-      rpcErrorMessage = error instanceof Error ? error.message : "Error desconocido en save_order_transaction";
+      return {
+        success: false,
+        error: error instanceof Error
+          ? error.message
+          : "Error desconocido en persist_order_transaction"
+      };
     }
 
     return {
       success: false,
-      error: upsertError
-        ? `${upsertError.message} (${upsertError.code})${rpcErrorMessage ? `; RPC: ${rpcErrorMessage}` : ""}`
-        : rpcErrorMessage || "Supabase no devolvió la comanda guardada"
+      error: "Supabase no devolvió la comanda guardada"
     };
   }
 
