@@ -39,6 +39,7 @@ interface AdminHubProps {
   orders: Order[];
   onOrderStatusUpdate: (orderId: string, status: OrderStatusType) => void;
   onArchiveOrder: (orderId: string) => Promise<boolean>;
+  onDeleteOrder: (orderId: string) => Promise<boolean>;
   onUpdateOrders?: (orders: Order[]) => void;
   menuItems: MenuItem[];
   onUpdateMenu: (updatedMenu: MenuItem[]) => void;
@@ -105,6 +106,7 @@ export default function AdminHub({
   orders,
   onOrderStatusUpdate,
   onArchiveOrder,
+  onDeleteOrder,
   onUpdateOrders,
   menuItems,
   onUpdateMenu,
@@ -8998,6 +9000,8 @@ export default function AdminHub({
               menuItems={menuItems}
               onOrderStatusUpdate={onOrderStatusUpdate}
               onArchiveOrder={onArchiveOrder}
+              onDeleteOrder={onDeleteOrder}
+              canDeleteOrders={["administrador", "dueño"].includes(currentUser.role)}
             />
           )}
           {activeSubTab === "caja" && renderCaja()}
