@@ -101,5 +101,36 @@ if (menuError || !menuCount) {
   console.error("❌ La carta canónica está vacía o no responde");
 }
 
+const { error: protectedOrderRpcError } = await supabase.rpc(
+  "persist_order_transaction",
+  {
+    p_order: {
+      id: "anonymous-integrity-probe",
+      items: [{ itemId: "probe", name: "Probe", quantity: 1, price: 0 }]
+    },
+    p_idempotency_key: "anonymous-integrity-probe"
+  }
+);
+if (!protectedOrderRpcError) {
+  failures += 1;
+  console.error("❌ persist_order_transaction permite escritura anónima");
+} else if (["PGRST202", "42883"].includes(protectedOrderRpcError.code)) {
+  failures += 1;
+  console.error("❌ persist_order_transaction no está instalada en Supabase");
+} else {
+  console.log("✅ persist_order_transaction existe y bloquea escritura anónima");
+}
+
+const { data: menuIntegrityRows } = await supabase
+  .from("menu_items")
+  .select("id,recipe,fiscal_enabled");
+if (menuIntegrityRows) {
+  const recipes = menuIntegrityRows.filter(
+    (item) => Array.isArray(item.recipe) && item.recipe.length > 0
+  ).length;
+  const fiscal = menuIntegrityRows.filter((item) => item.fiscal_enabled).length;
+  console.log(`ℹ️ Carta operativa: ${recipes}/${menuIntegrityRows.length} recetas; ${fiscal}/${menuIntegrityRows.length} fichas fiscales`);
+}
+
 console.log(`\nResultado: ${failures === 0 ? "LISTO" : `${failures} bloqueo(s)`}`);
 process.exitCode = failures === 0 ? 0 : 1;
