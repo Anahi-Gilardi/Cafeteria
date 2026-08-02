@@ -4878,16 +4878,25 @@ export default function AdminHub({
                     🧾 CONFIRMAR VENTA & EMITIR FACTURA FISCAL (ARCA)
                   </button>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button 
+                      onClick={() => {
+                        ReceiptPDFService.generateTicketNoFiscalPDF(posCheckoutOrder);
+                        onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
+                      }}
+                      className="py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+                    >
+                      <Download className="h-3.5 w-3.5" /> 📥 Descargar PDF
+                    </button>
                     <button 
                       onClick={() => handleIssueTicketNoFiscal(posCheckoutOrder)}
-                      className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     >
                       <Printer className="h-3.5 w-3.5 text-[#843747]" /> 🖨️ Ticket No Fiscal
                     </button>
                     <button 
                       onClick={() => setIsPrinterConfigModalOpen(true)}
-                      className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     >
                       <Settings className="h-3.5 w-3.5 text-[#843747]" /> Config Ticketera
                     </button>
@@ -5025,12 +5034,25 @@ export default function AdminHub({
                       </td>
                       <td className="p-3 text-right font-mono font-bold text-[#843747]">${o.total.toLocaleString()}</td>
                       <td className="p-3 text-center">
-                        <button
-                          onClick={() => setSelectedOrderForTicket(o)}
-                          className="px-3 py-1 bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-[#843747] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1 mx-auto"
-                        >
-                          <Printer className="h-3 w-3" /> Ver Ticket
-                        </button>
+                        <div className="flex items-center gap-1.5 justify-center">
+                          <button
+                            onClick={() => setSelectedOrderForTicket(o)}
+                            className="px-2.5 py-1 bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-[#843747] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                            title="Ver Ticket Térmico"
+                          >
+                            <Printer className="h-3 w-3" /> Ver
+                          </button>
+                          <button
+                            onClick={() => {
+                              ReceiptPDFService.generateTicketNoFiscalPDF(o);
+                              onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
+                            }}
+                            className="px-2.5 py-1 bg-[#843747] hover:bg-[#71303D] text-white rounded-lg transition-all cursor-pointer font-black text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                            title="Descargar Ticket PDF (80mm)"
+                          >
+                            <Download className="h-3 w-3" /> PDF
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ));
