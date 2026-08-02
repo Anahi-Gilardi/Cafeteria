@@ -6,7 +6,7 @@ import {
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
   Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame, Menu,
-  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen
+  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DailyExecutiveMenu } from "../types";
@@ -8281,7 +8281,7 @@ export default function AdminHub({
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="font-serif font-black text-sm text-[#332424] uppercase tracking-wider">CASTAÑO</span>
+          <RestoBarLogo size="sm" />
         </div>
         <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#843747] text-white">
           {activeSubTab.toUpperCase()}
