@@ -30,6 +30,8 @@ import { PresupuestoPDFService } from "../services/PresupuestoPDFService";
 import { StaffService } from "../services/StaffService";
 import { offlineQueueService } from "../services/OfflineQueueService";
 import { arcaAdapter } from "../services/ARCAAdapter";
+import { CashClosure, CashShiftService } from "../services/CashShiftService";
+import { MenuCatalogService } from "../services/MenuCatalogService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -55,6 +57,17 @@ interface Insumo {
   provider?: string;
   expirationDate?: string;
   costPerUnit?: number;
+}
+
+interface BusinessProfileForm {
+  name: string;
+  address: string;
+  city: string;
+  province: string;
+  phone: string;
+  email: string;
+  cuit: string;
+  posNumber: string;
 }
 
 const EMPTY_WEEKLY_MENUS: DailyExecutiveMenu[] = (
@@ -316,8 +329,8 @@ export default function AdminHub({
     floorNotes: "",
     deliveryFee: 1200
   });
-  const [stableTakeawayId, setStableTakeawayId] = useState<string>(() => `RET-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [stableDeliveryId, setStableDeliveryId] = useState<string>(() => `DEL-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [stableTakeawayId, setStableTakeawayId] = useState<string>(() => `RET-${crypto.randomUUID()}`);
+  const [stableDeliveryId, setStableDeliveryId] = useState<string>(() => `DEL-${crypto.randomUUID()}`);
   const [isSupabaseSqlModalOpen, setIsSupabaseSqlModalOpen] = useState<boolean>(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
 
@@ -342,21 +355,10 @@ export default function AdminHub({
     };
   }, []);
 
-  const [isShiftOpen, setIsShiftOpen] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("castano_shift_open") === "true";
-    } catch {
-      return false;
-    }
-  });
-  const [shiftOpenTime, setShiftOpenTime] = useState<string>(() => {
-    try {
-      return localStorage.getItem("castano_shift_open_time") || "";
-    } catch {
-      return "";
-    }
-  });
-  const [closuresHistory, setClosuresHistory] = useState<any[]>([]);
+  const [isShiftOpen, setIsShiftOpen] = useState(false);
+  const [shiftOpenTime, setShiftOpenTime] = useState("");
+  const [closuresHistory, setClosuresHistory] = useState<CashClosure[]>([]);
+  const [isShiftOperationPending, setIsShiftOperationPending] = useState(false);
 
   // Sidebar collapse state & scroll ref
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => localStorage.getItem("castano_sidebar_collapsed") === "true");
@@ -389,6 +391,17 @@ export default function AdminHub({
   // Delivery logistics config states (Top level to respect React rules of hooks)
   const [deliveryFeeConfig, setDeliveryFeeConfig] = useState<number>(0);
   const [deliveryFreeMinConfig, setDeliveryFreeMinConfig] = useState<number>(0);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfileForm>({
+    name: "Castaño — Resto Bar",
+    address: "Constitución 944",
+    city: "Río Cuarto",
+    province: "Córdoba",
+    phone: "358 5042311",
+    email: "",
+    cuit: "",
+    posNumber: ""
+  });
+  const [isBusinessProfileSaving, setIsBusinessProfileSaving] = useState(false);
 
   // Salon 2D Floor Plan states (Top level to respect React rules of hooks)
   const [floorViewMode, setFloorViewMode] = useState<"map2d" | "cards">("map2d");
@@ -463,12 +476,24 @@ export default function AdminHub({
         // 1. Fetch business configuration
         const { data: businessData, error: businessError } = await supabase
           .from("business_profile")
-          .select("delivery_fee,delivery_free_min")
+          .select("name,address,city,province,phone,email,cuit,pos_number,delivery_fee,delivery_free_min")
           .limit(1)
           .maybeSingle();
         if (businessError) throw businessError;
         setDeliveryFeeConfig(Number(businessData?.delivery_fee || 0));
         setDeliveryFreeMinConfig(Number(businessData?.delivery_free_min || 0));
+        if (businessData) {
+          setBusinessProfile({
+            name: businessData.name || "",
+            address: businessData.address || "",
+            city: businessData.city || "",
+            province: businessData.province || "",
+            phone: businessData.phone || "",
+            email: businessData.email || "",
+            cuit: businessData.cuit || "",
+            posNumber: businessData.pos_number ? String(businessData.pos_number) : ""
+          });
+        }
 
         // 2. Fetch Insumos
         const { data: insData, error: insError } = await supabase.from("insumos").select("*");
@@ -679,17 +704,11 @@ export default function AdminHub({
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
         async () => {
-          const { data } = await supabase.from("orders").select("*").neq("status", "Completado");
-          if (data) {
-            setOrders(data.map((o: any) => ({
-              id: o.id,
-              items: o.items || [],
-              total: Number(o.total || 0),
-              type: o.type,
-              tableNumber: o.table_number,
-              status: o.status,
-              createdAt: o.created_at
-            })));
+          const refreshed = await SupabaseSyncService.fetchOrders();
+          if (!refreshed.error) {
+            onUpdateOrders?.(
+              refreshed.orders.filter((order) => order.status !== "Completado")
+            );
           }
         }
       )
@@ -1001,14 +1020,14 @@ export default function AdminHub({
           }
         }
         // Map database object structure to client model structure
-        const mappedProduct = {
+        const mappedProduct: MenuItem = {
           id: newProduct.id,
           name: newProduct.name,
           price: newProduct.price,
           takeawayPrice: newProduct.takeaway_price,
           deliveryPrice: newProduct.delivery_price,
           description: newProduct.description,
-          category: newProduct.category,
+          category: newProduct.category as MenuItem["category"],
           tags: newProduct.tags,
           image: newProduct.image,
           customizable: newProduct.customizable,
@@ -1049,6 +1068,7 @@ export default function AdminHub({
 
   const handleSaveProductDetails = async (e: FormEvent, itemId: string) => {
     e.preventDefault();
+    if (isSavingProduct) return;
     if (!editProdName || !editProdPrice) {
       onShowNotification("⚠️ Ingrese el nombre y precio del producto.", "warning");
       return;
@@ -1078,38 +1098,26 @@ export default function AdminHub({
       image: editProdImage.trim() || original.image
     };
 
+    setIsSavingProduct(true);
     try {
-      const dbProduct = {
-        id: updatedProduct.id,
-        name: updatedProduct.name,
-        price: updatedProduct.price,
-        takeaway_price: updatedProduct.takeawayPrice,
-        delivery_price: updatedProduct.deliveryPrice,
-        description: updatedProduct.description,
-        category: updatedProduct.category,
-        tags: updatedProduct.tags || ["Artesanal"],
-        image: updatedProduct.image,
-        customizable: updatedProduct.customizable !== undefined ? updatedProduct.customizable : true,
-        calories: updatedProduct.nutrition?.calories || 180,
-        allergens: updatedProduct.nutrition?.allergens || ["Gluten"],
-        stock: updatedProduct.stock,
-        is_offer: updatedProduct.isOffer || false,
-        offer_price: updatedProduct.offerPrice || null,
-        recipe: updatedProduct.recipe || []
-      };
-
-      const { error } = await supabase.from("menu_items").upsert(dbProduct);
-      if (error) throw error;
+      const result = await MenuCatalogService.saveProduct(updatedProduct);
+      if (!result.success) {
+        onShowNotification(`❌ ${result.error || "No se pudo guardar la ficha."}`, "warning");
+        return;
+      }
 
       if (updatedProduct.image && updatedProduct.image.startsWith("data:image")) {
-        try {
-          await supabase.from("product_images").upsert({
-            id: updatedProduct.id,
-            product_id: updatedProduct.id,
-            image_base64: updatedProduct.image
-          });
-        } catch (imgErr) {
-          console.error("Error upserting to product_images table:", imgErr);
+        const { error: imageError } = await supabase.from("product_images").upsert({
+          id: updatedProduct.id,
+          product_id: updatedProduct.id,
+          image_base64: updatedProduct.image
+        });
+        if (imageError) {
+          console.error("Error upserting to product_images table:", imageError);
+          onShowNotification(
+            "⚠️ La ficha se guardó, pero la copia secundaria de la imagen fue rechazada.",
+            "warning"
+          );
         }
       }
 
@@ -1120,7 +1128,9 @@ export default function AdminHub({
       onShowNotification("✅ Ficha de producto guardada y sincronizada.", "success");
     } catch (err) {
       console.error("Error saving product changes:", err);
-      onShowNotification("❌ Error al guardar en Supabase.", "warning");
+      onShowNotification("❌ No fue posible comunicarse con Supabase para guardar la ficha.", "warning");
+    } finally {
+      setIsSavingProduct(false);
     }
   };
 
@@ -1205,6 +1215,7 @@ export default function AdminHub({
   const [editProdStock, setEditProdStock] = useState("");
   const [editProdDescription, setEditProdDescription] = useState("");
   const [editProdImage, setEditProdImage] = useState("");
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
 
   const [mermaLogs, setMermaLogs] = useState<{ id: string; date: string; name: string; qty: string; cost: string; reason: string; auditor: string }[]>([]);
 
@@ -1748,85 +1759,94 @@ export default function AdminHub({
 
   // Open Daily Shift
   const handleOpenShift = async () => {
-    const emptyLedger = {
-      totalCollected: 0,
-      cash: 0,
-      card: 0,
-      mercadopago: 0,
-      transactions: []
-    };
-
-    let openedAt = new Date().toISOString();
-
-    // 1. Try Supabase Postgres RPC open_cash_shift
-    try {
-      const { data, error } = await supabase.rpc("open_cash_shift");
-      if (!error && data?.opened_at) {
-        openedAt = data.opened_at;
-      } else {
-        console.warn("RPC open_cash_shift notice:", error?.message);
-        // Direct table upsert fallback on cash_shifts table
-        await supabase
-          .from("cash_shifts")
-          .upsert({ id: "current", is_open: true, opened_at: openedAt, total_collected: 0, cash: 0, card: 0, mercadopago: 0, transactions: [] });
-      }
-    } catch (e) {
-      console.warn("Network or RPC fallback for open_cash_shift:", e);
+    if (isShiftOperationPending) return;
+    setIsShiftOperationPending(true);
+    const result = await CashShiftService.openShift();
+    setIsShiftOperationPending(false);
+    if (!result.success || !result.ledger) {
+      onShowNotification(`⚠️ No se pudo abrir la caja: ${result.error || "respuesta inválida"}`, "warning");
+      return;
     }
 
-    // 2. Always set local shift state open and persist to localStorage
     setIsShiftOpen(true);
-    setShiftOpenTime(openedAt);
-    setCashLedger(emptyLedger);
-    try {
-      localStorage.setItem("castano_shift_open", "true");
-      localStorage.setItem("castano_shift_open_time", openedAt);
-    } catch (e) {}
+    setShiftOpenTime(result.ledger.openedAt);
+    setCashLedger({
+      totalCollected: result.ledger.totalCollected,
+      cash: result.ledger.cash,
+      card: result.ledger.card,
+      mercadopago: result.ledger.mercadopago,
+      transactions: result.ledger.transactions
+    });
     onShowNotification("🔓 Turno fiscal de caja abierto con éxito.", "success");
+  };
+
+  const handleSaveBusinessProfile = async () => {
+    const normalizedCuit = businessProfile.cuit.replace(/\D/g, "");
+    const posNumber = Number(businessProfile.posNumber);
+    if (!businessProfile.name.trim() || !businessProfile.address.trim()) {
+      onShowNotification("⚠️ Complete el nombre y la dirección comercial.", "warning");
+      return;
+    }
+    if (normalizedCuit.length !== 11 || !Number.isInteger(posNumber) || posNumber <= 0) {
+      onShowNotification("⚠️ Ingrese un CUIT de 11 dígitos y un punto de venta válido.", "warning");
+      return;
+    }
+
+    setIsBusinessProfileSaving(true);
+    const { data, error } = await supabase
+      .from("business_profile")
+      .upsert({
+        id: "resto_bar_del_teatro",
+        name: businessProfile.name.trim(),
+        cuit: normalizedCuit,
+        address: businessProfile.address.trim(),
+        city: businessProfile.city.trim() || "Río Cuarto",
+        province: businessProfile.province.trim() || "Córdoba",
+        phone: businessProfile.phone.trim() || null,
+        email: businessProfile.email.trim() || null,
+        currency: "ARS",
+        timezone: "America/Argentina/Cordoba",
+        pos_number: posNumber,
+        delivery_fee: deliveryFeeConfig,
+        delivery_free_min: deliveryFreeMinConfig,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "id" })
+      .select("id")
+      .single();
+    setIsBusinessProfileSaving(false);
+
+    if (error || !data) {
+      onShowNotification(`⚠️ No se pudo guardar el perfil comercial: ${error?.message || "respuesta inválida"}`, "warning");
+      return;
+    }
+    setBusinessProfile((profile) => ({ ...profile, cuit: normalizedCuit, posNumber: String(posNumber) }));
+    setIsConfigRestaurantOpen(false);
+    onShowNotification("✅ Perfil comercial guardado y verificado en Supabase.", "success");
+  };
+
+  const handleSavePrinterConfig = () => {
+    try {
+      ThermalPrinterService.saveConfig(printerConfig);
+      setIsConfigTicketerisOpen(false);
+      onShowNotification("🖨️ Configuración de impresora guardada en esta terminal.", "success");
+    } catch (error) {
+      console.error("Error saving printer configuration:", error);
+      onShowNotification("⚠️ No se pudo guardar la configuración de impresora.", "warning");
+    }
   };
 
   // Close Daily Shift
   const handleConfirmCloseShift = async (montoReal: number, observaciones: string) => {
-    const closedAt = new Date().toISOString();
-    let newClosure: any = {
-      id: `closure-${Date.now()}`,
-      user: currentUser.name || "Cajero",
-      apertura: shiftOpenTime || closedAt,
-      cierre: closedAt,
-      observaciones: observaciones || "Cierre de caja ordinario",
-      ventasTurno: cashLedger.totalCollected,
-      montoReal,
-      diferencia: montoReal - cashLedger.cash,
-      transactions: cashLedger.transactions || []
-    };
-
-    try {
-      const { data, error: closureError } = await supabase.rpc("close_cash_shift", {
-        p_declared_cash: montoReal,
-        p_notes: observaciones || "Cierre de caja ordinario"
-      });
-      if (!closureError && data) {
-        newClosure = {
-          id: data.id,
-          user: data.user_name || currentUser.name,
-          apertura: data.opened_at,
-          cierre: data.closed_at,
-          observaciones: data.notes || "",
-          ventasTurno: Number(data.sales_total),
-          montoReal: Number(data.declared_cash),
-          diferencia: Number(data.difference),
-          transactions: data.transactions || []
-        };
-      } else {
-        await supabase
-          .from("cash_shifts")
-          .upsert({ id: "current", is_open: false, opened_at: null, total_collected: 0, cash: 0, card: 0, mercadopago: 0, transactions: [] });
-      }
-    } catch (e) {
-      console.warn("RPC close_cash_shift fallback:", e);
+    if (isShiftOperationPending) return;
+    setIsShiftOperationPending(true);
+    const result = await CashShiftService.closeShift(montoReal, observaciones);
+    setIsShiftOperationPending(false);
+    if (!result.success || !result.closure) {
+      onShowNotification(`⚠️ No se pudo cerrar la caja: ${result.error || "respuesta inválida"}`, "warning");
+      return;
     }
 
-    setClosuresHistory(prev => [newClosure, ...prev]);
+    setClosuresHistory(prev => [result.closure!, ...prev]);
     setIsShiftOpen(false);
     setShiftOpenTime("");
     setCashLedger({
@@ -1837,11 +1857,9 @@ export default function AdminHub({
       transactions: []
     });
     setPosCheckoutOrder(null);
-    try {
-      localStorage.setItem("castano_shift_open", "false");
-      localStorage.removeItem("castano_shift_open_time");
-    } catch (e) {}
     setIsCloseShiftModalOpen(false);
+    setCloseShiftRealCash("");
+    setCloseShiftNotes("");
     onShowNotification("🔒 Turno de caja cerrado correctamente.", "info");
   };
 
@@ -1869,7 +1887,8 @@ export default function AdminHub({
       selectedOrderForBilling,
       fiscalForm.cuitOrDni,
       fiscalForm.nameOrReason,
-      draft.invoiceType === "No Fiscal" ? "B" : draft.invoiceType
+      draft.invoiceType === "No Fiscal" ? "B" : draft.invoiceType,
+      fiscalForm.ivaCondition
     );
 
     if (
@@ -2015,7 +2034,8 @@ export default function AdminHub({
       savedOrder.order,
       manualCustomerInfo.cuitOrDni,
       manualCustomerInfo.nameOrReason,
-      requestedType
+      requestedType,
+      manualCustomerInfo.ivaCondition
     );
     const draft = ArcaBillingService.generateDraftInvoice(savedOrder.order, {
       ...manualCustomerInfo,
@@ -2556,7 +2576,7 @@ export default function AdminHub({
                     ...proveedores.map((supplier) => supplier.name)
                   ].filter((name, index, names) => name && names.indexOf(name) === index);
                   setCompareQuotes([
-                    { supplier: supplierNames[0] || "", price: ins.price ? String(ins.price) : "" },
+                    { supplier: supplierNames[0] || "", price: ins.costPerUnit ? String(ins.costPerUnit) : "" },
                     { supplier: supplierNames[1] || "", price: "" },
                     { supplier: supplierNames[2] || "", price: "" }
                   ]);
@@ -3879,9 +3899,10 @@ export default function AdminHub({
                     </button>
                     <button 
                       type="submit" 
-                      className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
+                      disabled={isSavingProduct}
+                      className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider disabled:cursor-wait disabled:opacity-60"
                     >
-                      Guardar Ficha
+                      {isSavingProduct ? "Guardando…" : "Guardar Ficha"}
                     </button>
                   </div>
                 </form>
@@ -4151,20 +4172,24 @@ export default function AdminHub({
       activeCheckoutTotal = selectedItemsSum * (1 - discountPercentage / 100);
     }
 
-    const handleProcessPosCheckout = async () => {
-      if (!posCheckoutOrder) return;
+    const handleProcessPosCheckout = async (): Promise<boolean> => {
+      if (!posCheckoutOrder) return false;
       const orderId = posCheckoutOrder.id;
 
-      // Auto-assign coupon if empty for card payment
-      const effectiveCoupon = posCouponInput.trim() || `CUPON-${Date.now().toString().slice(-4)}`;
-      
+      if (
+        ["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(paymentMethod) &&
+        !posCouponInput.trim()
+      ) {
+        onShowNotification("⚠️ Registre el número de cupón POSNET.", "warning");
+        return false;
+      }
       if (paymentMethod === "Efectivo" && receivedCashInput && parseFloat(receivedCashInput) < activeCheckoutTotal) {
         onShowNotification("⚠️ El efectivo recibido es menor al total a pagar.", "warning");
-        return;
+        return false;
       }
       if (paymentMethod === "Fiado / Cta Cte" && !selectedCtaCteClient) {
         onShowNotification("⚠️ Seleccione una cuenta corriente para imputar el saldo.", "warning");
-        return;
+        return false;
       }
 
       const totalToRecord = activeCheckoutTotal;
@@ -4174,40 +4199,58 @@ export default function AdminHub({
           : undefined;
       if (paymentMethod === "Fiado / Cta Cte" && !selectedClient) {
         onShowNotification("⚠️ La cuenta corriente seleccionada ya no existe.", "warning");
-        return;
+        return false;
       }
 
       const paymentEntries:
-        { method: NonNullable<Order["paymentMethod"]>; amount: number }[] =
+        {
+          method: NonNullable<Order["paymentMethod"]>;
+          amount: number;
+          transactionId?: string;
+        }[] =
         paymentMethod === "Pago Mixto"
           ? [
-              { method: "Efectivo", amount: Number(mixedCashAmount) || totalToRecord / 2 },
-              { method: "MercadoPago", amount: Number(mixedDigitalAmount) || totalToRecord / 2 }
+              { method: "Efectivo", amount: Number(mixedCashAmount) },
+              { method: "MercadoPago", amount: Number(mixedDigitalAmount) }
             ]
-          : [{ method: paymentMethod, amount: totalToRecord }];
+          : [{
+              method: paymentMethod,
+              amount: totalToRecord,
+              transactionId: ["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(paymentMethod)
+                ? `pos-${orderId}-${posCouponInput.trim()}`
+                : undefined
+            }];
 
-      const completedEntries: {
-        method: NonNullable<Order["paymentMethod"]>;
-        amount: number;
-        transactionId: string;
-      }[] = [];
-      let updatedPaidOrder: Order | undefined;
-      for (const entry of paymentEntries) {
-        const result = await SupabaseSyncService.recordPayment(
-          orderId,
-          entry.amount,
-          entry.method,
-          undefined,
-          discountAmount,
-          selectedClient?.id
+      if (
+        !Number.isFinite(totalToRecord) ||
+        totalToRecord <= 0 ||
+        paymentEntries.some((entry) => !Number.isFinite(entry.amount) || entry.amount <= 0) ||
+        Math.abs(
+          paymentEntries.reduce((sum, entry) => sum + entry.amount, 0) - totalToRecord
+        ) > 0.01
+      ) {
+        onShowNotification(
+          "⚠️ Los importes del pago no coinciden con el total a registrar.",
+          "warning"
         );
-        completedEntries.push({
-          method: entry.method,
-          amount: entry.amount,
-          transactionId: result.transactionId
-        });
-        updatedPaidOrder = result.order;
+        return false;
       }
+
+      const result = await SupabaseSyncService.recordPayments(
+        orderId,
+        paymentEntries,
+        discountAmount,
+        selectedClient?.id
+      );
+      if (!result.success || !result.order) {
+        onShowNotification(
+          `⚠️ El cobro no pudo registrarse de forma transaccional: ${result.error || "respuesta inválida"}`,
+          "warning"
+        );
+        return false;
+      }
+      const completedEntries = result.transactions;
+      const updatedPaidOrder = result.order;
 
       setCashLedger((prev) => {
         const addedCash = completedEntries
@@ -4242,22 +4285,11 @@ export default function AdminHub({
         };
       });
 
-      // Always mark order as paid & completed locally
-      const finalPaidOrder: Order = updatedPaidOrder
-        ? { ...updatedPaidOrder, status: "Completado", paymentMethod, couponNumber: effectiveCoupon }
-        : { ...posCheckoutOrder, status: "Completado", paymentMethod, couponNumber: effectiveCoupon };
-
       if (onUpdateOrders) {
-        onUpdateOrders(orders.map((o) => (o.id === orderId ? finalPaidOrder : o)));
+        onUpdateOrders(
+          orders.map((order) => (order.id === orderId ? updatedPaidOrder : order))
+        );
       }
-
-      // Sync to local storage directly
-      try {
-        const currentLocal = localStorage.getItem("resto_bar_orders");
-        let list: Order[] = currentLocal ? JSON.parse(currentLocal) : orders;
-        list = list.map((o) => (o.id === orderId ? finalPaidOrder : o));
-        localStorage.setItem("resto_bar_orders", JSON.stringify(list));
-      } catch (e) {}
 
       if (selectedClient) {
         onUpdateClientAccounts(
@@ -4269,31 +4301,30 @@ export default function AdminHub({
         );
       }
 
-      // ALWAYS close checkout panel upon processing payment!
-      setPosCheckoutOrder(null);
-      setSelectedSplitItems({});
-      setReceivedCashInput("");
-      setPosCouponInput("");
-      setMixedCashAmount("");
-      setMixedDigitalAmount("");
-      onShowNotification(
-        `✅ Cobro por $${totalToRecord.toLocaleString()} registrado y comanda #${orderId.slice(-6)} cobrada.`,
-        "success"
-      );
+      if (updatedPaidOrder.status === "Completado") {
+        setPosCheckoutOrder(null);
+        onShowNotification(
+          `💵 Cobro por $${totalToRecord.toFixed(0)} registrado y comanda finalizada.`,
+          "success"
+        );
+      } else {
+        if (splitPaymentType === "comensales") {
+          setPaidDinersCount((count) => count + 1);
+        }
+        setSelectedSplitItems({});
+        setReceivedCashInput("");
+        setPosCouponInput("");
+        setMixedCashAmount("");
+        setMixedDigitalAmount("");
+        onShowNotification(
+          `💵 Pago parcial por $${totalToRecord.toFixed(0)} registrado.`,
+          "success"
+        );
+      }
+      return true;
     };
 
-    const getMozoName = (id: string) => {
-      const lastChar = id.slice(-1);
-      if (lastChar === "1") return "Enzo";
-      if (lastChar === "2") return "Enzo";
-      if (lastChar === "3") return "Micaela";
-      if (lastChar === "4") return "Enzo";
-      if (lastChar === "5") return "PedidosYa Delivery";
-      return "Enzo";
-    };
     const handleIssueTicketNoFiscal = async (targetOrder: Order) => {
-      ReceiptPDFService.generateTicketNoFiscalPDF(targetOrder);
-
       const itemsRows = targetOrder.items.map(it => 
         `<tr><td>${it.quantity}x</td><td>${it.name.slice(0, 20)}</td><td class="right">$${(it.price * it.quantity).toLocaleString("es-AR")}</td></tr>`
       ).join("");
@@ -4318,15 +4349,23 @@ export default function AdminHub({
         <div class="center italic">¡Muchas gracias por su visita!</div>
       `;
 
-      ThermalPrinterService.printRawText(ticketHtml, "Ticket No Fiscal");
-      handleProcessPosCheckout();
-      onShowNotification(`✅ Ticket No Fiscal emitido para ${targetOrder.tableNumber || "comanda"}.`, "success");
+      const paymentRecorded = await handleProcessPosCheckout();
+      if (!paymentRecorded) return;
+
+      ReceiptPDFService.generateTicketNoFiscalPDF(targetOrder);
+      const printStarted = await ThermalPrinterService.printRawText(ticketHtml, "Ticket No Fiscal");
+      onShowNotification(
+        printStarted
+          ? `Ticket No Fiscal enviado a impresión para ${targetOrder.tableNumber || "comanda"}.`
+          : "El cobro se procesó, pero el navegador bloqueó la ventana de impresión.",
+        printStarted ? "success" : "warning"
+      );
     };
 
     const handleOpenArcaModalForOrder = (targetOrder: Order) => {
       setSelectedOrderForBilling(targetOrder);
       setFiscalForm({
-        cuitOrDni: cuitNumber || "20345678901",
+        cuitOrDni: cuitNumber || "",
         nameOrReason: targetOrder.clientAccountName || cuitName || "Consumidor Final",
         ivaCondition: (ivaCondition as any) || "Consumidor Final"
       });
@@ -4410,9 +4449,11 @@ export default function AdminHub({
                   </div>
                   <button 
                     onClick={handleOpenShift}
-                    className="w-full py-3 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
+                    disabled={isShiftOperationPending}
+                    className="w-full py-3 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-black shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 uppercase tracking-wider"
                   >
-                    <Unlock className="h-4 w-4" /> ABRIR CAJA DIARIA
+                    {isShiftOperationPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+                    {isShiftOperationPending ? "ABRIENDO CAJA…" : "ABRIR CAJA DIARIA"}
                   </button>
                 </div>
               ) : (
@@ -4490,13 +4531,13 @@ export default function AdminHub({
                           <div>
                             <strong className="text-xs font-serif text-[#843747] block">
                               {order.priceList === "Takeaway" || order.type === "Llevar"
-                                ? `RETIRO: ${order.clientAccountName || "Cliente"} - Tel: ${(order as any).customerPhone || "3585042311"}`
+                                ? `RETIRO: ${order.clientAccountName || "Cliente"} - Tel: ${order.customerPhone || "Sin teléfono"}`
                                 : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
-                                ? `DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Constitución 944"}`
-                                : `Mesa ${order.tableNumber?.replace("Mesa ", "") || "1"} (Mozo: ${getMozoName(order.id)})`}
+                                ? `DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Sin dirección"}`
+                                : `${order.tableNumber || "Sin mesa"} (Mozo: ${order.waiterName || "Sin asignar"})`}
                             </strong>
                             <span className="text-[9px] font-bold text-[#6F5A55] block mt-0.5 font-mono">
-                              📅 {order.createdAt ? new Date(order.createdAt).toLocaleDateString("es-AR") : new Date().toLocaleDateString("es-AR")} • 🕒 {order.createdAt ? new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
+                              {order.createdAt ? `📅 ${new Date(order.createdAt).toLocaleDateString("es-AR")} • 🕒 ${new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs` : "Fecha no registrada"}
                             </span>
                           </div>
                           <span className="text-xs font-mono font-black text-[#843747]">${order.total.toLocaleString()}</span>
@@ -4924,9 +4965,9 @@ export default function AdminHub({
                 className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
               >
                 <option value="todos">Todos los Mozos</option>
-                <option value="Enzo">Enzo</option>
-                <option value="Micaela">Micaela</option>
-                <option value="PedidosYa Delivery">PedidosYa Delivery</option>
+                {[...new Set(orders.map((order) => order.waiterName).filter(Boolean))].map((waiter) => (
+                  <option key={waiter} value={waiter}>{waiter}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -4963,7 +5004,7 @@ export default function AdminHub({
                   const filteredCompletedOrders = orders.filter(o => {
                     if (o.status !== "Completado") return false;
                     if (historySearchTable && !(o.tableNumber || "").toLowerCase().includes(historySearchTable.toLowerCase())) return false;
-                    if (historyFilterWaiter !== "todos" && getMozoName(o.id) !== historyFilterWaiter) return false;
+                    if (historyFilterWaiter !== "todos" && o.waiterName !== historyFilterWaiter) return false;
                     if (historyFilterPayment !== "todos" && (o.paymentMethod || "Efectivo").toLowerCase() !== historyFilterPayment.toLowerCase()) return false;
                     return true;
                   });
@@ -5703,7 +5744,7 @@ export default function AdminHub({
       setMozoCart(prev => prev.filter(c => c.item.id !== itemId));
     };
 
-    const handleSubmitMozoOrder = () => {
+    const handleSubmitMozoOrder = async () => {
       if (mozoCart.length === 0) {
         onShowNotification("⚠️ Añada productos a la comanda antes de enviar.", "warning");
         return;
@@ -5737,26 +5778,32 @@ export default function AdminHub({
           priceList: "Takeaway",
           estimatedMinutes: 15,
           clientAccountName: mozoTakeawayForm.customerName,
-          customerPhone: mozoTakeawayForm.customerPhone
-        } as any;
+          customerPhone: mozoTakeawayForm.customerPhone,
+          waiterName: currentUser.name,
+          source: "takeaway"
+        };
 
-        if (onUpdateOrders) {
-          onUpdateOrders([newTakeawayOrder, ...orders]);
+        const persisted = await SupabaseSyncService.saveOrder(newTakeawayOrder);
+        if (!persisted.success || !persisted.order) {
+          onShowNotification(`⚠️ No se pudo guardar el retiro: ${persisted.error || "error desconocido"}.`, "warning");
+          return;
         }
+        onUpdateOrders?.([persisted.order, ...orders]);
         onShowNotification(`🛍️ Pedido de Retiro #${newTakeawayOrder.id} enviado a Cocina & Chef.`, "success");
         setMozoCart([]);
-        setStableTakeawayId(`RET-${Math.floor(1000 + Math.random() * 9000)}`);
+        setStableTakeawayId(`RET-${crypto.randomUUID()}`);
         return;
       }
 
       if (mozoServiceType === "delivery") {
-        if (!mozoDeliveryForm.customerName || !mozoDeliveryForm.customerPhone || !mozoDeliveryForm.street) {
-          onShowNotification("⚠️ Complete nombre, teléfono y dirección del cliente para Delivery.", "warning");
+        if (!mozoDeliveryForm.customerName || !mozoDeliveryForm.customerPhone || !mozoDeliveryForm.street || !mozoDeliveryForm.number) {
+          onShowNotification("⚠️ Complete nombre, teléfono, calle y altura para Delivery.", "warning");
           return;
         }
         const newDeliveryOrder: Order = {
           id: stableDeliveryId,
           items: mozoCart.map(c => ({
+            itemId: c.item.id,
             name: c.item.name,
             quantity: c.qty,
             price: c.item.price,
@@ -5777,15 +5824,20 @@ export default function AdminHub({
             street: mozoDeliveryForm.street,
             number: mozoDeliveryForm.number,
             notes: mozoDeliveryForm.floorNotes
-          }
-        } as any;
+          },
+          waiterName: currentUser.name,
+          source: "delivery"
+        };
 
-        if (onUpdateOrders) {
-          onUpdateOrders([newDeliveryOrder, ...orders]);
+        const persisted = await SupabaseSyncService.saveOrder(newDeliveryOrder);
+        if (!persisted.success || !persisted.order) {
+          onShowNotification(`⚠️ No se pudo guardar el delivery: ${persisted.error || "error desconocido"}.`, "warning");
+          return;
         }
+        onUpdateOrders?.([persisted.order, ...orders]);
         onShowNotification(`🛵 Pedido de Delivery #${newDeliveryOrder.id} enviado a Cocina & Chef.`, "success");
         setMozoCart([]);
-        setStableDeliveryId(`DEL-${Math.floor(1000 + Math.random() * 9000)}`);
+        setStableDeliveryId(`DEL-${crypto.randomUUID()}`);
         return;
       }
 
@@ -5796,6 +5848,7 @@ export default function AdminHub({
         const updatedOrderObj: Order = {
           ...activeOrder,
           items: mozoCart.map(c => ({
+            itemId: c.item.id,
             name: c.item.name,
             quantity: c.qty,
             price: c.item.price,
@@ -5803,17 +5856,23 @@ export default function AdminHub({
           })),
           subtotal,
           tax,
-          total
+          total,
+          waiterName: currentUser.name,
+          source: "mozo"
         };
-        if (onUpdateOrders) {
-          onUpdateOrders(orders.map(o => o.id === activeOrder.id ? updatedOrderObj : o));
+        const persisted = await SupabaseSyncService.saveOrder(updatedOrderObj);
+        if (!persisted.success || !persisted.order) {
+          onShowNotification(`⚠️ No se pudo actualizar la comanda: ${persisted.error || "error desconocido"}.`, "warning");
+          return;
         }
+        onUpdateOrders?.(orders.map(o => o.id === activeOrder.id ? persisted.order! : o));
         onShowNotification(`🍳 Comanda de la ${mozoSelectedTable} actualizada y enviada a cocina.`, "success");
       } else {
         const newOrder: Order = {
           id: `PED-${crypto.randomUUID()}`,
           tableNumber: mozoSelectedTable,
           items: mozoCart.map(c => ({
+            itemId: c.item.id,
             name: c.item.name,
             quantity: c.qty,
             price: c.item.price,
@@ -5826,11 +5885,16 @@ export default function AdminHub({
           createdAt: new Date().toISOString(),
           type: "Mesa",
           priceList: "Salon",
-          estimatedMinutes: 15
+          estimatedMinutes: 15,
+          waiterName: currentUser.name,
+          source: "mozo"
         };
-        if (onUpdateOrders) {
-          onUpdateOrders([newOrder, ...orders]);
+        const persisted = await SupabaseSyncService.saveOrder(newOrder);
+        if (!persisted.success || !persisted.order) {
+          onShowNotification(`⚠️ No se pudo guardar la comanda: ${persisted.error || "error desconocido"}.`, "warning");
+          return;
         }
+        onUpdateOrders?.([persisted.order, ...orders]);
         onShowNotification(`🍳 Nueva comanda para la ${mozoSelectedTable} enviada a cocina.`, "success");
       }
 
@@ -7367,6 +7431,35 @@ export default function AdminHub({
         });
       }
     }
+
+    const handleMergeTableToggle = (tableId: string) => {
+      const linkedTableId = mergedTableIds[tableId];
+      if (linkedTableId) {
+        setMergedTableIds((current) => {
+          const next = { ...current };
+          delete next[tableId];
+          delete next[linkedTableId];
+          return next;
+        });
+        onShowNotification("🔗 Las mesas fueron desvinculadas.", "info");
+        return;
+      }
+
+      const candidate = activeTables.find(
+        (table) => table.id !== tableId && !mergedTableIds[table.id]
+      );
+      if (!candidate) {
+        onShowNotification("⚠️ No hay otra mesa disponible para unir.", "warning");
+        return;
+      }
+
+      setMergedTableIds((current) => ({
+        ...current,
+        [tableId]: candidate.id,
+        [candidate.id]: tableId
+      }));
+      onShowNotification(`🔗 Mesa unida con ${candidate.name}.`, "success");
+    };
 
     const handleResetGrid = () => {
       const newMap: { [id: string]: { x: number; y: number } } = {};
@@ -9052,19 +9145,30 @@ export default function AdminHub({
             <div className="space-y-4">
               <div>
                 <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Nombre Comercial</label>
-                <input type="text" defaultValue="Castaño — Resto Bar" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                <input type="text" value={businessProfile.name} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, name: event.target.value }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
               </div>
               <div>
                 <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Dirección Física</label>
-                <input type="text" defaultValue="Constitución 944, Río Cuarto" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                <input type="text" value={businessProfile.address} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, address: event.target.value }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
               </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">CUIT Comercial</label>
-                <input type="text" defaultValue="30-71458925-9" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">CUIT Comercial</label>
+                  <input type="text" inputMode="numeric" value={businessProfile.cuit} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, cuit: event.target.value }))} placeholder="11 dígitos" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Punto de Venta</label>
+                  <input type="number" min="1" value={businessProfile.posNumber} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, posNumber: event.target.value }))} placeholder="Ej. 1" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                </div>
               </div>
+              {!businessProfile.cuit && (
+                <p className="rounded-xl border border-[#D7BBA8] bg-[#E8D4C3]/40 p-3 text-[10px] text-[#6F5A55]">
+                  El perfil fiscal está pendiente. No se completa con datos ficticios.
+                </p>
+              )}
               <div className="flex gap-3 pt-3">
                 <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigRestaurantOpen(false); onShowNotification("✅ Configuración de restaurante guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
+                <button onClick={() => void handleSaveBusinessProfile()} disabled={isBusinessProfileSaving} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer">{isBusinessProfileSaving ? "Guardando…" : "Guardar"}</button>
               </div>
             </div>
           </div>
@@ -9086,26 +9190,29 @@ export default function AdminHub({
             <div className="space-y-4">
               <div>
                 <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Interfaz de Conexión</label>
-                <select className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
-                  <option>USB Thermal Printer (Predeterminado)</option>
-                  <option>Bluetooth clover-thermal-58</option>
-                  <option>Ethernet (IP: 192.168.1.150)</option>
+                <select value={printerConfig.printerType} onChange={(event) => setPrinterConfig((config) => ({ ...config, printerType: event.target.value as PrinterConfig["printerType"] }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
+                  <option value="browser_print">Impresión del navegador</option>
+                  <option value="webbluetooth">Impresora Bluetooth</option>
+                  <option value="websocket">Servidor ESC/POS por WebSocket</option>
+                  <option value="webusb">USB mediante diálogo del navegador</option>
                 </select>
               </div>
               <div>
                 <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Ancho de Papel</label>
-                <select className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
-                  <option>80 mm (Recomendado)</option>
-                  <option>58 mm</option>
+                <select value={printerConfig.paperWidth} onChange={(event) => setPrinterConfig((config) => ({ ...config, paperWidth: event.target.value as PrinterConfig["paperWidth"] }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
+                  <option value="80mm">80 mm (Recomendado)</option>
+                  <option value="58mm">58 mm</option>
                 </select>
               </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Texto de Pie de Página</label>
-                <input type="text" defaultValue="¡Gracias por su visita! Castaño — Resto Bar" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
-              </div>
+              {printerConfig.printerType === "websocket" && (
+                <div>
+                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Servidor WebSocket</label>
+                  <input type="url" value={printerConfig.websocketUrl} onChange={(event) => setPrinterConfig((config) => ({ ...config, websocketUrl: event.target.value }))} placeholder="ws://localhost:9100" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                </div>
+              )}
               <div className="flex gap-3 pt-3">
                 <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
+                <button onClick={handleSavePrinterConfig} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
               </div>
             </div>
           </div>
@@ -9165,13 +9272,12 @@ export default function AdminHub({
                       onShowNotification("⚠️ Ingrese un monto real válido.", "warning");
                       return;
                     }
-                    handleConfirmCloseShift(realCash, closeShiftNotes);
-                    setCloseShiftRealCash("");
-                    setCloseShiftNotes("");
+                    void handleConfirmCloseShift(realCash, closeShiftNotes);
                   }} 
-                  className="w-1/2 py-2.5 rounded-xl bg-[#A63F45] hover:bg-[#8A3338] text-white text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isShiftOperationPending}
+                  className="w-1/2 py-2.5 rounded-xl bg-[#A63F45] hover:bg-[#8A3338] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Confirmar Arqueo ✓
+                  {isShiftOperationPending ? "Cerrando…" : "Confirmar Arqueo ✓"}
                 </button>
               </div>
             </div>
@@ -9180,7 +9286,7 @@ export default function AdminHub({
       )}
 
       {/* Detalle de Cierre de Caja Modal */}
-      {selectedClosureForModal && (
+      {false && selectedClosureForModal && (
         <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
           <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
             <button 
@@ -9234,7 +9340,7 @@ export default function AdminHub({
       )}
 
       {/* Configuración Ticketera Modal */}
-      {isConfigTicketerisOpen && (
+      {false && isConfigTicketerisOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
             <button 
@@ -9275,7 +9381,7 @@ export default function AdminHub({
       )}
 
       {/* Cerrar Turno de Caja Modal */}
-      {isCloseShiftModalOpen && (
+      {false && isCloseShiftModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
             <button 
@@ -9327,13 +9433,12 @@ export default function AdminHub({
                       onShowNotification("⚠️ Ingrese un monto real válido.", "warning");
                       return;
                     }
-                    handleConfirmCloseShift(realCash, closeShiftNotes);
-                    setCloseShiftRealCash("");
-                    setCloseShiftNotes("");
+                    void handleConfirmCloseShift(realCash, closeShiftNotes);
                   }} 
-                  className="w-1/2 py-2.5 rounded-xl bg-[#A63F45] hover:bg-[#8A3338] text-white text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isShiftOperationPending}
+                  className="w-1/2 py-2.5 rounded-xl bg-[#A63F45] hover:bg-[#8A3338] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Confirmar Arqueo ✓
+                  {isShiftOperationPending ? "Cerrando…" : "Confirmar Arqueo ✓"}
                 </button>
               </div>
             </div>
@@ -9499,13 +9604,12 @@ export default function AdminHub({
               </button>
 
               <button 
-                onClick={() => {
-                  setSelectedOrderForTicket(null);
-                  onShowNotification("📧 Comprobante enviado al correo del cliente.", "success");
-                }} 
-                className="py-2.5 rounded-xl bg-[#843747] text-white text-[10px] font-black cursor-pointer hover:bg-[#71303D] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+                type="button"
+                disabled
+                title="Requiere configurar un proveedor de correo transaccional"
+                className="py-2.5 rounded-xl bg-[#E8D4C3] text-[#6F5A55] border border-[#D7BBA8] text-[10px] font-black cursor-not-allowed opacity-70 flex items-center justify-center gap-1.5 uppercase tracking-wider"
               >
-                <FileText className="h-3.5 w-3.5" /> Enviar Mail
+                <FileText className="h-3.5 w-3.5" /> Email no configurado
               </button>
 
               <button 
@@ -9525,7 +9629,11 @@ export default function AdminHub({
               {selectedOrderForTicket.couponNumber && <div>CUPÓN POSNET NRO: {selectedOrderForTicket.couponNumber}</div>}
               {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
               <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
-              <div className="text-[7px] text-[#332424]/60 font-sans mt-2">COMPROBANTE HOMOLOGADO POR ARCA EMISIÓN CONTROLADA</div>
+              <div className="text-[7px] text-[#332424]/60 font-sans mt-2">
+                {selectedOrderForTicket.fiscal?.status && ["authorized", "observed"].includes(selectedOrderForTicket.fiscal.status)
+                  ? "COMPROBANTE ELECTRÓNICO AUTORIZADO POR ARCA"
+                  : "DOCUMENTO NO FISCAL · SIN CAE"}
+              </div>
             </div>
           </div>
         </div>

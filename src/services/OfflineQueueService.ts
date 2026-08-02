@@ -1,9 +1,12 @@
-import { Order } from "../types";
+import { Order, OrderStatusType } from "../types";
 import { SupabaseSyncService } from "./SupabaseSyncService";
 
 export interface PendingOfflineOrder {
   id: string;
-  order: Order;
+  operation: "save_order" | "update_status";
+  orderId: string;
+  order?: Order;
+  status?: OrderStatusType;
   timestamp: string;
   retryCount: number;
   nextRetryAt: string;
@@ -19,7 +22,12 @@ export class OfflineQueueService {
     try {
       const saved = localStorage.getItem(this.queueKey);
       const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((entry: any) => ({
+        ...entry,
+        operation: entry.operation || "save_order",
+        orderId: entry.orderId || entry.order?.id || entry.id
+      }));
     } catch {
       return [];
     }
@@ -27,10 +35,30 @@ export class OfflineQueueService {
 
   enqueueOrder(order: Order, reason?: string): void {
     const queue = this.getPendingQueue();
-    if (queue.some((entry) => entry.id === order.id)) return;
+    const queueId = `save:${order.id}`;
+    if (queue.some((entry) => entry.id === queueId || (entry.operation === "save_order" && entry.orderId === order.id))) return;
     queue.push({
-      id: order.id,
+      id: queueId,
+      operation: "save_order",
+      orderId: order.id,
       order: { ...order, source: order.source || "offline_sync" },
+      timestamp: new Date().toISOString(),
+      retryCount: 0,
+      nextRetryAt: new Date().toISOString(),
+      lastError: reason
+    });
+    this.persist(queue);
+  }
+
+  enqueueStatusUpdate(orderId: string, status: OrderStatusType, reason?: string): void {
+    const queue = this.getPendingQueue().filter(
+      (entry) => !(entry.operation === "update_status" && entry.orderId === orderId)
+    );
+    queue.push({
+      id: `status:${orderId}`,
+      operation: "update_status",
+      orderId,
+      status,
       timestamp: new Date().toISOString(),
       retryCount: 0,
       nextRetryAt: new Date().toISOString(),
@@ -57,10 +85,16 @@ export class OfflineQueueService {
         continue;
       }
 
-      const result = await SupabaseSyncService.saveOrder(item.order);
+      const result = item.operation === "update_status"
+        ? item.status
+          ? await SupabaseSyncService.updateOrderStatus(item.orderId, item.status)
+          : { success: false, error: "La operación no contiene un estado" }
+        : item.order
+          ? await SupabaseSyncService.saveOrder(item.order)
+          : { success: false, error: "La operación no contiene una comanda" };
       if (result.success) {
         synced += 1;
-        onSyncedItem?.(item.id);
+        onSyncedItem?.(item.orderId);
         continue;
       }
 
@@ -82,7 +116,7 @@ export class OfflineQueueService {
   }
 
   remove(orderId: string): void {
-    this.persist(this.getPendingQueue().filter((item) => item.id !== orderId));
+    this.persist(this.getPendingQueue().filter((item) => item.orderId !== orderId));
   }
 
   private persist(queue: PendingOfflineOrder[]): void {

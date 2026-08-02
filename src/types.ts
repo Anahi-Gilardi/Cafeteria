@@ -99,8 +99,16 @@ export interface Table {
   description: string;
   coordX: number; // For rendering physical layout
   coordY: number; // For rendering physical layout
-  status: "Libre" | "Ocupada" | "Esperando" | "Servida" | "Cuenta" | "Limpieza"; // State in salon
+  status: "Libre" | "Ocupada" | "Reservada" | "Esperando" | "Servida" | "Cuenta" | "Limpieza"; // State in salon
   activeOrderId?: string;
+  joinedWith?: string;
+  reservationDetails?: {
+    clientName: string;
+    clientPhone?: string;
+    date?: string;
+    time?: string;
+    guests?: number;
+  };
 }
 
 export type BookingTimeSlot = "Desayuno" | "Media Mañana" | "Almuerzo" | "Tarde" | "Cena";
@@ -157,6 +165,7 @@ export interface Order {
   priceList: "Salon" | "Takeaway" | "Delivery";
   tableReservationId?: string; // If dining in
   tableNumber?: string; // Linked table if dining in
+  waiterName?: string;
   status: OrderStatusType;
   createdAt: string;
   estimatedMinutes: number;

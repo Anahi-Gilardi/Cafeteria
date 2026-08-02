@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, isAllowedOrigin } from "../_shared/cors.ts";
 
 type FiscalStatus =
   | "draft"
@@ -7,21 +8,6 @@ type FiscalStatus =
   | "observed"
   | "rejected"
   | "uncertain";
-
-const appOrigin = Deno.env.get("APP_ORIGIN") || "";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": appOrigin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin"
-};
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
-  });
-}
 
 function responseFromRow(row: Record<string, unknown>) {
   const pointOfSale = Number(row.point_of_sale || 0);
@@ -48,10 +34,34 @@ function buildQrUrl(data: Record<string, unknown>) {
   return `https://www.arca.gob.ar/fe/qr/?p=${btoa(JSON.stringify(data))}`;
 }
 
+async function sha256(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function isValidCuit(value: string) {
+  if (!/^\d{11}$/.test(value)) return false;
+  const multipliers = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const sum = multipliers.reduce(
+    (total, multiplier, index) => total + Number(value[index]) * multiplier,
+    0
+  );
+  const calculated = 11 - (sum % 11);
+  const checkDigit = calculated === 11 ? 0 : calculated === 10 ? 9 : calculated;
+  return checkDigit === Number(value[10]);
+}
+
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = getCorsHeaders(request);
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+  if (request.method === "OPTIONS") return new Response(null, { status: isAllowedOrigin(request) ? 204 : 403, headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
-  if (!appOrigin || request.headers.get("origin") !== appOrigin) {
+  if (!isAllowedOrigin(request)) {
     return json({ error: "origin not allowed" }, 403);
   }
   if (Number(request.headers.get("content-length") || 0) > 20_000) {
@@ -88,6 +98,17 @@ Deno.serve(async (request) => {
     return json({ error: "billing role required" }, 403);
   }
 
+  const { data: rateAllowed, error: rateError } = await adminClient.rpc(
+    "consume_public_rate_limit",
+    {
+      p_client_hash: `billing:${await sha256(user.id)}`,
+      p_window_seconds: 600,
+      p_max_requests: 20
+    }
+  );
+  if (rateError) return json({ error: "billing rate limit unavailable" }, 503);
+  if (!rateAllowed) return json({ error: "too many billing requests" }, 429);
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -99,13 +120,23 @@ Deno.serve(async (request) => {
   const invoiceType = String(body.invoiceType || "");
   const cleanDocument = String(body.customerCuitDni || "").replace(/\D/g, "");
   const customerName = String(body.customerName || "").trim().slice(0, 160);
+  const customerIvaCondition = String(body.customerIvaCondition || "");
   const idempotencyKey = String(body.idempotencyKey || "").trim().slice(0, 180);
+  const canonicalIdempotencyKey = `fiscal:${orderId}:${invoiceType}:${cleanDocument}`;
+  const allowedIvaConditions = new Set([
+    "Consumidor Final",
+    "Responsable Inscripto",
+    "Monotributo",
+    "Exento"
+  ]);
   if (
     !orderId ||
     !["A", "B", "C"].includes(invoiceType) ||
     ![8, 11].includes(cleanDocument.length) ||
+    (cleanDocument.length === 11 && !isValidCuit(cleanDocument)) ||
     !customerName ||
-    !idempotencyKey
+    !allowedIvaConditions.has(customerIvaCondition) ||
+    idempotencyKey !== canonicalIdempotencyKey
   ) {
     return json({ error: "invalid fiscal request" }, 400);
   }
@@ -115,7 +146,8 @@ Deno.serve(async (request) => {
     .select("*")
     .eq("idempotency_key", idempotencyKey)
     .maybeSingle();
-  if (existing && !["draft", "uncertain"].includes(existing.status)) {
+  // An uncertain authorization may already exist in ARCA and must be reconciled first.
+  if (existing && existing.status !== "draft") {
     return json(responseFromRow(existing));
   }
 
@@ -175,8 +207,16 @@ Deno.serve(async (request) => {
     });
   }
 
-  const environment =
-    Deno.env.get("ARCA_ENVIRONMENT") === "production" ? "production" : "homologation";
+  const configuredEnvironment = String(Deno.env.get("ARCA_ENVIRONMENT") || "");
+  if (!["homologation", "production"].includes(configuredEnvironment)) {
+    return json({
+      success: false,
+      status: "draft",
+      errors: ["El ambiente fiscal no está configurado explícitamente en el servidor."]
+    });
+  }
+  const environment = configuredEnvironment as "homologation" | "production";
+  const issuerTaxCondition = String(Deno.env.get("ARCA_ISSUER_TAX_CONDITION") || "");
   const issuerCuit = String(Deno.env.get("ARCA_CUIT") || "").replace(/\D/g, "");
   const pointOfSale = Number(Deno.env.get("ARCA_POINT_OF_SALE") || 0);
   const authorizerUrl = Deno.env.get("ARCA_AUTHORIZER_URL") || "";
@@ -199,6 +239,26 @@ Deno.serve(async (request) => {
       success: false,
       status: "draft",
       errors: ["El CUIT o punto de venta del perfil no coincide con la configuración fiscal del servidor."]
+    });
+  }
+  if (!["responsable_inscripto", "monotributo"].includes(issuerTaxCondition)) {
+    return json({
+      success: false,
+      status: "draft",
+      errors: ["La condición tributaria del emisor no está configurada en el servidor."]
+    });
+  }
+  const expectedInvoiceType =
+    issuerTaxCondition === "monotributo"
+      ? "C"
+      : customerIvaCondition === "Responsable Inscripto"
+        ? "A"
+        : "B";
+  if (invoiceType !== expectedInvoiceType) {
+    return json({
+      success: false,
+      status: "draft",
+      errors: [`El tipo de comprobante debe ser ${expectedInvoiceType} según las condiciones tributarias configuradas.`]
     });
   }
   const voucherType = invoiceType === "A" ? 1 : invoiceType === "B" ? 6 : 11;
@@ -268,7 +328,7 @@ Deno.serve(async (request) => {
     authorization_method: "CAE",
     status: "authorizing",
     invoice_type: voucherType,
-    point_of_sale: pointOfSale || 1,
+    point_of_sale: pointOfSale,
     issuer_cuit: profileCuit,
     issuer_name: businessProfile.name,
     issuer_address: [businessProfile.address, businessProfile.city, businessProfile.province]
@@ -333,21 +393,29 @@ Deno.serve(async (request) => {
     const errors = Array.isArray(providerData.errors)
       ? providerData.errors.map(String)
       : [];
+    const safeProviderSnapshot = {
+      result,
+      cae: providerData.cae || null,
+      caeExpiration: providerData.caeExpiration || null,
+      invoiceNumber: providerData.invoiceNumber || null,
+      observations,
+      errors
+    };
 
     if (!providerResponse.ok || !["A", "O", "R"].includes(result)) {
-      const { data: rejected } = await adminClient
+      const { data: uncertain } = await adminClient
         .from("fiscal_invoices")
         .update({
-          status: "rejected",
+          status: "uncertain",
           observations,
-          errors: errors.length ? errors : ["Respuesta fiscal rechazada o inválida."],
-          response_snapshot: providerData,
+          errors: errors.length ? errors : ["Respuesta fiscal inválida; requiere conciliación antes de reintentar."],
+          response_snapshot: safeProviderSnapshot,
           updated_at: new Date().toISOString()
         })
         .eq("id", fiscalRow.id)
         .select("*")
         .single();
-      return json(responseFromRow(rejected || fiscalRow));
+      return json(responseFromRow(uncertain || fiscalRow));
     }
 
     if (result === "R") {
@@ -357,7 +425,7 @@ Deno.serve(async (request) => {
           status: "rejected",
           observations,
           errors,
-          response_snapshot: providerData,
+          response_snapshot: safeProviderSnapshot,
           updated_at: new Date().toISOString()
         })
         .eq("id", fiscalRow.id)
@@ -370,7 +438,7 @@ Deno.serve(async (request) => {
     const caeExpiration = String(providerData.caeExpiration || "");
     const invoiceNumber = Number(providerData.invoiceNumber);
     if (
-      cae.length < 12 ||
+      cae.length !== 14 ||
       !/^\d{4}-\d{2}-\d{2}$/.test(caeExpiration) ||
       !Number.isSafeInteger(invoiceNumber) ||
       invoiceNumber <= 0
@@ -404,7 +472,7 @@ Deno.serve(async (request) => {
         qr_url: qrUrl,
         observations,
         errors,
-        response_snapshot: providerData,
+        response_snapshot: safeProviderSnapshot,
         updated_at: new Date().toISOString()
       })
       .eq("id", fiscalRow.id)

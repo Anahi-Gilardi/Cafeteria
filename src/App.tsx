@@ -56,6 +56,7 @@ export default function App() {
       return [];
     }
   });
+  const [isMenuLoading, setIsMenuLoading] = useState(true);
 
   // Global notification toast states
   const [notifications, setNotifications] = useState<ToastNotification[]>([]);
@@ -165,6 +166,7 @@ export default function App() {
   // Load initial data from Supabase. Database seeding is migration-only.
   useEffect(() => {
     const loadSupabaseData = async () => {
+      setIsMenuLoading(true);
       try {
         // 1. Fetch Menu Items
         const { data: menuData, error: menuError } = await supabase
@@ -202,6 +204,10 @@ export default function App() {
           console.warn("Supabase no devolvió productos; no se publicará un catálogo demostrativo.");
           setMenuItems([]);
         }
+        setIsMenuLoading(false);
+
+        // Private operational data is fetched only after Supabase Auth resolves.
+        if (!currentUser) return;
 
         // 2. Fetch Client Accounts
         const { data: clientData } = await supabase.from("client_accounts").select("*");
@@ -235,37 +241,25 @@ export default function App() {
           })));
         }
 
-        // 4. Fetch Orders from Supabase & Merge with Local Cache (Prevents order loss on session change)
+        // 4. Supabase is canonical. Local data is only an offline fallback.
         const { orders: remoteOrders, error: fetchErr } = await SupabaseSyncService.fetchOrders();
-        let currentLocal: Order[] = [];
-        try {
-          const saved = localStorage.getItem("resto_bar_orders");
-          if (saved) currentLocal = JSON.parse(saved);
-        } catch (e) {}
-
-        const mergedMap = new Map<string, Order>();
-        currentLocal.forEach(o => mergedMap.set(o.id, o));
-        (remoteOrders || []).forEach(o => mergedMap.set(o.id, o));
-        const mergedList = Array.from(mergedMap.values()).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-
-        if (mergedList.length > 0) {
-          setOrders(mergedList);
+        if (!fetchErr) {
+          setOrders(remoteOrders);
           try {
-            localStorage.setItem("resto_bar_orders", JSON.stringify(mergedList));
-          } catch (e) {}
-        } else if (fetchErr) {
+            localStorage.setItem("resto_bar_orders", JSON.stringify(remoteOrders));
+          } catch {}
+        } else {
           console.warn("⚠️ Advertencia al consultar comandas en Supabase:", fetchErr);
         }
 
       } catch (err) {
+        setIsMenuLoading(false);
         console.error("Error loading data from Supabase:", err);
       }
     };
 
     loadSupabaseData();
-  }, []);
+  }, [currentUser]);
 
   // Sync active tracked order
   useEffect(() => {
@@ -282,17 +276,11 @@ export default function App() {
       const result = await SupabaseSyncService.fetchOrders();
       if (!active || result.error) return;
       
-      setOrders(prev => {
-        const map = new Map<string, Order>();
-        prev.forEach(o => map.set(o.id, o));
-        result.orders.forEach(o => map.set(o.id, o));
-        const merged = Array.from(map.values()).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+      setOrders(() => {
         try {
-          localStorage.setItem("resto_bar_orders", JSON.stringify(merged));
-        } catch (e) {}
-        return merged;
+          localStorage.setItem("resto_bar_orders", JSON.stringify(result.orders));
+        } catch {}
+        return result.orders;
       });
     };
 
@@ -318,7 +306,7 @@ export default function App() {
       const result = await offlineQueueService.syncPendingQueue();
       if (result.synced > 0) {
         const remote = await SupabaseSyncService.fetchOrders();
-        if (!remote.error && remote.orders.length > 0) setOrders(remote.orders);
+        if (!remote.error) setOrders(remote.orders);
         showNotification(
           `☁️ ${result.synced} pedido${result.synced === 1 ? "" : "s"} pendiente${result.synced === 1 ? "" : "s"} sincronizado${result.synced === 1 ? "" : "s"}.`,
           "success"
@@ -524,7 +512,7 @@ export default function App() {
         console.warn("Supabase status sync pending:", result.error);
         const currentOrder = orders.find(o => o.id === orderId);
         if (currentOrder) {
-          offlineQueueService.enqueueOrder({ ...currentOrder, status }, result.error);
+          offlineQueueService.enqueueStatusUpdate(orderId, status, result.error);
         }
         showNotification(`📋 Estado de comanda #${orderId} actualizado localmente.`, "info");
       } else {
@@ -538,32 +526,33 @@ export default function App() {
 
   const handleArchiveOrder = async (orderId: string): Promise<boolean> => {
     const targetOrder = orders.find(o => o.id === orderId);
+    if (!targetOrder) {
+      showNotification(`No se encontró la comanda #${orderId}.`, "warning");
+      return false;
+    }
 
-    // 1. Optimistic Local Update
-    setOrders((prev) => {
-      const updated = prev.map((order) =>
-        order.id === orderId ? { ...order, status: "Completado" as OrderStatusType } : order
-      );
-      try {
-        localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
-
-    // 2. Background Sync with Supabase Archive
     try {
       const result = await SupabaseSyncService.archiveOrder(orderId, targetOrder);
       if (!result.success) {
-        console.warn("Error archiving order on Supabase, kept in local archive:", result.error);
-        showNotification(`🗄️ Comanda #${orderId} archivada localmente.`, "info");
-        return true;
+        console.error("Error archiving order on Supabase:", result.error);
+        showNotification(`No se pudo archivar la comanda #${orderId}. Intente nuevamente.`, "warning");
+        return false;
       }
-      showNotification(`🗄️ Comanda #${orderId} guardada en el archivo de Supabase.`, "success");
+      setOrders((prev) => {
+        const updated = prev.map((order) =>
+          order.id === orderId ? { ...order, status: "Completado" as OrderStatusType } : order
+        );
+        try {
+          localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      showNotification(`Comanda #${orderId} guardada en el archivo de Supabase.`, "success");
       return true;
     } catch (err) {
-      console.warn("Archive error:", err);
-      showNotification(`🗄️ Comanda #${orderId} archivada localmente.`, "info");
-      return true;
+      console.error("Archive error:", err);
+      showNotification(`No se pudo archivar la comanda #${orderId}. Intente nuevamente.`, "warning");
+      return false;
     }
   };
 
@@ -671,22 +660,11 @@ export default function App() {
         <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
         <PublicLandingPage
           menuItems={menuItems}
+          isMenuLoading={isMenuLoading}
           onLoginSuccess={(user) => {
             setCurrentUser(user);
             if (user.role === "barista") {
               setActiveTab("cocina");
-            } else {
-              setActiveTab("dashboard");
-            }
-          }}
-          onSelectCategory={(catId) => {
-            setActiveTab("public_menu");
-          }}
-          onOpenPublicMarquee={() => setActiveTab("public_menu")}
-          currentUser={currentUser}
-          onOpenAdmin={() => {
-            if (currentUser?.role === "administrador" || currentUser?.role === "dueño" || currentUser?.role === "barista") {
-              setActiveTab("admin");
             } else {
               setActiveTab("dashboard");
             }

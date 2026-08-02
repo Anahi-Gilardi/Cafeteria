@@ -74,7 +74,7 @@ export default function LoginScreen({
         <form onSubmit={handleCredentialsLogin} className="space-y-4">
           <div className="space-y-1">
             <label htmlFor="staff-email" className="block text-[10px] font-black uppercase tracking-wider text-[#6F5A55]">
-              Correo electrónico / Usuario Admin
+              Correo electrónico
             </label>
             <div className="relative">
               <User className="absolute left-3.5 top-3.5 h-4 w-4 text-[#843747]" />
@@ -84,7 +84,7 @@ export default function LoginScreen({
                 autoComplete="username"
                 value={emailInput}
                 onChange={(event) => setEmailInput(event.target.value)}
-                placeholder="admin@restobardelteatro.com o admin"
+                placeholder="nombre@restobardelteatro.com"
                 className="w-full rounded-xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pl-11 pr-4 text-xs font-bold text-[#332424] placeholder-[#332424]/40 focus:border-[#843747] focus:outline-none"
                 required
               />
@@ -103,7 +103,7 @@ export default function LoginScreen({
                 autoComplete="current-password"
                 value={passwordInput}
                 onChange={(event) => setPasswordInput(event.target.value)}
-                placeholder="1998"
+                placeholder="Contraseña de Supabase Auth"
                 className="w-full rounded-xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pl-11 pr-11 text-xs font-bold text-[#332424] placeholder-[#332424]/40 focus:border-[#843747] focus:outline-none"
                 required
               />

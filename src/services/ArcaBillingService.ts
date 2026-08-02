@@ -50,21 +50,17 @@ export class ArcaBillingService {
     const cleanCuit = customer.cuitOrDni.replace(/\D/g, "");
     
     // Determine Invoice Type (A, B, C)
-    let invoiceType: "A" | "B" | "C" = "B";
-    if (customer.ivaCondition === "Responsable Inscripto") {
-      invoiceType = "A";
-    } else if (customer.ivaCondition === "Monotributo") {
-      invoiceType = "C";
-    } else {
-      invoiceType = "B";
-    }
+    const invoiceType: "A" | "B" | "C" = customer.invoiceTypeChoice
+      ? customer.invoiceTypeChoice
+      : customer.ivaCondition === "Responsable Inscripto"
+        ? "A"
+        : "B";
 
-    const ptoVta = "00005";
     const draftNumber = "BORRADOR-" + order.id.slice(-6).toUpperCase();
 
     return {
       invoiceType,
-      invoiceNumber: `${ptoVta}-${draftNumber}`,
+      invoiceNumber: draftNumber,
       cae: "SIN_AUTORIZACION_FISCAL",
       caeExpiration: "-",
       neto: 0,

@@ -1,19 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const appOrigin = Deno.env.get("APP_ORIGIN") || "";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": appOrigin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin"
-};
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
-  });
-}
+import { getCorsHeaders, isAllowedOrigin } from "../_shared/cors.ts";
 
 async function sha256(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);
@@ -24,9 +10,14 @@ async function sha256(value: string): Promise<string> {
 }
 
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = getCorsHeaders(request);
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+  if (request.method === "OPTIONS") return new Response(null, { status: isAllowedOrigin(request) ? 204 : 403, headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
-  if (!appOrigin || request.headers.get("origin") !== appOrigin) {
+  if (!isAllowedOrigin(request)) {
     return json({ error: "origin not allowed" }, 403);
   }
   if (Number(request.headers.get("content-length") || 0) > 30_000) {
@@ -66,6 +57,37 @@ Deno.serve(async (request) => {
       return json({ error: "invalid item count" }, 400);
     }
 
+    const orderType = String(input?.orderType || "");
+    const customerName = String(input?.customerName || "").trim().slice(0, 120);
+    const customerPhone = String(input?.customerPhone || "")
+      .replace(/[^\d+ ()-]/g, "")
+      .trim()
+      .slice(0, 30);
+    const tableNumber = String(input?.tableNumber || "").trim().slice(0, 80);
+    const clientAddress = String(input?.clientAddress || "").trim().slice(0, 300);
+    const providedIdempotencyKey = String(input?.idempotencyKey || "").trim();
+    if (
+      !["salon", "takeaway", "delivery"].includes(orderType) ||
+      customerName.length < 2 ||
+      customerPhone.replace(/\D/g, "").length < 7 ||
+      !/^[A-Za-z0-9:_-]{8,180}$/.test(providedIdempotencyKey) ||
+      (orderType === "salon" && !tableNumber) ||
+      (orderType === "delivery" && clientAddress.length < 5)
+    ) {
+      return json({ error: "invalid order contact or fulfillment details" }, 400);
+    }
+
+    if (orderType === "salon") {
+      const { data: table, error: tableError } = await admin
+        .from("restaurant_tables")
+        .select("name")
+        .eq("name", tableNumber)
+        .eq("active", true)
+        .maybeSingle();
+      if (tableError) return json({ error: "table validation unavailable" }, 503);
+      if (!table) return json({ error: "active table not found" }, 404);
+    }
+
     const ids = [...new Set(requestedItems.map((item: any) => String(item.itemId || "")))];
     if (ids.some((id) => !id)) return json({ error: "itemId is required" }, 400);
 
@@ -77,9 +99,6 @@ Deno.serve(async (request) => {
       return json({ error: "catalog validation failed" }, 400);
     }
 
-    const orderType = ["salon", "takeaway", "delivery"].includes(input?.orderType)
-      ? input.orderType
-      : "takeaway";
     let total = 0;
     const items = requestedItems.map((requested: any) => {
       const item = catalog.find((candidate) => candidate.id === requested.itemId);
@@ -126,7 +145,9 @@ Deno.serve(async (request) => {
     const grandTotal = Number((total + deliveryFee + requestedTip).toFixed(2));
 
     const orderId = `web-${crypto.randomUUID()}`;
-    const idempotencyKey = String(input?.idempotencyKey || `public-${crypto.randomUUID()}`);
+    const idempotencyKey = `public:${await sha256(
+      `${rateSalt}:${clientHash}:${providedIdempotencyKey}`
+    )}`;
     const payload = {
       id: orderId,
       idempotency_key: idempotencyKey,
@@ -136,10 +157,10 @@ Deno.serve(async (request) => {
       type: orderType === "salon" ? "Mesa" : "Llevar",
       price_list:
         orderType === "delivery" ? "Delivery" : orderType === "takeaway" ? "Takeaway" : "Salon",
-      table_number: String(input?.tableNumber || "").slice(0, 40) || null,
-      client_name: String(input?.customerName || "Consumidor Final").slice(0, 120),
-      client_phone: String(input?.customerPhone || "").replace(/[^\d+ -]/g, "").slice(0, 30) || null,
-      client_address: String(input?.clientAddress || "").slice(0, 300) || null,
+      table_number: tableNumber || null,
+      client_name: customerName,
+      client_phone: customerPhone,
+      client_address: clientAddress || null,
       items,
       status: "Recibido",
       subtotal: Number(total.toFixed(2)),

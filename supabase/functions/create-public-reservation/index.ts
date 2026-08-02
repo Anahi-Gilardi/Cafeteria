@@ -1,19 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const appOrigin = Deno.env.get("APP_ORIGIN") || "";
-const corsHeaders = {
-  "Access-Control-Allow-Origin": appOrigin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin"
-};
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
-  });
-}
+import { getCorsHeaders, isAllowedOrigin } from "../_shared/cors.ts";
 
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -22,10 +8,27 @@ async function sha256(value: string) {
     .join("");
 }
 
+function dateInArgentina(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Argentina/Cordoba",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(now);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((entry) => entry.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = getCorsHeaders(request);
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+  if (request.method === "OPTIONS") return new Response(null, { status: isAllowedOrigin(request) ? 204 : 403, headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "method not allowed" }, 405);
-  if (!appOrigin || request.headers.get("origin") !== appOrigin) {
+  if (!isAllowedOrigin(request)) {
     return json({ error: "origin not allowed" }, 403);
   }
   if (Number(request.headers.get("content-length") || 0) > 10_000) {
@@ -80,8 +83,7 @@ Deno.serve(async (request) => {
     "Cena"
   ]);
   const requestedDate = new Date(`${date}T12:00:00Z`);
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  const today = new Date(`${dateInArgentina()}T12:00:00Z`);
   const latestDate = new Date(today.getTime() + 180 * 86_400_000);
   if (
     !tableId ||

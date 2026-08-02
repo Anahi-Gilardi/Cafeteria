@@ -3,6 +3,7 @@ import { ARCAAdapter } from "./ARCAAdapter";
 import { ArcaBillingService } from "./ArcaBillingService";
 import { BillingAdapter } from "./BillingAdapter";
 import { AuthService } from "./AuthService";
+import { isAuthorizedFiscalDetails } from "./ReceiptPDFService";
 import type { Order } from "../types";
 
 const order: Order = {
@@ -35,7 +36,8 @@ describe("fiscal safety", () => {
     });
     expect(fiscal.cae).toBe("SIN_AUTORIZACION_FISCAL");
     expect(fiscal.qrCodeUrl).toBe("");
-    expect(fiscal.invoiceNumber).toContain("BORRADOR");
+    expect(fiscal.invoiceNumber).toMatch(/^BORRADOR-/);
+    expect(fiscal.invoiceNumber).not.toContain("00005");
   });
 
   it("builds an official ARCA v1 QR URL only from supplied authorization data", () => {
@@ -71,6 +73,42 @@ describe("fiscal safety", () => {
   it("validates DNI and rejects malformed documents", () => {
     expect(ArcaBillingService.validateCuitOrDni("12.345.678").isValid).toBe(true);
     expect(ArcaBillingService.validateCuitOrDni("123").isValid).toBe(false);
+  });
+
+  it("does not choose Factura C from the recipient condition", () => {
+    const fiscal = ArcaBillingService.generateDraftInvoice(order, {
+      cuitOrDni: "30123456780",
+      nameOrReason: "Cliente monotributista",
+      ivaCondition: "Monotributo"
+    });
+    expect(fiscal.invoiceType).toBe("B");
+  });
+
+  it("never treats a CAE-looking draft or an incomplete authorization as fiscal", () => {
+    expect(isAuthorizedFiscalDetails({
+      invoiceType: "B",
+      invoiceNumber: "00005-00000123",
+      cae: "74123456789012",
+      caeExpiration: "2026-08-10",
+      neto: 1000,
+      iva21: 210,
+      iva105: 0,
+      status: "draft",
+      qrCodeUrl: "https://www.arca.gob.ar/fe/qr/?p=test",
+      issuerCuit: "30712345678"
+    })).toBe(false);
+    expect(isAuthorizedFiscalDetails({
+      invoiceType: "B",
+      invoiceNumber: "00005-00000123",
+      cae: "74123456789012",
+      caeExpiration: "2026-08-10",
+      neto: 1000,
+      iva21: 210,
+      iva105: 0,
+      status: "authorized",
+      qrCodeUrl: "https://www.arca.gob.ar/fe/qr/?p=test",
+      issuerCuit: "30712345678"
+    })).toBe(true);
   });
 
   it("keeps role permissions least-privileged", () => {

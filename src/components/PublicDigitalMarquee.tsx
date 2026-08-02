@@ -1,22 +1,11 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
   FileText, 
-  ShoppingBag, 
-  Utensils, 
-  Bike, 
-  Plus, 
-  Minus, 
-  Check, 
   PhoneCall, 
   MapPin, 
-  Instagram,
-  X,
-  Send,
-  ArrowRight
+  Instagram
 } from "lucide-react";
 import { DailyExecutiveMenu, MenuItem } from "../types";
-import WhatsAppOrderService from "../services/WhatsAppOrderService";
 import { supabase } from "../lib/supabase";
 import RestoBarLogo from "./RestoBarLogo";
 
@@ -48,17 +37,6 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   onShowNotification
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [cart, setCart] = useState<{ item: MenuItem; qty: number }[]>([]);
-  const [fulfillmentType, setFulfillmentType] = useState<"salon" | "takeaway" | "delivery">("salon");
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [tableNumber, setTableNumber] = useState("");
-  const [deliveryStreet, setDeliveryStreet] = useState("");
-  const [deliveryNumber, setDeliveryNumber] = useState("");
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isOrderSubmitted, setIsOrderSubmitted] = useState(false);
-  const [submittedOrderId, setSubmittedOrderId] = useState("");
-  const [submittedWhatsAppUrl, setSubmittedWhatsAppUrl] = useState("");
 
   // Live Executive Menu state synced with Admin
   const [todayMenu, setTodayMenu] = useState<DailyExecutiveMenu | null>(null);
@@ -126,22 +104,6 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
     };
   }, []);
 
-  const addExecutiveComboToCart = () => {
-    if (!todayMenu) return;
-    const comboItem: MenuItem = {
-      id: "executive-combo-" + Date.now(),
-      name: `⭐ Menú Ejecutivo (${todayMenu.dayOfWeek})`,
-      price: todayMenu.price,
-      description: `Entrada: ${selectedStarter} | Principal: ${selectedMain} | Bebida: ${selectedDrink} | Postre: ${selectedDessert}`,
-      category: "executive",
-      tags: ["Menú del Día", "Combo"],
-      image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80",
-      customizable: false,
-      nutrition: { calories: 850, allergens: [] }
-    };
-    addToCart(comboItem);
-  };
-
   // Keep the public showcase connected to the current catalog and real prices.
   const featuredDishes = [...menuItems]
     .filter((item) => item.price > 0)
@@ -155,84 +117,6 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   const filteredItems = menuItems.filter(item => 
     selectedCategory === "all" || item.category === selectedCategory
   );
-
-  const addToCart = (item: MenuItem) => {
-    setCart(prev => {
-      const existing = prev.find(c => c.item.id === item.id);
-      if (existing) {
-        return prev.map(c => c.item.id === item.id ? { ...c, qty: c.qty + 1 } : c);
-      }
-      return [...prev, { item, qty: 1 }];
-    });
-    onShowNotification(`✨ ${item.name} agregado al pedido`, "success");
-  };
-
-  const updateCartQty = (id: string, delta: number) => {
-    setCart(prev => 
-      prev.map(c => {
-        if (c.item.id === id) {
-          const newQty = Math.max(0, c.qty + delta);
-          return newQty === 0 ? null : { ...c, qty: newQty };
-        }
-        return c;
-      }).filter(Boolean) as { item: MenuItem; qty: number }[]
-    );
-  };
-
-  const cartSubtotal = cart.reduce((sum, c) => sum + c.item.price * c.qty, 0);
-  const cartTax = cartSubtotal * 0.21;
-  const cartTotal = cartSubtotal;
-
-  const handleConfirmPublicOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerName || !customerPhone) {
-      onShowNotification("⚠️ Por favor ingrese su Nombre y número de WhatsApp.", "warning");
-      return;
-    }
-    if (cart.length === 0) {
-      onShowNotification("⚠️ Su carrito está vacío.", "warning");
-      return;
-    }
-    if (fulfillmentType === "salon" && !tableNumber) {
-      onShowNotification("⚠️ Ingrese el número de mesa.", "warning");
-      return;
-    }
-
-    try {
-      const createdOrder = await WhatsAppOrderService.createPublicOrder({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        fulfillmentType,
-        tableNumber: fulfillmentType === "salon" ? tableNumber.trim() : undefined,
-        deliveryAddress: fulfillmentType === "delivery" ? { street: deliveryStreet, number: deliveryNumber } : undefined,
-        items: cart.map(c => ({
-          itemId: c.item.id,
-          name: c.item.name,
-          quantity: c.qty,
-          customizationSummary: "",
-          price: c.item.price
-        })),
-        subtotal: cartSubtotal,
-        tax: cartTax,
-        total: cartTotal
-      });
-
-      setSubmittedOrderId(createdOrder.id);
-      const cleanPhone = customerPhone.replace(/\D/g, "");
-      const formattedPhone = cleanPhone.startsWith("54") ? cleanPhone : `54${cleanPhone}`;
-      const confirmationText = `Hola, mi pedido ${createdOrder.id} quedó registrado en Resto Bar Del Teatro por ${createdOrder.total.toLocaleString("es-AR")} ARS.`;
-      setSubmittedWhatsAppUrl(
-        `https://wa.me/${formattedPhone}?text=${encodeURIComponent(confirmationText)}`
-      );
-      setIsOrderSubmitted(true);
-      setIsCheckoutOpen(false);
-      setCart([]);
-      onShowNotification(`Pedido #${createdOrder.id} guardado y enviado a cocina.`, "success");
-    } catch (err) {
-      console.error(err);
-      onShowNotification("❌ Ocurrió un error al enviar el pedido.", "error");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#F3E7DB] text-[#332424] font-sans pb-28">
@@ -462,166 +346,6 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         </div>
       </section>
 
-      {/* Public Order Confirmation Modal */}
-      {isCheckoutOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-[#843747] rounded-3xl p-6 w-full max-w-md shadow-2xl relative text-xs font-semibold text-[#332424] space-y-5">
-            <button
-              onClick={() => setIsCheckoutOpen(false)}
-              className="absolute right-4 top-4 p-1.5 rounded-full hover:bg-stone-100 text-stone-500"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="border-b border-[#D7BBA8] pb-3">
-              <span className="text-[9px] font-black uppercase text-[#843747] tracking-widest block">Resto Bar Del Teatro</span>
-              <h3 className="font-serif text-xl font-bold text-[#332424]">Confirmar pedido</h3>
-            </div>
-
-            <form onSubmit={handleConfirmPublicOrder} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block">Modalidad de Consumo</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: "salon", label: "🍽️ Mesa", icon: Utensils },
-                    { id: "takeaway", label: "🛍️ Llevar", icon: ShoppingBag },
-                    { id: "delivery", label: "🛵 Delivery", icon: Bike }
-                  ].map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setFulfillmentType(m.id as any)}
-                      className={`p-2.5 rounded-xl border text-[10px] font-bold flex flex-col items-center gap-1 cursor-pointer transition-all ${
-                        fulfillmentType === m.id
-                          ? "bg-gradient-to-r from-[#843747] to-[#843747] text-white border-[#843747] font-black shadow-md"
-                          : "bg-[#F3E7DB] border-[#D7BBA8] text-[#6F5A55]"
-                      }`}
-                    >
-                      <m.icon className="h-4 w-4" />
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Nombre Completo *</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Enzo Gilardi"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#F3E7DB] text-[#332424] outline-none font-bold"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Número de WhatsApp (con código de área) *</label>
-                <input
-                  type="tel"
-                  placeholder="Ej: 3585042311"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#F3E7DB] text-[#332424] outline-none font-bold font-mono"
-                  required
-                />
-              </div>
-
-              {fulfillmentType === "salon" && (
-                <div>
-                  <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Mesa Número *</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Mesa 4"
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                    className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#F3E7DB] text-[#332424] outline-none font-bold"
-                    required
-                  />
-                </div>
-              )}
-
-              {fulfillmentType === "delivery" && (
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
-                    <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Calle</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Constitución"
-                      value={deliveryStreet}
-                      onChange={(e) => setDeliveryStreet(e.target.value)}
-                      className="w-full p-2 border border-[#D7BBA8] rounded-xl bg-[#F3E7DB] text-[#332424]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Altura</label>
-                    <input
-                      type="text"
-                      placeholder="944"
-                      value={deliveryNumber}
-                      onChange={(e) => setDeliveryNumber(e.target.value)}
-                      className="w-full p-2 border border-[#D7BBA8] rounded-xl bg-[#F3E7DB] text-[#332424]"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="p-3 bg-[#F3E7DB] border border-[#D7BBA8] rounded-2xl space-y-1.5">
-                <div className="flex justify-between text-xs text-[#6F5A55]">
-                  <span>Subtotal ({cart.reduce((s, c) => s + c.qty, 0)} ítems)</span>
-                  <span className="font-mono font-bold">${cartSubtotal.toLocaleString("es-AR")}</span>
-                </div>
-                <div className="flex justify-between text-sm font-black border-t border-[#D7BBA8] pt-1.5 text-[#843747]">
-                  <span>Total Final:</span>
-                  <span className="font-mono">${cartTotal.toLocaleString("es-AR")}</span>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#843747] to-[#843747] text-white font-black uppercase tracking-wider shadow-lg hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Send className="h-4 w-4" /> Guardar y enviar a cocina
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {isOrderSubmitted && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-[#843747] rounded-3xl p-8 w-full max-w-sm text-center space-y-5 shadow-2xl">
-            <div className="h-16 w-16 bg-[#E7C8CF] border border-[#843747] rounded-full flex items-center justify-center mx-auto text-[#843747]">
-              <Check className="h-8 w-8" />
-            </div>
-            <div>
-              <span className="text-[10px] font-black text-[#843747] uppercase tracking-widest block">¡Pedido Ingresado!</span>
-              <h3 className="font-serif text-2xl font-bold text-[#332424] mt-1">Pedido #{submittedOrderId}</h3>
-              <p className="text-xs text-[#6F5A55] leading-relaxed mt-2">
-                La comanda quedó guardada en el sistema y ya está visible para el equipo de cocina.
-              </p>
-            </div>
-            {submittedWhatsAppUrl && (
-              <a
-                href={submittedWhatsAppUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#843747] bg-[#FFF9F4] py-3 text-[10px] font-black uppercase tracking-wider text-[#843747]"
-              >
-                Abrir comprobante en WhatsApp <ArrowRight className="h-4 w-4" />
-              </a>
-            )}
-            <button
-              onClick={() => setIsOrderSubmitted(false)}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#843747] to-[#843747] text-white font-black uppercase tracking-wider cursor-pointer"
-            >
-              Volver al Menú
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

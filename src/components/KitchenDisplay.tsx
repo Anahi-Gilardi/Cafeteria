@@ -112,7 +112,7 @@ export default function KitchenDisplay({
 
   // Active orders come exclusively from the synchronized order stream.
   const mergedOrders = useMemo(() => {
-    return orders.filter(o => o.status !== "Completado" && (filterType === "all" || o.type === filterType || o.priceList === filterType));
+    return orders.filter(o => o.status !== "Completado" && (filterType === "all" || o.priceList === filterType));
   }, [orders, filterType]);
 
   // Filtered Orders by Destination
@@ -126,29 +126,14 @@ export default function KitchenDisplay({
   }, [mergedOrders, destinationFilter]);
 
   // Split active orders into 3 Kanban Columns (exclusively excluding "Completado")
-  const pendingOrders = useMemo(() => activeOrders.filter(o => o.status === "Recibido" || o.status === "Pendiente"), [activeOrders]);
+  const pendingOrders = useMemo(() => activeOrders.filter(o => o.status === "Recibido"), [activeOrders]);
   const inProgressOrders = useMemo(() => activeOrders.filter(o => o.status === "Preparando"), [activeOrders]);
   const completedOrders = useMemo(() => activeOrders.filter(o => o.status === "Listo"), [activeOrders]);
   const allArchivedList = useMemo(() => {
-    const map = new Map<string, ArchivedOrderRecord>();
-    archivedOrders.forEach(a => map.set(a.orderId, a));
-
-    // Include completed orders from active orders list
-    orders.filter(o => o.status === "Completado").forEach(o => {
-      if (!map.has(o.id)) {
-        map.set(o.id, {
-          orderId: o.id,
-          archivedAt: o.createdAt || new Date().toISOString(),
-          archiveReason: "completada",
-          order: o
-        });
-      }
-    });
-
-    return Array.from(map.values()).sort(
+    return [...archivedOrders].sort(
       (a, b) => new Date(b.archivedAt).getTime() - new Date(a.archivedAt).getTime()
     );
-  }, [archivedOrders, orders]);
+  }, [archivedOrders]);
 
   const visibleArchivedOrders = useMemo(() => {
     const query = archiveSearch.trim().toLowerCase();

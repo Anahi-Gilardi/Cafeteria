@@ -37,7 +37,7 @@ function orderPayload(order: Order) {
     client_address: order.deliveryAddress
       ? `${order.deliveryAddress.street} ${order.deliveryAddress.number || ""}`.trim()
       : null,
-    waiter_name: order.tableNumber ? "Personal de salón" : null,
+    waiter_name: order.waiterName || null,
     items: order.items,
     status: order.status,
     payment_method: order.paymentMethod || null,
@@ -73,6 +73,7 @@ function mapOrder(row: any): Order {
     ) as Order["priceList"],
     tableReservationId: row.table_reservation_id || undefined,
     tableNumber: row.table_number || undefined,
+    waiterName: row.waiter_name || undefined,
     status: row.status as Order["status"],
     createdAt: row.created_at,
     estimatedMinutes: row.estimated_minutes || 15,
@@ -142,7 +143,7 @@ export class SupabaseSyncService {
   ): Promise<{ success: boolean; order?: Order; error?: string }> {
     const payload = orderPayload(order);
     
-    // Direct table upsert - Guaranteed to write to Supabase orders table
+    // Only report success after Supabase confirms the canonical write.
     const { data: upsertData, error: upsertError } = await supabase
       .from("orders")
       .upsert(payload, { onConflict: "id" })
@@ -153,7 +154,7 @@ export class SupabaseSyncService {
       return { success: true, order: mapOrder(upsertData) };
     }
 
-    // Try RPC stored procedure fallback if available
+    let rpcErrorMessage: string | undefined;
     try {
       const idempotencyKey = `order:${order.id}`;
       const { data: rpcData, error: rpcError } = await supabase.rpc("save_order_transaction", {
@@ -163,15 +164,16 @@ export class SupabaseSyncService {
       if (!rpcError && rpcData) {
         return { success: true, order: mapOrder(rpcData) };
       }
-    } catch (e) {
-      // RPC fallback failed, return upsert error or generic success
+      if (rpcError) rpcErrorMessage = `${rpcError.message} (${rpcError.code})`;
+    } catch (error) {
+      rpcErrorMessage = error instanceof Error ? error.message : "Error desconocido en save_order_transaction";
     }
 
-    // Fallback: Return success for local state if payload was valid
-    return { 
-      success: !upsertError, 
-      order, 
-      error: upsertError ? `${upsertError.message} (${upsertError.code})` : undefined 
+    return {
+      success: false,
+      error: upsertError
+        ? `${upsertError.message} (${upsertError.code})${rpcErrorMessage ? `; RPC: ${rpcErrorMessage}` : ""}`
+        : rpcErrorMessage || "Supabase no devolvió la comanda guardada"
     };
   }
 
@@ -179,7 +181,7 @@ export class SupabaseSyncService {
     orderId: string,
     status: Order["status"]
   ): Promise<{ success: boolean; error?: string }> {
-    // Direct table update / upsert
+    // Never manufacture a partial order when the requested id does not exist.
     const { error, data } = await supabase
       .from("orders")
       .update({ status, updated_at: new Date().toISOString() })
@@ -190,14 +192,8 @@ export class SupabaseSyncService {
       return { success: false, error: `${error.message} (${error.code})` };
     }
 
-    // If no row matched, do upsert
     if (!data || data.length === 0) {
-      const { error: upsertErr } = await supabase
-        .from("orders")
-        .upsert({ id: orderId, status, updated_at: new Date().toISOString() });
-      if (upsertErr) {
-        return { success: false, error: `${upsertErr.message} (${upsertErr.code})` };
-      }
+      return { success: false, error: `No existe la comanda ${orderId} en Supabase` };
     }
 
     return { success: true };
@@ -207,57 +203,35 @@ export class SupabaseSyncService {
     orderId: string,
     targetOrder?: Order
   ): Promise<{ success: boolean; archivedOrder?: ArchivedOrderRecord; error?: string }> {
-    const archivedRecord: ArchivedOrderRecord = {
-      orderId,
-      archivedAt: new Date().toISOString(),
-      archiveReason: "archivado_manual",
-      order: targetOrder || ({ id: orderId, status: "Completado", items: [], total: 0, createdAt: new Date().toISOString() } as any)
-    };
-
-    // 1. Save in Local Storage Archive Cache
-    try {
-      const saved = localStorage.getItem("castano_archived_orders");
-      const current: ArchivedOrderRecord[] = saved ? JSON.parse(saved) : [];
-      const updated = [archivedRecord, ...current.filter(a => a.orderId !== orderId)];
-      localStorage.setItem("castano_archived_orders", JSON.stringify(updated));
-    } catch (e) {}
-
-    // 2. Direct Update status in Supabase orders table
-    await supabase
-      .from("orders")
-      .update({ status: "Completado", updated_at: new Date().toISOString() })
-      .eq("id", orderId);
-
-    // 3. Direct Upsert into Supabase archived_orders table
-    try {
-      if (targetOrder) {
-        await supabase.from("archived_orders").upsert({
-          order_id: orderId,
-          archived_at: archivedRecord.archivedAt,
-          archive_reason: "archivado_manual",
-          order_snapshot: orderPayload(targetOrder)
-        });
-      }
-    } catch (e) {}
-
-    // 4. Fallback RPC if available
     try {
       const { data, error } = await supabase.rpc("archive_order", { p_order_id: orderId });
-      if (!error && data) {
-        return {
-          success: true,
-          archivedOrder: {
-            orderId: data.order_id,
-            archivedAt: data.archived_at,
-            archivedBy: data.archived_by || undefined,
-            archiveReason: data.archive_reason,
-            order: mapOrder(data.order_snapshot)
-          }
-        };
+      if (error) {
+        return { success: false, error: `${error.message} (${error.code})` };
       }
-    } catch (e) {}
+      if (!data) return { success: false, error: "Supabase no devolvió el registro archivado" };
 
-    return { success: true, archivedOrder: archivedRecord };
+      const archivedOrder: ArchivedOrderRecord = {
+        orderId: data.order_id,
+        archivedAt: data.archived_at,
+        archivedBy: data.archived_by || undefined,
+        archiveReason: data.archive_reason,
+        order: mapOrder(data.order_snapshot)
+      };
+      try {
+        const saved = localStorage.getItem("castano_archived_orders");
+        const current: ArchivedOrderRecord[] = saved ? JSON.parse(saved) : [];
+        localStorage.setItem(
+          "castano_archived_orders",
+          JSON.stringify([archivedOrder, ...current.filter((item) => item.orderId !== orderId)])
+        );
+      } catch {}
+      return { success: true, archivedOrder };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "No fue posible archivar la comanda en Supabase"
+      };
+    }
   }
 
   static async fetchArchivedOrders(): Promise<{
@@ -276,6 +250,10 @@ export class SupabaseSyncService {
       .order("archived_at", { ascending: false })
       .limit(1000);
 
+    if (error) {
+      return { archivedOrders: localArchived, error: `${error.message} (${error.code})` };
+    }
+
     const remoteArchived: ArchivedOrderRecord[] = (data || []).map((row) => ({
       orderId: row.order_id,
       archivedAt: row.archived_at,
@@ -284,19 +262,15 @@ export class SupabaseSyncService {
       order: mapOrder(row.order_snapshot)
     }));
 
-    const map = new Map<string, ArchivedOrderRecord>();
-    localArchived.forEach(a => map.set(a.orderId, a));
-    remoteArchived.forEach(a => map.set(a.orderId, a));
-
-    const mergedList = Array.from(map.values()).sort(
+    const remoteList = remoteArchived.sort(
       (a, b) => new Date(b.archivedAt).getTime() - new Date(a.archivedAt).getTime()
     );
 
     try {
-      localStorage.setItem("castano_archived_orders", JSON.stringify(mergedList));
-    } catch (e) {}
+      localStorage.setItem("castano_archived_orders", JSON.stringify(remoteList));
+    } catch {}
 
-    return { archivedOrders: mergedList };
+    return { archivedOrders: remoteList };
   }
 
   static async recordPayment(
@@ -307,94 +281,76 @@ export class SupabaseSyncService {
     discount = 0,
     clientAccountId?: string
   ): Promise<{ success: boolean; order?: Order; transactionId: string; error?: string }> {
-    try {
-      const { data, error } = await supabase.rpc("record_order_payment", {
-        p_order_id: orderId,
-        p_amount: amount,
-        p_method: method,
-        p_transaction_id: transactionId,
-        p_discount: discount,
-        p_client_account_id: clientAccountId || null
-      });
-
-      if (!error && data) {
-        return { success: true, transactionId, order: mapOrder(data) };
-      }
-    } catch (e) {
-      console.warn("RPC record_order_payment call failed, executing resilient fallback:", e);
-    }
-
-    // Resilient Fallback: Update order directly in Supabase orders table or local storage
-    try {
-      const { data: fetchRow } = await supabase
-        .from("orders")
-        .select("payload")
-        .eq("id", orderId)
-        .maybeSingle();
-
-      let targetOrder: Order | null = fetchRow?.payload ? mapOrder(fetchRow.payload) : null;
-
-      if (!targetOrder) {
-        const saved = localStorage.getItem("resto_bar_orders");
-        if (saved) {
-          const list: Order[] = JSON.parse(saved);
-          targetOrder = list.find((o) => o.id === orderId) || null;
-        }
-      }
-
-      const updatedOrder: Order = targetOrder
-        ? {
-            ...targetOrder,
-            paymentMethod: method,
-            status: "Completado",
-            updatedAt: new Date().toISOString()
-          }
-        : {
-            id: orderId,
-            tableNumber: "1",
-            items: [],
-            total: amount,
-            subtotal: amount,
-            tax: 0,
-            status: "Completado",
-            type: "Local",
-            paymentMethod: method,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-
-      // Persist to Supabase directly
-      await supabase.from("orders").upsert({
-        id: orderId,
-        table_number: updatedOrder.tableNumber || null,
-        status: "Completado",
-        payment_method: method,
-        total: updatedOrder.total,
-        payload: updatedOrder,
-        updated_at: new Date().toISOString()
-      }, { onConflict: "id" });
-
-      return { success: true, transactionId, order: updatedOrder };
-    } catch (fallbackErr) {
-      console.error("Payment fallback failed:", fallbackErr);
+    const { data, error } = await supabase.rpc("record_order_payment", {
+      p_order_id: orderId,
+      p_amount: amount,
+      p_method: method,
+      p_transaction_id: transactionId,
+      p_discount: discount,
+      p_client_account_id: clientAccountId || null
+    });
+    if (error) {
       return {
-        success: true,
+        success: false,
         transactionId,
-        order: {
-          id: orderId,
-          tableNumber: "1",
-          items: [],
-          total: amount,
-          subtotal: amount,
-          tax: 0,
-          status: "Completado",
-          type: "Local",
-          paymentMethod: method,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
+        error: `${error.message} (${error.code})`
       };
     }
+    return { success: true, transactionId, order: mapOrder(data) };
+  }
+
+  static async recordPayments(
+    orderId: string,
+    payments: Array<{
+      amount: number;
+      method: NonNullable<Order["paymentMethod"]>;
+      transactionId?: string;
+    }>,
+    discount = 0,
+    clientAccountId?: string
+  ): Promise<{
+    success: boolean;
+    order?: Order;
+    transactions: Array<{
+      amount: number;
+      method: NonNullable<Order["paymentMethod"]>;
+      transactionId: string;
+    }>;
+    error?: string;
+  }> {
+    const transactions = payments.map((payment) => ({
+      amount: Number(payment.amount.toFixed(2)),
+      method: payment.method,
+      transactionId: payment.transactionId || `pay-${crypto.randomUUID()}`
+    }));
+
+    if (
+      transactions.length === 0 ||
+      transactions.some((payment) => !Number.isFinite(payment.amount) || payment.amount <= 0)
+    ) {
+      return { success: false, transactions, error: "Importes de pago inválidos." };
+    }
+
+    const { data, error } = await supabase.rpc("record_order_payment_batch", {
+      p_order_id: orderId,
+      p_payments: transactions.map((payment) => ({
+        amount: payment.amount,
+        method: payment.method,
+        transaction_id: payment.transactionId
+      })),
+      p_discount: discount,
+      p_client_account_id: clientAccountId || null
+    });
+
+    if (error) {
+      return {
+        success: false,
+        transactions,
+        error: `${error.message} (${error.code})`
+      };
+    }
+
+    return { success: true, transactions, order: mapOrder(data) };
   }
 
   static async recordClientRepayment(
