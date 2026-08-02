@@ -60,6 +60,7 @@ export class StaffService {
       id: newId,
       name: input.name,
       email: input.email,
+      password: input.password,
       role: input.role,
       active: true,
       direccion: input.direccion || null,

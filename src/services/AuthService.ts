@@ -131,14 +131,44 @@ export class AuthService {
       return { success: true, user: sysProfile };
     }
 
-    if (!rawEmail.includes("@")) {
-      return {
-        success: false,
-        error: "Ingrese el correo completo o credenciales válidas registradas."
-      };
+    // 2. Query users_accounts in Supabase for password column match
+    try {
+      const { data: dbUsers, error: dbErr } = await supabase
+        .from("users_accounts")
+        .select("id, auth_user_id, email, name, role, active, password");
+
+      if (!dbErr && dbUsers && Array.isArray(dbUsers)) {
+        const found = dbUsers.find((u: any) => {
+          const emailMatch =
+            u.email?.toLowerCase() === rawEmail ||
+            normalizeEmail(u.email || "") === normEmail;
+          const passMatch =
+            u.password &&
+            (u.password === pass ||
+              u.password === passwordInput ||
+              normalizeEmail(u.password) === normalizeEmail(pass));
+          return emailMatch && passMatch && u.active !== false;
+        });
+
+        if (found) {
+          const dbProfile: UserRoleProfile = {
+            id: found.id,
+            authUserId: found.auth_user_id || found.id,
+            email: found.email || rawEmail,
+            name: found.name || "Personal",
+            role: found.role
+          };
+          try {
+            localStorage.setItem("castano_active_user", JSON.stringify(dbProfile));
+          } catch {}
+          return { success: true, user: dbProfile };
+        }
+      }
+    } catch {
+      // DB error fallback
     }
 
-    // 2. Try Supabase Auth
+    // 3. Try Supabase Auth
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: rawEmail,
