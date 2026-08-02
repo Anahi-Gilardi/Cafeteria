@@ -307,13 +307,23 @@ export default function KitchenDisplay({
             </button>
           )}
 
-          {(currentColumn === "preparando" || currentColumn === "finalizadas") && (
+          {currentColumn === "preparando" && (
             <button
               type="button"
               onClick={() => handleUpdateStatus(order, "Listo")}
               className="w-full py-2.5 px-3 rounded-xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
-              <CheckCircle2 className="h-4 w-4 text-white" /> ✅ Listo
+              <CheckCircle2 className="h-4 w-4 text-white" /> ✅ Marcar Listo
+            </button>
+          )}
+
+          {currentColumn === "finalizadas" && (
+            <button
+              type="button"
+              onClick={() => handleUpdateStatus(order, "Completado")}
+              className="w-full py-2.5 px-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+            >
+              <CheckCircle2 className="h-4 w-4 text-white" /> ✅ Entregado
             </button>
           )}
         </div>
