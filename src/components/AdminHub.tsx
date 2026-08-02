@@ -5023,28 +5023,7 @@ export default function AdminHub({
                         ))}
                       </div>
 
-                      {paymentMethod === "Efectivo" && (
-                        <div className="grid grid-cols-2 gap-3 pt-1">
-                          <div>
-                            <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Efectivo Entregado</label>
-                            <input 
-                              type="number" 
-                              placeholder="Monto entregado" 
-                              value={receivedCashInput}
-                              onChange={(e) => setReceivedCashInput(e.target.value)}
-                              className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] font-bold font-mono outline-none focus:border-[#843747]" 
-                            />
-                          </div>
-                          <div className="p-2.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-xl flex flex-col justify-center font-mono">
-                            <span className="text-[8px] font-bold text-[#6F5A55] uppercase block font-sans">Vuelto Cambio</span>
-                            <strong className="text-xs text-[#843747] mt-0.5">
-                              ${receivedCashInput && parseFloat(receivedCashInput) >= activeCheckoutTotal
-                                ? (parseFloat(receivedCashInput) - activeCheckoutTotal).toFixed(0)
-                                : "0"}
-                            </strong>
-                          </div>
-                        </div>
-                      )}
+
 
                       {paymentMethod === "Pago Mixto" && (
                         <div className="grid grid-cols-2 gap-3 pt-1">

@@ -248,14 +248,16 @@ export default function KitchenDisplay({
           <div className="flex items-start justify-between border-b border-[#D7BBA8]/40 pb-2.5 mb-2.5">
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-[#E8D4C3] text-[#843747] font-mono border border-[#D7BBA8]">
-                  {order.priceList === "Takeaway" || order.type === "Llevar" ? "🛍️ RETIRO" : order.priceList === "Delivery" || order.fulfillmentType === "delivery" ? "🛵 DELIVERY" : `🪑 ${order.tableNumber || "SALÓN"}`}
+                <span className="text-xs font-black uppercase px-3 py-1 rounded-xl bg-[#843747] text-white font-mono shadow-xs">
+                  {order.tableNumber ? `🪑 MESA ${order.tableNumber.toString().replace(/mesa\s*/i, "")}` : (order.priceList === "Takeaway" || order.type === "Llevar" ? "🛍️ RETIRO BARRA" : "🛵 DELIVERY")}
                 </span>
-                <span className="text-xs font-serif font-black text-[#332424]">
-                  {order.clientAccountName || order.customerName || "Cliente"}
-                </span>
+                {order.waiterName && (
+                  <span className="text-[10px] font-bold text-[#6F5A55] bg-[#E8D4C3] px-2 py-0.5 rounded-lg border border-[#D7BBA8]">
+                    Mozo: {order.waiterName}
+                  </span>
+                )}
               </div>
-              <h4 className="text-xs font-mono font-bold mt-1 text-[#843747]">{formatOrderId(order.id)}</h4>
+              <h4 className="text-[11px] font-mono font-bold mt-1 text-[#843747]">{formatOrderId(order.id)}</h4>
             </div>
 
             <div className="text-right">
@@ -299,54 +301,20 @@ export default function KitchenDisplay({
             <button
               type="button"
               onClick={() => handleUpdateStatus(order, "Preparando")}
-              className="w-full py-2 px-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              className="w-full py-2.5 px-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
-              <Eye className="h-4 w-4" /> Revisar Pedido →
+              👨‍🍳 Preparar →
             </button>
           )}
 
-          {currentColumn === "preparando" && (
+          {(currentColumn === "preparando" || currentColumn === "finalizadas") && (
             <button
               type="button"
               onClick={() => handleUpdateStatus(order, "Listo")}
-              className="w-full py-2 px-3 rounded-xl bg-[#4F735A] hover:bg-emerald-800 text-white text-xs font-black uppercase tracking-wider shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              className="w-full py-2.5 px-3 rounded-xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
-              <CheckCircle2 className="h-4 w-4" /> Finalizar Comanda ✓
+              <CheckCircle2 className="h-4 w-4 text-white" /> ✅ Listo
             </button>
-          )}
-
-          {currentColumn === "finalizadas" && (
-            <div className={`grid gap-2 ${canDeleteOrders ? "grid-cols-2" : "grid-cols-1"}`}>
-              <button
-                type="button"
-                onClick={() => void handleArchiveOrder(order)}
-                disabled={archivingOrderId === order.id || deletingOrderId === order.id}
-                className="w-full py-2 px-3 rounded-xl bg-[#E8D4C3] hover:bg-[#D7BBA8] disabled:opacity-60 disabled:cursor-wait text-[#332424] text-[11px] font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-              >
-                {archivingOrderId === order.id ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Archive className="h-4 w-4" />
-                )}
-                {archivingOrderId === order.id ? "Archivando…" : "Archivar"}
-              </button>
-
-              {canDeleteOrders && (
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteOrder(order)}
-                  disabled={deletingOrderId === order.id || archivingOrderId === order.id}
-                  className="w-full py-2 px-3 rounded-xl border border-[#C76A70] bg-[#F4DCDD] hover:bg-[#EBC8CA] disabled:opacity-60 disabled:cursor-wait text-[#8B2F37] text-[11px] font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                >
-                  {deletingOrderId === order.id ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  {deletingOrderId === order.id ? "Eliminando…" : "Eliminar"}
-                </button>
-              )}
-            </div>
           )}
         </div>
       </div>
