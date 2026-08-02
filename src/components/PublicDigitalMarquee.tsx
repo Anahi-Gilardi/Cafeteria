@@ -145,10 +145,15 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
           <div className="flex flex-wrap gap-3">
             <button
               onClick={async () => {
-                onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
-                const { MenuPDFService } = await import("../services/MenuPDFService");
-                await MenuPDFService.generateMenuPDF(menuItems);
-                onShowNotification("✅ Carta oficial descargada correctamente.", "success");
+                try {
+                  onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
+                  const { MenuPDFService } = await import("../services/MenuPDFService");
+                  await MenuPDFService.generateMenuPDF(menuItems);
+                  onShowNotification("✅ Carta oficial descargada correctamente.", "success");
+                } catch (error) {
+                  console.error("Error generating menu PDF:", error);
+                  onShowNotification("⚠️ No hay una carta sincronizada disponible para descargar.", "warning");
+                }
               }}
               className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]/40 cursor-pointer"
             >

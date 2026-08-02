@@ -160,10 +160,15 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   }, [viewMode]);
 
   const handleDownloadPDF = async () => {
-    onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
-    const { MenuPDFService } = await import("../services/MenuPDFService");
-    await MenuPDFService.generateMenuPDF(menuItems);
-    onShowNotification("✅ Carta oficial descargada correctamente.", "success");
+    try {
+      onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
+      const { MenuPDFService } = await import("../services/MenuPDFService");
+      await MenuPDFService.generateMenuPDF(menuItems);
+      onShowNotification("✅ Carta oficial descargada correctamente.", "success");
+    } catch (error) {
+      console.error("Error generating menu PDF:", error);
+      onShowNotification("⚠️ No hay una carta sincronizada disponible para descargar.", "warning");
+    }
   };
 
   if (viewMode === "digital_menu") {

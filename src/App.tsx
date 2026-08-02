@@ -1,6 +1,5 @@
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { MenuItem, MenuItemCustomization, CartItem, Reservation, Order, OrderStatusType, ClientAccount } from "./types";
-import { MENU_ITEMS } from "./data/menu";
 import Navbar from "./components/Navbar";
 import InteractiveMenu from "./components/InteractiveMenu";
 import TableReservation from "./components/TableReservation";
@@ -23,6 +22,9 @@ import RestoBarLogo from "./components/RestoBarLogo";
 import { AuthService, UserRoleProfile } from "./services/AuthService";
 import { offlineQueueService } from "./services/OfflineQueueService";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { mapDbMenuItem } from "./services/MenuMappingService";
+import { OrderPersistenceService } from "./services/OrderPersistenceService";
+import PasswordSetupScreen from "./components/PasswordSetupScreen";
 
 const AdminHub = lazy(() => import("./components/AdminHub"));
 const BaristaAI = lazy(() => import("./components/BaristaAI"));
@@ -43,6 +45,9 @@ interface ToastNotification {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserRoleProfile | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reset-password") === "1"
+  );
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
@@ -76,47 +81,6 @@ export default function App() {
     setNotifications((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  // Helper mappers for Supabase
-  const mapDbToMenuItem = (db: any): MenuItem => ({
-    id: db.id,
-    name: db.name,
-    price: Number(db.price),
-    takeawayPrice: db.takeaway_price ? Number(db.takeaway_price) : undefined,
-    deliveryPrice: db.delivery_price ? Number(db.delivery_price) : undefined,
-    description: db.description,
-    category: db.category as any,
-    tags: db.tags || [],
-    image: db.image,
-    customizable: db.customizable,
-    nutrition: {
-      calories: db.calories || 0,
-      allergens: db.allergens || []
-    },
-    stock: db.stock !== null ? Number(db.stock) : undefined,
-    isOffer: db.is_offer,
-    offerPrice: db.offer_price ? Number(db.offer_price) : undefined,
-    recipe: db.recipe || []
-  });
-
-  const mapMenuItemToDb = (item: MenuItem) => ({
-    id: item.id,
-    name: item.name,
-    price: item.price,
-    takeaway_price: item.takeawayPrice ?? null,
-    delivery_price: item.deliveryPrice ?? null,
-    description: item.description,
-    category: item.category,
-    tags: item.tags,
-    image: item.image,
-    customizable: item.customizable,
-    calories: item.nutrition?.calories ?? null,
-    allergens: item.nutrition?.allergens ?? [],
-    stock: item.stock ?? null,
-    is_offer: item.isOffer ?? false,
-    offer_price: item.offerPrice ?? null,
-    recipe: item.recipe || []
-  });
-
   // Core synchronized persistent states
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     try {
@@ -135,6 +99,7 @@ export default function App() {
       return [];
     }
   });
+  const ordersRef = useRef<Order[]>(orders);
   const [activeTrackedOrder, setActiveTrackedOrder] = useState<Order | null>(null);
   const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -182,16 +147,7 @@ export default function App() {
         }
 
         if (menuData && menuData.length > 0) {
-          const mapped = menuData.map(dbItem => {
-            const item = mapDbToMenuItem(dbItem);
-            const catalogItem = MENU_ITEMS.find(m => m.id === item.id);
-            if (catalogItem) {
-              item.price = Math.max(item.price, catalogItem.price);
-              item.takeawayPrice = catalogItem.takeawayPrice || item.takeawayPrice;
-              item.deliveryPrice = catalogItem.deliveryPrice || item.deliveryPrice;
-            }
-            return item;
-          });
+          const mapped = menuData.map(mapDbMenuItem);
           customImages.forEach((img: any) => {
             const match = mapped.find(item => item.id === img.product_id);
             if (match) {
@@ -265,6 +221,7 @@ export default function App() {
   useEffect(() => {
     const active = orders.find(o => o.status !== "Completado");
     setActiveTrackedOrder(active || null);
+    ordersRef.current = orders;
   }, [orders]);
 
   // Keep authenticated staff screens aligned with changes made by other terminals.
@@ -557,30 +514,24 @@ export default function App() {
   };
 
   const handleUpdateOrdersWithPersist = (newOrdersOrUpdater: Order[] | ((prev: Order[]) => Order[])) => {
-    setOrders((prev) => {
-      const nextOrders = typeof newOrdersOrUpdater === "function" ? newOrdersOrUpdater(prev) : newOrdersOrUpdater;
-      localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
+    const previousOrders = ordersRef.current;
+    const nextOrders = typeof newOrdersOrUpdater === "function"
+      ? newOrdersOrUpdater(previousOrders)
+      : newOrdersOrUpdater;
 
-      const previousById = new Map<string, Order>(
-        prev.map((order): [string, Order] => [order.id, order])
-      );
-      void Promise.all(
-        nextOrders.map(async (order) => {
-          const previous = previousById.get(order.id);
-          if (!previous) {
-            const result = await SupabaseSyncService.saveOrder(order);
-            if (!result.success) offlineQueueService.enqueueOrder(order, result.error);
-            return;
-          }
-          if (previous.status !== order.status) {
-            const result = await SupabaseSyncService.updateOrderStatus(order.id, order.status);
-            if (!result.success) {
-              console.error(`No se pudo actualizar ${order.id}:`, result.error);
-            }
-          }
-        })
-      );
-      return nextOrders;
+    ordersRef.current = nextOrders;
+    setOrders(nextOrders);
+    try {
+      localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
+    } catch {}
+
+    void OrderPersistenceService.persistChanges(previousOrders, nextOrders).then((report) => {
+      if (report.failedOrderIds.length > 0) {
+        showNotification(
+          `⚠️ ${report.failedOrderIds.length} cambio de comanda quedó pendiente de sincronización.`,
+          "warning"
+        );
+      }
     });
   };
 
@@ -642,6 +593,31 @@ export default function App() {
       </AnimatePresence>
     </div>
   );
+
+  const finishPasswordRecovery = (showSuccess: boolean) => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("reset-password");
+      url.searchParams.delete("code");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+    setIsPasswordRecovery(false);
+    if (showSuccess) {
+      showNotification("✅ Contraseña actualizada correctamente.", "success");
+    }
+  };
+
+  if (isPasswordRecovery) {
+    return (
+      <ErrorBoundary>
+        <PasswordSetupScreen
+          onCompleted={() => finishPasswordRecovery(true)}
+          onCancel={() => finishPasswordRecovery(false)}
+        />
+        {renderNotificationStack()}
+      </ErrorBoundary>
+    );
+  }
 
   if (activeTab === "public_menu") {
     return (

@@ -3,8 +3,7 @@ import { MenuItem } from "../types";
 import { MENU_ITEMS } from "../data/menu";
 
 export function resolvePdfMenuItems(inputMenuItems: MenuItem[]): MenuItem[] {
-  const baseItems = inputMenuItems.length > 0 ? inputMenuItems : MENU_ITEMS;
-  return baseItems.map((item) => {
+  return inputMenuItems.map((item) => {
     const catalogItem = MENU_ITEMS.find((candidate) => candidate.id === item.id);
     return catalogItem ? { ...item, image: item.image || catalogItem.image } : item;
   });
@@ -55,6 +54,9 @@ export class MenuPDFService {
   public static async generateMenuPDF(inputMenuItems: MenuItem[]): Promise<void> {
     // Supabase is canonical for prices; the bundled catalog only supplies missing images.
     const menuItems = resolvePdfMenuItems(inputMenuItems || []);
+    if (menuItems.length === 0) {
+      throw new Error("No hay productos disponibles en Supabase para generar la carta oficial.");
+    }
 
     // Digital Menu Web Link for QR Code
     const digitalMenuUrl = typeof window !== "undefined" && window.location.origin

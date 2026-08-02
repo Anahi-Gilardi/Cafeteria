@@ -23,7 +23,7 @@ describe("resolvePdfMenuItems", () => {
     expect(resolved.image).toBe(catalogItem.image);
   });
 
-  it("falls back to the bundled menu only when Supabase returned no items", () => {
-    expect(resolvePdfMenuItems([])).toHaveLength(MENU_ITEMS.length);
+  it("does not publish a bundled demonstration catalog when Supabase returned no items", () => {
+    expect(resolvePdfMenuItems([])).toEqual([]);
   });
 });

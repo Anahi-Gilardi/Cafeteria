@@ -85,6 +85,44 @@ export class AuthService {
     return { success: true, user: profile };
   }
 
+  public static async requestPasswordReset(
+    emailInput: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const email = emailInput.trim().toLowerCase();
+    if (!email.includes("@")) {
+      return { success: false, error: "Ingrese un correo electrónico válido." };
+    }
+
+    const origin = typeof window !== "undefined"
+      ? window.location.origin
+      : "https://cafeteria-ten-pied.vercel.app";
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/?reset-password=1`
+    });
+
+    if (error) {
+      return { success: false, error: "Supabase no pudo enviar el correo de recuperación." };
+    }
+    return { success: true };
+  }
+
+  public static async updatePassword(
+    password: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (password.length < 12) {
+      return { success: false, error: "La nueva contraseña debe tener al menos 12 caracteres." };
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      return {
+        success: false,
+        error: "El enlace venció o la sesión de recuperación no es válida. Solicite un nuevo correo."
+      };
+    }
+    return { success: true };
+  }
+
   public static async getCurrentUser(): Promise<UserRoleProfile | null> {
     this.clearLegacySessionCache();
     const {
