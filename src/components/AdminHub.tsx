@@ -5074,50 +5074,94 @@ export default function AdminHub({
           </div>
         </div>
 
-        {/* Bottom panel: closures history list */}
-        <div className="bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
-          <h3 className="font-serif text-sm font-bold flex items-center gap-2 uppercase tracking-wider text-[#2C1810]/70">
-            <Calendar className="h-4 w-4 text-[#C2956E]" /> REGISTRO DE AUDITORÍA DE CIERRES DE CAJA HOMOLOGADOS ({closuresHistory.length})
-          </h3>
-          
-          <div className="space-y-3">
-            {closuresHistory.map((cls, idx) => (
-              <div 
-                key={cls.id || idx}
-                className="p-4 bg-stone-50 border border-stone-150 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[10px] font-semibold text-[#2C1810]/80"
+        {/* Bottom panel: closures history & audit log list */}
+        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#D7BBA8] pb-4">
+            <div>
+              <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#843747]">
+                <Calendar className="h-4 w-4 text-[#843747]" /> REGISTRO DE AUDITORÍA Y CIERRES DE CAJA (ARQUEOS Z) ({closuresHistory.length})
+              </h3>
+              <p className="text-[10px] text-[#6F5A55] font-semibold mt-0.5">
+                Historial homologado de aperturas, cierres de turno, arqueos de efectivo y balances contables.
+              </p>
+            </div>
+            {isShiftOpen && (
+              <button
+                onClick={() => {
+                  setCloseShiftRealCash("");
+                  setCloseShiftNotes("");
+                  setIsCloseShiftModalOpen(true);
+                }}
+                className="px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
               >
-                <div>
-                  <h4 className="text-xs font-serif font-bold text-[#2C1810]">Cierre de Caja {cls.user}</h4>
-                  <p className="text-[#2C1810]/50 mt-1">Apertura: {cls.apertura} • Cierre: {cls.cierre}</p>
-                  <p className="text-[#2C1810]/40 mt-0.5 italic">Observaciones: "{cls.observaciones}"</p>
-                </div>
-                <div className="flex items-center gap-6 shrink-0 w-full md:w-auto justify-between md:justify-end">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <span className="text-[8px] text-[#2C1810]/40 font-bold block uppercase tracking-wider">Ventas Turno</span>
-                      <strong className="font-mono text-[#2C1810]">${cls.ventasTurno.toLocaleString()}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[8px] text-[#2C1810]/40 font-bold block uppercase tracking-wider">Monto Real</span>
-                      <strong className="font-mono text-[#2C1810]">${cls.montoReal.toLocaleString()}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[8px] text-[#2C1810]/40 font-bold block uppercase tracking-wider">Diferencia</span>
-                      <strong className={`font-mono ${cls.diferencia >= 0 ? "text-emerald-700" : "text-red-700"}`}>
-                        ${cls.diferencia.toLocaleString()}
-                      </strong>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedClosureForModal(cls)}
-                    className="px-4 py-2 rounded-xl bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold shadow-sm transition-all cursor-pointer uppercase tracking-wider"
-                  >
-                    Detalle
-                  </button>
-                </div>
-              </div>
-            ))}
+                <Lock className="h-3.5 w-3.5" /> Realizar Cierre Z
+              </button>
+            )}
           </div>
+          
+          {closuresHistory.length === 0 ? (
+            <div className="text-center py-10 bg-[#E8D4C3]/30 border border-[#D7BBA8] rounded-2xl flex flex-col items-center justify-center space-y-2.5">
+              <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+                <FileText className="h-6 w-6 stroke-1.5" />
+              </div>
+              <h4 className="font-serif text-sm font-bold text-[#843747]">Sin Arqueos de Caja Registrados</h4>
+              <p className="text-xs text-[#6F5A55] max-w-md px-4">
+                Los cierres Z y arqueos de caja diaria se irán asentando de forma automática cada vez que los cajeros o administradores realicen el cierre de turno.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+              {closuresHistory.map((cls, idx) => (
+                <div 
+                  key={cls.id || idx}
+                  className="p-4 bg-[#E8D4C3]/30 hover:bg-[#E8D4C3]/60 border border-[#D7BBA8] rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs font-semibold text-[#332424] transition-all"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-[#843747] text-white rounded text-[9px] font-black uppercase tracking-wider">
+                        {cls.user || "Administrador"}
+                      </span>
+                      <strong className="font-serif text-sm text-[#843747]">Arqueo #{cls.id ? cls.id.slice(-6) : idx + 1}</strong>
+                    </div>
+                    <p className="text-[10px] text-[#6F5A55] font-mono mt-0.5">
+                      📅 Apertura: {cls.apertura} • 🕒 Cierre: {cls.cierre}
+                    </p>
+                    {cls.observaciones && (
+                      <p className="text-[10px] text-[#332424]/80 italic bg-[#FFF9F4] px-2 py-1 rounded border border-[#D7BBA8]/50 mt-1">
+                        "{cls.observaciones}"
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-6 shrink-0 w-full md:w-auto justify-between md:justify-end">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="bg-[#FFF9F4] p-2 rounded-xl border border-[#D7BBA8]/60">
+                        <span className="text-[8px] text-[#6F5A55] font-bold block uppercase tracking-wider">Ventas Turno</span>
+                        <strong className="font-mono text-xs text-[#843747]">${cls.ventasTurno.toLocaleString()}</strong>
+                      </div>
+                      <div className="bg-[#FFF9F4] p-2 rounded-xl border border-[#D7BBA8]/60">
+                        <span className="text-[8px] text-[#6F5A55] font-bold block uppercase tracking-wider">Monto Real</span>
+                        <strong className="font-mono text-xs text-[#332424]">${cls.montoReal.toLocaleString()}</strong>
+                      </div>
+                      <div className="bg-[#FFF9F4] p-2 rounded-xl border border-[#D7BBA8]/60">
+                        <span className="text-[8px] text-[#6F5A55] font-bold block uppercase tracking-wider">Diferencia</span>
+                        <strong className={`font-mono text-xs ${cls.diferencia >= 0 ? "text-[#4F735A]" : "text-[#A63F45]"}`}>
+                          {cls.diferencia >= 0 ? "+" : ""}${cls.diferencia.toLocaleString()}
+                        </strong>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setSelectedClosureForModal(cls)}
+                      className="px-3.5 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black transition-all cursor-pointer uppercase tracking-wider shadow-2xs flex items-center gap-1"
+                    >
+                      🔍 Detalle
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </motion.div>
     );
