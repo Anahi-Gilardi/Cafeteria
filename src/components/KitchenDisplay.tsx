@@ -1,6 +1,6 @@
 import { Order, OrderStatusType, MenuItem } from "../types";
 import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, RefreshCw, Search } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { ArchivedOrderRecord, SupabaseSyncService } from "../services/SupabaseSyncService";
 
@@ -21,7 +21,9 @@ export default function KitchenDisplay({
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
   const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos">("all");
   const [activeMobileTab, setActiveMobileTab] = useState<"pendientes" | "preparando" | "finalizadas">("pendientes");
-  const [previousOrdersCount, setPreviousOrdersCount] = useState<number>(0);
+  const knownPendingOrderIds = useRef(
+    new Set(orders.filter((order) => order.status === "Recibido").map((order) => order.id))
+  );
   const [showArchive, setShowArchive] = useState(false);
   const [archivedOrders, setArchivedOrders] = useState<ArchivedOrderRecord[]>([]);
   const [archiveSearch, setArchiveSearch] = useState("");
@@ -154,37 +156,15 @@ export default function KitchenDisplay({
     });
   }, [archiveSearch, allArchivedList]);
 
-  const [isVoiceAlertEnabled, setIsVoiceAlertEnabled] = useState(true);
-
-  // Audio & Voice Speech Notification
+  // Keep only a brief non-verbal alert for genuinely new orders.
   useEffect(() => {
     const receivedOrders = orders.filter((o) => o.status === "Recibido");
-    const activeCount = receivedOrders.length;
-    if (activeCount > previousOrdersCount) {
+    const hasNewOrder = receivedOrders.some((order) => !knownPendingOrderIds.current.has(order.id));
+    if (hasNewOrder) {
       playAlertSound();
-      const latestOrder = receivedOrders[0];
-      if (latestOrder) {
-        speakOrderNotification(latestOrder);
-      }
     }
-    setPreviousOrdersCount(activeCount);
+    knownPendingOrderIds.current = new Set(receivedOrders.map((order) => order.id));
   }, [orders]);
-
-  const speakOrderNotification = (order: Order) => {
-    if (!isVoiceAlertEnabled || !("speechSynthesis" in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const tableText = order.tableNumber ? `para Mesa ${order.tableNumber}` : "para Retiro";
-      const itemsText = order.items.slice(0, 3).map(i => `${i.quantity} ${i.name}`).join(", ");
-      const text = `¡Nueva comanda ${tableText}! ${itemsText}`;
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "es-AR";
-      utterance.rate = 1.05;
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.log("SpeechSynthesis error:", e);
-    }
-  };
 
   const playAlertSound = () => {
     try {
