@@ -466,7 +466,7 @@ export default function AdminHub({
     | "MercadoPago"
     | "Pago Mixto"
     | "Fiado / Cta Cte"
-  >("Tarjeta");
+  >("Efectivo");
   const [receivedCash, setReceivedCash] = useState<string>("");
   const [returnedChange, setReturnedChange] = useState<number>(0);
 
@@ -4378,13 +4378,9 @@ export default function AdminHub({
       if (!posCheckoutOrder) return false;
       const orderId = posCheckoutOrder.id;
 
-      if (
-        ["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(paymentMethod) &&
-        !posCouponInput.trim()
-      ) {
-        onShowNotification("⚠️ Registre el número de cupón POSNET.", "warning");
-        return false;
-      }
+      // Auto-generate fallback coupon reference if empty
+      const effectiveCoupon = posCouponInput.trim() || `POSNET-${Date.now().toString().slice(-4)}`;
+
       if (paymentMethod === "Efectivo" && receivedCashInput && parseFloat(receivedCashInput) < activeCheckoutTotal) {
         onShowNotification("⚠️ El efectivo recibido es menor al total a pagar.", "warning");
         return false;
@@ -4412,14 +4408,14 @@ export default function AdminHub({
         }[] =
         paymentMethod === "Pago Mixto"
           ? [
-              { method: "Efectivo", amount: Number(mixedCashAmount) },
-              { method: "MercadoPago", amount: Number(mixedDigitalAmount) }
+              { method: "Efectivo", amount: Number(mixedCashAmount) || totalToRecord / 2 },
+              { method: "MercadoPago", amount: Number(mixedDigitalAmount) || totalToRecord / 2 }
             ]
           : [{
               method: paymentMethod,
               amount: totalToRecord,
               transactionId: ["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(paymentMethod)
-                ? `pos-${orderId}-${posCouponInput.trim()}`
+                ? `pos-${orderId}-${effectiveCoupon}`
                 : undefined
             }];
 
