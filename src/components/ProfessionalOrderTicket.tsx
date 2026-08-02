@@ -18,7 +18,7 @@ export interface ProfessionalOrderTicketProps {
 
 export default function ProfessionalOrderTicket({
   order,
-  waiterName = "Sofía Colombo",
+  waiterName = "Florencia",
   onOrderStatusUpdate,
   onAddItem,
   onRequestBill,

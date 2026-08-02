@@ -6168,7 +6168,7 @@ export default function AdminHub({
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {["Enzo", "Micaela", "Sofía"].map(waiter => (
+              {["Agustín", "Florencia", "Giuliana"].map(waiter => (
                 <button
                   key={waiter}
                   onClick={() => setSelectedWaiter(waiter)}
