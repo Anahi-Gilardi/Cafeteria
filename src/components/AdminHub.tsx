@@ -33,6 +33,7 @@ import { arcaAdapter } from "../services/ARCAAdapter";
 import { CashClosure, CashShiftService } from "../services/CashShiftService";
 import { MenuCatalogService } from "../services/MenuCatalogService";
 import { InventoryService } from "../services/InventoryService";
+import { getProductReadiness, summarizeProductReadiness } from "../services/ProductReadinessService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -84,6 +85,21 @@ const EMPTY_WEEKLY_MENUS: DailyExecutiveMenu[] = (
   desserts: [],
   active: false
 }));
+
+const PRODUCT_CATEGORY_LABELS: Partial<Record<MenuItem["category"], string>> = {
+  desayunos_meriendas: "Desayunos & Meriendas",
+  pizzas_focaccias: "Pizzas & Focaccias",
+  minutas_carnes: "Minutas & Carnes",
+  pastas_caseras: "Pastas Caseras",
+  empanadas: "Empanadas",
+  bebidas_sa: "Bebidas sin alcohol",
+  bebidas_alcohol: "Bebidas con alcohol",
+  postres: "Postres",
+  executive: "Menú Diario",
+  coffee: "Cafetería de Especialidad",
+  bakery: "Pastelería",
+  drinks: "Bebidas"
+};
 
 export default function AdminHub({
   orders,
@@ -200,7 +216,7 @@ export default function AdminHub({
 
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProdName, setNewProdName] = useState("");
-  const [newProdCategory, setNewProdCategory] = useState("coffee");
+  const [newProdCategory, setNewProdCategory] = useState("desayunos_meriendas");
   const [newProdDescription, setNewProdDescription] = useState("");
   const [newProdPrice, setNewProdPrice] = useState("");
   const [newProdStock, setNewProdStock] = useState("0");
@@ -986,7 +1002,7 @@ export default function AdminHub({
       return;
     }
 
-    const defaultImage = newProdImage.trim() || "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=600";
+    const defaultImage = newProdImage.trim();
     
     const newProduct = {
       id: "prod-" + Date.now(),
@@ -994,16 +1010,22 @@ export default function AdminHub({
       price: priceNum,
       takeaway_price: Number((priceNum * 0.9).toFixed(2)),
       delivery_price: Number((priceNum * 1.15).toFixed(2)),
-      description: newProdDescription.trim() || "Delicioso producto de especialidad Resto Bar Del Teatro.",
+      description: newProdDescription.trim(),
       category: newProdCategory,
-      tags: ["Artesanal"],
+      tags: [],
       image: defaultImage,
-      customizable: true,
-      calories: 180,
-      allergens: ["Gluten"],
+      customizable: false,
+      calories: 0,
+      allergens: [],
       stock: Math.max(0, Number.parseInt(newProdStock, 10) || 0),
       is_offer: false,
-      recipe: []
+      recipe: [],
+      recipe_required: true,
+      vat_rate: null,
+      arca_item_code: null,
+      arca_unit_code: null,
+      fiscal_enabled: false,
+      is_available: true
     };
 
     try {
@@ -1037,7 +1059,10 @@ export default function AdminHub({
             allergens: newProduct.allergens
           },
           stock: newProduct.stock,
-          recipe: []
+          recipe: [],
+          recipeRequired: true,
+          fiscalEnabled: false,
+          isAvailable: true
         };
         onUpdateMenu([mappedProduct, ...menuItems]);
         onShowNotification(`✨ Producto '${newProduct.name}' creado con éxito.`, "success");
@@ -1048,7 +1073,10 @@ export default function AdminHub({
         setNewProdStock("0");
         setNewProdImage("");
       } else {
-        onShowNotification("⚠️ Error al crear el producto.", "warning");
+        onShowNotification(
+          `⚠️ Supabase rechazó el producto${error.code ? ` (${error.code})` : ""}: ${error.message}`,
+          "warning"
+        );
       }
     } catch (err) {
       console.error("Error creating product:", err);
@@ -1065,6 +1093,12 @@ export default function AdminHub({
     setEditProdStock(String(item.stock ?? 0));
     setEditProdDescription(item.description || "");
     setEditProdImage(item.image || "");
+    setEditProdRecipeRequired(item.recipeRequired !== false);
+    setEditProdVatRate(item.vatRate === undefined ? "" : String(item.vatRate));
+    setEditProdArcaItemCode(item.arcaItemCode || "");
+    setEditProdArcaUnitCode(item.arcaUnitCode || "");
+    setEditProdFiscalEnabled(item.fiscalEnabled === true);
+    setEditProdIsAvailable(item.isAvailable !== false);
   };
 
   const handleSaveProductDetails = async (e: FormEvent, itemId: string) => {
@@ -1083,6 +1117,23 @@ export default function AdminHub({
     const deliveryVal = parseFloat(editProdDeliveryPrice) || Number((priceVal * 1.15).toFixed(2));
     const parsedStock = Number.parseInt(editProdStock, 10);
     const stockVal = Number.isFinite(parsedStock) ? Math.max(0, parsedStock) : 0;
+    const parsedVatRate = editProdVatRate === "" ? undefined : Number(editProdVatRate);
+    const allowedVatRates = [0, 10.5, 21, 27];
+    if (
+      editProdFiscalEnabled &&
+      (
+        parsedVatRate === undefined ||
+        !allowedVatRates.includes(parsedVatRate) ||
+        !editProdArcaItemCode.trim() ||
+        !editProdArcaUnitCode.trim()
+      )
+    ) {
+      onShowNotification(
+        "⚠️ Para habilitar ARCA complete alícuota, código de ítem y código de unidad.",
+        "warning"
+      );
+      return;
+    }
 
     const original = menuItems.find(i => i.id === itemId);
     if (!original) return;
@@ -1095,8 +1146,14 @@ export default function AdminHub({
       deliveryPrice: deliveryVal,
       stock: stockVal,
       category: editProdCategory as any,
-      description: editProdDescription.trim() || "Delicioso producto de especialidad Resto Bar Del Teatro.",
-      image: editProdImage.trim() || original.image
+      description: editProdDescription.trim(),
+      image: editProdImage.trim() || original.image,
+      recipeRequired: editProdRecipeRequired,
+      vatRate: parsedVatRate as MenuItem["vatRate"],
+      arcaItemCode: editProdArcaItemCode.trim() || undefined,
+      arcaUnitCode: editProdArcaUnitCode.trim() || undefined,
+      fiscalEnabled: editProdFiscalEnabled,
+      isAvailable: editProdIsAvailable
     };
 
     setIsSavingProduct(true);
@@ -1218,6 +1275,12 @@ export default function AdminHub({
   const [editProdStock, setEditProdStock] = useState("");
   const [editProdDescription, setEditProdDescription] = useState("");
   const [editProdImage, setEditProdImage] = useState("");
+  const [editProdRecipeRequired, setEditProdRecipeRequired] = useState(true);
+  const [editProdVatRate, setEditProdVatRate] = useState("");
+  const [editProdArcaItemCode, setEditProdArcaItemCode] = useState("");
+  const [editProdArcaUnitCode, setEditProdArcaUnitCode] = useState("");
+  const [editProdFiscalEnabled, setEditProdFiscalEnabled] = useState(false);
+  const [editProdIsAvailable, setEditProdIsAvailable] = useState(true);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
 
   const [mermaLogs, setMermaLogs] = useState<{ id: string; date: string; name: string; qty: string; cost: string; reason: string; auditor: string }[]>([]);
@@ -3500,6 +3563,7 @@ export default function AdminHub({
     const directCost = currentItem ? getRecipeCost(currentItem) : 0;
     const utility = currentItem ? simulatedPrice - directCost : 0;
     const margin = (currentItem && simulatedPrice > 0) ? (utility / simulatedPrice) * 100 : 0;
+    const readinessSummary = summarizeProductReadiness(menuItems, insumos);
 
     return (
       <motion.div
@@ -3512,6 +3576,22 @@ export default function AdminHub({
         <div>
           <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Ficha Técnica & Rentabilidad</span>
           <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Carta & Recetas</h2>
+        </div>
+
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          {[
+            { label: "Publicados con stock", value: readinessSummary.salesReady, tone: "text-[#4F735A]", bg: "bg-[#DFEADF]" },
+            { label: "Receta técnica lista", value: readinessSummary.recipeReady, tone: "text-[#843747]", bg: "bg-[#E8D4C3]" },
+            { label: "Ficha fiscal ARCA", value: readinessSummary.fiscalReady, tone: "text-[#B97932]", bg: "bg-[#F5E4CC]" },
+            { label: "Listos integralmente", value: readinessSummary.fullyReady, tone: "text-white", bg: "bg-[#843747]" }
+          ].map((metric) => (
+            <div key={metric.label} className={`${metric.bg} border border-[#D7BBA8] rounded-2xl p-4 shadow-xs`}>
+              <span className={`text-[9px] font-black uppercase tracking-wider block ${metric.tone}`}>{metric.label}</span>
+              <strong className={`text-2xl font-serif block mt-1 ${metric.tone}`}>
+                {metric.value}<span className="text-xs opacity-70">/{readinessSummary.total}</span>
+              </strong>
+            </div>
+          ))}
         </div>
 
         <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#D7BBA8] mb-6 scrollbar-thin scrollbar-thumb-[#D7BBA8]">
@@ -3696,7 +3776,8 @@ export default function AdminHub({
                 .map((item, idx) => {
                   const active = currentItem ? currentItem.id === item.id : false;
                   const itemCost = getRecipeCost(item);
-                  const isRecipeComplete = itemCost > 0;
+                  const readiness = getProductReadiness(item, insumos);
+                  const isRecipeComplete = readiness.recipeReady;
                   const itemMargin = item.price > 0 && isRecipeComplete ? ((item.price - itemCost) / item.price) * 100 : 0;
 
                   return (
@@ -3732,15 +3813,31 @@ export default function AdminHub({
                       <div className="text-right shrink-0 ml-2 font-mono flex items-center gap-2">
                         <div>
                           <span className="text-sm font-black block text-[#843747]">${item.price.toLocaleString("es-AR")}</span>
-                          <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
-                            !isRecipeComplete
-                              ? "bg-[#F4DCDD] text-[#A63F45] border border-[#A63F45]/30"
-                              : itemMargin >= 60 
-                                ? "bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30" 
+                          <div className="flex flex-col items-end gap-1">
+                            <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
+                              !isRecipeComplete
+                                ? "bg-[#F4DCDD] text-[#A63F45] border border-[#A63F45]/30"
+                                : "bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30"
+                            }`}>
+                              {!isRecipeComplete
+                                ? "Receta pendiente"
+                                : item.recipeRequired === false
+                                  ? "Producto terminado"
+                                  : `${itemMargin.toFixed(0)}% mrg.`}
+                            </span>
+                            <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
+                              readiness.fiscalReady
+                                ? "bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30"
                                 : "bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30"
-                          }`}>
-                            {!isRecipeComplete ? "Receta Incompleta" : `${itemMargin.toFixed(0)}% mrg.`}
-                          </span>
+                            }`}>
+                              {readiness.fiscalReady ? "Fiscal listo" : "Fiscal pendiente"}
+                            </span>
+                            {item.isAvailable === false && (
+                              <span className="text-[8px] font-bold block px-1.5 py-0.5 rounded-md bg-[#E8D4C3] text-[#6F5A55] border border-[#D7BBA8]">
+                                No publicado
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -3843,6 +3940,87 @@ export default function AdminHub({
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <label className="flex items-start gap-3 p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editProdIsAvailable}
+                        onChange={(e) => setEditProdIsAvailable(e.target.checked)}
+                        className="mt-0.5 accent-[#843747]"
+                      />
+                      <span>
+                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Publicado y disponible</strong>
+                        <small className="text-[9px] text-[#6F5A55] font-medium">Permite mostrar y vender el producto en la carta.</small>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editProdRecipeRequired}
+                        onChange={(e) => setEditProdRecipeRequired(e.target.checked)}
+                        className="mt-0.5 accent-[#843747]"
+                      />
+                      <span>
+                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Requiere receta técnica</strong>
+                        <small className="text-[9px] text-[#6F5A55] font-medium">Desmarcar solo para mercadería terminada sin consumo de insumos.</small>
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="p-4 bg-[#F5E4CC]/55 border border-[#D7BBA8] rounded-2xl space-y-3">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editProdFiscalEnabled}
+                        onChange={(e) => setEditProdFiscalEnabled(e.target.checked)}
+                        className="mt-0.5 accent-[#843747]"
+                      />
+                      <span>
+                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Habilitar ficha fiscal ARCA</strong>
+                        <small className="text-[9px] text-[#6F5A55] font-medium">Solo habilitar con códigos confirmados para WSMTXCA.</small>
+                      </span>
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Alícuota IVA</label>
+                        <select
+                          value={editProdVatRate}
+                          onChange={(e) => setEditProdVatRate(e.target.value)}
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold"
+                        >
+                          <option value="">Sin configurar</option>
+                          <option value="0">0%</option>
+                          <option value="10.5">10,5%</option>
+                          <option value="21">21%</option>
+                          <option value="27">27%</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Código de ítem ARCA</label>
+                        <input
+                          type="text"
+                          value={editProdArcaItemCode}
+                          onChange={(e) => setEditProdArcaItemCode(e.target.value)}
+                          placeholder="Consultar tabla oficial"
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Código de unidad ARCA</label>
+                        <input
+                          type="text"
+                          value={editProdArcaUnitCode}
+                          onChange={(e) => setEditProdArcaUnitCode(e.target.value)}
+                          placeholder="Consultar tabla oficial"
+                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-mono"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-[#6F5A55] font-medium">
+                      Los códigos variables deben confirmarse mediante las tablas oficiales del servicio; el sistema no los completa con valores ficticios.
+                    </p>
+                  </div>
+
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
@@ -3933,7 +4111,9 @@ export default function AdminHub({
                 <>
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-widest block">Ficha Técnica — {currentItem.category === "coffee" ? "Cafetería de Especialidad" : "Pastelería de Autor"}</span>
+                      <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-widest block">
+                        Ficha Técnica — {PRODUCT_CATEGORY_LABELS[currentItem.category] || "Producto gastronómico"}
+                      </span>
                       <h3 className="font-serif text-2xl font-bold text-[#843747] mt-1">{currentItem.name}</h3>
                       <p className="text-xs text-[#6F5A55] mt-1 leading-relaxed font-medium">{currentItem.description}</p>
                     </div>
@@ -4089,7 +4269,8 @@ export default function AdminHub({
     const posTotal = posSubtotal;
 
     const posMenuItems = menuItems.filter(item => 
-      selectedPosCategory === "todos" || item.category === selectedPosCategory
+      item.isAvailable !== false &&
+      (selectedPosCategory === "todos" || item.category === selectedPosCategory)
     );
 
     // Orders pending payment in Caja include all active orders plus completed orders that haven't been paid yet
@@ -5713,7 +5894,7 @@ export default function AdminHub({
       const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
                             item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
       const matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
-      return matchesSearch && matchesCategory;
+      return item.isAvailable !== false && matchesSearch && matchesCategory;
     });
 
     const handleSelectMozoTable = (table: string) => {

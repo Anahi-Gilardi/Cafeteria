@@ -39,6 +39,12 @@ export interface MenuItem {
     ingredientId: string;
     amount: number; // e.g. grams or ml
   }[];
+  recipeRequired?: boolean; // False for finished goods that do not consume raw materials
+  vatRate?: 0 | 10.5 | 21 | 27;
+  arcaItemCode?: string;
+  arcaUnitCode?: string;
+  fiscalEnabled?: boolean;
+  isAvailable?: boolean;
   station?: "parrilla" | "cocina_caliente" | "cocina_fria" | "barra_tragos" | "barista";
 }
 

@@ -19,6 +19,12 @@ export function mapDbMenuItem(db: Record<string, any>): MenuItem {
     stock: db.stock == null ? undefined : Number(db.stock),
     isOffer: db.is_offer === true,
     offerPrice: db.offer_price == null ? undefined : Number(db.offer_price),
-    recipe: db.recipe || []
+    recipe: db.recipe || [],
+    recipeRequired: db.recipe_required !== false,
+    vatRate: db.vat_rate == null ? undefined : Number(db.vat_rate) as MenuItem["vatRate"],
+    arcaItemCode: db.arca_item_code || undefined,
+    arcaUnitCode: db.arca_unit_code || undefined,
+    fiscalEnabled: db.fiscal_enabled === true,
+    isAvailable: db.is_available !== false
   };
 }

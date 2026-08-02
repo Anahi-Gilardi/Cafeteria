@@ -19,12 +19,24 @@ describe("mapDbMenuItem", () => {
       stock: 10,
       is_offer: false,
       offer_price: null,
-      recipe: []
+      recipe: [],
+      recipe_required: false,
+      vat_rate: 21,
+      arca_item_code: "ITEM-1",
+      arca_unit_code: "UNIT-1",
+      fiscal_enabled: true,
+      is_available: false
     });
 
     expect(item.price).toBe(2000);
     expect(item.takeawayPrice).toBe(1800);
     expect(item.deliveryPrice).toBe(2400);
+    expect(item.recipeRequired).toBe(false);
+    expect(item.vatRate).toBe(21);
+    expect(item.arcaItemCode).toBe("ITEM-1");
+    expect(item.arcaUnitCode).toBe("UNIT-1");
+    expect(item.fiscalEnabled).toBe(true);
+    expect(item.isAvailable).toBe(false);
   });
 
   it("preserves explicit zero values instead of treating them as missing", () => {

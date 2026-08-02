@@ -28,7 +28,13 @@ const product: MenuItem = {
   customizable: true,
   nutrition: { calories: 250, allergens: ["Gluten"] },
   stock: 100,
-  recipe: []
+  recipe: [],
+  recipeRequired: false,
+  vatRate: 21,
+  arcaItemCode: "ITEM-1",
+  arcaUnitCode: "UNIT-1",
+  fiscalEnabled: true,
+  isAvailable: true
 };
 
 describe("MenuCatalogService", () => {
@@ -60,7 +66,17 @@ describe("MenuCatalogService", () => {
     expect(result.success).toBe(true);
     expect(mocks.from).toHaveBeenCalledWith("menu_items");
     expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "Empanada", price: 3500, stock: 100 })
+      expect.objectContaining({
+        name: "Empanada",
+        price: 3500,
+        stock: 100,
+        recipe_required: false,
+        vat_rate: 21,
+        arca_item_code: "ITEM-1",
+        arca_unit_code: "UNIT-1",
+        fiscal_enabled: true,
+        is_available: true
+      })
     );
     expect(eq).toHaveBeenCalledWith("id", product.id);
     expect(select).toHaveBeenCalledWith("id");
