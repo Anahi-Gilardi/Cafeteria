@@ -51,6 +51,12 @@ export class MenuCatalogService {
       is_offer: item.isOffer ?? false,
       offer_price: item.isOffer ? item.offerPrice ?? null : null,
       recipe: item.recipe || [],
+      recipe_required: item.recipeRequired !== false,
+      vat_rate: item.vatRate ?? null,
+      arca_item_code: item.arcaItemCode?.trim() || null,
+      arca_unit_code: item.arcaUnitCode?.trim() || null,
+      fiscal_enabled: item.fiscalEnabled === true,
+      is_available: item.isAvailable !== false,
       updated_at: new Date().toISOString()
     };
 

@@ -25,7 +25,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 const publicTables = [
   ["business_profile", "id"],
   ["daily_menu", "day_of_week,active"],
-  ["menu_items", "id,name,price,stock,is_available,recipe"],
+  ["menu_items", "id,name,price,stock,is_available,recipe,recipe_required,vat_rate,arca_item_code,arca_unit_code,fiscal_enabled"],
   ["product_images", "id,product_id"],
   ["restaurant_tables", "id,name,capacity,active"]
 ];
@@ -123,13 +123,22 @@ if (!protectedOrderRpcError) {
 
 const { data: menuIntegrityRows } = await supabase
   .from("menu_items")
-  .select("id,recipe,fiscal_enabled");
+  .select("id,stock,is_available,recipe,recipe_required,vat_rate,arca_item_code,arca_unit_code,fiscal_enabled");
 if (menuIntegrityRows) {
-  const recipes = menuIntegrityRows.filter(
-    (item) => Array.isArray(item.recipe) && item.recipe.length > 0
+  const recipesReady = menuIntegrityRows.filter(
+    (item) => item.recipe_required === false || (Array.isArray(item.recipe) && item.recipe.length > 0)
   ).length;
-  const fiscal = menuIntegrityRows.filter((item) => item.fiscal_enabled).length;
-  console.log(`ℹ️ Carta operativa: ${recipes}/${menuIntegrityRows.length} recetas; ${fiscal}/${menuIntegrityRows.length} fichas fiscales`);
+  const fiscalReady = menuIntegrityRows.filter(
+    (item) => item.fiscal_enabled && [0, 10.5, 21, 27].includes(Number(item.vat_rate)) && item.arca_item_code && item.arca_unit_code
+  ).length;
+  const salesReady = menuIntegrityRows.filter(
+    (item) => item.is_available && Number(item.stock) > 0
+  ).length;
+  console.log(
+    `ℹ️ Carta operativa: ${salesReady}/${menuIntegrityRows.length} publicados con stock; ` +
+    `${recipesReady}/${menuIntegrityRows.length} recetas listas; ` +
+    `${fiscalReady}/${menuIntegrityRows.length} fichas fiscales`
+  );
 }
 
 console.log(`\nResultado: ${failures === 0 ? "LISTO" : `${failures} bloqueo(s)`}`);

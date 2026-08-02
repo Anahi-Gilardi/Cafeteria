@@ -283,6 +283,10 @@ export default function App() {
 
   // Handle adding an item to the cart
   const handleAddToBag = (item: MenuItem, customization: MenuItemCustomization) => {
+    if (item.isAvailable === false) {
+      showNotification(`⚠️ '${item.name}' no está disponible para la venta.`, "warning");
+      return;
+    }
     // Check if item is in stock
     if (item.stock !== undefined && item.stock <= 0) {
       showNotification(`⚠️ Lo sentimos, '${item.name}' está agotado temporalmente.`, "warning");
@@ -612,6 +616,8 @@ export default function App() {
     }
   };
 
+  const availableMenuItems = menuItems.filter((item) => item.isAvailable !== false);
+
   if (isPasswordRecovery) {
     return (
       <ErrorBoundary>
@@ -628,7 +634,7 @@ export default function App() {
     return (
       <ErrorBoundary>
         <PublicDigitalMarquee
-          menuItems={menuItems}
+          menuItems={availableMenuItems}
           onShowNotification={showNotification}
         />
       </ErrorBoundary>
@@ -640,7 +646,7 @@ export default function App() {
       <ErrorBoundary>
         <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
         <PublicLandingPage
-          menuItems={menuItems}
+          menuItems={availableMenuItems}
           isMenuLoading={isMenuLoading}
           onLoginSuccess={(user) => {
             setCurrentUser(user);
@@ -763,7 +769,7 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="menu-tab-content"
               >
-                <InteractiveMenu onAddToBag={handleAddToBag} menuItems={menuItems} />
+                <InteractiveMenu onAddToBag={handleAddToBag} menuItems={availableMenuItems} />
               </motion.div>
             )}
 
@@ -774,7 +780,7 @@ export default function App() {
                 exit={{ opacity: 0 }}
                 key="carta-digital-tab-content"
               >
-                <CartaDigital menuItems={menuItems} onAddToBag={handleAddToBag} onShowNotification={showNotification} />
+                <CartaDigital menuItems={availableMenuItems} onAddToBag={handleAddToBag} onShowNotification={showNotification} />
               </motion.div>
             )}
 
@@ -810,7 +816,7 @@ export default function App() {
                 key="barista-tab-content"
               >
                 <Suspense fallback={<ModuleFallback />}>
-                  <BaristaAI onAddToBag={handleAddToBag} menuItems={menuItems} />
+                  <BaristaAI onAddToBag={handleAddToBag} menuItems={availableMenuItems} />
                 </Suspense>
               </motion.div>
             )}
