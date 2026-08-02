@@ -1,5 +1,3 @@
-import React from "react";
-
 interface LogoProps {
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
@@ -7,38 +5,75 @@ interface LogoProps {
   compact?: boolean;
 }
 
-export default function RestoBarLogo({ className = "", size = "md", showText = true, compact = false }: LogoProps) {
-  const dimensions = {
-    sm: { box: "w-8 h-8", title: "text-xs", sub: "text-[8px]" },
-    md: { box: "w-10 h-10", title: "text-sm", sub: "text-[10px]" },
-    lg: { box: "w-12 h-12", title: "text-base", sub: "text-xs" },
-    xl: { box: "w-16 h-16", title: "text-xl", sub: "text-sm" }
-  }[size];
+const LOGO_SIZES = {
+  sm: { mark: "h-8 w-8", title: "text-[11px]", subtitle: "text-[7px]", gap: "gap-2" },
+  md: { mark: "h-10 w-10", title: "text-sm", subtitle: "text-[8px]", gap: "gap-2.5" },
+  lg: { mark: "h-12 w-12", title: "text-base", subtitle: "text-[9px]", gap: "gap-3" },
+  xl: { mark: "h-16 w-16", title: "text-xl", subtitle: "text-[10px]", gap: "gap-3.5" }
+} as const;
 
-  if (compact) {
-    return (
-      <div className={`flex items-center justify-center ${className}`}>
-        <div className={`${dimensions.box} rounded-2xl bg-[#843747] text-white flex items-center justify-center font-serif font-black text-xl shadow-md border border-[#D7BBA8]/40`}>
-          C
-        </div>
-      </div>
-    );
-  }
+function CastanoMonogram({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label="Monograma de Castaño"
+      className={`${className} shrink-0 overflow-visible drop-shadow-[0_5px_10px_rgba(51,36,36,0.16)]`}
+    >
+      <circle cx="32" cy="32" r="29.5" fill="#FFF9F4" stroke="#843747" strokeWidth="1.5" />
+      <circle cx="32" cy="32" r="25.5" fill="none" stroke="#D7BBA8" strokeWidth="0.75" />
+
+      <text
+        x="32"
+        y="47"
+        textAnchor="middle"
+        fill="#71303D"
+        fontFamily="Cinzel, Marcellus, Georgia, serif"
+        fontSize="38"
+        fontWeight="700"
+      >
+        C
+      </text>
+
+      <path
+        d="M20.5 16.7c3.7-5.1 7.8-2.7 11.6-.5 4.1 2.3 7.9 3.7 11.7-1.7"
+        fill="none"
+        stroke="#843747"
+        strokeWidth="3.1"
+        strokeLinecap="round"
+      />
+      <circle cx="48.5" cy="16" r="2" fill="#C9942E" />
+    </svg>
+  );
+}
+
+export default function RestoBarLogo({
+  className = "",
+  size = "md",
+  showText = true,
+  compact = false
+}: LogoProps) {
+  const dimensions = LOGO_SIZES[size];
+  const displayText = showText && !compact;
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      {/* Burgundy badge icon */}
-      <div className={`${dimensions.box} rounded-2xl bg-[#843747] text-white flex items-center justify-center font-serif font-black text-xl shadow-md border border-[#D7BBA8]/40 shrink-0`}>
-        C
-      </div>
+    <div
+      className={`inline-flex items-center ${dimensions.gap} ${className}`}
+      aria-label={displayText ? "Castaño, Resto Bar y Café" : undefined}
+    >
+      <CastanoMonogram className={dimensions.mark} />
 
-      {showText && (
-        <div className="flex flex-col text-left leading-tight">
-          <span className={`font-serif font-black uppercase tracking-wider text-[#332424] ${dimensions.title}`}>
+      {displayText && (
+        <div className="flex flex-col text-left leading-none">
+          <span
+            className={`font-serif font-black uppercase tracking-[0.15em] text-[#332424] ${dimensions.title}`}
+          >
             CASTAÑO
           </span>
-          <span className={`font-mono text-[9px] uppercase tracking-widest text-[#843747] font-bold ${dimensions.sub}`}>
-            RESTO BAR & CAFÉ
+          <span
+            className={`mt-1 font-sans font-extrabold uppercase tracking-[0.2em] text-[#843747] ${dimensions.subtitle}`}
+          >
+            RESTO BAR · CAFÉ
           </span>
         </div>
       )}
