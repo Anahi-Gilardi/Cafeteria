@@ -32,6 +32,7 @@ import { offlineQueueService } from "../services/OfflineQueueService";
 import { arcaAdapter } from "../services/ARCAAdapter";
 import { CashClosure, CashShiftService } from "../services/CashShiftService";
 import { MenuCatalogService } from "../services/MenuCatalogService";
+import { InventoryService } from "../services/InventoryService";
 
 interface AdminHubProps {
   orders: Order[];
@@ -1174,6 +1175,8 @@ export default function AdminHub({
   const [newInsumoMinLimit, setNewInsumoMinLimit] = useState("5");
   const [newInsumoProvider, setNewInsumoProvider] = useState("");
   const [newInsumoExpDate, setNewInsumoExpDate] = useState("");
+  const [newInsumoCost, setNewInsumoCost] = useState("0");
+  const [isCreatingInsumo, setIsCreatingInsumo] = useState(false);
   const [recipeIngredientId, setRecipeIngredientId] = useState<string>("");
   const [recipeIngredientQty, setRecipeIngredientQty] = useState<string>("0.1");
   const [historySearchTable, setHistorySearchTable] = useState("");
@@ -1601,46 +1604,49 @@ export default function AdminHub({
 
   const handleCreateNewInsumo = async (e: FormEvent) => {
     e.preventDefault();
+    if (isCreatingInsumo) return;
     if (!newInsumoName.trim()) {
       onShowNotification("⚠️ Ingrese el nombre de la materia prima o insumo.", "warning");
       return;
     }
 
-    const qty = parseFloat(newInsumoQuantity) || 0;
-    const minLim = parseFloat(newInsumoMinLimit) || 1;
-    const insumoId = "ins-" + Date.now();
-
-    const createdInsumo = {
-      id: insumoId,
-      name: newInsumoName.trim(),
-      quantity: qty,
-      unit: newInsumoUnit,
-      minLimit: minLim,
-      provider: newInsumoProvider.trim() || undefined,
-      expirationDate: newInsumoExpDate || undefined
-    };
-
-    const { error } = await supabase.from("insumos").insert({
-      id: createdInsumo.id,
-      name: createdInsumo.name,
-      quantity: createdInsumo.quantity,
-      unit: createdInsumo.unit,
-      min_limit: createdInsumo.minLimit,
-      provider: createdInsumo.provider,
-      expiration_date: createdInsumo.expirationDate || null
-    });
-    if (error) {
-      console.error("Error creating inventory item:", error);
-      onShowNotification("⚠️ No se pudo registrar el insumo en Supabase.", "warning");
+    const qty = Number(newInsumoQuantity);
+    const minLim = Number(newInsumoMinLimit);
+    const cost = Number(newInsumoCost);
+    if (![qty, minLim, cost].every(Number.isFinite) || qty < 0 || minLim < 0 || cost < 0) {
+      onShowNotification("⚠️ Cantidad, stock mínimo y costo deben ser números iguales o mayores a cero.", "warning");
       return;
     }
 
-    setInsumos(prev => {
-      const newList = [...prev, createdInsumo];
-      return newList;
-    });
-    setIsNewInsumoModalOpen(false);
-    onShowNotification(`✅ Insumo '${newInsumoName}' registrado e integrado a Supabase con éxito.`, "success");
+    setIsCreatingInsumo(true);
+    try {
+      const result = await InventoryService.createItem({
+        name: newInsumoName,
+        quantity: qty,
+        unit: newInsumoUnit,
+        minLimit: minLim,
+        provider: newInsumoProvider,
+        expirationDate: newInsumoExpDate,
+        costPerUnit: cost
+      });
+      if (!result.success || !result.item) {
+        onShowNotification(`⚠️ ${result.error || "No se pudo registrar el insumo."}`, "warning");
+        return;
+      }
+
+      setInsumos((previous) => [...previous, result.item!].sort((a, b) => a.name.localeCompare(b.name, "es")));
+      setIsNewInsumoModalOpen(false);
+      setNewInsumoName("");
+      setNewInsumoProvider("");
+      setNewInsumoExpDate("");
+      setNewInsumoCost("0");
+      onShowNotification(`✅ Insumo '${result.item.name}' registrado e integrado a Supabase con éxito.`, "success");
+    } catch (error) {
+      console.error("Error creating inventory item:", error);
+      onShowNotification("⚠️ No fue posible comunicarse con Supabase para registrar el insumo.", "warning");
+    } finally {
+      setIsCreatingInsumo(false);
+    }
   };
 
   const handleAddIngredientToRecipe = async (productId: string, ingredientId: string, amount: number) => {
@@ -3018,6 +3024,7 @@ export default function AdminHub({
                   setNewInsumoName("");
                   setNewInsumoQuantity("10");
                   setNewInsumoMinLimit("5");
+                  setNewInsumoCost("0");
                   setIsNewInsumoModalOpen(true);
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
@@ -3118,12 +3125,23 @@ export default function AdminHub({
                     <th className="p-4 text-center">Mínimo</th>
                     <th className="p-4 text-center">Actual</th>
                     <th className="p-4 text-center">Unidad</th>
+                    <th className="p-4 text-center">Costo unit.</th>
                     <th className="p-4">Vencimiento</th>
                     <th className="p-4 text-center">Estado</th>
                     <th className="p-4 text-center">Ajuste</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#D7BBA8] text-xs">
+                  {filteredInsumos.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="px-6 py-12 text-center">
+                        <strong className="block text-sm text-[#843747]">Todavía no hay insumos registrados</strong>
+                        <span className="mt-1 block text-[11px] font-medium text-[#6F5A55]">
+                          Usá “Crear Nuevo Insumo” para cargar tu primera materia prima directamente en Supabase.
+                        </span>
+                      </td>
+                    </tr>
+                  )}
                   {filteredInsumos.map((ins, idx) => {
                     const isExpired = ins.expirationDate ? new Date(ins.expirationDate) < new Date(new Date().setHours(0,0,0,0)) : false;
                     const isCritical = ins.quantity <= ins.minLimit / 2;
@@ -3145,6 +3163,7 @@ export default function AdminHub({
                         <td className="p-4 text-center font-mono font-bold text-[#6F5A55]">{ins.minLimit}</td>
                         <td className="p-4 text-center font-mono font-black text-[#843747]">{ins.quantity}</td>
                         <td className="p-4 text-center text-[#6F5A55] uppercase font-bold">{ins.unit}</td>
+                        <td className="p-4 text-center font-mono font-bold text-[#6F5A55]">${Number(ins.costPerUnit || 0).toLocaleString("es-AR")}</td>
                         <td className="p-4 font-mono font-semibold text-[#6F5A55]">{ins.expirationDate || "-"}</td>
                         <td className="p-4 text-center">{statusBadge}</td>
                         <td className="p-4 text-center flex items-center justify-center gap-1.5">
@@ -8927,7 +8946,7 @@ export default function AdminHub({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div>
                   <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Cantidad Inicial *</label>
                   <input
@@ -8967,6 +8986,19 @@ export default function AdminHub({
                     className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#332424] outline-none text-center focus:border-[#843747]"
                   />
                 </div>
+
+                <div>
+                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Costo Unitario ($) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={newInsumoCost}
+                    onChange={(e) => setNewInsumoCost(e.target.value)}
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#332424] outline-none text-center focus:border-[#843747]"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -9002,9 +9034,10 @@ export default function AdminHub({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer"
+                  disabled={isCreatingInsumo}
+                  className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer disabled:cursor-wait disabled:opacity-60"
                 >
-                  REGISTRAR EN SUPABASE
+                  {isCreatingInsumo ? "REGISTRANDO…" : "REGISTRAR EN SUPABASE"}
                 </button>
               </div>
             </form>
