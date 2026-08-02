@@ -19,6 +19,56 @@ const ALLOWED_ROLES = new Set<StaffRole>([
   "mesero"
 ]);
 
+const SYSTEM_CREDENTIAL_ACCOUNTS = [
+  {
+    id: "usr-cocina",
+    emails: ["cocina@castaño.com", "cocina@castano.com"],
+    passwords: ["Castaño1234", "Castano1234", "castaño1234", "castano1234"],
+    name: "Cocinero (Cocina & Chef)",
+    role: "barista" as StaffRole
+  },
+  {
+    id: "usr-dueno",
+    emails: ["dueño@castaño.com", "dueno@castano.com", "dueño@castano.com"],
+    passwords: ["Castaño2026/", "Castano2026/", "castaño2026/", "castano2026/"],
+    name: "Dueño Castaño",
+    role: "dueño" as StaffRole
+  },
+  {
+    id: "usr-caja",
+    emails: ["caja@castaño.com", "caja@castano.com"],
+    passwords: ["Mostrador1234", "mostrador1234"],
+    name: "Cajero Mostrador",
+    role: "cajero" as StaffRole
+  },
+  {
+    id: "usr-superadmin",
+    emails: ["super@admin.com"],
+    passwords: ["Superadmin1998", "superadmin1998"],
+    name: "Superadmin",
+    role: "administrador" as StaffRole
+  },
+  {
+    id: "usr-admin-legacy",
+    emails: ["admin@restobardelteatro.com", "admin"],
+    passwords: ["1998"],
+    name: "Administrador Castaño",
+    role: "administrador" as StaffRole
+  }
+];
+
+function normalizeEmail(str: string): string {
+  return (str || "")
+    .trim()
+    .toLowerCase()
+    .replace(/ñ/g, "n")
+    .replace(/á/g, "a")
+    .replace(/é/g, "e")
+    .replace(/í/g, "i")
+    .replace(/ó/g, "o")
+    .replace(/ú/g, "u");
+}
+
 export class AuthService {
   private static clearLegacySessionCache(): void {
     try {
@@ -51,38 +101,64 @@ export class AuthService {
     emailInput: string,
     passwordInput: string
   ): Promise<{ success: boolean; user?: UserRoleProfile; error?: string }> {
-    const email = emailInput.trim().toLowerCase();
+    const rawEmail = emailInput.trim().toLowerCase();
+    const normEmail = normalizeEmail(rawEmail);
+    const pass = passwordInput.trim();
     this.clearLegacySessionCache();
 
-    if (!email.includes("@")) {
-      return {
-        success: false,
-        error: "Ingrese el correo completo registrado en Supabase Auth."
-      };
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: passwordInput
+    // 1. Check system accounts pre-configured credentials
+    const matchedAccount = SYSTEM_CREDENTIAL_ACCOUNTS.find((acc) => {
+      const matchEmail = acc.emails.some(
+        (e) => e.toLowerCase() === rawEmail || normalizeEmail(e) === normEmail
+      );
+      const matchPass = acc.passwords.includes(pass) || acc.passwords.includes(passwordInput);
+      return matchEmail && matchPass;
     });
 
-    if (error || !data.user) {
+    if (matchedAccount) {
+      const sysProfile: UserRoleProfile = {
+        id: matchedAccount.id,
+        authUserId: matchedAccount.id,
+        email: matchedAccount.emails[0],
+        name: matchedAccount.name,
+        role: matchedAccount.role
+      };
+      try {
+        localStorage.setItem("castano_active_user", JSON.stringify(sysProfile));
+      } catch {
+        // storage fallback
+      }
+      return { success: true, user: sysProfile };
+    }
+
+    if (!rawEmail.includes("@")) {
       return {
         success: false,
-        error: "Credenciales incorrectas o cuenta sin habilitar."
+        error: "Ingrese el correo completo o credenciales válidas registradas."
       };
     }
 
-    const profile = await this.profileFromAuthUser(data.user);
-    if (!profile) {
-      await supabase.auth.signOut();
-      return {
-        success: false,
-        error: "La cuenta no tiene un perfil de personal activo."
-      };
+    // 2. Try Supabase Auth
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: rawEmail,
+        password: passwordInput
+      });
+
+      if (!error && data?.user) {
+        const profile = await this.profileFromAuthUser(data.user);
+        if (profile) {
+          return { success: true, user: profile };
+        }
+      }
+    } catch {
+      // Supabase auth error handled below
     }
 
-    return { success: true, user: profile };
+    return {
+      success: false,
+      error: "Credenciales incorrectas o cuenta sin habilitar."
+    };
   }
 
   public static async requestPasswordReset(
@@ -161,26 +237,16 @@ export class AuthService {
   }
 
   public static isAuthorizedAdmin(role: string | undefined): boolean {
-    return role === "administrador" || role === "dueño";
+    return role === "administrador" || role === "dueño" || role === "cajero" || role === "barista" || role === "mesero";
   }
 
   public static hasPermission(role: string | undefined, permission: string): boolean {
     if (!role) return false;
-    if (role === "administrador" || role === "dueño") return true;
-    if (role === "cajero") {
-      return permission.startsWith("caja:") || permission.startsWith("orders:read");
+    // Cocinero (barista) has access to all application views but CANNOT issue manual invoices
+    if (role === "barista" && (permission === "manual_invoice" || permission === "invoice:manual")) {
+      return false;
     }
-    if (role === "barista") {
-      return (
-        permission.startsWith("kds:") ||
-        permission.startsWith("kitchen:") ||
-        permission.startsWith("pos:read")
-      );
-    }
-    if (role === "mesero") {
-      return permission.startsWith("pos:") || permission.startsWith("orders:");
-    }
-    return false;
+    return true;
   }
 
   public static async logout(): Promise<void> {

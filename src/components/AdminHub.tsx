@@ -4601,12 +4601,14 @@ export default function AdminHub({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button 
-              onClick={() => setIsManualArcaModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
-            >
-              <Plus className="h-3.5 w-3.5" /> FACTURACIÓN MANUAL ARCA
-            </button>
+            {currentUser.role !== "barista" && (
+              <button 
+                onClick={() => setIsManualArcaModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
+              >
+                <Plus className="h-3.5 w-3.5" /> FACTURACIÓN MANUAL ARCA
+              </button>
+            )}
             <button 
               onClick={() => setIsSupabaseSqlModalOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
