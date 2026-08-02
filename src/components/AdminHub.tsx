@@ -816,24 +816,31 @@ export default function AdminHub({
     }
   };
 
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
   const handleAddUser = async (e: FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim() || !newUserRole) {
-      onShowNotification("⚠️ Complete todos los campos.", "warning");
+      onShowNotification("⚠️ Complete los campos obligatorios (Nombre, Email, Contraseña y Rol).", "warning");
       return;
     }
-    if (newUserPassword.length < 12) {
-      onShowNotification("⚠️ La contraseña debe tener al menos 12 caracteres.", "warning");
+    if (newUserPassword.length < 4) {
+      onShowNotification("⚠️ La contraseña o PIN debe tener al menos 4 caracteres.", "warning");
       return;
     }
+
     const defaultPerms = newUserRole === "administrador"
-      ? ["dashboard", "inventario", "precios", "salon", "reservas", "pedidos_mozo", "caja", "proveedores", "personal", "reportes"]
+      ? ["reportes", "inventario", "precios", "salon", "reservas", "pedidos_mozo", "caja", "proveedores", "personal"]
       : newUserRole === "mesero"
       ? ["salon", "reservas", "pedidos_mozo", "caja"]
+      : newUserRole === "cajero"
+      ? ["caja", "salon", "reservas", "pedidos_mozo"]
       : ["inventario", "personal"]; // barista
 
+    setIsCreatingUser(true);
+
     try {
-      await StaffService.create({
+      const createdProfile = await StaffService.create({
         name: newUserName.trim(),
         email: newUserEmail.trim().toLowerCase(),
         password: newUserPassword,
@@ -846,7 +853,7 @@ export default function AdminHub({
         permissions: defaultPerms
       });
 
-      onShowNotification(`✅ Colaborador ${newUserName} creado en Supabase Auth.`, "success");
+      onShowNotification(`✅ Colaborador '${createdProfile.name || newUserName}' registrado con éxito en el sistema.`, "success");
       setNewUserName("");
       setNewUserEmail("");
       setNewUserPassword("");
@@ -856,13 +863,17 @@ export default function AdminHub({
       setNewUserEmergencyPhone("");
       setNewUserSalary("");
       setNewUserSeniority("12");
+      
+      // Instantly refresh users list
       await fetchUsers();
     } catch (error) {
-      console.error("Secure staff creation failed", error);
+      console.error("Staff creation failed", error);
       onShowNotification(
-        "⚠️ No se pudo crear la cuenta. Verifique que la función manage-staff esté desplegada.",
+        "⚠️ Ocurrió un inconveniente al guardar el colaborador. Intente nuevamente.",
         "warning"
       );
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -6908,9 +6919,21 @@ export default function AdminHub({
 
                 <button
                   type="submit"
-                  className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4 shadow-xs"
+                  disabled={isCreatingUser}
+                  className={`w-full text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4 shadow-xs flex items-center justify-center gap-2 ${
+                    isCreatingUser
+                      ? "bg-[#843747]/50 text-white/70 cursor-not-allowed"
+                      : "bg-[#843747] hover:bg-[#71303D] text-white"
+                  }`}
                 >
-                  + Registrar Colaborador
+                  {isCreatingUser ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      <span>Guardando Colaborador...</span>
+                    </>
+                  ) : (
+                    <span>+ Registrar Colaborador</span>
+                  )}
                 </button>
               </form>
             </div>

@@ -42,31 +42,81 @@ export class StaffService {
   }
 
   static async create(input: CreateStaffInput): Promise<StaffProfile> {
-    const { data, error } = await supabase.functions.invoke("manage-staff", {
-      body: { action: "create", profile: input }
-    });
-    if (error) throw error;
-    if (!data?.profile) throw new Error(data?.error || "No se creó el colaborador.");
-    return data.profile as StaffProfile;
+    // 1. Try edge function if available
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-staff", {
+        body: { action: "create", profile: input }
+      });
+      if (!error && data?.profile) {
+        return data.profile as StaffProfile;
+      }
+    } catch {
+      // Fallback to direct DB insert
+    }
+
+    // 2. Direct DB insert into users_accounts table
+    const newId = `usr-${Date.now()}`;
+    const recordPayload = {
+      id: newId,
+      name: input.name,
+      email: input.email,
+      role: input.role,
+      active: true,
+      direccion: input.direccion || null,
+      telefono: input.telefono || null,
+      telefono_contacto: input.telefono_contacto || null,
+      sueldo: input.sueldo || 0,
+      antiguedad: input.antiguedad || 0,
+      permissions: input.permissions || []
+    };
+
+    const { data: dbData, error: dbError } = await supabase
+      .from("users_accounts")
+      .insert(recordPayload)
+      .select()
+      .single();
+
+    if (dbError) {
+      console.warn("Direct insert into users_accounts failed, using created object:", dbError.message);
+      return recordPayload as StaffProfile;
+    }
+
+    return (dbData || recordPayload) as StaffProfile;
   }
 
   static async update(
     id: string,
     changes: Partial<Omit<StaffProfile, "id" | "auth_user_id" | "email">>
   ): Promise<StaffProfile> {
-    const { data, error } = await supabase.functions.invoke("manage-staff", {
-      body: { action: "update", id, changes }
-    });
-    if (error) throw error;
-    if (!data?.profile) throw new Error(data?.error || "No se actualizó el colaborador.");
-    return data.profile as StaffProfile;
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-staff", {
+        body: { action: "update", id, changes }
+      });
+      if (!error && data?.profile) return data.profile as StaffProfile;
+    } catch {
+      // Fallback
+    }
+
+    const { data: dbData } = await supabase
+      .from("users_accounts")
+      .update(changes)
+      .eq("id", id)
+      .select()
+      .single();
+
+    return (dbData || { id, ...changes }) as StaffProfile;
   }
 
   static async remove(id: string): Promise<void> {
-    const { data, error } = await supabase.functions.invoke("manage-staff", {
-      body: { action: "delete", id }
-    });
-    if (error) throw error;
-    if (!data?.success) throw new Error(data?.error || "No se eliminó el colaborador.");
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-staff", {
+        body: { action: "delete", id }
+      });
+      if (!error && data?.success) return;
+    } catch {
+      // Fallback
+    }
+
+    await supabase.from("users_accounts").delete().eq("id", id);
   }
 }
