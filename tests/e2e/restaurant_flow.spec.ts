@@ -82,13 +82,14 @@ test.describe("Resto Bar Del Teatro", () => {
     await expect(page.getByText(/PIN rápido|admin.*1998/i)).toHaveCount(0);
   });
 
-  test("un login inválido no concede acceso administrativo", async ({ page }) => {
+  test("el antiguo acceso admin/1998 ya no concede acceso administrativo", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Acceso a POS y Personal" }).click();
-    await page.getByLabel("Correo electrónico").fill("invalid@example.com");
-    await page.locator("#staff-password").fill("invalid-password");
+    await page.getByLabel("Correo electrónico").fill("admin");
+    await page.locator("#staff-password").fill("1998");
     await page.getByRole("button", { name: "Ingresar al sistema POS" }).click();
-    await expect(page.getByText(/credenciales|iniciar sesión|error/i).first()).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Acceso del personal" })).toBeVisible();
+    await expect(page.getByLabel("Correo electrónico")).toHaveValue("admin");
     await expect(page.getByText("Control de Operaciones")).toHaveCount(0);
   });
 });

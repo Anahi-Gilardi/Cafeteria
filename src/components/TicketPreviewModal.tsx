@@ -26,7 +26,7 @@ export default function TicketPreviewModal({
   const [invoiceType, setInvoiceType] = useState<"A" | "B" | "C" | "No Fiscal">("C");
   const [customerCuit, setCustomerCuit] = useState<string>("");
   const [customerName, setCustomerName] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "MercadoPago" | "Fiado / Cta Cte">("Tarjeta");
+  const [paymentMethod, setPaymentMethod] = useState<NonNullable<Order["paymentMethod"]>>("Tarjeta");
 
   // Payment inputs
   const [receivedCash, setReceivedCash] = useState<string>("");

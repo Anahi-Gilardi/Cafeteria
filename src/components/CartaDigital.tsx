@@ -17,6 +17,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [pendingWaiterAction, setPendingWaiterAction] = useState<"mozo" | "cuenta" | "retirar" | null>(null);
 
   const [tables, setTables] = useState<Table[]>([]);
 
@@ -68,14 +69,31 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
     return matchesCategory && matchesSearch && matchesTag;
   });
 
-  const handleCallWaiter = (action: string) => {
-    const tableName = tableDetails?.name || "Mesa";
-    if (action === "mozo") {
-      onShowNotification(`🔔 El Mozo ha sido notificado y se dirige a la ${tableName}.`, "info");
-    } else if (action === "cuenta") {
-      onShowNotification(`💵 Solicitud de Cuenta enviada para la ${tableName}. El mozo traerá la terminal de cobro.`, "success");
-    } else {
-      onShowNotification(`☕ Solicitaste retirar tazas o servicio para la ${tableName}.`, "info");
+  const handleCallWaiter = async (action: "mozo" | "cuenta" | "retirar") => {
+    if (!tableDetails) {
+      onShowNotification("Seleccione una mesa activa.", "warning");
+      return;
+    }
+    if (pendingWaiterAction) return;
+
+    setPendingWaiterAction(action);
+    try {
+      const requestType = action === "cuenta" ? "request_bill" : "call_waiter";
+      const serviceNote = action === "retirar" ? "Servicio de mesa: limpiar mesa o traer vasos" : undefined;
+      await WaiterCallService.requestAttention(tableDetails.name, requestType, serviceNote);
+
+      if (action === "cuenta") {
+        onShowNotification(`Solicitud de cuenta enviada para ${tableDetails.name}.`, "success");
+      } else if (action === "retirar") {
+        onShowNotification(`Solicitud de servicio enviada para ${tableDetails.name}.`, "success");
+      } else {
+        onShowNotification(`Solicitud enviada al mozo para ${tableDetails.name}.`, "success");
+      }
+    } catch (error) {
+      console.error("Error requesting waiter service:", error);
+      onShowNotification("No se pudo enviar la solicitud. Intente nuevamente.", "warning");
+    } finally {
+      setPendingWaiterAction(null);
     }
   };
 
@@ -106,10 +124,15 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
         <div className="mt-4 flex flex-wrap justify-center gap-3">
           <button
             onClick={async () => {
-              onShowNotification("📄 Generando Carta PDF con Fotos y Código QR...", "info");
-              const { MenuPDFService } = await import("../services/MenuPDFService");
-              await MenuPDFService.generateMenuPDF(menuItems);
-              onShowNotification("✅ Carta PDF descargada correctamente.", "success");
+              try {
+                onShowNotification("Generando carta PDF...", "info");
+                const { MenuPDFService } = await import("../services/MenuPDFService");
+                await MenuPDFService.generateMenuPDF(menuItems);
+                onShowNotification("Carta PDF descargada correctamente.", "success");
+              } catch (error) {
+                console.error("Error generating menu PDF:", error);
+                onShowNotification("No se pudo generar la carta PDF.", "warning");
+              }
             }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
@@ -117,40 +140,16 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
           </button>
 
           <button
-            onClick={async () => {
-              if (!tableDetails) {
-                onShowNotification("⚠️ Seleccione una mesa activa.", "warning");
-                return;
-              }
-              try {
-                await WaiterCallService.requestAttention(tableDetails.name, "call_waiter");
-                onShowNotification(`🔔 Solicitud enviada al mozo para ${tableDetails.name}.`, "success");
-              } catch (error) {
-                console.error("Error requesting waiter:", error);
-                onShowNotification("⚠️ No se pudo enviar la solicitud.", "warning");
-              }
-            }}
-            disabled={!tableDetails}
+            onClick={() => void handleCallWaiter("mozo")}
+            disabled={!tableDetails || pendingWaiterAction !== null}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
             <Bell className="h-4 w-4" /> 🔔 Llamar al Mozo
           </button>
 
           <button
-            onClick={async () => {
-              if (!tableDetails) {
-                onShowNotification("⚠️ Seleccione una mesa activa.", "warning");
-                return;
-              }
-              try {
-                await WaiterCallService.requestAttention(tableDetails.name, "request_bill");
-                onShowNotification(`💳 Pedido de cuenta enviado para ${tableDetails.name}.`, "info");
-              } catch (error) {
-                console.error("Error requesting bill:", error);
-                onShowNotification("⚠️ No se pudo solicitar la cuenta.", "warning");
-              }
-            }}
-            disabled={!tableDetails}
+            onClick={() => void handleCallWaiter("cuenta")}
+            disabled={!tableDetails || pendingWaiterAction !== null}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#2A1B12] border border-[#D4AF37] text-[#FFDF00] hover:bg-[#3D281A] text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider gold-glow"
           >
             <CreditCard className="h-4 w-4" /> 💳 Pedir la Cuenta
@@ -241,7 +240,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
             <div className="space-y-2.5">
               <button
                 id="digital-call-waiter"
-                onClick={() => handleCallWaiter("mozo")}
+                onClick={() => void handleCallWaiter("mozo")}
+                disabled={!tableDetails || pendingWaiterAction !== null}
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-caramel hover:text-white text-paper transition-all text-xs font-bold cursor-pointer"
               >
                 <span>🙋‍♂️ Llamar al Mozo</span>
@@ -250,7 +250,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
 
               <button
                 id="digital-request-bill"
-                onClick={() => handleCallWaiter("cuenta")}
+                onClick={() => void handleCallWaiter("cuenta")}
+                disabled={!tableDetails || pendingWaiterAction !== null}
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-emerald-700 text-paper transition-all text-xs font-bold cursor-pointer"
               >
                 <span>💵 Pedir la Cuenta (Caja)</span>
@@ -259,7 +260,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
 
               <button
                 id="digital-request-service"
-                onClick={() => handleCallWaiter("retirar")}
+                onClick={() => void handleCallWaiter("retirar")}
+                disabled={!tableDetails || pendingWaiterAction !== null}
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/20 text-paper/90 transition-all text-xs font-bold cursor-pointer"
               >
                 <span>🧼 Limpiar Mesa / Traer Vasos</span>

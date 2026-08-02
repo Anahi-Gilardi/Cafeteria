@@ -24,10 +24,12 @@ import TableReservation from "./TableReservation";
 import { PublicDigitalMarquee } from "./PublicDigitalMarquee";
 import { ReservationService } from "../services/ReservationService";
 import { supabase } from "../lib/supabase";
+import type { UserRoleProfile } from "../services/AuthService";
 
 interface PublicLandingPageProps {
   menuItems: MenuItem[];
-  onLoginSuccess: (user: { id: string; name: string; email: string; role: string; pin?: string }) => void;
+  isMenuLoading: boolean;
+  onLoginSuccess: (user: UserRoleProfile) => void;
   onShowNotification: (message: string, type: "success" | "info" | "warning") => void;
 }
 
@@ -63,6 +65,7 @@ const CatalogImage: React.FC<{
 
 export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
   menuItems,
+  isMenuLoading,
   onLoginSuccess,
   onShowNotification
 }) => {
@@ -321,7 +324,9 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
 
               <div className="mt-8 grid max-w-xl grid-cols-3 divide-x divide-[#D7BBA8] border-y border-[#D7BBA8] py-4">
                 <div className="pr-3">
-                  <strong className="block font-serif text-xl text-[#843747]">{publicItems.length}</strong>
+                  <strong className="block font-serif text-xl text-[#843747]">
+                    {isMenuLoading ? "…" : publicItems.length}
+                  </strong>
                   <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">Propuestas</span>
                 </div>
                 <div className="px-3">

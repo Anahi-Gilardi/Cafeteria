@@ -1,6 +1,16 @@
 import jsPDF from "jspdf";
 import { Order, FiscalDetails } from "../types";
 
+export function isAuthorizedFiscalDetails(fiscal: FiscalDetails): boolean {
+  return (
+    ["authorized", "observed"].includes(fiscal.status || "") &&
+    /^\d{14}$/.test(fiscal.cae || "") &&
+    /^\d{4}-\d{2}-\d{2}$/.test(fiscal.caeExpiration || "") &&
+    /^\d{5}-\d{8}$/.test(fiscal.invoiceNumber || "") &&
+    Boolean(fiscal.qrCodeUrl && fiscal.issuerCuit)
+  );
+}
+
 export class ReceiptPDFService {
   /**
    * Generates downloadable PDF for TICKET NO FISCAL (Roll format 80mm) with clean multi-line wrapping and no text overlap.
@@ -200,7 +210,7 @@ export class ReceiptPDFService {
     // Right Header (Invoice Details)
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    const isRealCae = fiscal.cae && fiscal.cae !== "SIN_AUTORIZACION_FISCAL" && !fiscal.cae.includes("BORRADOR");
+    const isRealCae = isAuthorizedFiscalDetails(fiscal);
     doc.text(isRealCae ? "FACTURA" : "DOCUMENTO NO FISCAL", pageWidth - 15, 20, { align: "right" });
 
     doc.setFontSize(8);
@@ -270,7 +280,7 @@ export class ReceiptPDFService {
 
     doc.setFontSize(14);
     doc.setTextColor(16, 124, 65);
-    doc.text(`TOTAL PRE-TICKET: $${order.total.toLocaleString("es-AR")}`, pageWidth - 15, currentY + 18, { align: "right" });
+    doc.text(`${isRealCae ? "TOTAL" : "TOTAL PRE-TICKET"}: $${order.total.toLocaleString("es-AR")}`, pageWidth - 15, currentY + 18, { align: "right" });
 
     // Official ARCA CAE / Draft Box
     currentY = 255;
@@ -281,12 +291,16 @@ export class ReceiptPDFService {
       doc.text(`CAE N°: ${fiscal.cae}`, 15, currentY);
       doc.text(`Fecha de Vencimiento CAE: ${fiscal.caeExpiration}`, 15, currentY + 5);
       doc.text("Comprobante Autorizado por ARCA (Agencia de Recaudación y Control Aduanero)", 15, currentY + 10);
+      doc.textWithLink("Abrir verificación fiscal ARCA", pageWidth - 15, currentY + 10, {
+        url: fiscal.qrCodeUrl!,
+        align: "right"
+      });
     } else {
       doc.text(`ESTADO FISCAL: DOCUMENTO NO FISCAL / BORRADOR PREVIO A FACTURACIÓN`, 15, currentY);
       doc.text(`CAE N°: PENDIENTE DE HOMOLOGACIÓN EN BACKEND`, 15, currentY + 5);
       doc.text("*** ESTE COMPROBANTE ES UN PRE-TICKET OPERATIVO INTERNO DE RESTO BAR DEL TEATRO ***", 15, currentY + 10);
     }
 
-    doc.save(`PreTicket_${fiscal.invoiceType}_${fiscal.invoiceNumber}.pdf`);
+    doc.save(`${isRealCae ? "Factura_ARCA" : "PreTicket"}_${fiscal.invoiceType}_${fiscal.invoiceNumber}.pdf`);
   }
 }

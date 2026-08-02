@@ -2,6 +2,14 @@ import jsPDF from "jspdf";
 import { MenuItem } from "../types";
 import { MENU_ITEMS } from "../data/menu";
 
+export function resolvePdfMenuItems(inputMenuItems: MenuItem[]): MenuItem[] {
+  const baseItems = inputMenuItems.length > 0 ? inputMenuItems : MENU_ITEMS;
+  return baseItems.map((item) => {
+    const catalogItem = MENU_ITEMS.find((candidate) => candidate.id === item.id);
+    return catalogItem ? { ...item, image: item.image || catalogItem.image } : item;
+  });
+}
+
 export class MenuPDFService {
   /**
    * Helper to load an image URL or Base64 into a clean Data URL for jsPDF
@@ -45,22 +53,8 @@ export class MenuPDFService {
    * Generates and downloads a complete, multi-page PDF of the active menu catalog with Photos & QR Code
    */
   public static async generateMenuPDF(inputMenuItems: MenuItem[]): Promise<void> {
-    // Merge input menu items with master MENU_ITEMS to ensure updated prices
-    const baseItems = inputMenuItems && inputMenuItems.length > 0 ? inputMenuItems : MENU_ITEMS;
-    const menuItems = baseItems.map(item => {
-      const catalogItem = MENU_ITEMS.find(m => m.id === item.id);
-      if (catalogItem) {
-        return {
-          ...item,
-          price: Math.max(item.price, catalogItem.price),
-          offerPrice: catalogItem.offerPrice || item.offerPrice,
-          takeawayPrice: catalogItem.takeawayPrice || item.takeawayPrice,
-          deliveryPrice: catalogItem.deliveryPrice || item.deliveryPrice,
-          image: item.image || catalogItem.image
-        };
-      }
-      return item;
-    });
+    // Supabase is canonical for prices; the bundled catalog only supplies missing images.
+    const menuItems = resolvePdfMenuItems(inputMenuItems || []);
 
     // Digital Menu Web Link for QR Code
     const digitalMenuUrl = typeof window !== "undefined" && window.location.origin
@@ -374,4 +368,3 @@ export class MenuPDFService {
     doc.save("Carta_Oficial_Castano.pdf");
   }
 }
-

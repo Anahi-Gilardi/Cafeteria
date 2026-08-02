@@ -80,16 +80,39 @@ export class ThermalPrinterService {
     }
 
     if (config.printerType === "websocket") {
-      try {
-        const socket = new WebSocket(config.websocketUrl);
-        socket.onopen = () => {
-          socket.send(JSON.stringify({ text, title, config }));
-          socket.close();
+      const sent = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        const finish = (success: boolean) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          resolve(success);
         };
-        return true;
-      } catch (e) {
-        console.warn("WebSocket print error, falling back to browser window.print()", e);
-      }
+        const timeoutId = window.setTimeout(() => finish(false), 3000);
+
+        try {
+          const socket = new WebSocket(config.websocketUrl);
+          socket.onopen = () => {
+            try {
+              socket.send(JSON.stringify({ text, title, config }));
+              socket.close();
+              finish(true);
+            } catch (error) {
+              console.warn("WebSocket print send failed:", error);
+              finish(false);
+            }
+          };
+          socket.onerror = () => finish(false);
+          socket.onclose = () => {
+            if (!settled) finish(false);
+          };
+        } catch (error) {
+          console.warn("WebSocket print connection failed:", error);
+          finish(false);
+        }
+      });
+      if (sent) return true;
+      console.warn("WebSocket printer unavailable, falling back to browser printing.");
     }
 
     // Fallback: Use standard clean browser print window

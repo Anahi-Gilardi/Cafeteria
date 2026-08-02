@@ -15,6 +15,7 @@ export interface ARCARequestPayload {
   invoiceType: "A" | "B" | "C";
   customerCuitDni: string;
   customerName: string;
+  customerIvaCondition: "Consumidor Final" | "Responsable Inscripto" | "Monotributo" | "Exento";
   idempotencyKey: string;
 }
 
@@ -74,7 +75,8 @@ export class ARCAAdapter {
     order: Order,
     customerCuitDni: string,
     customerName: string,
-    invoiceType: "A" | "B" | "C"
+    invoiceType: "A" | "B" | "C",
+    customerIvaCondition: ARCARequestPayload["customerIvaCondition"]
   ): Promise<ARCAResponse> {
     const cleanDoc = customerCuitDni.replace(/\D/g, "");
     const idempotencyKey = `fiscal:${order.id}:${invoiceType}:${cleanDoc || "0"}`;
@@ -84,6 +86,7 @@ export class ARCAAdapter {
       invoiceType,
       customerCuitDni: cleanDoc,
       customerName: customerName.trim() || "Consumidor Final",
+      customerIvaCondition,
       idempotencyKey
     };
 

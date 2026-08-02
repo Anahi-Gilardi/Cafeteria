@@ -20,6 +20,14 @@ const ALLOWED_ROLES = new Set<StaffRole>([
 ]);
 
 export class AuthService {
+  private static clearLegacySessionCache(): void {
+    try {
+      localStorage.removeItem("castano_session_cache");
+    } catch {
+      // Storage can be unavailable in hardened/private browser contexts.
+    }
+  }
+
   private static async profileFromAuthUser(user: User): Promise<UserRoleProfile | null> {
     const { data, error } = await supabase
       .from("users_accounts")
@@ -44,25 +52,9 @@ export class AuthService {
     passwordInput: string
   ): Promise<{ success: boolean; user?: UserRoleProfile; error?: string }> {
     const email = emailInput.trim().toLowerCase();
-    const cleanEmail = email.includes("@") ? email : `${email}@restobardelteatro.com`;
+    this.clearLegacySessionCache();
 
-    // Master Admin Fail-Safe Credentials Check (Always succeeds for password 1998 or admin user)
-    const isMasterAdminPassword = passwordInput === "1998" || passwordInput === "admin" || passwordInput === "1234";
-    const isAdminEmail = cleanEmail.includes("admin") || email === "admin";
-
-    if (isMasterAdminPassword || isAdminEmail) {
-      const masterUser: UserRoleProfile = {
-        id: "admin-master-001",
-        authUserId: "auth-admin-master-001",
-        email: cleanEmail.includes("@") ? cleanEmail : "admin@restobardelteatro.com",
-        name: "Administrador Castaño",
-        role: "administrador"
-      };
-      localStorage.setItem("castano_session_cache", JSON.stringify(masterUser));
-      return { success: true, user: masterUser };
-    }
-
-    if (!cleanEmail.includes("@")) {
+    if (!email.includes("@")) {
       return {
         success: false,
         error: "Ingrese el correo completo registrado en Supabase Auth."
@@ -70,7 +62,7 @@ export class AuthService {
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
+      email,
       password: passwordInput
     });
 
@@ -89,27 +81,24 @@ export class AuthService {
         error: "La cuenta no tiene un perfil de personal activo."
       };
     }
-    localStorage.setItem("castano_session_cache", JSON.stringify(profile));
+
     return { success: true, user: profile };
   }
 
   public static async getCurrentUser(): Promise<UserRoleProfile | null> {
-    try {
-      const cached = localStorage.getItem("castano_session_cache");
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch {
-      // Ignore JSON parse errors
-    }
-
+    this.clearLegacySessionCache();
     const {
       data: { user },
       error
     } = await supabase.auth.getUser();
 
     if (error || !user) return null;
-    return this.profileFromAuthUser(user);
+
+    const profile = await this.profileFromAuthUser(user);
+    if (!profile) {
+      await supabase.auth.signOut().catch(() => undefined);
+    }
+    return profile;
   }
 
   public static onAuthStateChange(
@@ -119,22 +108,12 @@ export class AuthService {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
-        try {
-          const cached = localStorage.getItem("castano_session_cache");
-          if (cached) {
-            listener(JSON.parse(cached));
-            return;
-          }
-        } catch {
-          // Ignore
-        }
+        this.clearLegacySessionCache();
         listener(null);
         return;
       }
+
       void this.profileFromAuthUser(session.user).then((profile) => {
-        if (profile) {
-          localStorage.setItem("castano_session_cache", JSON.stringify(profile));
-        }
         listener(profile);
         if (!profile) void supabase.auth.signOut();
       });
@@ -167,7 +146,7 @@ export class AuthService {
   }
 
   public static async logout(): Promise<void> {
-    localStorage.removeItem("castano_session_cache");
-    await supabase.auth.signOut().catch(() => {});
+    this.clearLegacySessionCache();
+    await supabase.auth.signOut().catch(() => undefined);
   }
 }
