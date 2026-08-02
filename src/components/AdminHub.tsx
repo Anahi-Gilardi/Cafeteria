@@ -4869,30 +4869,42 @@ export default function AdminHub({
                   </div>
                 </div>
 
-                {/* Final receipt emission actions */}
-                <div className="border-t border-[#D7BBA8] pt-5 space-y-3">
-                  <button 
-                    onClick={() => handleOpenArcaModalForOrder(posCheckoutOrder)}
-                    className="w-full py-4 rounded-2xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-xs cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2"
-                  >
-                    🧾 CONFIRMAR VENTA & EMITIR FACTURA FISCAL (ARCA)
-                  </button>
+                {/* Final receipt emission actions - Two Clear Checkout Modes */}
+                <div className="border-t border-[#D7BBA8] pt-5 space-y-3.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {/* Mode 1: Simple Payment without Fiscal Invoice */}
+                    <button 
+                      onClick={handleProcessPosCheckout}
+                      className="w-full py-4 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#4F735A]"
+                    >
+                      <CheckCircle className="h-4 w-4 text-white" /> 🟢 FINALIZAR COBRO SIMPLE (Sin Factura)
+                    </button>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Mode 2: Fiscal Invoice via ARCA / AFIP */}
+                    <button 
+                      onClick={() => handleOpenArcaModalForOrder(posCheckoutOrder)}
+                      className="w-full py-4 rounded-2xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#843747]"
+                    >
+                      <FileText className="h-4 w-4 text-white" /> 🧾 CONFIRMAR VENTA & EMITIR FACTURA FISCAL (ARCA)
+                    </button>
+                  </div>
+
+                  {/* Supporting Printing & Utility Actions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                     <button 
                       onClick={() => {
                         ReceiptPDFService.generateTicketNoFiscalPDF(posCheckoutOrder);
                         onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
                       }}
-                      className="py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+                      className="py-2.5 rounded-xl bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-[#843747] text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs uppercase tracking-wider"
                     >
-                      <Download className="h-3.5 w-3.5" /> 📥 Descargar PDF
+                      <Download className="h-3.5 w-3.5 text-[#843747]" /> 📥 Descargar PDF
                     </button>
                     <button 
                       onClick={() => handleIssueTicketNoFiscal(posCheckoutOrder)}
                       className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     >
-                      <Printer className="h-3.5 w-3.5 text-[#843747]" /> 🖨️ Ticket No Fiscal
+                      <Printer className="h-3.5 w-3.5 text-[#843747]" /> 🖨️ Ticket Térmico
                     </button>
                     <button 
                       onClick={() => setIsPrinterConfigModalOpen(true)}
