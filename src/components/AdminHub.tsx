@@ -5746,7 +5746,7 @@ export default function AdminHub({
                   type="submit"
                   className="px-6 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider text-xs"
                 >
-                  Guardar Reserva en Supabase
+                  Guardar Reserva
                 </button>
               </div>
             </form>
@@ -6752,7 +6752,7 @@ export default function AdminHub({
                           setProveedores(prev => prev.filter(p => p.id !== prov.id));
                           onShowNotification(`🗑️ Proveedor '${prov.name}' eliminado.`, "info");
                         }}
-                        className="p-1.5 text-red-400 hover:text-red-300 bg-[#2A1B12] hover:bg-red-950/80 border border-red-800/40 rounded-xl transition-all cursor-pointer"
+                        className="p-1.5 text-[#843747] hover:text-white bg-[#E8D4C3] hover:bg-[#843747] border border-[#D7BBA8] rounded-xl transition-all cursor-pointer"
                         title="Eliminar proveedor"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -6775,618 +6775,146 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#FDFBF7]"
+        className="space-y-8 text-[#332424]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Equipo y Colaboradores</span>
-            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Gestión de Personal</h2>
-          </div>
-          <div className="flex gap-1.5 bg-[#1A110B] p-1.5 border border-[#D4AF37]/25 rounded-xl gold-glow">
-            {[
-              { id: "barista", label: "Calibración" },
-              { id: "asistencia", label: "⏱️ Fichajes" },
-              { id: "consumo", label: "Mesa Colaborador" },
-              { id: "profit", label: "Profit-Sharing" },
-              { id: "cuentas", label: "Cuentas y Accesos" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setPersonalSubTab(tab.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
-                  personalSubTab === tab.id
-                    ? "bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] font-black shadow-md gold-glow"
-                    : "text-[#FDFBF7]/60 hover:text-[#FFDF00]"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#843747]">Equipo y Colaboradores</span>
+            <h2 className="font-serif text-3xl font-bold text-[#843747] mt-0.5">Gestión de Personal</h2>
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {personalSubTab === "barista" && (
-            <motion.div
-              key="subtab-barista"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8"
-            >
-              <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
-                <div>
-                  <div className="mb-4 border-b border-[#D7BBA8] pb-2">
-                    <h3 className="font-serif text-base font-bold text-[#843747]">Ficha de Calibración Diaria</h3>
-                    <p className="text-[10px] text-[#6F5A55] mt-0.5">Control de extracción obligatorio para Baristas de Castaño — Resto Bar.</p>
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#332424]">
+          {/* Form to add user: only visible to owner/administrator */}
+          {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+            <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
+              <form onSubmit={handleAddUser} className="space-y-4">
+                <div className="border-b border-[#D7BBA8] pb-2">
+                  <h3 className="font-serif text-base font-bold text-[#843747]">Crear Nueva Cuenta</h3>
+                  <p className="text-[10px] text-[#6F5A55] mt-0.5 font-medium">Registre empleados y asigne sus permisos de acceso.</p>
+                </div>
 
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      try {
-                        const { error } = await supabase.from("barista_calibrations").insert({
-                          gramos_in: calibrationData.gramosIn,
-                          mililitros_out: calibrationData.mililitrosOut,
-                          tiempo: calibrationData.tiempo,
-                          temperatura: calibrationData.temperatura,
-                          clima: calibrationData.clima
-                        });
-                        if (error) throw error;
-                        localStorage.setItem("puglia_calibration", JSON.stringify(calibrationData));
-                        onShowNotification("☕ Calibración del Barista guardada e integrada con éxito.", "success");
-                        fetchCalibrationsHistory();
-                      } catch (err) {
-                        console.error("Error saving calibration to Supabase:", err);
-                        onShowNotification("⚠️ Error al guardar calibración en la nube.", "warning");
-                      }
-                    }}
-                    className="space-y-4 text-xs font-semibold text-[#332424]"
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Nombre Completo</label>
+                  <input
+                    type="text"
+                    value={newUserName}
+                    onChange={(e) => setNewUserName(e.target.value)}
+                    placeholder="Ej. Juan Pérez"
+                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Correo Electrónico</label>
+                  <input
+                    type="email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="juan@restobardelteatro.com"
+                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Contraseña de Acceso</label>
+                  <input
+                    type="password"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Dirección Particular</label>
+                  <input
+                    type="text"
+                    value={newUserAddress}
+                    onChange={(e) => setNewUserAddress(e.target.value)}
+                    placeholder="Calle 50 nro. 123, Mar del Plata"
+                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Teléfono Personal</label>
+                    <input
+                      type="text"
+                      value={newUserPhone}
+                      onChange={(e) => setNewUserPhone(e.target.value)}
+                      placeholder="+54 223 555-1234"
+                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Tel. Contacto Emerg.</label>
+                    <input
+                      type="text"
+                      value={newUserEmergencyPhone}
+                      onChange={(e) => setNewUserEmergencyPhone(e.target.value)}
+                      placeholder="+54 223 555-9876"
+                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Sueldo Base ($ Mensual)</label>
+                    <input
+                      type="number"
+                      value={newUserSalary}
+                      onChange={(e) => setNewUserSalary(e.target.value)}
+                      placeholder="Ej. 180000"
+                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] font-mono font-bold outline-none focus:border-[#843747]"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Antigüedad (Meses)</label>
+                    <input
+                      type="number"
+                      value={newUserSeniority}
+                      onChange={(e) => setNewUserSeniority(e.target.value)}
+                      placeholder="Ej. 12"
+                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] font-mono font-bold outline-none focus:border-[#843747]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Rol / Cargo</label>
+                  <select
+                    value={newUserRole}
+                    onChange={(e) => setNewUserRole(e.target.value)}
+                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] font-bold text-[#332424] cursor-pointer outline-none focus:border-[#843747]"
                   >
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Dosis (In)</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={calibrationData.gramosIn}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, gramosIn: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Rendimiento (Out)</label>
-                        <input
-                          type="number"
-                          value={calibrationData.mililitrosOut}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, mililitrosOut: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Tiempo (seg)</label>
-                        <input
-                          type="number"
-                          value={calibrationData.tiempo}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, tiempo: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Temperatura (°C)</label>
-                        <input
-                          type="number"
-                          value={calibrationData.temperatura}
-                          onChange={(e) => setCalibrationData({ ...calibrationData, temperatura: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#843747] outline-none focus:border-[#843747]"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Clima / Humedad</label>
-                      <select
-                        value={calibrationData.clima}
-                        onChange={(e) => setCalibrationData({ ...calibrationData, clima: e.target.value })}
-                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl font-bold bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer focus:border-[#843747]"
-                      >
-                        <option value="Despejado y Seco">Despejado y Seco (Estable)</option>
-                        <option value="Lluvioso y Húmedo">Lluvioso y Húmedo (Ajustar Molienda)</option>
-                        <option value="Frío extremo">Frío extremo (Calentar tazas)</option>
-                        <option value="Caluroso y Húmedo">Caluroso y Húmedo</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase transition-all cursor-pointer tracking-wider shadow-xs"
-                    >
-                      ✓ Guardar & Calibrar
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
-                <div className="mb-4">
-                  <h3 className="font-serif text-base font-bold text-[#843747]">Historial de Calibraciones Recientes</h3>
-                  <p className="text-[10px] text-[#6F5A55]">Monitoreo de molienda y estabilidad de caldera.</p>
+                    <option value="mesero">Mesero</option>
+                    <option value="barista">Barista</option>
+                    <option value="cajero">Cajero</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
                 </div>
 
-                <div className="space-y-3 text-xs">
-                  {calibrationsHistory.length === 0 ? (
-                    <div className="text-center py-8 text-[#6F5A55] font-medium italic border border-dashed border-[#D7BBA8] rounded-2xl">
-                      No hay calibraciones registradas en el historial.
-                    </div>
-                  ) : (
-                    calibrationsHistory.map((log, idx) => {
-                      const fechaStr = log.created_at 
-                        ? new Date(log.created_at).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-                        : "Reciente";
-                      return (
-                        <div key={log.id || idx} className={`p-4 rounded-2xl border ${idx === 0 ? "border-[#843747] bg-[#E8D4C3]/50" : "border-[#D7BBA8] bg-[#FFF9F4]"} space-y-1.5`}>
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-[#332424]">Fecha: {fechaStr}</span>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${idx === 0 ? "bg-[#843747] text-white" : "bg-[#E8D4C3] text-[#6F5A55]"}`}>
-                              {idx === 0 ? "Activa (Perfil actual)" : "Archivada"}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2 font-mono text-[11px] text-[#6F5A55] pt-1">
-                            <div>In: <strong className="text-[#843747]">{log.gramos_in}g</strong></div>
-                            <div>Out: <strong className="text-[#843747]">{log.mililitros_out}ml</strong></div>
-                            <div>Tiempo: <strong className="text-[#843747]">{log.tiempo}s</strong></div>
-                            <div>Temp: <strong className="text-[#843747]">{log.temperatura}°C</strong></div>
-                          </div>
-                          <div className="text-[9px] text-[#6F5A55] italic pt-1 border-t border-[#D7BBA8] mt-1">
-                            Condición ambiental: {log.clima}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </motion.div>
+                <button
+                  type="submit"
+                  className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4 shadow-xs"
+                >
+                  + Registrar Colaborador
+                </button>
+              </form>
+            </div>
           )}
-
-          {personalSubTab === "consumo" && (
-            <motion.div
-              key="subtab-consumo"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6"
-            >
-              <div>
-                <h3 className="font-serif text-base font-bold text-[#843747]">💳 Mesa Colaborador (Consumos de Empleados)</h3>
-                <p className="text-[10px] text-[#6F5A55] mt-0.5 leading-relaxed">
-                  El manual operativo de <strong>Castaño — Resto Bar</strong> otorga un subsidio diario de consumo de hasta $12,00 por colaborador de turno para alimentación o refrigerio (Art. 9).
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {staffConsumptions.map((staff) => {
-                  const limitReached = staff.consumedToday >= staff.limit;
-                  return (
-                    <div key={staff.id} className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex flex-col justify-between h-36">
-                      <div>
-                        <strong className="text-xs font-bold text-[#332424] block">{staff.name}</strong>
-                        <span className="text-[9px] text-[#6F5A55] font-bold block mt-0.5">{staff.rol}</span>
-                        <div className="text-sm font-mono font-bold text-[#843747] mt-3">
-                          ${staff.consumedToday.toFixed(2)} / ${staff.limit.toFixed(2)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRecordStaffConsumption(staff.id, 2.50)}
-                        disabled={limitReached}
-                        className={`w-full py-1.5 rounded-lg text-[9px] font-bold tracking-wider transition-all cursor-pointer uppercase mt-3 ${
-                          limitReached 
-                            ? "bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] cursor-not-allowed"
-                            : "bg-[#843747] hover:bg-[#71303D] text-white"
-                        }`}
-                      >
-                        {limitReached ? "Subsidio Excedido" : "+$2.50 Consumo"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          {personalSubTab === "profit" && (
-            <motion.div
-              key="subtab-profit"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-5 space-y-6">
-                  <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
-                    <div className="mb-4 border-b border-[#D7BBA8] pb-2 flex items-center justify-between">
-                      <div>
-                        <h3 className="font-serif text-base font-bold text-[#843747]">Billetera de Propinas</h3>
-                        <p className="text-[10px] text-[#6F5A55] mt-0.5">Fondo Colectivo de Propinas Digitales (Sec. III.2)</p>
-                      </div>
-                      <Coins className="h-5 w-5 text-[#843747]" />
-                    </div>
-
-                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-center space-y-1">
-                      <span className="text-[10px] text-[#6F5A55] uppercase font-bold block">Fondo Acumulado</span>
-                      <span className="font-serif text-3xl font-black text-[#843747] block font-mono">${tipPool.toFixed(0)}</span>
-                      <p className="text-[8px] text-[#6F5A55] italic leading-tight pt-1">
-                        * Reparto digital semanal equitativo entre todos los miembros de turno.
-                      </p>
-                    </div>
-
-                    {/* Tip Splitter Tool */}
-                    <div className="pt-3 border-t border-[#D7BBA8] space-y-2.5">
-                      <h4 className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
-                        Seleccionar personal en turno ({selectedTipStaff.length})
-                      </h4>
-                      <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                        {activeTipEmployees.map(name => {
-                          const isChecked = selectedTipStaff.includes(name);
-                          return (
-                            <label key={name} className="flex items-center gap-2 text-[10px] font-semibold text-[#332424] cursor-pointer select-none">
-                              <input 
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => {
-                                  setSelectedTipStaff(prev => 
-                                    isChecked ? prev.filter(n => n !== name) : [...prev, name]
-                                  );
-                                }}
-                                className="h-3.5 w-3.5 rounded border-[#D7BBA8] text-[#843747] focus:ring-[#843747]/30 cursor-pointer"
-                              />
-                              <span>{name}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      <div className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-xl flex justify-between items-center text-[10px]">
-                        <span className="font-bold text-[#6F5A55]">Monto por Persona:</span>
-                        <strong className="text-xs font-mono text-[#4F735A]">
-                          ${selectedTipStaff.length > 0 ? (tipPool / selectedTipStaff.length).toFixed(0) : "0"} c/u
-                        </strong>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={async () => {
-                        if (tipPool <= 0) {
-                          onShowNotification("⚠️ No hay propinas acumuladas para repartir.", "warning");
-                          return;
-                        }
-                        if (selectedTipStaff.length === 0) {
-                          onShowNotification("⚠️ Seleccione al menos un colaborador para repartir.", "warning");
-                          return;
-                        }
-                        try {
-                          const selectedStaffIds = users
-                            .filter((staff) => selectedTipStaff.includes(staff.name))
-                            .map((staff) => staff.id);
-                          const { data, error } = await supabase.rpc("distribute_tip_pool", {
-                            p_staff_ids: selectedStaffIds
-                          });
-                          if (error) throw error;
-                          const perPerson = Number(data.amountPerStaff || 0).toFixed(0);
-                          setTipPool(0);
-                          onShowNotification(`✅ Repartido con éxito: $${perPerson} para ${selectedTipStaff.join(", ")}.`, "success");
-                        } catch (err) {
-                          console.error("Error clearing tip pool on Supabase:", err);
-                          onShowNotification("⚠️ No se pudo confirmar el reparto en Supabase.", "warning");
-                        }
-                      }}
-                      className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer mt-4 uppercase tracking-wider"
-                    >
-                      💸 Repartir Propinas Colectivas
-                    </button>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
-                  <div className="mb-2 border-b border-[#D7BBA8] pb-2 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-serif text-base font-bold text-[#843747]">Profit-Sharing Semestral</h3>
-                      <p className="text-[10px] text-[#6F5A55] mt-0.5">Distribución de utilidades (Marzo y Septiembre) - Sec. III.3</p>
-                    </div>
-                    <TrendingUp className="h-5 w-5 text-[#843747]" />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Ventas Semestrales</label>
-                      <input
-                        type="number"
-                        value={profitSales}
-                        onChange={(e) => setProfitSales(Math.max(0, parseFloat(e.target.value) || 0))}
-                        className="w-full text-xs font-mono font-bold p-2 border border-[#2C1810]/20 rounded-lg bg-stone-50 text-[#2C1810]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Ganancia Neta</label>
-                      <input
-                        type="number"
-                        value={profitNet}
-                        onChange={(e) => setProfitNet(Math.max(0, parseFloat(e.target.value) || 0))}
-                        className="w-full text-xs font-mono font-bold p-2 border border-[#2C1810]/20 rounded-lg bg-stone-50 text-[#2C1810]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-bold text-[#2C1810]/50 uppercase block mb-1">Horas Equipo</label>
-                      <input
-                        type="number"
-                        value={profitHoursTotal}
-                        onChange={(e) => setProfitHoursTotal(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-full text-xs font-mono font-bold p-2 border border-[#2C1810]/20 rounded-lg bg-stone-50 text-[#2C1810]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-stone-50 border border-[#2C1810]/5 rounded-2xl text-xs space-y-2 font-semibold">
-                    <div className="flex justify-between text-[#2C1810]">
-                      <span>Umbral de Rentabilidad Mínimo (URM 6% de Ventas):</span>
-                      <span>${(profitSales * 0.06).toFixed(0)}</span>
-                    </div>
-                    <div className="flex justify-between text-[#2C1810]">
-                      <span>¿Supera el Umbral para Reparto?:</span>
-                      <span className={superaSueldos ? "text-emerald-700 font-extrabold" : "text-rose-700 font-extrabold"}>
-                        {superaSueldos ? "SÍ (Se activa el pozo del 10%)" : "NO"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between font-bold border-t border-[#2C1810]/10 pt-2 text-[#2C1810]">
-                      <span>Pozo Profit-Sharing Neto (10% del Excedente):</span>
-                      <span className="font-mono text-caramel">${pozoProfitSharing.toFixed(0)}</span>
-                    </div>
-                  </div>
-
-                  <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
-                          <th className="p-3">Colaborador</th>
-                          <th className="p-3 text-center">Horas / Ant.</th>
-                          <th className="p-3 text-center">Pago Equitativo</th>
-                          <th className="p-3 text-center">Pago Proporcional</th>
-                          <th className="p-3 text-right">Total Neto</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-[#2C1810]/10">
-                        {(() => {
-                          const activeStaffList = users.map(u => {
-                            const meta = usersMetadata[u.id] || {};
-                            const recordedHours = attendanceLogs
-                              .filter((attendance) => attendance.staff_id === u.id)
-                              .reduce((sum, attendance) => sum + Number(attendance.hours_worked || 0), 0);
-                            const horasVal = profitStaffHours[u.id] !== undefined ? profitStaffHours[u.id] : recordedHours;
-                            const antVal = profitStaffAntiguedad[u.id] !== undefined ? profitStaffAntiguedad[u.id] : (meta.antiguedad || 0);
-                            return {
-                              id: u.id,
-                              name: u.name,
-                              rol: u.role === "administrador" ? "Administrador" : u.role === "barista" ? "Barista" : "Mesero",
-                              horas: horasVal,
-                              antiguedad: antVal
-                            };
-                          });
-
-                          const staffList = activeStaffList;
-
-                          const eligibleStaff = staffList.filter(s => s.antiguedad >= 6);
-                          const eligibleCount = eligibleStaff.length;
-                          const totalEligibleHours = eligibleStaff.reduce((sum, s) => sum + s.horas, 0);
-
-                          return staffList.map((emp, idx) => {
-                            const eligible = emp.antiguedad >= 6;
-                            const equitativa = eligible ? ((pozoProfitSharing * 0.50) / eligibleCount) : 0;
-                            const proporcional = (eligible && totalEligibleHours > 0) ? (emp.horas / totalEligibleHours) * (pozoProfitSharing * 0.50) : 0;
-                            const totalEmp = equitativa + proporcional;
-
-                            return (
-                              <tr key={idx} className="hover:bg-stone-50/50 transition-colors">
-                                <td className="p-3">
-                                  <strong className="text-[#2C1810] font-bold block">{emp.name}</strong>
-                                  <span className="text-[9px] text-[#2C1810]/50 block">{emp.rol}</span>
-                                </td>
-                                <td className="p-3 text-center flex items-center justify-center gap-1.5 min-h-[50px]">
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[8px] uppercase tracking-wider text-stone-400 font-bold">Horas</span>
-                                    <input 
-                                      type="number" 
-                                      value={emp.horas} 
-                                      onChange={(e) => {
-                                        const val = Math.max(0, parseInt(e.target.value) || 0);
-                                        setProfitStaffHours(prev => ({ ...prev, [emp.id]: val }));
-                                      }}
-                                      className="w-14 p-1 text-center border border-stone-200 rounded font-mono text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-caramel bg-stone-50/50"
-                                    />
-                                  </div>
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className="text-[8px] uppercase tracking-wider text-stone-400 font-bold">Meses</span>
-                                    <input 
-                                      type="number" 
-                                      value={emp.antiguedad} 
-                                      onChange={(e) => {
-                                        const val = Math.max(0, parseInt(e.target.value) || 0);
-                                        setProfitStaffAntiguedad(prev => ({ ...prev, [emp.id]: val }));
-                                        const userMeta = usersMetadata[emp.id] || {};
-                                        saveUsersMetadata({
-                                          ...usersMetadata,
-                                          [emp.id]: {
-                                            ...userMeta,
-                                            antiguedad: val
-                                          }
-                                        }, emp.id);
-                                      }}
-                                      className="w-12 p-1 text-center border border-stone-200 rounded font-mono text-[10px] font-bold focus:outline-none focus:ring-1 focus:ring-caramel bg-stone-50/50"
-                                    />
-                                  </div>
-                                </td>
-                                <td className="p-3 text-center font-mono text-[10px] text-[#2C1810]/60">
-                                  {eligible ? `$${equitativa.toFixed(0)}` : "-"}
-                                </td>
-                                <td className="p-3 text-center font-mono text-[10px] text-[#2C1810]/60">
-                                  {eligible ? `$${proporcional.toFixed(0)}` : "-"}
-                                </td>
-                                <td className="p-3 text-right font-mono font-bold text-[#C2956E]">
-                                  {eligible ? `$${totalEmp.toFixed(0)}` : (
-                                    <span className="text-rose-700 text-[8px] uppercase tracking-wider font-extrabold bg-rose-50 px-1 py-0.5 rounded border border-rose-200">Excluido</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          });
-                        })()}
-                      </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          {personalSubTab === "cuentas" && (
-            <motion.div
-              key="subtab-cuentas"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2C1810]"
-            >
-              {/* Form to add user: only visible to owner/administrator */}
-              {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                <div className="lg:col-span-4 bg-[#1A110B] border border-[#D4AF37]/25 text-[#FDFBF7] rounded-3xl p-6 shadow-xs space-y-4">
-                  <form onSubmit={handleAddUser} className="space-y-4">
-                    <div className="border-b border-[#2C1810]/15 pb-2">
-                      <h3 className="font-serif text-base font-bold text-[#2C1810]">Crear Nueva Cuenta</h3>
-                      <p className="text-[10px] text-[#2C1810]/50 mt-0.5 font-normal">Registre empleados y asigne sus permisos de acceso.</p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Nombre Completo</label>
-                      <input
-                        type="text"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        placeholder="Ej. Juan Pérez"
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Correo Electrónico</label>
-                      <input
-                        type="email"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        placeholder="juan@restobardelteatro.com"
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Contraseña de Acceso</label>
-                      <input
-                        type="password"
-                        value={newUserPassword}
-                        onChange={(e) => setNewUserPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Dirección Particular</label>
-                      <input
-                        type="text"
-                        value={newUserAddress}
-                        onChange={(e) => setNewUserAddress(e.target.value)}
-                        placeholder="Calle 50 nro. 123, Mar del Plata"
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Teléfono Personal</label>
-                        <input
-                          type="text"
-                          value={newUserPhone}
-                          onChange={(e) => setNewUserPhone(e.target.value)}
-                          placeholder="+54 223 555-1234"
-                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Tel. Contacto Emerg.</label>
-                        <input
-                          type="text"
-                          value={newUserEmergencyPhone}
-                          onChange={(e) => setNewUserEmergencyPhone(e.target.value)}
-                          placeholder="+54 223 555-9876"
-                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-semibold"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Sueldo Base ($ Mensual)</label>
-                        <input
-                          type="number"
-                          value={newUserSalary}
-                          onChange={(e) => setNewUserSalary(e.target.value)}
-                          placeholder="Ej. 180000"
-                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Antigüedad (Meses)</label>
-                        <input
-                          type="number"
-                          value={newUserSeniority}
-                          onChange={(e) => setNewUserSeniority(e.target.value)}
-                          placeholder="Ej. 12"
-                          className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] text-[#2C1810] font-mono font-bold"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-[#2C1810]/50 block">Rol / Cargo</label>
-                      <select
-                        value={newUserRole}
-                        onChange={(e) => setNewUserRole(e.target.value)}
-                        className="w-full text-xs p-2 border border-[#2C1810]/15 rounded-lg bg-[#FDFBF7] font-bold text-[#2C1810] cursor-pointer"
-                      >
-                        <option value="mesero">Mesero</option>
-                        <option value="barista">Barista</option>
-                        <option value="cajero">Cajero</option>
-                        <option value="administrador">Administrador</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-[#2C1810] hover:bg-[#3d2217] text-white text-[10px] font-bold py-2.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4"
-                    >
-                      + Registrar Colaborador
-                    </button>
-                  </form>
-                </div>
-              )}
 
               {/* Users list */}
               <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6" : "lg:col-span-12 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6"}>
@@ -7550,14 +7078,10 @@ export default function AdminHub({
                   </div>
                 )}
               </div>
-            </motion.div>
-          )}
-
-          {personalSubTab === "asistencia" && renderAttendance()}
-          </AnimatePresence>
-        </motion.div>
-      );
-    };
+            </div>
+          </motion.div>
+        );
+      };
 
   const renderSalon = () => {
     const defaultCoords = [
@@ -8854,12 +8378,11 @@ export default function AdminHub({
 
             {/* 2. MÓDULOS DE ADMINISTRACIÓN Y GESTIÓN */}
             {[
-              { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["administrador"] },
+              { id: "reportes", label: "Reportes & Analíticas", icon: ChartNoAxesCombined, roles: ["administrador"] },
               { id: "precios", label: "Carta & Recetas", icon: BookOpenText, roles: ["administrador"] },
               { id: "inventario", label: "Stock & Insumos", icon: Boxes, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
               { id: "proveedores", label: "Proveedores", icon: Truck, roles: ["administrador"] },
-              { id: "personal", label: "Personal", icon: UsersRound, roles: ["administrador", "barista"] },
-              { id: "reportes", label: "Reportes", icon: ChartNoAxesCombined, roles: ["administrador"] }
+              { id: "personal", label: "Personal", icon: UsersRound, roles: ["administrador", "barista"] }
             ].filter(link => {
               if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
                 return false;
