@@ -19,6 +19,7 @@ export default function LoginScreen({
   const [passwordInput, setPasswordInput] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const handleCredentialsLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -56,6 +57,28 @@ export default function LoginScreen({
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!emailInput.trim()) {
+      onShowNotification("⚠️ Ingrese primero el correo de la cuenta.", "warning");
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const result = await AuthService.requestPasswordReset(emailInput);
+      if (!result.success) {
+        onShowNotification(`❌ ${result.error || "No fue posible enviar la recuperación."}`, "warning");
+        return;
+      }
+      onShowNotification(
+        "✅ Si la cuenta existe, Supabase envió un enlace para definir una nueva contraseña.",
+        "success"
+      );
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
   return (
     <div className="relative z-10 flex min-h-[520px] w-full flex-col justify-between rounded-3xl border border-[#D7BBA8] bg-[#FFF9F4] p-6 text-[#332424] shadow-2xl sm:p-8">
       <div>
@@ -89,6 +112,14 @@ export default function LoginScreen({
                 required
               />
             </div>
+            <button
+              type="button"
+              disabled={isSendingReset}
+              onClick={handlePasswordReset}
+              className="ml-auto block border-none bg-transparent pt-1 text-[10px] font-bold text-[#843747] underline decoration-[#843747]/40 underline-offset-2 hover:text-[#332424] disabled:cursor-wait disabled:opacity-60"
+            >
+              {isSendingReset ? "Enviando recuperación…" : "Olvidé mi contraseña"}
+            </button>
           </div>
 
           <div className="space-y-1">

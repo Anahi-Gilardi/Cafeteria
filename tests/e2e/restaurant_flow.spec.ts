@@ -79,7 +79,16 @@ test.describe("Resto Bar Del Teatro", () => {
     await page.getByRole("button", { name: "Acceso a POS y Personal" }).click();
     await expect(page.getByLabel("Correo electrónico")).toBeVisible();
     await expect(page.locator("#staff-password")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Olvidé mi contraseña" })).toBeVisible();
     await expect(page.getByText(/PIN rápido|admin.*1998/i)).toHaveCount(0);
+  });
+
+  test("el enlace de recuperación abre una pantalla para definir una clave segura", async ({ page }) => {
+    await page.goto("/?reset-password=1");
+
+    await expect(page.getByRole("heading", { name: "Definir nueva contraseña" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Nueva contraseña", exact: true })).toHaveAttribute("minlength", "12");
+    await expect(page.getByRole("textbox", { name: "Confirmar contraseña", exact: true })).toHaveAttribute("minlength", "12");
   });
 
   test("el antiguo acceso admin/1998 ya no concede acceso administrativo", async ({ page }) => {
