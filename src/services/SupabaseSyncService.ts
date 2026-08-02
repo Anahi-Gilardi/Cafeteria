@@ -245,6 +245,44 @@ export class SupabaseSyncService {
     }
   }
 
+  static async deleteOrder(
+    orderId: string,
+    reason = "Eliminación manual desde Cocina & Chef"
+  ): Promise<{ success: boolean; inventoryRestored?: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc("delete_order_transaction", {
+        p_order_id: orderId,
+        p_reason: reason
+      });
+
+      if (error) {
+        let message = error.message;
+        if (error.code === "42501") {
+          message = "Solo un administrador o dueño puede eliminar comandas";
+        } else if (error.code === "P0002") {
+          message = "La comanda ya no existe en Supabase";
+        } else if (error.code === "23514") {
+          message = `La comanda no se puede eliminar: ${error.message}`;
+        }
+        return { success: false, error: `${message} (${error.code})` };
+      }
+
+      if (!data?.deleted || data.order_id !== orderId) {
+        return { success: false, error: "Supabase no confirmó la eliminación de la comanda" };
+      }
+
+      return {
+        success: true,
+        inventoryRestored: data.inventory_restored === true
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "No fue posible eliminar la comanda en Supabase"
+      };
+    }
+  }
+
   static async fetchArchivedOrders(): Promise<{
     archivedOrders: ArchivedOrderRecord[];
     error?: string;

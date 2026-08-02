@@ -59,6 +59,51 @@ describe("SupabaseSyncService integrity", () => {
     expect(result.archivedOrder?.orderId).toBe("ORDER-2");
   });
 
+  it("does not report a deletion as successful when the protected RPC rejects it", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "paid orders cannot be deleted", code: "23514" }
+    });
+
+    const result = await SupabaseSyncService.deleteOrder("ORDER-PAID");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("23514");
+    expect(result.error).toContain("no se puede eliminar");
+    expect(mocks.rpc).toHaveBeenCalledWith("delete_order_transaction", {
+      p_order_id: "ORDER-PAID",
+      p_reason: "Eliminación manual desde Cocina & Chef"
+    });
+  });
+
+  it("only confirms a deletion acknowledged by Supabase and exposes inventory restoration", async () => {
+    mocks.rpc.mockResolvedValue({
+      error: null,
+      data: {
+        deleted: true,
+        order_id: "ORDER-DELETE",
+        inventory_restored: true
+      }
+    });
+
+    const result = await SupabaseSyncService.deleteOrder("ORDER-DELETE");
+
+    expect(result.success).toBe(true);
+    expect(result.inventoryRestored).toBe(true);
+  });
+
+  it("rejects a mismatched deletion acknowledgement", async () => {
+    mocks.rpc.mockResolvedValue({
+      error: null,
+      data: { deleted: true, order_id: "OTHER-ORDER", inventory_restored: true }
+    });
+
+    const result = await SupabaseSyncService.deleteOrder("ORDER-DELETE");
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no confirmó");
+  });
+
   it("keeps mixed payments atomic when the batch RPC rejects them", async () => {
     mocks.rpc.mockResolvedValue({
       data: null,

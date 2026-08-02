@@ -121,6 +121,23 @@ if (!protectedOrderRpcError) {
   console.log("✅ persist_order_transaction existe y bloquea escritura anónima");
 }
 
+const { error: protectedDeleteRpcError } = await supabase.rpc(
+  "delete_order_transaction",
+  {
+    p_order_id: "anonymous-integrity-probe",
+    p_reason: "Prueba anónima de integridad"
+  }
+);
+if (!protectedDeleteRpcError) {
+  failures += 1;
+  console.error("❌ delete_order_transaction permite borrado anónimo");
+} else if (["PGRST202", "42883"].includes(protectedDeleteRpcError.code)) {
+  failures += 1;
+  console.error("❌ delete_order_transaction no está instalada en Supabase");
+} else {
+  console.log("✅ delete_order_transaction existe y bloquea borrado anónimo");
+}
+
 const { data: menuIntegrityRows } = await supabase
   .from("menu_items")
   .select("id,stock,is_available,recipe,recipe_required,vat_rate,arca_item_code,arca_unit_code,fiscal_enabled");

@@ -522,6 +522,35 @@ export default function App() {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string): Promise<boolean> => {
+    const targetOrder = ordersRef.current.find((order) => order.id === orderId);
+    if (!targetOrder) {
+      showNotification(`No se encontró la comanda #${orderId}.`, "warning");
+      return false;
+    }
+
+    const result = await SupabaseSyncService.deleteOrder(orderId);
+    if (!result.success) {
+      showNotification(result.error || `No se pudo eliminar la comanda #${orderId}.`, "warning");
+      return false;
+    }
+
+    const updatedOrders = ordersRef.current.filter((order) => order.id !== orderId);
+    ordersRef.current = updatedOrders;
+    setOrders(updatedOrders);
+    try {
+      localStorage.setItem("resto_bar_orders", JSON.stringify(updatedOrders));
+    } catch {}
+
+    showNotification(
+      result.inventoryRestored
+        ? `Comanda #${orderId} eliminada. El stock y los insumos fueron restaurados.`
+        : `Comanda #${orderId} eliminada correctamente.`,
+      "success"
+    );
+    return true;
+  };
+
   const handleUpdateOrdersWithPersist = (newOrdersOrUpdater: Order[] | ((prev: Order[]) => Order[])) => {
     const previousOrders = ordersRef.current;
     const nextOrders = typeof newOrdersOrUpdater === "function"
@@ -674,6 +703,7 @@ export default function App() {
               orders={orders}
               onOrderStatusUpdate={handleOrderStatusUpdate}
               onArchiveOrder={handleArchiveOrder}
+              onDeleteOrder={handleDeleteOrder}
               onUpdateOrders={handleUpdateOrdersWithPersist}
               menuItems={menuItems}
               onUpdateMenu={setMenuItems}
@@ -698,6 +728,7 @@ export default function App() {
           orders={orders}
           onOrderStatusUpdate={handleOrderStatusUpdate}
           onArchiveOrder={handleArchiveOrder}
+          onDeleteOrder={handleDeleteOrder}
           onUpdateOrders={handleUpdateOrdersWithPersist}
           menuItems={menuItems}
           onUpdateMenu={setMenuItems}
@@ -833,6 +864,7 @@ export default function App() {
                 orders={orders}
                 onOrderStatusUpdate={handleOrderStatusUpdate}
                 onArchiveOrder={handleArchiveOrder}
+                onDeleteOrder={handleDeleteOrder}
                     onUpdateOrders={handleUpdateOrdersWithPersist}
                     menuItems={menuItems}
                     onUpdateMenu={setMenuItems}
@@ -859,6 +891,8 @@ export default function App() {
                   menuItems={menuItems}
                   onOrderStatusUpdate={handleOrderStatusUpdate}
                   onArchiveOrder={handleArchiveOrder}
+                  onDeleteOrder={handleDeleteOrder}
+                  canDeleteOrders={["administrador", "dueño"].includes(currentUser.role)}
                 />
               </motion.div>
             )}

@@ -1,5 +1,5 @@
 import { Order, OrderStatusType, MenuItem } from "../types";
-import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, RefreshCw, Search } from "lucide-react";
+import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { ArchivedOrderRecord, SupabaseSyncService } from "../services/SupabaseSyncService";
@@ -9,13 +9,17 @@ interface KitchenDisplayProps {
   menuItems: MenuItem[];
   onOrderStatusUpdate: (orderId: string, status: OrderStatusType) => void;
   onArchiveOrder: (orderId: string) => Promise<boolean>;
+  onDeleteOrder: (orderId: string) => Promise<boolean>;
+  canDeleteOrders: boolean;
 }
 
 export default function KitchenDisplay({
   orders,
   menuItems,
   onOrderStatusUpdate,
-  onArchiveOrder
+  onArchiveOrder,
+  onDeleteOrder,
+  canDeleteOrders
 }: KitchenDisplayProps) {
   const [selectedItemForRecipe, setSelectedItemForRecipe] = useState<MenuItem | null>(null);
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
@@ -30,6 +34,7 @@ export default function KitchenDisplay({
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [archiveError, setArchiveError] = useState("");
   const [archivingOrderId, setArchivingOrderId] = useState<string | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
   const loadArchive = async () => {
     setArchiveLoading(true);
@@ -48,13 +53,26 @@ export default function KitchenDisplay({
   }, []);
 
   const handleArchiveOrder = async (order: Order) => {
-    if (archivingOrderId) return;
+    if (archivingOrderId || deletingOrderId) return;
     setArchivingOrderId(order.id);
     const archived = await onArchiveOrder(order.id);
     if (archived) {
       await loadArchive();
     }
     setArchivingOrderId(null);
+  };
+
+  const handleDeleteOrder = async (order: Order) => {
+    if (!canDeleteOrders || deletingOrderId || archivingOrderId) return;
+    const confirmed = window.confirm(
+      `¿Eliminar permanentemente la comanda ${formatOrderId(order.id)}?\n\n` +
+      "Esta acción no se puede deshacer. Solo se permitirá si no tiene pagos ni comprobantes fiscales; el stock consumido se restaurará automáticamente."
+    );
+    if (!confirmed) return;
+
+    setDeletingOrderId(order.id);
+    await onDeleteOrder(order.id);
+    setDeletingOrderId(null);
   };
 
   const handleUpdateStatus = (order: Order, newStatus: OrderStatusType) => {
@@ -298,19 +316,37 @@ export default function KitchenDisplay({
           )}
 
           {currentColumn === "finalizadas" && (
-            <button
-              type="button"
-              onClick={() => void handleArchiveOrder(order)}
-              disabled={archivingOrderId === order.id}
-              className="w-full py-2 px-3 rounded-xl bg-[#E8D4C3] hover:bg-[#D7BBA8] disabled:opacity-60 disabled:cursor-wait text-[#332424] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-            >
-              {archivingOrderId === order.id ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <Archive className="h-4 w-4" />
+            <div className={`grid gap-2 ${canDeleteOrders ? "grid-cols-2" : "grid-cols-1"}`}>
+              <button
+                type="button"
+                onClick={() => void handleArchiveOrder(order)}
+                disabled={archivingOrderId === order.id || deletingOrderId === order.id}
+                className="w-full py-2 px-3 rounded-xl bg-[#E8D4C3] hover:bg-[#D7BBA8] disabled:opacity-60 disabled:cursor-wait text-[#332424] text-[11px] font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                {archivingOrderId === order.id ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Archive className="h-4 w-4" />
+                )}
+                {archivingOrderId === order.id ? "Archivando…" : "Archivar"}
+              </button>
+
+              {canDeleteOrders && (
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteOrder(order)}
+                  disabled={deletingOrderId === order.id || archivingOrderId === order.id}
+                  className="w-full py-2 px-3 rounded-xl border border-[#C76A70] bg-[#F4DCDD] hover:bg-[#EBC8CA] disabled:opacity-60 disabled:cursor-wait text-[#8B2F37] text-[11px] font-bold uppercase tracking-wide flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                >
+                  {deletingOrderId === order.id ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  {deletingOrderId === order.id ? "Eliminando…" : "Eliminar"}
+                </button>
               )}
-              {archivingOrderId === order.id ? "Archivando…" : "Archivar en Supabase"}
-            </button>
+            </div>
           )}
         </div>
       </div>
