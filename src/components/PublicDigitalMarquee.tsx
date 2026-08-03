@@ -281,66 +281,21 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Starters Selector */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">1. Entrada</label>
-                <select
-                  value={selectedStarter}
-                  onChange={(e) => setSelectedStarter(e.target.value)}
-                  className="w-full p-2.5 bg-[#F3E7DB] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none"
-                >
-                  {todayMenu.starters.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Mains Selector */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">2. Plato Principal</label>
-                <select
-                  value={selectedMain}
-                  onChange={(e) => setSelectedMain(e.target.value)}
-                  className="w-full p-2.5 bg-[#F3E7DB] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none"
-                >
-                  {todayMenu.mains.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Drinks Selector */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">3. Bebida</label>
-                <select
-                  value={selectedDrink}
-                  onChange={(e) => setSelectedDrink(e.target.value)}
-                  className="w-full p-2.5 bg-[#F3E7DB] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none"
-                >
-                  {todayMenu.drinks.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Desserts Selector */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">4. Postre / Café</label>
-                <select
-                  value={selectedDessert}
-                  onChange={(e) => setSelectedDessert(e.target.value)}
-                  className="w-full p-2.5 bg-[#F3E7DB] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none"
-                >
-                  {todayMenu.desserts.map((ds) => (
-                    <option key={ds} value={ds}>{ds}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="w-full py-3 rounded-2xl bg-[#E8D4C3]/60 border border-[#D7BBA8] text-[#843747] font-bold text-[10px] uppercase tracking-wider text-center">
-              📖 Menú de consulta visual · Su mozo tomará la orden en mesa
+            {/* Botón directo de Pedido por WhatsApp */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `¡Hola! Quisiera realizar un pedido del *Plato del Día (${todayMenu.dayOfWeek})*:\n\n*${todayMenu.title}*\n"${todayMenu.description}"\n*Precio: $${todayMenu.price.toLocaleString("es-AR")}*`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                }}
+                className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20bd59] text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-emerald-400/40"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                PEDIR PLATO DEL DÍA POR WHATSAPP
+              </button>
             </div>
           </div>
         )}
