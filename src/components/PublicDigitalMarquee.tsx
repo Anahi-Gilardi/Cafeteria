@@ -474,39 +474,46 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => (
-            <div key={item.id} className="p-4 bg-white border border-[#D7BBA8] rounded-2xl flex gap-4 items-center justify-between shadow-sm hover:shadow-md hover:border-[#843747] transition-all">
-              <div className="space-y-1 flex-1">
-                <strong className="text-sm font-bold text-[#332424] block">{item.name}</strong>
-                <p className="text-xs text-[#6F5A55] leading-tight line-clamp-2">{item.description}</p>
-                <span className="text-sm font-black text-[#843747] block font-mono mt-1">${item.price.toLocaleString("es-AR")}</span>
+            <div key={item.id} className="p-4 bg-white border border-[#D7BBA8] rounded-2xl flex gap-4 items-start shadow-sm hover:shadow-md hover:border-[#843747] transition-all group">
+              <div className="relative h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden shrink-0 border border-[#D7BBA8] bg-[#F3E7DB] shadow-xs">
+                <MenuImage src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
-              {cartOrder[item.id] ? (
-                <div className="flex items-center gap-1.5 bg-[#E8D4C3] border border-[#843747] rounded-xl p-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFromCart(item.id)}
-                    className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
-                  >
-                    -
-                  </button>
-                  <span className="text-xs font-black font-mono text-[#843747] px-1">{cartOrder[item.id].quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleAddToCart(item)}
-                    className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
-                  >
-                    +
-                  </button>
+              <div className="flex-1 flex flex-col justify-between h-full min-h-[5rem] space-y-2">
+                <div>
+                  <strong className="text-sm font-bold text-[#332424] block leading-snug">{item.name}</strong>
+                  <p className="text-xs text-[#6F5A55] leading-tight line-clamp-2 mt-1">{item.description}</p>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleAddToCart(item)}
-                  className="px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all shadow-xs cursor-pointer"
-                >
-                  + Agregar al pedido
-                </button>
-              )}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-sm font-black text-[#843747] font-mono">${item.price.toLocaleString("es-AR")}</span>
+                  {cartOrder[item.id] ? (
+                    <div className="flex items-center gap-1.5 bg-[#E8D4C3] border border-[#843747] rounded-xl p-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFromCart(item.id)}
+                        className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-black font-mono text-[#843747] px-1">{cartOrder[item.id].quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(item)}
+                        className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(item)}
+                      className="px-3 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all shadow-xs cursor-pointer"
+                    >
+                      + Agregar
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>
