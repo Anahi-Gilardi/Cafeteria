@@ -315,20 +315,20 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               </div>
             </div>
 
-            {/* Botón directo de Pedido por WhatsApp */}
-            <div className="pt-2">
+            {/* Botón directo de Pedido por WhatsApp (Tamaño compacto) */}
+            <div className="pt-2 flex justify-center">
               <button
                 type="button"
                 onClick={() => {
                   const msg = `¡Hola! Quisiera realizar un pedido del *Plato del Día (${todayMenu.dayOfWeek})*:\n\n*${todayMenu.title}*\n"${todayMenu.description}"\n*Precio: $${todayMenu.price.toLocaleString("es-AR")}*`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
                 }}
-                className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20bd59] text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-emerald-400/40"
+                className="py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20bd59] text-white font-bold text-[11px] uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/30"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
-                PEDIR PLATO DEL DÍA POR WHATSAPP
+                Pedir plato del día por WhatsApp
               </button>
             </div>
           </div>
@@ -385,8 +385,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               </div>
             </div>
 
-            {/* Botón Pedir Menú Diario por WhatsApp */}
-            <div className="pt-2">
+            {/* Botón Pedir Menú Diario por WhatsApp (Tamaño compacto) */}
+            <div className="pt-2 flex justify-center">
               <button
                 type="button"
                 onClick={() => {
@@ -395,12 +395,12 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   const msg = `¡Hola! Quisiera pedir el *Menú Diario*:\n\n• *Plato Principal:* ${mainChoice}\n• *Guarnición:* ${sideChoice}\n\n*Precio Combo: $${dailyComboState.price.toLocaleString("es-AR")}*`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
                 }}
-                className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20bd59] text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-emerald-400/40"
+                className="py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20bd59] text-white font-bold text-[11px] uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/30"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
-                PEDIR MENÚ DIARIO COMBINADO POR WHATSAPP
+                Pedir menú diario por WhatsApp
               </button>
             </div>
           </div>
