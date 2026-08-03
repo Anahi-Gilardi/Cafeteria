@@ -437,6 +437,8 @@ export default function AdminHub({
   const [mozoCategory, setMozoCategory] = useState<string>("todos");
   const [mozoSearchQuery, setMozoSearchQuery] = useState<string>("");
   const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
+  const [selectedMainMozo, setSelectedMainMozo] = useState<string>("");
+  const [selectedSideMozo, setSelectedSideMozo] = useState<string>("");
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -455,6 +457,14 @@ export default function AdminHub({
     } catch (e) {}
     return EMPTY_WEEKLY_MENUS;
   });
+
+  const todayMenu = useMemo(() => {
+    const days: DailyExecutiveMenu["dayOfWeek"][] = [
+      "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
+    ];
+    const todayDayName = days[new Date().getDay()];
+    return weeklyMenus.find(m => m.dayOfWeek && m.dayOfWeek.toLowerCase().trim() === todayDayName.toLowerCase().trim() && m.title && m.title.trim() !== "") || null;
+  }, [weeklyMenus]);
 
   const [selectedDayTab, setSelectedDayTab] = useState<DailyExecutiveMenu["dayOfWeek"]>("Lunes");
 
@@ -6459,16 +6469,17 @@ export default function AdminHub({
 
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
               {[
-                { id: "todos", label: "Todos" },
-                { id: "executive", label: "Menú Diario" },
-                { id: "desayunos_meriendas", label: "Desayunos & Meriendas" },
-                { id: "pizzas_focaccias", label: "Pizzas & Focaccias" },
-                { id: "minutas_carnes", label: "Minutas & Carnes" },
-                { id: "pastas_caseras", label: "Pastas Caseras" },
-                { id: "empanadas", label: "Empanadas" },
-                { id: "bebidas_sa", label: "Bebidas S/A" },
-                { id: "bebidas_alcohol", label: "Bebidas c/Alcohol" },
-                { id: "postres", label: "Postres" }
+                { id: "todos", label: "🍽️ Todos" },
+                { id: "menu_diario", label: "⭐ Menú del Día" },
+                { id: "executive", label: "🍱 Menú Diario" },
+                { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
+                { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
+                { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
+                { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+                { id: "empanadas", label: "🥟 Empanadas" },
+                { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
+                { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
+                { id: "postres", label: "🍰 Postres" }
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -6484,6 +6495,116 @@ export default function AdminHub({
               ))}
             </div>
           </div>
+
+          {/* ⭐ Menú del Día (Plato Único Semanal) Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "menu_diario") && todayMenu && (
+            <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-5 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#D7BBA8] pb-3">
+                <div className="flex items-center gap-3">
+                  {todayMenu.image ? (
+                    <img src={todayMenu.image} alt={todayMenu.title} className="h-16 w-20 rounded-2xl object-cover border border-[#843747] shadow-xs shrink-0" />
+                  ) : (
+                    <div className="h-16 w-20 rounded-2xl bg-[#843747] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                      ⭐ DÍA
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#843747] tracking-widest block">⭐ Plato Único del Día ({todayMenu.dayOfWeek})</span>
+                    <h4 className="font-serif text-lg font-bold text-[#332424]">{todayMenu.title}</h4>
+                    <p className="text-xs text-[#6F5A55] italic">{todayMenu.description || "Plato especial del día."}</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs text-[#6F5A55] block font-bold">Precio</span>
+                  <span className="text-xl font-mono font-black text-[#843747] block">${todayMenu.price.toLocaleString("es-AR")}</span>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const itemToCart: MenuItem = {
+                      id: `menu_dia_${Date.now()}`,
+                      name: `⭐ Menú del Día (${todayMenu.title})`,
+                      price: todayMenu.price,
+                      category: "menu_diario",
+                      description: todayMenu.description,
+                      image: todayMenu.image
+                    };
+                    handleAddMozoCart(itemToCart);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Agregar Plato del Día a Comanda
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 🍱 Combo Menú Diario (4 Platos + 3 Guarniciones) Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "executive") && (
+            <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-start border-b border-[#D7BBA8] pb-3">
+                <div>
+                  <span className="text-[9px] font-black uppercase text-[#843747] tracking-widest block">🍱 Combo Menú Diario</span>
+                  <h4 className="font-serif text-lg font-bold text-[#332424]">Menú Diario (Plato + Guarnición)</h4>
+                  <p className="text-xs text-[#6F5A55] italic">Elija 1 Plato Principal de los 4 y 1 Guarnición de las 3 disponibles.</p>
+                </div>
+                <span className="text-xl font-black font-mono text-[#843747] shrink-0">${dailyComboState.price.toLocaleString("es-AR")}</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. Main Choice */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-[#843747] block font-bold">1. Plato Principal (4 Opciones):</label>
+                  <select
+                    value={selectedMainMozo || dailyComboState.mains[0] || ""}
+                    onChange={(e) => setSelectedMainMozo(e.target.value)}
+                    className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  >
+                    {dailyComboState.mains.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Side Choice */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-[#843747] block font-bold">2. Guarnición (3 Opciones):</label>
+                  <select
+                    value={selectedSideMozo || dailyComboState.sides[0] || ""}
+                    onChange={(e) => setSelectedSideMozo(e.target.value)}
+                    className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  >
+                    {dailyComboState.sides.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mainChoice = selectedMainMozo || dailyComboState.mains[0] || "Pollo al horno";
+                    const sideChoice = selectedSideMozo || dailyComboState.sides[0] || "Puré de papa o mixto";
+                    const itemToCart: MenuItem = {
+                      id: `combo_diario_${Date.now()}`,
+                      name: `🍱 Menú Diario (${mainChoice} c/ ${sideChoice})`,
+                      price: dailyComboState.price,
+                      category: "executive",
+                      description: `Plato: ${mainChoice} | Guarnición: ${sideChoice}`
+                    };
+                    handleAddMozoCart(itemToCart);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Agregar Combo a Comanda
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Product grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
