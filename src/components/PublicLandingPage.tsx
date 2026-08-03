@@ -353,14 +353,14 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               <div className="relative grid h-[430px] grid-cols-[1fr_0.43fr] gap-3 sm:h-[540px]">
                 <button
                   type="button"
-                  onClick={() => setViewMode("digital_menu")}
+                  onClick={() => todayMenu ? setIsExecutiveModalOpen(true) : setViewMode("digital_menu")}
                   className="group relative overflow-hidden rounded-[2rem] bg-[#332424] text-left shadow-[0_28px_70px_rgba(51,36,36,0.2)]"
-                  aria-label={heroItem ? `Ver ${heroItem.name} en la carta` : "Ver la carta digital"}
+                  aria-label={todayMenu ? `Ver Menú del Día: ${todayMenu.title}` : heroItem ? `Ver ${heroItem.name} en la carta` : "Ver la carta digital"}
                 >
-                  {heroItem?.image ? (
+                  {(todayMenu?.image || heroItem?.image) ? (
                     <CatalogImage
-                      src={heroItem.image}
-                      alt={heroItem.name}
+                      src={todayMenu?.image || heroItem?.image || ""}
+                      alt={todayMenu?.title || heroItem?.name || "Menú del Día"}
                       loading="eager"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
@@ -369,15 +369,20 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#241819] via-transparent to-black/5" />
                   <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-7">
-                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#E7C8CF]">
-                      Selección de la casa
+                    <span className="inline-block rounded-full bg-[#E7C8CF]/30 backdrop-blur-md border border-[#E7C8CF]/40 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-[#FFF9F4]">
+                      {todayMenu ? `⭐ Menú del Día (${todayMenu.dayOfWeek})` : "Selección de la casa"}
                     </span>
                     <strong className="mt-2 block font-serif text-xl leading-tight sm:text-3xl">
-                      {heroItem?.name || "Carta Castaño"}
+                      {todayMenu?.title || heroItem?.name || "Carta Castaño"}
                     </strong>
-                    {heroItem && (
+                    {todayMenu?.description && (
+                      <p className="mt-1 text-xs text-[#E7C8CF] line-clamp-2 font-medium">
+                        {todayMenu.description}
+                      </p>
+                    )}
+                    {(todayMenu || heroItem) && (
                       <span className="mt-3 inline-flex rounded-full bg-[#FFF9F4] px-3 py-1.5 text-xs font-black text-[#843747]">
-                        {formatPrice(heroItem.isOffer && heroItem.offerPrice ? heroItem.offerPrice : heroItem.price)}
+                        {formatPrice(todayMenu ? todayMenu.price : (heroItem!.isOffer && heroItem!.offerPrice ? heroItem!.offerPrice : heroItem!.price))}
                       </span>
                     )}
                   </div>
