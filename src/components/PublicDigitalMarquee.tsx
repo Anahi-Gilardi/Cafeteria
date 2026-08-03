@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   FileText, 
   PhoneCall, 
@@ -194,6 +194,14 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   const filteredItems = menuItems.filter(item => 
     selectedCategory === "all" || item.category === selectedCategory
   );
+
+  const totalCartCount = useMemo(() => {
+    return Object.values(cartOrder).reduce((acc, curr) => acc + curr.quantity, 0);
+  }, [cartOrder]);
+
+  const totalCartAmount = useMemo(() => {
+    return Object.values(cartOrder).reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0);
+  }, [cartOrder]);
 
   return (
     <div className="min-h-screen bg-[#F3E7DB] text-[#332424] font-sans pb-28">
