@@ -45,8 +45,41 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   const [selectedDrink, setSelectedDrink] = useState("");
   const [selectedDessert, setSelectedDessert] = useState("");
 
+  const [dailyComboState, setDailyComboState] = useState<{
+    mains: string[];
+    sides: string[];
+    price: number;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_daily_combo");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      mains: [
+        "Pollo al horno",
+        "Pasta ( tallarines, ñoquis, canelones )",
+        "Milanesa de pollo o ternera",
+        "Hamburguesa"
+      ],
+      sides: [
+        "Puré de papa o mixto",
+        "Arroz con crema",
+        "Ensalada mixta"
+      ],
+      price: 8500
+    };
+  });
+
   React.useEffect(() => {
     const loadTodayMenu = async () => {
+      try {
+        const { data: comboSys } = await supabase.from("system_settings").select("*").eq("key", "daily_combo").maybeSingle();
+        if (comboSys && comboSys.value) {
+          const parsed = typeof comboSys.value === "string" ? JSON.parse(comboSys.value) : comboSys.value;
+          setDailyComboState(parsed);
+          try { localStorage.setItem("puglia_daily_combo", JSON.stringify(parsed)); } catch (e) {}
+        }
+      } catch (e) {}
       const days: DailyExecutiveMenu["dayOfWeek"][] = [
         "Domingo",
         "Lunes",
@@ -302,17 +335,17 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         )}
 
         {/* 🍱 Menú Diario (4 Platos + 3 Guarniciones) Card */}
-        {todayMenu && (selectedCategory === "all" || selectedCategory === "executive") && (
+        {(selectedCategory === "all" || selectedCategory === "executive") && (
           <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-5">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
               <div>
-                <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 Combo Menú Diario ({todayMenu.dayOfWeek})</span>
+                <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 Combo Menú Diario</span>
                 <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones)</h3>
                 <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">Elija 1 Plato Principal + 1 Guarnición de su preferencia.</p>
               </div>
               <div className="text-right shrink-0">
                 <span className="text-xs text-[#6F5A55] block font-bold">Precio Combo ($ ARS)</span>
-                <span className="text-3xl font-black font-mono text-[#843747]">${todayMenu.price.toLocaleString("es-AR")}</span>
+                <span className="text-3xl font-black font-mono text-[#843747]">${dailyComboState.price.toLocaleString("es-AR")}</span>
               </div>
             </div>
 
@@ -325,9 +358,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   onChange={(e) => setSelectedMain(e.target.value)}
                   className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
                 >
-                  {(todayMenu.mains && todayMenu.mains.length > 0
-                    ? todayMenu.mains
-                    : ["Milanesa de Ternera", "Pechuga de Pollo a la Plancha", "Filet de Merluza a la Romana", "Bife de Chorizo a la Parrilla"]
+                  {(dailyComboState.mains && dailyComboState.mains.length > 0
+                    ? dailyComboState.mains
+                    : ["Pollo al horno", "Pasta ( tallarines, ñoquis, canelones )", "Milanesa de pollo o ternera", "Hamburguesa"]
                   ).map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
@@ -342,9 +375,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   onChange={(e) => setSelectedStarter(e.target.value)}
                   className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
                 >
-                  {(todayMenu.starters && todayMenu.starters.length > 0
-                    ? todayMenu.starters
-                    : ["Papas Fritas Caseras", "Ensalada Rusa / Mixta de Estación", "Puré de Papas o Calabaza"]
+                  {(dailyComboState.sides && dailyComboState.sides.length > 0
+                    ? dailyComboState.sides
+                    : ["Puré de papa o mixto", "Arroz con crema", "Ensalada mixta"]
                   ).map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
@@ -357,7 +390,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  const msg = `¡Hola! Quisiera pedir el *Menú Diario (${todayMenu.dayOfWeek})*:\n\n• *Plato Principal:* ${selectedMain || todayMenu.mains[0]}\n• *Guarnición:* ${selectedStarter || todayMenu.starters[0]}\n\n*Precio Combo: $${todayMenu.price.toLocaleString("es-AR")}*`;
+                  const mainChoice = selectedMain || dailyComboState.mains[0] || "Pollo al horno";
+                  const sideChoice = selectedStarter || dailyComboState.sides[0] || "Puré de papa o mixto";
+                  const msg = `¡Hola! Quisiera pedir el *Menú Diario*:\n\n• *Plato Principal:* ${mainChoice}\n• *Guarnición:* ${sideChoice}\n\n*Precio Combo: $${dailyComboState.price.toLocaleString("es-AR")}*`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
                 }}
                 className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20bd59] text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-emerald-400/40"
