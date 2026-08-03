@@ -463,9 +463,9 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
                             </span>
 
                             <span
-                              className="rounded-full bg-[#E8D4C3] text-[#843747] font-bold text-[9px] px-3 py-1 border border-[#D7BBA8] uppercase tracking-wider shrink-0"
+                              className="rounded-full bg-[#843747] text-white font-bold text-[9px] px-3 py-1 border border-[#843747] uppercase tracking-wider shrink-0 shadow-xs"
                             >
-                              Pedir al mozo
+                              + Agregar al pedido
                             </span>
                           </div>
                         </div>

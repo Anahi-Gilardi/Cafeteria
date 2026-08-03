@@ -68,7 +68,42 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
       ],
       price: 8500
     };
-  });
+  });  const [cartOrder, setCartOrder] = useState<Record<string, { item: MenuItem; quantity: number }>>({});
+
+  const handleAddToCart = (item: MenuItem) => {
+    setCartOrder((prev) => {
+      const existing = prev[item.id];
+      const newQty = existing ? existing.quantity + 1 : 1;
+      return { ...prev, [item.id]: { item, quantity: newQty } };
+    });
+  };
+
+  const handleRemoveFromCart = (itemId: string) => {
+    setCartOrder((prev) => {
+      const existing = prev[itemId];
+      if (!existing) return prev;
+      if (existing.quantity <= 1) {
+        const copy = { ...prev };
+        delete copy[itemId];
+        return copy;
+      }
+      return { ...prev, [itemId]: { ...existing, quantity: existing.quantity - 1 } };
+    });
+  };
+
+  const handleSendFullOrderToWhatsApp = () => {
+    const entries = Object.values(cartOrder);
+    if (entries.length === 0) return;
+
+    const itemsList = entries
+      .map(e => `• ${e.quantity}x *${e.item.name}* ($${(e.item.price * e.quantity).toLocaleString("es-AR")})`)
+      .join("\n");
+
+    const total = entries.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0);
+
+    const msg = `¡Hola! Quisiera realizar el siguiente pedido:\n\n${itemsList}\n\n*TOTAL A PAGAR: $${total.toLocaleString("es-AR")}*\n\n¡Muchas gracias!`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  };
 
   React.useEffect(() => {
     const loadTodayMenu = async () => {
@@ -147,7 +182,6 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
     };
   }, []);
 
-  // Keep the public showcase connected to the current catalog and real prices.
   const featuredDishes = [...menuItems]
     .filter((item) => item.price > 0)
     .sort((a, b) => {
@@ -216,9 +250,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         {/* Read-Only Safety Notice Banner */}
         <div className="mx-auto max-w-6xl mt-6 p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex items-center justify-between gap-3 text-xs text-[#332424]">
           <div className="flex items-center gap-2.5">
-            <span className="text-base shrink-0">📖</span>
+            <span className="text-base shrink-0">💡</span>
             <p className="text-[11px] font-semibold text-[#6F5A55]">
-              <strong className="text-[#843747]">Carta en Modo Lectura:</strong> Esta pantalla es de consulta visual de platos, fotos y precios. Su mozo registrará su pedido en la mesa para garantizar la precisión de la comanda en cocina.
+              <strong className="text-[#843747]">Menú Interactivo & Pedidos:</strong> Seleccione sus platos, bebidas y postres preferidos presionando <span className="text-[#843747] font-black">+ AGREGAR AL PEDIDO</span>. Luego podrá enviar su comanda completa por WhatsApp con un solo clic.
             </p>
           </div>
         </div>
@@ -252,9 +286,33 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   <h3 className="font-serif text-base font-bold text-[#332424]">{item.name}</h3>
                   <p className="text-xs text-[#6F5A55] line-clamp-2 leading-relaxed mt-1">{item.description}</p>
                 </div>
-                <span className="w-full mt-3 py-2 rounded-xl bg-[#E8D4C3]/60 border border-[#D7BBA8] text-[#843747] text-[10px] font-bold uppercase tracking-wider text-center block">
-                  Pedir al mozo
-                </span>
+                {cartOrder[item.id] ? (
+                  <div className="mt-3 flex items-center justify-between bg-[#E8D4C3] border border-[#843747] rounded-xl p-1 shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFromCart(item.id)}
+                      className="h-7 w-7 rounded-lg bg-[#843747] text-white font-black text-sm flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                    >
+                      -
+                    </button>
+                    <span className="text-xs font-black font-mono text-[#843747]">{cartOrder[item.id].quantity} en pedido</span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(item)}
+                      className="h-7 w-7 rounded-lg bg-[#843747] text-white font-black text-sm flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleAddToCart(item)}
+                    className="w-full mt-3 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black uppercase tracking-wider text-center block shadow-xs transition-all cursor-pointer"
+                  >
+                    + Agregar al pedido
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -414,14 +472,75 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 <p className="text-xs text-[#6F5A55] leading-tight line-clamp-2">{item.description}</p>
                 <span className="text-sm font-black text-[#843747] block font-mono mt-1">${item.price.toLocaleString("es-AR")}</span>
               </div>
-              <span className="px-3 py-1.5 bg-[#E8D4C3]/60 border border-[#D7BBA8] rounded-xl text-[10px] font-bold text-[#843747] uppercase tracking-wider shrink-0">
-                Pedir al mozo
-              </span>
+              {cartOrder[item.id] ? (
+                <div className="flex items-center gap-1.5 bg-[#E8D4C3] border border-[#843747] rounded-xl p-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFromCart(item.id)}
+                    className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                  >
+                    -
+                  </button>
+                  <span className="text-xs font-black font-mono text-[#843747] px-1">{cartOrder[item.id].quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleAddToCart(item)}
+                    className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart(item)}
+                  className="px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all shadow-xs cursor-pointer"
+                >
+                  + Agregar al pedido
+                </button>
+              )}
             </div>
           ))}
         </div>
       </section>
 
+      {/* Sticky Floating WhatsApp Order Bar */}
+      {totalCartCount > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-8 md:max-w-xl z-50 bg-[#332424] text-white border-2 border-[#843747] rounded-3xl p-4 shadow-2xl backdrop-blur-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#843747] text-white shrink-0 font-black shadow-md text-sm font-mono">
+              🛒 {totalCartCount}
+            </div>
+            <div>
+              <strong className="block text-xs uppercase tracking-wider text-[#E8D4C3]">Tu Pedido en Progreso</strong>
+              <span className="text-sm font-black font-mono text-white">
+                Total: ${totalCartAmount.toLocaleString("es-AR")}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => setCartOrder({})}
+              className="px-3 py-2 rounded-xl text-[10px] font-bold text-white/70 hover:text-white hover:bg-white/10 transition-all uppercase tracking-wider cursor-pointer"
+            >
+              Vaciar
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendFullOrderToWhatsApp}
+              className="py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20bd59] text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/40"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              ENVIAR PEDIDO POR WHATSAPP
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
