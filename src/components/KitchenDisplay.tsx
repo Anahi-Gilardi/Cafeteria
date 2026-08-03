@@ -1,5 +1,5 @@
 import { Order, OrderStatusType, MenuItem } from "../types";
-import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, RefreshCw, Search, Trash2, MessageCircle } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { ArchivedOrderRecord, SupabaseSyncService } from "../services/SupabaseSyncService";
@@ -77,26 +77,31 @@ export default function KitchenDisplay({
 
   const handleUpdateStatus = (order: Order, newStatus: OrderStatusType) => {
     onOrderStatusUpdate(order.id, newStatus);
+  };
 
+  const handleNotifyWhatsApp = (order: Order) => {
     const customerPhone = order.customerPhone || order.clientPhone;
-    if (customerPhone && newStatus === "Listo" && (order.priceList === "Takeaway" || order.type === "Llevar")) {
+    if (!customerPhone) {
+      alert("Este pedido no tiene número de teléfono registrado.");
+      return;
+    }
+
+    if (order.priceList === "Delivery" || order.fulfillmentType === "delivery") {
+      WhatsAppNotificationService.sendDeliveryEnCaminoNotification({
+        id: order.id,
+        customerName: order.clientAccountName || "Cliente",
+        customerPhone,
+        deliveryAddress: order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Dirección indicada",
+        total: order.total,
+        type: "Delivery"
+      });
+    } else {
       WhatsAppNotificationService.sendReadyForPickupNotification({
         id: order.id,
         customerName: order.clientAccountName || "Cliente",
         customerPhone,
         total: order.total,
         type: "Takeaway"
-      });
-    }
-
-    if (customerPhone && order.deliveryAddress && newStatus === "Completado" && (order.priceList === "Delivery" || order.fulfillmentType === "delivery")) {
-      WhatsAppNotificationService.sendDeliveryEnCaminoNotification({
-        id: order.id,
-        customerName: order.clientAccountName || "Cliente",
-        customerPhone,
-        deliveryAddress: `${order.deliveryAddress.street} ${order.deliveryAddress.number}`,
-        total: order.total,
-        type: "Delivery"
       });
     }
   };
@@ -318,13 +323,23 @@ export default function KitchenDisplay({
           )}
 
           {currentColumn === "finalizadas" && (
-            <button
-              type="button"
-              onClick={() => handleUpdateStatus(order, "Completado")}
-              className="w-full py-2.5 px-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-            >
-              <CheckCircle2 className="h-4 w-4 text-white" /> ✅ Entregado
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleUpdateStatus(order, "Completado")}
+                className="w-full py-2.5 px-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-[11px] font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <CheckCircle2 className="h-4 w-4 text-white" /> Entregado
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleNotifyWhatsApp(order)}
+                className="w-full py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#20bd59] text-white text-[11px] font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all border border-emerald-400/30"
+              >
+                <MessageCircle className="h-4 w-4 text-white" /> Avisar WhatsApp
+              </button>
+            </div>
           )}
         </div>
       </div>
