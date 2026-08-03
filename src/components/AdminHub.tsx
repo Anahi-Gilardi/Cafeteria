@@ -445,7 +445,16 @@ export default function AdminHub({
   const [blindCounts, setBlindCounts] = useState<Record<string, string>>({});
   const [auditHistory, setAuditHistory] = useState<any[]>([]);
 
-  const [weeklyMenus, setWeeklyMenus] = useState<DailyExecutiveMenu[]>(EMPTY_WEEKLY_MENUS);
+  const [weeklyMenus, setWeeklyMenus] = useState<DailyExecutiveMenu[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_weekly_menus");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return EMPTY_WEEKLY_MENUS;
+  });
 
   const [selectedDayTab, setSelectedDayTab] = useState<DailyExecutiveMenu["dayOfWeek"]>("Lunes");
 
@@ -672,27 +681,40 @@ export default function AdminHub({
         try {
           const { data: dailyMenusData, error: dailyMenusError } = await supabase
             .from("daily_menu")
-            .select("*")
-            .order("day_of_week");
-          if (!dailyMenusError && dailyMenusData?.length) {
-            setWeeklyMenus(EMPTY_WEEKLY_MENUS.map((emptyMenu) => {
-              const menu = dailyMenusData.find((candidate) => candidate.day_of_week === emptyMenu.dayOfWeek);
+            .select("*");
+          if (!dailyMenusError && dailyMenusData && dailyMenusData.length > 0) {
+            const mappedList = EMPTY_WEEKLY_MENUS.map((emptyMenu) => {
+              const menu = dailyMenusData.find((candidate) =>
+                candidate.day_of_week && candidate.day_of_week.toString().toLowerCase().trim() === emptyMenu.dayOfWeek.toLowerCase().trim()
+              );
               return menu ? {
-                dayOfWeek: menu.day_of_week,
-                title: menu.title,
+                dayOfWeek: emptyMenu.dayOfWeek,
+                title: menu.title || "",
                 description: menu.description || "",
-                price: Number(menu.price),
+                price: Number(menu.price) || 0,
                 image: menu.image || undefined,
-                starters: menu.starters || [],
-                mains: menu.mains || [],
-                drinks: menu.drinks || [],
-                desserts: menu.desserts || [],
-                active: menu.active
+                starters: Array.isArray(menu.starters) ? menu.starters : [],
+                mains: Array.isArray(menu.mains) ? menu.mains : [],
+                drinks: Array.isArray(menu.drinks) ? menu.drinks : [],
+                desserts: Array.isArray(menu.desserts) ? menu.desserts : [],
+                active: menu.active ?? true
               } : emptyMenu;
-            }));
+            });
+            setWeeklyMenus(mappedList);
+            try { localStorage.setItem("puglia_weekly_menus", JSON.stringify(mappedList)); } catch (e) {}
           } else {
-            const savedLocal = localStorage.getItem("puglia_weekly_menus");
-            if (savedLocal) setWeeklyMenus(JSON.parse(savedLocal));
+            // Check system_settings key weekly_menus
+            const { data: sysData } = await supabase.from("system_settings").select("*").eq("key", "weekly_menus").maybeSingle();
+            if (sysData && sysData.value) {
+              const parsed = typeof sysData.value === "string" ? JSON.parse(sysData.value) : sysData.value;
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setWeeklyMenus(parsed);
+                try { localStorage.setItem("puglia_weekly_menus", JSON.stringify(parsed)); } catch (e) {}
+              }
+            } else {
+              const savedLocal = localStorage.getItem("puglia_weekly_menus");
+              if (savedLocal) setWeeklyMenus(JSON.parse(savedLocal));
+            }
           }
         } catch (e) {
           const savedLocal = localStorage.getItem("puglia_weekly_menus");
