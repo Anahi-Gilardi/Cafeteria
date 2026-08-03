@@ -4218,60 +4218,6 @@ export default function AdminHub({
                     </label>
                   </div>
 
-                  <div className="p-4 bg-[#F5E4CC]/55 border border-[#D7BBA8] rounded-2xl space-y-3">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editProdFiscalEnabled}
-                        onChange={(e) => setEditProdFiscalEnabled(e.target.checked)}
-                        className="mt-0.5 accent-[#843747]"
-                      />
-                      <span>
-                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Habilitar ficha fiscal ARCA</strong>
-                        <small className="text-[9px] text-[#6F5A55] font-medium">Solo habilitar con códigos confirmados para WSMTXCA.</small>
-                      </span>
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Alícuota IVA</label>
-                        <select
-                          value={editProdVatRate}
-                          onChange={(e) => setEditProdVatRate(e.target.value)}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold"
-                        >
-                          <option value="">Sin configurar</option>
-                          <option value="0">0%</option>
-                          <option value="10.5">10,5%</option>
-                          <option value="21">21%</option>
-                          <option value="27">27%</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Código de ítem ARCA</label>
-                        <input
-                          type="text"
-                          value={editProdArcaItemCode}
-                          onChange={(e) => setEditProdArcaItemCode(e.target.value)}
-                          placeholder="Consultar tabla oficial"
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-mono"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Código de unidad ARCA</label>
-                        <input
-                          type="text"
-                          value={editProdArcaUnitCode}
-                          onChange={(e) => setEditProdArcaUnitCode(e.target.value)}
-                          placeholder="Consultar tabla oficial"
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-mono"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-[#6F5A55] font-medium">
-                      Los códigos variables deben confirmarse mediante las tablas oficiales del servicio; el sistema no los completa con valores ficticios.
-                    </p>
-                  </div>
-
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
