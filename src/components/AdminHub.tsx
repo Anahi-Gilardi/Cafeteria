@@ -6075,6 +6075,10 @@ export default function AdminHub({
     const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
 
     const filteredMenuItems = menuItems.filter(item => {
+      // Exclude legacy executive items and old static menu_diario items
+      if (item.category === "executive" || item.category === "menu_diario" || item.id === "menu_ejecutivo_promocional" || item.name.toLowerCase().includes("menú ejecutivo")) {
+        return false;
+      }
       const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
                             item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
       const matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
