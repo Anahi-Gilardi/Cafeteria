@@ -258,8 +258,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
           ))}
         </div>
 
-        {/* Executive Menu Live Combo Builder Box */}
-        {todayMenu && (selectedCategory === "all" || selectedCategory === "executive" || selectedCategory === "menu_diario") && (
+        {/* ⭐ Menú del Día (Plato Único Semanal) Card */}
+        {todayMenu && (selectedCategory === "all" || selectedCategory === "menu_diario") && (
           <div className="bg-white border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-5">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
               <div className="flex items-center gap-4">
@@ -271,13 +271,13 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   />
                 )}
                 <div>
-                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">⭐ Plato Único del Día</span>
-                  <h3 className="font-serif text-2xl font-bold text-[#332424]">{todayMenu.title} ({todayMenu.dayOfWeek})</h3>
+                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">⭐ Plato Único del Día ({todayMenu.dayOfWeek})</span>
+                  <h3 className="font-serif text-2xl font-bold text-[#332424]">{todayMenu.title}</h3>
                   <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">"{todayMenu.description}"</p>
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs text-[#6F5A55] block font-bold">Precio del Plato ($ ARS)</span>
+                <span className="text-xs text-[#6F5A55] block font-bold">Precio ($ ARS)</span>
                 <span className="text-3xl font-black font-mono text-[#843747]">${todayMenu.price.toLocaleString("es-AR")}</span>
               </div>
             </div>
@@ -296,6 +296,76 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
                 PEDIR PLATO DEL DÍA POR WHATSAPP
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 🍱 Menú Diario (4 Platos + 3 Guarniciones) Card */}
+        {todayMenu && (selectedCategory === "all" || selectedCategory === "executive") && (
+          <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+              <div>
+                <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 Combo Menú Diario ({todayMenu.dayOfWeek})</span>
+                <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones)</h3>
+                <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">Elija 1 Plato Principal + 1 Guarnición de su preferencia.</p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-xs text-[#6F5A55] block font-bold">Precio Combo ($ ARS)</span>
+                <span className="text-3xl font-black font-mono text-[#843747]">${todayMenu.price.toLocaleString("es-AR")}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Plato Principal (4 Opciones) */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#843747] block">1. Seleccione 1 Plato Principal (de 4 opciones)</label>
+                <select
+                  value={selectedMain}
+                  onChange={(e) => setSelectedMain(e.target.value)}
+                  className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                >
+                  {(todayMenu.mains && todayMenu.mains.length > 0
+                    ? todayMenu.mains
+                    : ["Milanesa de Ternera", "Pechuga de Pollo a la Plancha", "Filet de Merluza a la Romana", "Bife de Chorizo a la Parrilla"]
+                  ).map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 2. Guarnición (3 Opciones) */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#843747] block">2. Seleccione 1 Guarnición (de 3 opciones)</label>
+                <select
+                  value={selectedStarter}
+                  onChange={(e) => setSelectedStarter(e.target.value)}
+                  className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                >
+                  {(todayMenu.starters && todayMenu.starters.length > 0
+                    ? todayMenu.starters
+                    : ["Papas Fritas Caseras", "Ensalada Rusa / Mixta de Estación", "Puré de Papas o Calabaza"]
+                  ).map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Botón Pedir Menú Diario por WhatsApp */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const msg = `¡Hola! Quisiera pedir el *Menú Diario (${todayMenu.dayOfWeek})*:\n\n• *Plato Principal:* ${selectedMain || todayMenu.mains[0]}\n• *Guarnición:* ${selectedStarter || todayMenu.starters[0]}\n\n*Precio Combo: $${todayMenu.price.toLocaleString("es-AR")}*`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                }}
+                className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#20bd59] text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-emerald-400/40"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                PEDIR MENÚ DIARIO COMBINADO POR WHATSAPP
               </button>
             </div>
           </div>

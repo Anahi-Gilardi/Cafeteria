@@ -3311,6 +3311,152 @@ export default function AdminHub({
     );
   };
 
+  const renderDailyComboEditor = () => {
+    const activeMenu = weeklyMenus.find(m => m.dayOfWeek === selectedDayTab) || weeklyMenus[0];
+
+    const updateCurrentDayMenu = (updatedFields: Partial<DailyExecutiveMenu>) => {
+      const newList = weeklyMenus.map(m => m.dayOfWeek === selectedDayTab ? { ...m, ...updatedFields } : m);
+      setWeeklyMenus(newList);
+    };
+
+    const handleSaveCombo = async () => {
+      try {
+        localStorage.setItem("puglia_weekly_menus", JSON.stringify(weeklyMenus));
+      } catch (err) {}
+
+      try {
+        await supabase.from("system_settings").upsert({
+          key: "weekly_menus",
+          value: JSON.stringify(weeklyMenus)
+        });
+      } catch (sysErr) {}
+
+      try {
+        await supabase.from("daily_menu").upsert({
+          day_of_week: activeMenu.dayOfWeek,
+          title: activeMenu.title,
+          description: activeMenu.description,
+          price: activeMenu.price,
+          image: activeMenu.image || null,
+          starters: activeMenu.starters,
+          mains: activeMenu.mains,
+          drinks: activeMenu.drinks,
+          desserts: activeMenu.desserts,
+          active: activeMenu.active,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "day_of_week" });
+        onShowNotification(`💾 Opciones del Menú Diario (${activeMenu.dayOfWeek}) guardadas con éxito.`, "success");
+      } catch (err) {
+        onShowNotification(`💾 Opciones del Menú Diario guardadas localmente.`, "success");
+      }
+      window.dispatchEvent(new Event("daily_menus_updated"));
+    };
+
+    const defaultMains = ["Milanesa de Ternera", "Pechuga de Pollo a la Plancha", "Filet de Merluza a la Romana", "Bife de Chorizo a la Parrilla"];
+    const defaultGuarniciones = ["Papas Fritas Caseras", "Ensalada Rusa / Mixta", "Puré de Papas o Calabaza"];
+
+    const mainsList = activeMenu.mains && activeMenu.mains.length >= 4 ? activeMenu.mains : defaultMains;
+    const guarnicionesList = activeMenu.starters && activeMenu.starters.length >= 3 ? activeMenu.starters : defaultGuarniciones;
+
+    return (
+      <div className="space-y-6 bg-[#FFF9F4] border-2 border-[#843747] text-[#332424] rounded-3xl p-6 shadow-xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+          <div>
+            <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 Configuración de Combo Menú Diario</span>
+            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones) — {selectedDayTab}</h3>
+            <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
+              Ingrese los 4 platos principales y las 3 guarniciones a elección para el combo de hoy.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveCombo}
+            className="px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
+          >
+            💾 GUARDAR MENÚ DIARIO ({selectedDayTab})
+          </button>
+        </div>
+
+        {/* Selector de día */}
+        <div className="flex flex-wrap gap-2">
+          {(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] as const).map((day) => (
+            <button
+              key={day}
+              type="button"
+              onClick={() => setSelectedDayTab(day)}
+              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                selectedDayTab === day
+                  ? "bg-[#843747] text-white border-[#843747] shadow-sm scale-[1.03]"
+                  : "bg-[#E8D4C3] border-[#D7BBA8] text-[#843747] hover:bg-[#E7C8CF]"
+              }`}
+            >
+              {day}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-5 p-5 bg-white border border-[#D7BBA8] rounded-2xl shadow-sm">
+          <div>
+            <label className="text-[11px] font-black uppercase text-[#843747] block mb-2">🍽️ 4 Platos Principales Elegibles</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#843747] w-6 shrink-0">{idx + 1}.</span>
+                  <input
+                    type="text"
+                    value={mainsList[idx] || ""}
+                    onChange={(e) => {
+                      const updated = [...mainsList];
+                      updated[idx] = e.target.value;
+                      updateCurrentDayMenu({ mains: updated });
+                    }}
+                    placeholder={`Plato ${idx + 1}...`}
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-[#D7BBA8]/60">
+            <label className="text-[11px] font-black uppercase text-[#843747] block mb-2">🥗 3 Guarniciones Elegibles</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[0, 1, 2].map((idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#843747] w-6 shrink-0">{idx + 1}.</span>
+                  <input
+                    type="text"
+                    value={guarnicionesList[idx] || ""}
+                    onChange={(e) => {
+                      const updated = [...guarnicionesList];
+                      updated[idx] = e.target.value;
+                      updateCurrentDayMenu({ starters: updated });
+                    }}
+                    placeholder={`Guarnición ${idx + 1}...`}
+                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-[#D7BBA8]/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="w-full md:w-64">
+              <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Precio Combo Menú Diario ($ ARS)</label>
+              <input
+                type="number"
+                value={activeMenu.price || 0}
+                onChange={(e) => updateCurrentDayMenu({ price: Number(e.target.value) })}
+                className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-sm font-black font-mono text-[#843747] outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDailyMenuEditor = () => {
     const activeMenu = weeklyMenus.find(m => m.dayOfWeek === selectedDayTab) || weeklyMenus[0];
 
@@ -3678,8 +3824,10 @@ export default function AdminHub({
           ))}
         </div>
 
-        {selectedPosCategory === "menu_diario" || selectedPosCategory === "menu_ejecutivo" ? (
+        {selectedPosCategory === "menu_diario" ? (
           renderDailyMenuEditor()
+        ) : selectedPosCategory === "menu_ejecutivo" ? (
+          renderDailyComboEditor()
         ) : selectedPosCategory === "delivery_config" ? (
           renderDeliveryConfig()
         ) : (
