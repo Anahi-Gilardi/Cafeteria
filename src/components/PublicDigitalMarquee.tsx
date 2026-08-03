@@ -47,6 +47,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
   const [dailyComboState, setDailyComboState] = useState<{
     mains: string[];
+    mainImages?: string[];
     sides: string[];
     price: number;
   }>(() => {
@@ -60,6 +61,12 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         "Pasta ( tallarines, ñoquis, canelones )",
         "Milanesa de pollo o ternera",
         "Hamburguesa"
+      ],
+      mainImages: [
+        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
       ],
       sides: [
         "Puré de papa o mixto",
@@ -420,13 +427,39 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 <span className="text-3xl font-black font-mono text-[#843747]">${dailyComboState.price.toLocaleString("es-AR")}</span>
               </div>
             </div>
+            {/* 4 Main Dishes Photo Gallery */}
+            <div>
+              <label className="text-[10px] font-black uppercase text-[#843747] block mb-2">📸 Platos Elegibles del Menú Diario (Seleccione uno):</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {dailyComboState.mains.slice(0, 4).map((mainName, idx) => {
+                  const imgUrl = dailyComboState.mainImages?.[idx];
+                  const isSelected = (selectedMain || dailyComboState.mains[0]) === mainName;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedMain(mainName)}
+                      className={`p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center text-center space-y-2 ${
+                        isSelected
+                          ? "border-[#843747] bg-[#E8D4C3]/50 shadow-md scale-[1.02]"
+                          : "border-[#D7BBA8]/60 bg-white hover:border-[#843747]/40"
+                      }`}
+                    >
+                      <div className="h-24 w-full rounded-xl overflow-hidden bg-[#F3E7DB]">
+                        <MenuImage src={imgUrl} alt={mainName} className="w-full h-full object-cover" />
+                      </div>
+                      <strong className="text-xs font-bold text-[#332424] leading-tight line-clamp-2">{mainName}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 1. Plato Principal (4 Opciones) */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-[#843747] block">1. Seleccione 1 Plato Principal (de 4 opciones)</label>
                 <select
-                  value={selectedMain}
+                  value={selectedMain || dailyComboState.mains[0]}
                   onChange={(e) => setSelectedMain(e.target.value)}
                   className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
                 >

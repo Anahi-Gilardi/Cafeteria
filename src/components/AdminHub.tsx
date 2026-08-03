@@ -3313,6 +3313,7 @@ export default function AdminHub({
 
   const [dailyComboState, setDailyComboState] = useState<{
     mains: string[];
+    mainImages?: string[];
     sides: string[];
     price: number;
   }>(() => {
@@ -3326,6 +3327,12 @@ export default function AdminHub({
         "Pasta ( tallarines, ñoquis, canelones )",
         "Milanesa de pollo o ternera",
         "Hamburguesa"
+      ],
+      mainImages: [
+        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
       ],
       sides: [
         "Puré de papa o mixto",
@@ -3357,6 +3364,14 @@ export default function AdminHub({
     const mainsList = dailyComboState.mains && dailyComboState.mains.length >= 4 
       ? dailyComboState.mains 
       : ["Pollo al horno", "Pasta ( tallarines, ñoquis, canelones )", "Milanesa de pollo o ternera", "Hamburguesa"];
+    const mainImagesList = dailyComboState.mainImages && dailyComboState.mainImages.length >= 4
+      ? dailyComboState.mainImages
+      : [
+          "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+          "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+          "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+          "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
+        ];
     const sidesList = dailyComboState.sides && dailyComboState.sides.length >= 3 
       ? dailyComboState.sides 
       : ["Puré de papa o mixto", "Arroz con crema", "Ensalada mixta"];
@@ -3368,7 +3383,7 @@ export default function AdminHub({
             <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 CONFIGURACIÓN DE COMBO MENÚ DIARIO</span>
             <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones)</h3>
             <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
-              Ingrese los 4 platos principales y las 3 guarniciones a elección para el combo (válido para todos los días).
+              Ingrese el nombre y la foto para cada uno de los 4 platos principales y las 3 guarniciones a elección.
             </p>
           </div>
 
@@ -3383,22 +3398,69 @@ export default function AdminHub({
 
         <div className="space-y-5 p-5 bg-white border border-[#D7BBA8] rounded-2xl shadow-sm">
           <div>
-            <label className="text-[11px] font-black uppercase text-[#843747] block mb-2">🍽️ 4 PLATOS PRINCIPALES ELEGIBLES</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label className="text-[11px] font-black uppercase text-[#843747] block mb-2">🍽️ 4 PLATOS PRINCIPALES ELEGIBLES (NOMBRE Y FOTO)</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[0, 1, 2, 3].map((idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#843747] w-6 shrink-0">{idx + 1}.</span>
-                  <input
-                    type="text"
-                    value={mainsList[idx] || ""}
-                    onChange={(e) => {
-                      const updated = [...mainsList];
-                      updated[idx] = e.target.value;
-                      setDailyComboState({ ...dailyComboState, mains: updated });
-                    }}
-                    placeholder={`Plato ${idx + 1}...`}
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
-                  />
+                <div key={idx} className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#843747] w-6 shrink-0">{idx + 1}.</span>
+                    <input
+                      type="text"
+                      value={mainsList[idx] || ""}
+                      onChange={(e) => {
+                        const updated = [...mainsList];
+                        updated[idx] = e.target.value;
+                        setDailyComboState({ ...dailyComboState, mains: updated });
+                      }}
+                      placeholder={`Nombre plato ${idx + 1}...`}
+                      className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pl-8">
+                    {mainImagesList[idx] && (
+                      <img
+                        src={mainImagesList[idx]}
+                        alt={`Preview plato ${idx + 1}`}
+                        className="h-10 w-12 rounded-lg object-cover border border-[#D7BBA8] shrink-0"
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={mainImagesList[idx] || ""}
+                      onChange={(e) => {
+                        const updatedImgs = [...mainImagesList];
+                        updatedImgs[idx] = e.target.value;
+                        setDailyComboState({ ...dailyComboState, mainImages: updatedImgs });
+                      }}
+                      placeholder="📷 URL de foto del plato..."
+                      className="w-full p-2 bg-white border border-[#D7BBA8] rounded-xl text-[11px] text-[#6F5A55] outline-none focus:border-[#843747]"
+                    />
+                    <label className="px-3 py-2 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold uppercase rounded-xl cursor-pointer shrink-0">
+                      Subir
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const res = evt.target?.result as string;
+                              if (res) {
+                                const updatedImgs = [...mainImagesList];
+                                updatedImgs[idx] = res;
+                                setDailyComboState({ ...dailyComboState, mainImages: updatedImgs });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
               ))}
             </div>
