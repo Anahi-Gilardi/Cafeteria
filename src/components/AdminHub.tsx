@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent } from "react";
+import { useState, useEffect, useRef, useMemo, FormEvent } from "react";
 import { MenuItem, Order, OrderStatusType, ClientAccount } from "../types";
 import {
   Coins, ClipboardList, Package, TrendingUp, AlertCircle, Plus, Edit2, Save, 
