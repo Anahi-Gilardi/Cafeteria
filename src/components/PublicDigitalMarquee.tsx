@@ -64,12 +64,22 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         .eq("active", true)
         .maybeSingle();
 
-      if (error) {
-        console.warn("No se pudo cargar el menú diario desde Supabase:", error.message);
-        return;
-      }
-
-      if (!data) {
+      if (error || !data) {
+        try {
+          const saved = localStorage.getItem("puglia_weekly_menus");
+          if (saved) {
+            const list: DailyExecutiveMenu[] = JSON.parse(saved);
+            const found = list.find(m => m.dayOfWeek === dayOfWeek && m.active);
+            if (found) {
+              setTodayMenu(found);
+              setSelectedStarter(found.starters[0] || "");
+              setSelectedMain(found.mains[0] || "");
+              setSelectedDrink(found.drinks[0] || "");
+              setSelectedDessert(found.desserts[0] || "");
+              return;
+            }
+          }
+        } catch (e) {}
         setTodayMenu(null);
         setSelectedStarter("");
         setSelectedMain("");

@@ -35,15 +35,30 @@ export default function ExecutiveMenuModal({ isOpen, onClose, onConfirm }: Execu
         "Viernes",
         "Sábado"
       ];
+      const targetDay = days[new Date().getDay()];
       const { data, error } = await supabase
         .from("daily_menu")
         .select("*")
-        .eq("day_of_week", days[new Date().getDay()])
+        .eq("day_of_week", targetDay)
         .eq("active", true)
         .maybeSingle();
 
       if (error || !data) {
-        if (error) console.warn("No se pudo cargar el menú diario desde Supabase:", error.message);
+        try {
+          const saved = localStorage.getItem("puglia_weekly_menus");
+          if (saved) {
+            const list: DailyExecutiveMenu[] = JSON.parse(saved);
+            const found = list.find(m => m.dayOfWeek === targetDay && m.active);
+            if (found) {
+              setDailyConfig(found);
+              setSelectedStarter(found.starters[0] || "");
+              setSelectedMain(found.mains[0] || "");
+              setSelectedDrink(found.drinks[0] || "");
+              setSelectedDessert(found.desserts[0] || "");
+              return;
+            }
+          }
+        } catch (e) {}
         setDailyConfig(null);
         return;
       }
