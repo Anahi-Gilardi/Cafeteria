@@ -94,10 +94,10 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         description: data.description || "",
         price: Number(data.price),
         image: data.image || undefined,
-        starters: data.starters || [],
-        mains: data.mains || [],
-        drinks: data.drinks || [],
-        desserts: data.desserts || [],
+        starters: Array.isArray(data.starters) && data.starters.length > 0 ? data.starters : ["Ensalada Mixta de la Casa", "Sopa Casera de Verduras"],
+        mains: Array.isArray(data.mains) && data.mains.length > 0 ? data.mains : [data.title || "Tallarines caseros"],
+        drinks: Array.isArray(data.drinks) && data.drinks.length > 0 ? data.drinks : ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa 500ml"],
+        desserts: Array.isArray(data.desserts) && data.desserts.length > 0 ? data.desserts : ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
         active: data.active
       };
       setTodayMenu(updated);

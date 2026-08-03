@@ -693,10 +693,10 @@ export default function AdminHub({
                 description: menu.description || "",
                 price: Number(menu.price) || 0,
                 image: menu.image || undefined,
-                starters: Array.isArray(menu.starters) ? menu.starters : [],
-                mains: Array.isArray(menu.mains) ? menu.mains : [],
-                drinks: Array.isArray(menu.drinks) ? menu.drinks : [],
-                desserts: Array.isArray(menu.desserts) ? menu.desserts : [],
+                starters: Array.isArray(menu.starters) && menu.starters.length > 0 ? menu.starters : ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+                mains: Array.isArray(menu.mains) && menu.mains.length > 0 ? menu.mains : [menu.title || "Plato Principal del Día"],
+                drinks: Array.isArray(menu.drinks) && menu.drinks.length > 0 ? menu.drinks : ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+                desserts: Array.isArray(menu.desserts) && menu.desserts.length > 0 ? menu.desserts : ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
                 active: menu.active ?? true
               } : emptyMenu;
             });
@@ -3495,6 +3495,60 @@ export default function AdminHub({
                   Sin imagen cargada
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Opciones de los 4 Pasos del Menú Ejecutivo */}
+          <div className="pt-4 border-t border-[#D7BBA8]/60 space-y-4">
+            <div>
+              <span className="text-[10px] font-black uppercase text-[#843747] tracking-wider block">🍱 Opciones de los 4 Pasos del Menú Ejecutivo ({selectedDayTab})</span>
+              <p className="text-[11px] text-[#6F5A55] italic">Ingrese las opciones disponibles para cada paso del combo ejecutivo de hoy (separadas por comas).</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">1. Entradas (separadas por comas)</label>
+                <input
+                  type="text"
+                  value={activeMenu.starters ? activeMenu.starters.join(", ") : ""}
+                  onChange={(e) => updateCurrentDayMenu({ starters: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  placeholder="Ej. Ensalada Mixta de Estación, Sopa Casera de Verduras, Empanada Criolla"
+                  className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-medium text-[#332424] outline-none focus:border-[#843747]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">2. Platos Principales (separados por comas)</label>
+                <input
+                  type="text"
+                  value={activeMenu.mains ? activeMenu.mains.join(", ") : ""}
+                  onChange={(e) => updateCurrentDayMenu({ mains: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  placeholder="Ej. Tallarines caseros con tuco al Malbec, Milanesa de Ternera con Papas Fritas"
+                  className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-medium text-[#332424] outline-none focus:border-[#843747]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">3. Bebidas (separadas por comas)</label>
+                <input
+                  type="text"
+                  value={activeMenu.drinks ? activeMenu.drinks.join(", ") : ""}
+                  onChange={(e) => updateCurrentDayMenu({ drinks: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  placeholder="Ej. Copa de Vino Malbec, Limonada de la Casa, Agua Mineral / Gaseosa 500ml"
+                  className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-medium text-[#332424] outline-none focus:border-[#843747]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">4. Postres / Café (separados por comas)</label>
+                <input
+                  type="text"
+                  value={activeMenu.desserts ? activeMenu.desserts.join(", ") : ""}
+                  onChange={(e) => updateCurrentDayMenu({ desserts: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                  placeholder="Ej. Flan Casero con Dulce de Leche, Helado Artesanal (2 bochas), Café Espresso"
+                  className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-medium text-[#332424] outline-none focus:border-[#843747]"
+                />
+              </div>
             </div>
           </div>
 
