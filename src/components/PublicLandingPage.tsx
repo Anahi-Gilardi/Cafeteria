@@ -327,16 +327,12 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                 </button>
               </div>
 
-              <div className="mt-8 grid max-w-xl grid-cols-3 divide-x divide-[#D7BBA8] border-y border-[#D7BBA8] py-4">
+              <div className="mt-8 grid max-w-xl grid-cols-2 divide-x divide-[#D7BBA8] border-y border-[#D7BBA8] py-4">
                 <div className="pr-3">
                   <strong className="block font-serif text-xl text-[#843747]">
                     {isMenuLoading ? "…" : publicItems.length}
                   </strong>
                   <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">Propuestas</span>
-                </div>
-                <div className="px-3">
-                  <strong className="block font-serif text-xl text-[#843747]">En vivo</strong>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">Precios y stock</span>
                 </div>
                 <div className="pl-3">
                   <strong className="block font-serif text-xl text-[#843747]">944</strong>
