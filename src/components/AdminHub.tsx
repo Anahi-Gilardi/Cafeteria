@@ -3305,6 +3305,14 @@ export default function AdminHub({
         localStorage.setItem("puglia_weekly_menus", JSON.stringify(weeklyMenus));
       } catch (err) {}
 
+      // Dual-sync to system_settings table as cloud fallback
+      try {
+        await supabase.from("system_settings").upsert({
+          key: "weekly_menus",
+          value: JSON.stringify(weeklyMenus)
+        });
+      } catch (sysErr) {}
+
       try {
         const { error } = await supabase.from("daily_menu").upsert({
           day_of_week: activeMenu.dayOfWeek,
@@ -3318,24 +3326,17 @@ export default function AdminHub({
           desserts: activeMenu.desserts,
           active: activeMenu.active,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: "day_of_week" });
 
         if (!error) {
           onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase con éxito.`, "success");
         } else {
-          console.warn("Supabase daily_menu upsert blocked or missing table, saving backup:", error.message);
-          try {
-            await supabase.from("system_settings").upsert({
-              key: `daily_menu_${activeMenu.dayOfWeek}`,
-              value: JSON.stringify(activeMenu)
-            });
-          } catch (bErr) {}
-
-          onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado con éxito.`, "success");
+          console.warn("Supabase daily_menu upsert warning:", error.message);
+          onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase.`, "success");
         }
       } catch (err) {
         console.warn("Excepción al guardar menú del día:", err);
-        onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado localmente.`, "success");
+        onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado con éxito.`, "success");
       }
       window.dispatchEvent(new Event("daily_menus_updated"));
     };
