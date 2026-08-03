@@ -420,19 +420,6 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                   )}
                 </div>
               </div>
-
-              <div className="absolute -bottom-5 left-5 right-5 flex items-center justify-between gap-4 rounded-2xl border border-white/60 bg-[#FFF9F4]/95 p-4 shadow-xl backdrop-blur-lg sm:left-8 sm:right-8">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E7C8CF] text-[#843747]">
-                    <ShieldCheck className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <strong className="block text-xs text-[#332424]">Carta conectada</strong>
-                    <span className="text-[10px] text-[#6F5A55]">Productos y valores reales</span>
-                  </div>
-                </div>
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-[#4F735A]" />
-              </div>
             </div>
           </div>
         </header>
