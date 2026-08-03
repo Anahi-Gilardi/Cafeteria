@@ -191,9 +191,15 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
     })
     .slice(0, 4);
 
-  const filteredItems = menuItems.filter(item => 
-    selectedCategory === "all" || item.category === selectedCategory
-  );
+  const filteredItems = useMemo(() => {
+    if (selectedCategory === "executive" || selectedCategory === "menu_diario") {
+      return [];
+    }
+    if (selectedCategory === "all") {
+      return menuItems.filter(item => item.category !== "executive" && item.category !== "menu_diario");
+    }
+    return menuItems.filter(item => item.category === selectedCategory);
+  }, [menuItems, selectedCategory]);
 
   const totalCartCount = useMemo(() => {
     return Object.values(cartOrder).reduce((acc, curr) => acc + curr.quantity, 0);
