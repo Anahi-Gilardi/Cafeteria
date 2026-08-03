@@ -99,7 +99,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
 
   const categories = [
     { id: "all", label: "Todo", emoji: "🍽️" },
-    { id: "executive", label: "⭐ Menú Diario", emoji: "⭐" },
+    { id: "menu_diario", label: "⭐ Menú del Día", emoji: "⭐" },
+    { id: "executive", label: "🍱 Menú Diario", emoji: "🍱" },
     { id: "desayunos_meriendas", label: "Desayunos, Almuerzos & Meriendas", emoji: "☕" },
     { id: "pizzas_focaccias", label: "Pizzas & Focaccias", emoji: "🍕" },
     { id: "minutas_carnes", label: "Minutas & Carnes", emoji: "🥩" },

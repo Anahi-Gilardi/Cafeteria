@@ -3653,6 +3653,7 @@ export default function AdminHub({
           {[
             { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
+            { id: "menu_ejecutivo", label: "🍱 Menú Diario" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
@@ -3677,7 +3678,7 @@ export default function AdminHub({
           ))}
         </div>
 
-        {selectedPosCategory === "menu_diario" ? (
+        {selectedPosCategory === "menu_diario" || selectedPosCategory === "menu_ejecutivo" ? (
           renderDailyMenuEditor()
         ) : selectedPosCategory === "delivery_config" ? (
           renderDeliveryConfig()

@@ -233,7 +233,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         <div className="flex border-b border-[#D7BBA8] pb-3 gap-3 overflow-x-auto text-xs font-bold">
           {[
             { id: "all", label: "🍽️ Ver Todo" },
-            { id: "executive", label: "⭐ Menú Diario" },
+            { id: "menu_diario", label: "⭐ Menú del Día" },
+            { id: "executive", label: "🍱 Menú Diario" },
             { id: "desayunos_meriendas", label: "☕ Desayunos, Almuerzos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
@@ -242,7 +243,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
             { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
             { id: "postres", label: "🍰 Postres" }
-          ].filter((cat) => cat.id !== "executive" || todayMenu).map((cat) => (
+          ].filter((cat) => (cat.id !== "executive" && cat.id !== "menu_diario") || todayMenu).map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
@@ -258,7 +259,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         </div>
 
         {/* Executive Menu Live Combo Builder Box */}
-        {todayMenu && (selectedCategory === "all" || selectedCategory === "executive") && (
+        {todayMenu && (selectedCategory === "all" || selectedCategory === "executive" || selectedCategory === "menu_diario") && (
           <div className="bg-white border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-5">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
               <div className="flex items-center gap-4">
