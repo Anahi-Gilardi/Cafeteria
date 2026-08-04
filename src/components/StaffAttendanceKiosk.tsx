@@ -232,6 +232,41 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
         
         {/* PANEL IZQUIERDO: RELOJ DE CONTROL & FICHAJE GPS */}
         <div className="lg:col-span-5 space-y-6">
+          
+          {/* Banner de Activación Interactiva al Ingresar al Módulo */}
+          <div className="bg-[#843747] text-white p-4 rounded-3xl shadow-sm space-y-2 border border-[#71303D]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Radio className="h-4 w-4 text-[#E8D4C3] animate-pulse" />
+                <strong className="text-xs font-black uppercase tracking-wider text-[#FFF9F4]">
+                  📍 Sincronización GPS en Tiempo Real
+                </strong>
+              </div>
+              <span className="text-[9px] bg-[#FFF9F4]/20 text-[#FFF9F4] px-2 py-0.5 rounded-full font-mono font-bold">
+                {gpsData?.provider === "gps_high_accuracy" ? "🟢 GPS Activo" : "🟡 Sincronizando..."}
+              </span>
+            </div>
+            <p className="text-[10px] text-[#E8D4C3] leading-relaxed">
+              Al ingresar al módulo de personal, active la geolocalización para validar su ubicación en Google Maps (compatible con computadoras y teléfonos móviles).
+            </p>
+            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={fetchGps}
+                disabled={isLoadingGps}
+                className="flex-1 py-2 px-3 bg-[#4F735A] hover:bg-[#3D5B46] text-white font-black text-[10px] uppercase rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RefreshCw className={`h-3 w-3 ${isLoadingGps ? "animate-spin" : ""}`} />
+                {isLoadingGps ? "Solicitando..." : "🌐 Activar Mi Ubicación GPS"}
+              </button>
+              <button
+                onClick={enableStoreLocationFallback}
+                className="py-2 px-3 bg-[#FFF9F4] hover:bg-[#E8D4C3] text-[#843747] font-black text-[10px] uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+              >
+                📍 Ubicación Sucursal
+              </button>
+            </div>
+          </div>
+
           <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-6 rounded-3xl shadow-sm space-y-6">
             
             {/* Reloj de Control Digital */}

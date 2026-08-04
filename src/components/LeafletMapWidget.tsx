@@ -89,23 +89,21 @@ export const LeafletMapWidget: React.FC<LeafletMapWidgetProps> = ({
 
     mapInstanceRef.current = map;
 
-    // Capa de Mapas de Alta Velocidad (CartoDB Voyager Tiles + OpenStreetMap Fallback)
-    const cartoTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    // Capa de Mapas de Alta Velocidad (OpenStreetMap Standard + CartoDB + Esri World Street Map)
+    const osmTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      subdomains: "abcd",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      subdomains: ["a", "b", "c"]
     });
 
-    const osmTileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    const esriTileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
       maxZoom: 19
     });
 
-    cartoTileLayer.addTo(map);
+    osmTileLayer.addTo(map);
 
-    // Si falla CartoDB, cambiar a OpenStreetMap tile layer
-    cartoTileLayer.on("tileerror", () => {
-      if (map && !map.hasLayer(osmTileLayer)) {
-        osmTileLayer.addTo(map);
+    osmTileLayer.on("tileerror", () => {
+      if (map && !map.hasLayer(esriTileLayer)) {
+        esriTileLayer.addTo(map);
       }
     });
 
