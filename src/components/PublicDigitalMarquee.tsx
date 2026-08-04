@@ -50,6 +50,11 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
     mainImages?: string[];
     sides: string[];
     price: number;
+    saladTitle?: string;
+    saladDescription?: string;
+    saladImage?: string;
+    saladPriceSmall?: number;
+    saladPriceLarge?: number;
   }>(() => {
     try {
       const saved = localStorage.getItem("puglia_daily_combo");
@@ -73,9 +78,16 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         "Arroz con crema",
         "Ensalada mixta"
       ],
-      price: 8500
+      price: 8500,
+      saladTitle: "Ensalada Completa",
+      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
+      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
+      saladPriceSmall: 6500,
+      saladPriceLarge: 8500
     };
-  });  const [cartOrder, setCartOrder] = useState<Record<string, { item: MenuItem; quantity: number }>>({});
+  });
+  const [selectedSaladSize, setSelectedSaladSize] = useState<"chica" | "grande">("chica");
+  const [cartOrder, setCartOrder] = useState<Record<string, { item: MenuItem; quantity: number }>>({});
 
   const handleAddToCart = (item: MenuItem) => {
     setCartOrder((prev) => {
@@ -506,6 +518,78 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
                 Pedir menú diario por WhatsApp
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 🥗 Ensalada Completa (Chica / Grande) Card */}
+        {(selectedCategory === "all" || selectedCategory === "executive") && (
+          <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+              <div className="flex items-center gap-4">
+                {(dailyComboState.saladImage || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600") && (
+                  <MenuImage
+                    src={dailyComboState.saladImage || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600"}
+                    alt={dailyComboState.saladTitle || "Ensalada Completa"}
+                    className="h-20 w-24 rounded-2xl object-cover border-2 border-[#843747] shadow-md shrink-0"
+                  />
+                )}
+                <div>
+                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🥗 Menú Saludable</span>
+                  <h3 className="font-serif text-2xl font-bold text-[#332424]">{dailyComboState.saladTitle || "Ensalada Completa"}</h3>
+                  <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">"{dailyComboState.saladDescription || "Mix de verdes, pollo desmenuzado, queso, huevo y tomates cherry."}"</p>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-xs text-[#6F5A55] block font-bold">Precio ({selectedSaladSize === "chica" ? "Chica" : "Grande"})</span>
+                <span className="text-3xl font-black font-mono text-[#843747]">
+                  ${(selectedSaladSize === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500)).toLocaleString("es-AR")}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#843747] uppercase tracking-wider">Elija Tamaño:</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSaladSize("chica")}
+                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                    selectedSaladSize === "chica"
+                      ? "bg-[#843747] text-white border-[#843747] shadow-sm font-black"
+                      : "bg-white text-[#332424] border-[#D7BBA8] hover:bg-[#E8D4C3]"
+                  }`}
+                >
+                  🥗 Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSaladSize("grande")}
+                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                    selectedSaladSize === "grande"
+                      ? "bg-[#843747] text-white border-[#843747] shadow-sm font-black"
+                      : "bg-white text-[#332424] border-[#D7BBA8] hover:bg-[#E8D4C3]"
+                  }`}
+                >
+                  🥗 Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const price = selectedSaladSize === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500);
+                  const title = `${dailyComboState.saladTitle || "Ensalada Completa"} (${selectedSaladSize === "chica" ? "Chica" : "Grande"})`;
+                  const msg = `¡Hola! Quisiera pedir la *${title}*:\n"${dailyComboState.saladDescription || ""}"\n*Precio: $${price.toLocaleString("es-AR")}*`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                }}
+                className="py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20bd59] text-white font-bold text-[11px] uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/30"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                Pedir ensalada por WhatsApp
               </button>
             </div>
           </div>

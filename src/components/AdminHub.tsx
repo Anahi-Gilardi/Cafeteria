@@ -439,6 +439,7 @@ export default function AdminHub({
   const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
   const [selectedMainMozo, setSelectedMainMozo] = useState<string>("");
   const [selectedSideMozo, setSelectedSideMozo] = useState<string>("");
+  const [saladSizeMozo, setSaladSizeMozo] = useState<"chica" | "grande">("chica");
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -3326,6 +3327,11 @@ export default function AdminHub({
     mainImages?: string[];
     sides: string[];
     price: number;
+    saladTitle?: string;
+    saladDescription?: string;
+    saladImage?: string;
+    saladPriceSmall?: number;
+    saladPriceLarge?: number;
   }>(() => {
     try {
       const saved = localStorage.getItem("puglia_daily_combo");
@@ -3349,7 +3355,12 @@ export default function AdminHub({
         "Arroz con crema",
         "Ensalada mixta"
       ],
-      price: 8500
+      price: 8500,
+      saladTitle: "Ensalada Completa",
+      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
+      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
+      saladPriceSmall: 6500,
+      saladPriceLarge: 8500
     };
   });
 
@@ -3390,10 +3401,10 @@ export default function AdminHub({
       <div className="space-y-6 bg-[#FFF9F4] border-2 border-[#843747] text-[#332424] rounded-3xl p-6 shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 CONFIGURACIÓN DE COMBO MENÚ DIARIO</span>
-            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones)</h3>
+            <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 CONFIGURACIÓN DE COMBO MENÚ DIARIO Y ENSALADAS</span>
+            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones) & Ensaladas</h3>
             <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
-              Ingrese el nombre y la foto para cada uno de los 4 platos principales y las 3 guarniciones a elección.
+              Ingrese los platos, guarniciones y precios para el combo menú diario y la ensalada completa (Chica/Grande).
             </p>
           </div>
 
@@ -3402,7 +3413,7 @@ export default function AdminHub({
             onClick={handleSaveCombo}
             className="px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
           >
-            💾 GUARDAR MENÚ DIARIO
+            💾 GUARDAR CONFIGURACIÓN
           </button>
         </div>
 
@@ -3507,6 +3518,101 @@ export default function AdminHub({
                 onChange={(e) => setDailyComboState({ ...dailyComboState, price: Number(e.target.value) })}
                 className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-sm font-black font-mono text-[#843747] outline-none"
               />
+            </div>
+          </div>
+
+          {/* 🥗 Ensalada Completa Editor */}
+          <div className="pt-4 border-t border-[#D7BBA8]/60 space-y-3">
+            <label className="text-[11px] font-black uppercase text-[#843747] block">🥗 OPCIÓN ADICIONAL: ENSALADA COMPLETA (CHICA / GRANDE)</label>
+            <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#6F5A55] block mb-1">Nombre del Menú Ensalada</label>
+                  <input
+                    type="text"
+                    value={dailyComboState.saladTitle || "Ensalada Completa"}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladTitle: e.target.value })}
+                    placeholder="ej: Ensalada Completa"
+                    className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#6F5A55] block mb-1">Descripción / Ingredientes</label>
+                  <input
+                    type="text"
+                    value={dailyComboState.saladDescription || ""}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladDescription: e.target.value })}
+                    placeholder="Mix de verdes, pollo, queso, huevo..."
+                    className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-xs text-[#332424] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Prices Chica vs Grande */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#843747] block mb-1">Precio Chica ($ ARS)</label>
+                  <input
+                    type="number"
+                    value={dailyComboState.saladPriceSmall ?? 6500}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladPriceSmall: Number(e.target.value) })}
+                    className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-sm font-black font-mono text-[#843747] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#843747] block mb-1">Precio Grande ($ ARS)</label>
+                  <input
+                    type="number"
+                    value={dailyComboState.saladPriceLarge ?? 8500}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladPriceLarge: Number(e.target.value) })}
+                    className="w-full p-2.5 bg-white border border-[#D7BBA8] rounded-xl text-sm font-black font-mono text-[#843747] outline-none"
+                  />
+                </div>
+
+                {/* Photo URL & Upload */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#6F5A55] block mb-1">Foto Ensalada</label>
+                  <div className="flex items-center gap-2">
+                    {dailyComboState.saladImage && (
+                      <img
+                        src={dailyComboState.saladImage}
+                        alt="Preview ensalada"
+                        className="h-10 w-12 rounded-lg object-cover border border-[#D7BBA8] shrink-0"
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={dailyComboState.saladImage || ""}
+                      onChange={(e) => setDailyComboState({ ...dailyComboState, saladImage: e.target.value })}
+                      placeholder="URL foto ensalada..."
+                      className="w-full p-2 bg-white border border-[#D7BBA8] rounded-xl text-[11px] text-[#6F5A55] outline-none"
+                    />
+                    <label className="px-3 py-2 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold uppercase rounded-xl cursor-pointer shrink-0">
+                      Subir
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const res = evt.target?.result as string;
+                              if (res) {
+                                setDailyComboState({ ...dailyComboState, saladImage: res });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -6605,6 +6711,78 @@ export default function AdminHub({
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="h-4 w-4" /> Agregar Combo a Comanda
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 🥗 Ensalada Completa Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "executive") && (
+            <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-start border-b border-[#D7BBA8] pb-3">
+                <div className="flex items-center gap-3">
+                  {dailyComboState.saladImage ? (
+                    <img src={dailyComboState.saladImage} alt={dailyComboState.saladTitle || "Ensalada Completa"} className="h-16 w-20 rounded-2xl object-cover border border-[#843747] shadow-xs shrink-0" />
+                  ) : (
+                    <div className="h-16 w-20 rounded-2xl bg-[#843747] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                      🥗
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#843747] tracking-widest block">🥗 Menú Saludable</span>
+                    <h4 className="font-serif text-lg font-bold text-[#332424]">{dailyComboState.saladTitle || "Ensalada Completa"}</h4>
+                    <p className="text-xs text-[#6F5A55] italic">{dailyComboState.saladDescription || "Mix de verdes, pollo desmenuzado, queso, huevo y tomates cherry."}</p>
+                  </div>
+                </div>
+                <span className="text-xl font-black font-mono text-[#843747] shrink-0">
+                  ${(saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500)).toLocaleString("es-AR")}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#843747] uppercase tracking-wider">Tamaño:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSaladSizeMozo("chica")}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      saladSizeMozo === "chica"
+                        ? "bg-[#843747] text-white border-[#843747] shadow-xs font-black"
+                        : "bg-white text-[#332424] border-[#D7BBA8] hover:bg-[#E8D4C3]"
+                    }`}
+                  >
+                    Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSaladSizeMozo("grande")}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      saladSizeMozo === "grande"
+                        ? "bg-[#843747] text-white border-[#843747] shadow-xs font-black"
+                        : "bg-white text-[#332424] border-[#D7BBA8] hover:bg-[#E8D4C3]"
+                    }`}
+                  >
+                    Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const price = saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500);
+                    const title = `${dailyComboState.saladTitle || "Ensalada Completa"} (${saladSizeMozo === "chica" ? "Chica" : "Grande"})`;
+                    const itemToCart: MenuItem = {
+                      id: `ensalada_completa_${saladSizeMozo}_${Date.now()}`,
+                      name: `🥗 ${title}`,
+                      price: price,
+                      category: "executive",
+                      description: dailyComboState.saladDescription
+                    };
+                    handleAddMozoCart(itemToCart);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Agregar Ensalada a Comanda
                 </button>
               </div>
             </div>
