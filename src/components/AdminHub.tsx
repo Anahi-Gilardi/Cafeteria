@@ -187,7 +187,7 @@ export default function AdminHub({
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [activeSubTab]);
-  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("barista");
+  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("asistencia");
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
   // User Accounts Management state
@@ -6914,16 +6914,43 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#332424]"
+        className="space-y-6 text-[#332424]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-widest text-[#843747]">Equipo y Colaboradores</span>
             <h2 className="font-serif text-3xl font-bold text-[#843747] mt-0.5">Gestión de Personal</h2>
           </div>
+
+          {/* Sub-tab Navigation */}
+          <div className="flex gap-2 bg-[#FFF9F4] p-1.5 border border-[#D7BBA8] rounded-2xl shadow-xs">
+            <button
+              onClick={() => setPersonalSubTab("asistencia")}
+              className={`px-4 py-2 rounded-xl font-black text-xs uppercase transition-all cursor-pointer flex items-center gap-2 ${
+                personalSubTab === "asistencia"
+                  ? "bg-[#843747] text-white shadow-xs"
+                  : "bg-[#E8D4C3]/40 text-[#843747] hover:bg-[#E8D4C3]"
+              }`}
+            >
+              📱 Control de Asistencia & GPS
+            </button>
+            <button
+              onClick={() => setPersonalSubTab("cuentas")}
+              className={`px-4 py-2 rounded-xl font-black text-xs uppercase transition-all cursor-pointer flex items-center gap-2 ${
+                personalSubTab === "cuentas"
+                  ? "bg-[#843747] text-white shadow-xs"
+                  : "bg-[#E8D4C3]/40 text-[#843747] hover:bg-[#E8D4C3]"
+              }`}
+            >
+              👥 Cuentas de Personal & Permisos
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#332424]">
+        {personalSubTab === "asistencia" ? (
+          renderAttendance()
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#332424]">
           {/* Form to add user: only visible to owner/administrator */}
           {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
             <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
@@ -7230,9 +7257,10 @@ export default function AdminHub({
                 )}
               </div>
             </div>
-          </motion.div>
-        );
-      };
+        )}
+      </motion.div>
+    );
+  };
 
   const renderSalon = () => {
     const defaultCoords = [
