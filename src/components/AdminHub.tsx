@@ -3403,7 +3403,7 @@ export default function AdminHub({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
             <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 CONFIGURACIÓN DE COMBO MENÚ DIARIO Y ENSALADAS</span>
-            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + Guarniciones) & Ensaladas</h3>
+            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario & Ensaladas</h3>
             <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
               Ingrese los platos, guarniciones y precios para el combo menú diario y la ensalada completa (Chica/Grande).
             </p>
