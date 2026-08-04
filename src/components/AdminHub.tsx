@@ -3351,7 +3351,8 @@ export default function AdminHub({
         "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
       ],
       sides: [
-        "Puré de papa o mixto",
+        "Puré de papa",
+        "Puré mixto",
         "Arroz con crema",
         "Ensalada mixta"
       ],
@@ -3393,16 +3394,16 @@ export default function AdminHub({
           "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
           "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
         ];
-    const sidesList = dailyComboState.sides && dailyComboState.sides.length >= 3 
+    const sidesList = dailyComboState.sides && dailyComboState.sides.length >= 4
       ? dailyComboState.sides 
-      : ["Puré de papa o mixto", "Arroz con crema", "Ensalada mixta"];
+      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"];
 
     return (
       <div className="space-y-6 bg-[#FFF9F4] border-2 border-[#843747] text-[#332424] rounded-3xl p-6 shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
           <div>
             <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 CONFIGURACIÓN DE COMBO MENÚ DIARIO Y ENSALADAS</span>
-            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + 3 Guarniciones) & Ensaladas</h3>
+            <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario (4 Platos + Guarniciones) & Ensaladas</h3>
             <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
               Ingrese los platos, guarniciones y precios para el combo menú diario y la ensalada completa (Chica/Grande).
             </p>
@@ -3488,9 +3489,9 @@ export default function AdminHub({
           </div>
 
           <div className="pt-3 border-t border-[#D7BBA8]/60">
-            <label className="text-[11px] font-black uppercase text-[#843747] block mb-2">🥗 3 GUARNICIONES ELEGIBLES</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[0, 1, 2].map((idx) => (
+            <label className="text-[11px] font-black uppercase text-[#843747] block mb-2">🥗 GUARNICIONES ELEGIBLES (OPCIONES DE ACOMPAÑAMIENTO)</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map((idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[#843747] w-6 shrink-0">{idx + 1}.</span>
                   <input

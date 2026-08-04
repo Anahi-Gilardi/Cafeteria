@@ -74,7 +74,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
       ],
       sides: [
-        "Puré de papa o mixto",
+        "Puré de papa",
+        "Puré mixto",
         "Arroz con crema",
         "Ensalada mixta"
       ],
@@ -484,9 +485,9 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 </select>
               </div>
 
-              {/* 2. Guarnición (3 Opciones) */}
+              {/* 2. Guarnición */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">2. Seleccione 1 Guarnición (de 3 opciones)</label>
+                <label className="text-[10px] font-black uppercase text-[#843747] block">2. Seleccione 1 Guarnición de Acompañamiento</label>
                 <select
                   value={selectedStarter}
                   onChange={(e) => setSelectedStarter(e.target.value)}
@@ -494,7 +495,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 >
                   {(dailyComboState.sides && dailyComboState.sides.length > 0
                     ? dailyComboState.sides
-                    : ["Puré de papa o mixto", "Arroz con crema", "Ensalada mixta"]
+                    : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"]
                   ).map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
@@ -508,7 +509,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 type="button"
                 onClick={() => {
                   const mainChoice = selectedMain || dailyComboState.mains[0] || "Pollo al horno";
-                  const sideChoice = selectedStarter || dailyComboState.sides[0] || "Puré de papa o mixto";
+                  const sideChoice = selectedStarter || dailyComboState.sides[0] || "Puré de papa";
                   const msg = `¡Hola! Quisiera pedir el *Menú Diario*:\n\n• *Plato Principal:* ${mainChoice}\n• *Guarnición:* ${sideChoice}\n\n*Precio Combo: $${dailyComboState.price.toLocaleString("es-AR")}*`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
                 }}
