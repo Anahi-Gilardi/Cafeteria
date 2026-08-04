@@ -56,7 +56,7 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Consultar GPS al cargar
+  // Consultar GPS al cargar y suscribir a tiempo real
   const fetchGps = async () => {
     setIsLoadingGps(true);
     const result = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
@@ -72,17 +72,43 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
   useEffect(() => {
     fetchGps();
     loadHistory();
+
+    // Suscripción Realtime en Supabase para actualización automática instantánea
+    const unsubscribe = AttendanceService.subscribeToRealtimeChanges(() => {
+      loadHistory();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const selectedEmployee = DEFAULT_EMPLOYEES.find(e => e.id === selectedEmployeeId) || DEFAULT_EMPLOYEES[0];
 
+  const isGpsBlocked = Boolean(gpsData?.error) || (!gpsData?.latitude && !isLoadingGps);
+
   const handleRecordMovement = async (movementType: "INGRESO" | "EGRESO") => {
     if (!selectedEmployee) return;
+
+    if (isGpsBlocked) {
+      if (onShowNotification) {
+        onShowNotification("Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar", "error");
+      }
+      return;
+    }
 
     setIsSubmitting(true);
     // Refrescar GPS justo antes de fichar
     const freshGps = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
     setGpsData(freshGps);
+
+    if (freshGps.error || (!freshGps.latitude && !freshGps.longitude)) {
+      setIsSubmitting(false);
+      if (onShowNotification) {
+        onShowNotification("Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar", "error");
+      }
+      return;
+    }
 
     const response = await AttendanceService.recordAttendance(
       selectedEmployee.id,
@@ -273,13 +299,36 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
               </div>
             </div>
 
+            {/* Banner Alerta de Permisos GPS Obligatorio */}
+            {isGpsBlocked && (
+              <div className="p-4 bg-[#F4DCDD] border-2 border-[#A63F45] text-[#A63F45] rounded-2xl space-y-2 text-center shadow-sm">
+                <strong className="text-xs font-black uppercase tracking-wider block">
+                  ⚠️ Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar
+                </strong>
+                <p className="text-[10px] font-semibold text-[#843747]">
+                  El navegador requiere permisos de geolocalización activos para validar la presencia en Castaño Resto Bar.
+                </p>
+                <button
+                  onClick={fetchGps}
+                  className="mt-1 px-4 py-2 bg-[#843747] text-white font-black text-xs uppercase rounded-xl hover:bg-[#71303D] transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  🔓 Activar Permiso de Ubicación GPS
+                </button>
+              </div>
+            )}
+
             {/* BOTONES DE FICHAJE GIGANTES */}
             <div className="grid grid-cols-2 gap-4 pt-1">
               <button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isGpsBlocked}
                 onClick={() => handleRecordMovement("INGRESO")}
-                className="py-5 px-4 bg-[#2E6F40] hover:bg-[#245832] text-white font-black rounded-2xl shadow-md transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95 border border-[#245832]"
+                className={`py-5 px-4 font-black rounded-2xl shadow-md transition-all flex flex-col items-center justify-center gap-1.5 border ${
+                  isSubmitting || isGpsBlocked
+                    ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed opacity-60"
+                    : "bg-[#2E6F40] hover:bg-[#245832] border-[#245832] text-white cursor-pointer active:scale-95"
+                }`}
               >
                 <LogIn className="h-7 w-7 text-white" />
                 <span className="text-sm font-black uppercase tracking-wider">Fichar Ingreso</span>
@@ -287,9 +336,13 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
 
               <button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isGpsBlocked}
                 onClick={() => handleRecordMovement("EGRESO")}
-                className="py-5 px-4 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-2xl shadow-md transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95 border border-[#71303D]"
+                className={`py-5 px-4 font-black rounded-2xl shadow-md transition-all flex flex-col items-center justify-center gap-1.5 border ${
+                  isSubmitting || isGpsBlocked
+                    ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed opacity-60"
+                    : "bg-[#843747] hover:bg-[#71303D] border-[#71303D] text-white cursor-pointer active:scale-95"
+                }`}
               >
                 <LogOut className="h-7 w-7 text-white" />
                 <span className="text-sm font-black uppercase tracking-wider">Fichar Egreso</span>

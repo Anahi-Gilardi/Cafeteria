@@ -1,14 +1,14 @@
 /**
  * AttendanceService.ts
- * Servicio de Fichaje y Control de Asistencia con Resiliencia Offline y Supabase
+ * Servicio de Fichaje y Control de Asistencia con Resiliencia Offline y Supabase Realtime
  * Castaño Resto Bar & Cafetería
  */
 
 import { supabase } from "../lib/supabase";
-import { GeofencingService, GPSResult, CASTANO_LOCATION } from "./GeofencingService";
+import { GPSResult } from "./GeofencingService";
 
 export interface AttendanceRecordPayload {
-  id_fichaje?: number;
+  id_fichaje?: number | string;
   id_empleado: string;
   nombre_empleado: string;
   tipo_movimiento: "INGRESO" | "EGRESO";
@@ -21,6 +21,8 @@ export interface AttendanceRecordPayload {
   dispositivo_info?: string;
   direccion_aproximada?: string;
   observaciones?: string;
+  fecha?: string;
+  hora?: string;
 }
 
 export interface AttendanceResponse {
@@ -45,17 +47,29 @@ export class AttendanceService {
     gpsResult: GPSResult
   ): Promise<AttendanceResponse> {
     try {
-      const nowIso = new Date().toISOString();
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const timeStr = now.toTimeString().slice(0, 8); // HH:MM:SS
       const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "Castaño App";
 
-      // Validar máquina de estados para evitar duplicados
+      // Validar máquina de estados para evitar marcas inconsistentes
       const lastRecord = await this.getLastEmployeeRecord(employeeId);
       if (lastRecord && lastRecord.tipo_movimiento === movementType) {
         return {
           success: false,
           status: "error",
-          message: `⚠️ No se puede registrar un nuevo ${movementType.toLowerCase()} consecutivo. Su última marca fue ${movementType}.`,
+          message: `⚠️ No se puede fichar un ${movementType} consecutivo. Su última marca fue ${movementType} el ${new Date(lastRecord.timestamp_servidor).toLocaleTimeString("es-AR")}.`,
           error: "DUPLICATE_MOVEMENT"
+        };
+      }
+
+      if (!lastRecord && movementType === "EGRESO") {
+        return {
+          success: false,
+          status: "error",
+          message: `⚠️ No se puede registrar un EGRESO sin un INGRESO previo.`,
+          error: "MISSING_INGRESO"
         };
       }
 
@@ -70,37 +84,47 @@ export class AttendanceService {
         distancia_metros: gpsResult.distanceMeters,
         dentro_de_rango: gpsResult.isWithinFence,
         dispositivo_info: userAgent,
-        direccion_aproximada: gpsResult.isWithinFence ? "Constitución 944, Río Cuarto" : "Ubicación remota",
+        direccion_aproximada: gpsResult.isWithinFence ? "Constitución 944, Río Cuarto" : `A ${gpsResult.distanceMeters}m de la sucursal`,
         observaciones: gpsResult.isWithinFence
-          ? "Fichaje normal dentro del radio de la cafetería"
-          : `⚠️ Alerta: Fichaje fuera de rango (a ${gpsResult.distanceMeters}m)`
+          ? "Fichaje en sucursal dentro del radio permitido"
+          : `⚠️ Alerta: Fichaje fuera de rango (a ${gpsResult.distanceMeters}m)`,
+        fecha: dateStr,
+        hora: timeStr
       };
 
-      // Guardar localmente para disponibilidad inmediata
+      // Payload para tabla SQL `fichajes` según especificación requerida
+      const fichajesTablePayload = {
+        empleado_id: employeeId,
+        nombre_completo: employeeName,
+        tipo: movementType,
+        fecha: dateStr,
+        hora: timeStr,
+        latitud: gpsResult.latitude,
+        longitud: gpsResult.longitude,
+        precision_metros: gpsResult.accuracy,
+        dentro_de_rango: gpsResult.isWithinFence,
+        distancia_sucursal_metros: gpsResult.distanceMeters,
+        direccion_texto: recordPayload.direccion_aproximada,
+        user_agent: userAgent
+      };
+
+      // Guardar localmente para disponibilidad e historial inmediato
       this.saveLocalRecord(recordPayload);
 
-      // Intentar persistencia en Supabase
+      // Intentar inserción en Supabase (primero tabla `fichajes`, luego `registros_fichaje`)
       try {
-        const { data, error } = await supabase
-          .from("registros_fichaje")
-          .insert([recordPayload])
-          .select()
-          .single();
-
-        if (error) {
-          console.warn("📌 Error Supabase, encolando offline:", error.message);
-          this.enqueueOfflineRecord(recordPayload);
-        } else if (data) {
-          recordPayload.id_fichaje = data.id_fichaje;
+        const { error: err1 } = await supabase.from("fichajes").insert([fichajesTablePayload]);
+        if (err1) {
+          await supabase.from("registros_fichaje").insert([recordPayload]);
         }
       } catch (err) {
-        console.warn("📌 Fallo de red, encolando offline:", err);
+        console.warn("📌 Fallo de red Supabase, guardado en cola offline:", err);
         this.enqueueOfflineRecord(recordPayload);
       }
 
       const statusMsg = gpsResult.isWithinFence
         ? `¡${movementType === "INGRESO" ? "Ingreso" : "Egreso"} registrado con éxito!`
-        : `⚠️ ${movementType === "INGRESO" ? "Ingreso" : "Egreso"} registrado con advertencia: Fichaje fuera del rango de la cafetería (${gpsResult.distanceMeters}m).`;
+        : `⚠️ ${movementType === "INGRESO" ? "Ingreso" : "Egreso"} registrado (FUERA DE RANGO: a ${gpsResult.distanceMeters}m).`;
 
       return {
         success: true,
@@ -124,23 +148,46 @@ export class AttendanceService {
   public static async getLastEmployeeRecord(
     employeeId: string
   ): Promise<AttendanceRecordPayload | null> {
-    // Buscar primero en Supabase
     try {
-      const { data, error } = await supabase
+      const { data: d1 } = await supabase
+        .from("fichajes")
+        .select("*")
+        .eq("empleado_id", employeeId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (d1 && d1.length > 0) {
+        const r = d1[0];
+        return {
+          id_fichaje: r.id,
+          id_empleado: r.empleado_id,
+          nombre_empleado: r.nombre_completo,
+          tipo_movimiento: r.tipo as "INGRESO" | "EGRESO",
+          timestamp_servidor: r.created_at,
+          latitud: Number(r.latitud),
+          longitud: Number(r.longitud),
+          precision_gps: Number(r.precision_metros),
+          distancia_metros: Number(r.distancia_sucursal_metros),
+          dentro_de_rango: r.dentro_de_rango,
+          dispositivo_info: r.user_agent,
+          direccion_aproximada: r.direccion_texto
+        };
+      }
+
+      const { data: d2 } = await supabase
         .from("registros_fichaje")
         .select("*")
         .eq("id_empleado", employeeId)
         .order("timestamp_servidor", { ascending: false })
         .limit(1);
 
-      if (!error && data && data.length > 0) {
-        return data[0] as AttendanceRecordPayload;
+      if (d2 && d2.length > 0) {
+        return d2[0] as AttendanceRecordPayload;
       }
     } catch (e) {
-      // Ignorar fallo y recurrir a local
+      // Ignore
     }
 
-    // Fallback en localStorage
     const local = this.getLocalRecords();
     const employeeRecords = local.filter((r) => r.id_empleado === employeeId);
     if (employeeRecords.length > 0) {
@@ -158,19 +205,68 @@ export class AttendanceService {
    */
   public static async getAllAttendanceRecords(): Promise<AttendanceRecordPayload[]> {
     try {
-      const { data, error } = await supabase
+      const { data: d1, error: err1 } = await supabase
+        .from("fichajes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!err1 && d1 && d1.length > 0) {
+        return d1.map(r => ({
+          id_fichaje: r.id,
+          id_empleado: r.empleado_id,
+          nombre_empleado: r.nombre_completo,
+          tipo_movimiento: r.tipo as "INGRESO" | "EGRESO",
+          timestamp_servidor: r.created_at,
+          latitud: Number(r.latitud),
+          longitud: Number(r.longitud),
+          precision_gps: Number(r.precision_metros),
+          distancia_metros: Number(r.distancia_sucursal_metros),
+          dentro_de_rango: r.dentro_de_rango,
+          dispositivo_info: r.user_agent,
+          direccion_aproximada: r.direccion_texto
+        }));
+      }
+
+      const { data: d2, error: err2 } = await supabase
         .from("registros_fichaje")
         .select("*")
         .order("timestamp_servidor", { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        return data as AttendanceRecordPayload[];
+      if (!err2 && d2 && d2.length > 0) {
+        return d2 as AttendanceRecordPayload[];
       }
     } catch (e) {
       // Ignore
     }
 
     return this.getLocalRecords();
+  }
+
+  /**
+   * Suscribe a cambios en tiempo real en Supabase (Realtime Subscription)
+   */
+  public static subscribeToRealtimeChanges(onNewRecord: () => void) {
+    try {
+      const channel = supabase
+        .channel("public:fichajes_realtime")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "fichajes" },
+          () => onNewRecord()
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "registros_fichaje" },
+          () => onNewRecord()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (e) {
+      return () => {};
+    }
   }
 
   // --- MÉTODOS OFFLINE Y LOCALSTORAGE ---
@@ -203,37 +299,5 @@ export class AttendanceService {
       console.error("Error encolando fichaje offline:", e);
     }
   }
-
-  /**
-   * Sincroniza fichajes guardados offline
-   */
-  public static async syncOfflineRecords(): Promise<number> {
-    try {
-      const queue: AttendanceRecordPayload[] = JSON.parse(
-        localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]"
-      );
-      if (queue.length === 0) return 0;
-
-      let syncedCount = 0;
-      const remaining: AttendanceRecordPayload[] = [];
-
-      for (const item of queue) {
-        try {
-          const { error } = await supabase.from("registros_fichaje").insert([item]);
-          if (!error) {
-            syncedCount++;
-          } else {
-            remaining.push(item);
-          }
-        } catch (e) {
-          remaining.push(item);
-        }
-      }
-
-      localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
-      return syncedCount;
-    } catch (e) {
-      return 0;
-    }
-  }
 }
+
