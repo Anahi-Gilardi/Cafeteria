@@ -244,19 +244,32 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                 </p>
               </div>
 
-              {/* Vista Previa Mapa Interactivo / Widget */}
-              <div className="h-32 w-full rounded-xl overflow-hidden border border-[#D7BBA8] relative bg-[#E8D4C3]/30">
+              {/* Vista Previa Mapa Interactivo / Widget OpenStreetMap (Inalterable y Resiliente) */}
+              <div className="h-36 w-full rounded-2xl overflow-hidden border border-[#D7BBA8] relative bg-[#E8D4C3]/40 flex flex-col justify-between p-3 group">
                 <iframe
-                  title="Mapa Castaño GPS"
+                  title="Mapa Castaño GPS OpenStreetMap"
                   width="100%"
                   height="100%"
                   frameBorder="0"
                   scrolling="no"
                   marginHeight={0}
                   marginWidth={0}
-                  src="https://maps.google.com/maps?q=-33.1245,-64.3490&z=16&output=embed"
-                  className="w-full h-full opacity-90 hover:opacity-100 transition-opacity"
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=-64.3540%2C-33.1290%2C-64.3440%2C-33.1200&layer=mapnik&marker=-33.1245%2C-64.3490"
+                  className="w-full h-full absolute inset-0 opacity-90 group-hover:opacity-100 transition-opacity"
                 />
+                <div className="relative z-10 flex justify-between items-end mt-auto pointer-events-none">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#843747] text-white text-[9px] font-black uppercase shadow-xs pointer-events-auto">
+                    📍 Constitución 944, Río Cuarto
+                  </span>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=-33.1245,-64.3490"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-[#FFF9F4] text-[#843747] border border-[#D7BBA8] text-[9px] font-black uppercase hover:bg-[#E7C8CF] transition-all shadow-xs pointer-events-auto flex items-center gap-1"
+                  >
+                    🗺️ Abrir Mapa GPS
+                  </a>
+                </div>
               </div>
             </div>
 
