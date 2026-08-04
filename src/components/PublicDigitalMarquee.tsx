@@ -426,18 +426,22 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
           </div>
         )}
 
-        {/* 🍱 Menú Diario (4 Platos + 3 Guarniciones) Card */}
+        {/* 🍱 Menú Diario Card */}
         {(selectedCategory === "all" || selectedCategory === "executive") && (
-          <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-5">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+          <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-6 shadow-xl space-y-5 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#7A2E39]/30 pb-4">
               <div>
-                <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🍱 Combo Menú Diario</span>
-                <h3 className="font-serif text-2xl font-bold text-[#332424]">Menú Diario</h3>
-                <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">Elija 1 Plato Principal + 1 Guarnición de su preferencia.</p>
+                <div className="flex items-center gap-3">
+                  <h3 className="font-script text-4xl md:text-5xl text-[#5C1D27] font-bold leading-snug">Nuestros Menús Diarios</h3>
+                  <span className="px-3 py-1 bg-[#D49E35] text-[#2D0E13] text-xs font-bold rounded-full uppercase tracking-widest shadow-xs font-mono">
+                    MENÚ
+                  </span>
+                </div>
+                <p className="text-xs text-[#5E393F] italic mt-1 font-medium">Elija 1 Plato Principal + 1 Guarnición de su preferencia.</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs text-[#6F5A55] block font-bold">Precio Combo ($ ARS)</span>
-                <span className="text-3xl font-black font-mono text-[#843747]">${dailyComboState.price.toLocaleString("es-AR")}</span>
+                <span className="text-xs text-[#5E393F] block font-bold">Precio Combo ($ ARS)</span>
+                <span className="text-3xl font-black font-mono text-[#5C1D27]">${dailyComboState.price.toLocaleString("es-AR")}</span>
               </div>
             </div>
             {/* 4 Main Dishes Photo Gallery */}
@@ -526,25 +530,25 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
         {/* 🥗 Ensalada Completa (Chica / Grande) Card */}
         {(selectedCategory === "all" || selectedCategory === "executive") && (
-          <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+          <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#7A2E39]/30 pb-4">
               <div className="flex items-center gap-4">
                 {(dailyComboState.saladImage || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600") && (
                   <MenuImage
                     src={dailyComboState.saladImage || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600"}
                     alt={dailyComboState.saladTitle || "Ensalada Completa"}
-                    className="h-20 w-24 rounded-2xl object-cover border-2 border-[#843747] shadow-md shrink-0"
+                    className="h-20 w-24 rounded-2xl object-cover border-2 border-[#5C1D27] shadow-md shrink-0"
                   />
                 )}
                 <div>
-                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">🥗 Menú Saludable</span>
-                  <h3 className="font-serif text-2xl font-bold text-[#332424]">{dailyComboState.saladTitle || "Ensalada Completa"}</h3>
-                  <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">"{dailyComboState.saladDescription || "Mix de verdes, pollo desmenuzado, queso, huevo y tomates cherry."}"</p>
+                  <span className="text-[10px] font-black uppercase text-[#5C1D27] tracking-widest block font-heading">🥗 MENÚ SALUDABLE</span>
+                  <h3 className="font-heading text-3xl font-bold text-[#5C1D27] uppercase tracking-wide">{dailyComboState.saladTitle || "ENSALADAS COMPLETAS"}</h3>
+                  <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">"{dailyComboState.saladDescription || "Mix de verdes, pollo desmenuzado, queso, huevo y tomates cherry."}"</p>
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs text-[#6F5A55] block font-bold">Precio ({selectedSaladSize === "chica" ? "Chica" : "Grande"})</span>
-                <span className="text-3xl font-black font-mono text-[#843747]">
+                <span className="text-xs text-[#5E393F] block font-bold">Precio ({selectedSaladSize === "chica" ? "Chica" : "Grande"})</span>
+                <span className="text-3xl font-black font-mono text-[#5C1D27]">
                   ${(selectedSaladSize === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500)).toLocaleString("es-AR")}
                 </span>
               </div>
