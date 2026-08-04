@@ -18,6 +18,7 @@ import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
+import { StaffAttendanceKiosk } from "./StaffAttendanceKiosk";
 import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";
 import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingService";
@@ -304,6 +305,7 @@ export default function AdminHub({
   const [selectedStaffMember, setSelectedStaffMember] = useState<string>(currentUser.id);
   const [isLocatingGPS, setIsLocatingGPS] = useState<boolean>(false);
   const [currentGPSLoc, setCurrentGPSLoc] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [attendanceSubTab, setAttendanceSubTab] = useState<"kiosk" | "history">("kiosk");
 
   // Thermal Printer & ARCA Fiscal Billing State
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(() => ThermalPrinterService.getConfig());
@@ -627,91 +629,105 @@ export default function AdminHub({
           });
         }
 
-        const { data: closuresData, error: closuresError } = await supabase
-          .from("cash_closures")
-          .select("*")
-          .order("closed_at", { ascending: false })
-          .limit(100);
-        if (closuresError) throw closuresError;
-        setClosuresHistory(
-          (closuresData || []).map((closure) => ({
-            id: closure.id,
-            user: closure.user_name,
-            apertura: closure.opened_at,
-            cierre: closure.closed_at,
-            observaciones: closure.notes || "",
-            ventasTurno: Number(closure.sales_total),
-            montoReal: Number(closure.declared_cash),
-            diferencia: Number(closure.difference),
-            transactions: closure.transactions || []
-          }))
-        );
+        // 5. Fetch Cash Closures
+        try {
+          const { data: closuresData } = await supabase
+            .from("cash_closures")
+            .select("*")
+            .order("closed_at", { ascending: false })
+            .limit(100);
+          if (closuresData) {
+            setClosuresHistory(
+              closuresData.map((closure) => ({
+                id: closure.id,
+                user: closure.user_name,
+                apertura: closure.opened_at,
+                cierre: closure.closed_at,
+                observaciones: closure.notes || "",
+                ventasTurno: Number(closure.sales_total),
+                montoReal: Number(closure.declared_cash),
+                diferencia: Number(closure.difference),
+                transactions: closure.transactions || []
+              }))
+            );
+          }
+        } catch {
+          // Graceful fallback for closures
+        }
 
         // 6. Fetch Barista Calibration Data
-        const { data: calData } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
-        if (calData && calData.length > 0) {
-          const latest = calData[0];
-          const parsedCal = {
-            gramosIn: Number(latest.gramos_in),
-            mililitrosOut: Number(latest.mililitros_out),
-            tiempo: Number(latest.tiempo),
-            temperatura: Number(latest.temperatura),
-            clima: latest.clima
-          };
-          setCalibrationData(parsedCal);
-          localStorage.setItem("puglia_calibration", JSON.stringify(parsedCal));
-        }
+        try {
+          const { data: calData } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
+          if (calData && calData.length > 0) {
+            const latest = calData[0];
+            const parsedCal = {
+              gramosIn: Number(latest.gramos_in),
+              mililitrosOut: Number(latest.mililitros_out),
+              tiempo: Number(latest.tiempo),
+              temperatura: Number(latest.temperatura),
+              clima: latest.clima
+            };
+            setCalibrationData(parsedCal);
+            localStorage.setItem("puglia_calibration", JSON.stringify(parsedCal));
+          }
+        } catch {}
 
         // 7. Fetch Tip Pool
-        const { data: settingsData } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
-        if (settingsData) {
-          setTipPool(Number(settingsData.value));
-        }
+        try {
+          const { data: settingsData } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
+          if (settingsData) {
+            setTipPool(Number(settingsData.value));
+          }
+        } catch {}
 
         // 8. Fetch Daily Menu
-        const { data: dailyMenusData, error: dailyMenusError } = await supabase
-          .from("daily_menu")
-          .select("*")
-          .order("day_of_week");
-        if (dailyMenusError) throw dailyMenusError;
-        if (dailyMenusData?.length) {
-          setWeeklyMenus(EMPTY_WEEKLY_MENUS.map((emptyMenu) => {
-            const menu = dailyMenusData.find((candidate) => candidate.day_of_week === emptyMenu.dayOfWeek);
-            return menu ? {
-              dayOfWeek: menu.day_of_week,
-              title: menu.title,
-              description: menu.description || "",
-              price: Number(menu.price),
-              image: menu.image || undefined,
-              starters: menu.starters || [],
-              mains: menu.mains || [],
-              drinks: menu.drinks || [],
-              desserts: menu.desserts || [],
-              active: menu.active
-            } : emptyMenu;
-          }));
-        }
+        try {
+          const { data: dailyMenusData } = await supabase
+            .from("daily_menu")
+            .select("*")
+            .order("day_of_week");
+          if (dailyMenusData?.length) {
+            setWeeklyMenus(EMPTY_WEEKLY_MENUS.map((emptyMenu) => {
+              const menu = dailyMenusData.find((candidate) => candidate.day_of_week === emptyMenu.dayOfWeek);
+              return menu ? {
+                dayOfWeek: menu.day_of_week,
+                title: menu.title,
+                description: menu.description || "",
+                price: Number(menu.price),
+                image: menu.image || undefined,
+                starters: menu.starters || [],
+                mains: menu.mains || [],
+                drinks: menu.drinks || [],
+                desserts: menu.desserts || [],
+                active: menu.active
+              } : emptyMenu;
+            }));
+          }
+        } catch {}
 
         // 9. Fetch Users Metadata
-        const { data: metaData } = await supabase.from("system_settings").select("*").eq("key", "users_metadata").single();
-        if (metaData) {
-          setUsersMetadata(
-            typeof metaData.value === "string"
-              ? JSON.parse(metaData.value)
-              : metaData.value || {}
-          );
-        }
+        try {
+          const { data: metaData } = await supabase.from("system_settings").select("*").eq("key", "users_metadata").single();
+          if (metaData) {
+            setUsersMetadata(
+              typeof metaData.value === "string"
+                ? JSON.parse(metaData.value)
+                : metaData.value || {}
+            );
+          }
+        } catch {}
 
         // 10. Fetch attendance records allowed by the current user's RLS policy
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from("staff_attendance")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(250);
-        if (attendanceError) throw attendanceError;
-        setAttendanceLogs(attendanceData || []);
+        try {
+          const { data: attendanceData } = await supabase
+            .from("staff_attendance")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(250);
+          if (attendanceData) setAttendanceLogs(attendanceData);
+        } catch {}
       } catch (err) {
-        console.error("Error fetching admin data from Supabase:", err);
+        console.warn("Notice: loadSupabaseData partial finish:", err);
       }
     };
 
@@ -2925,8 +2941,49 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#332424]"
+        className="space-y-6 text-[#332424]"
       >
+        {/* Navigation Sub-Tabs: Kiosco vs Historial */}
+        <div className="flex justify-between items-center bg-[#FFF9F4] p-2 border border-[#D7BBA8] rounded-2xl shadow-xs">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAttendanceSubTab("kiosk")}
+              className={`px-4 py-2 rounded-xl font-black text-xs uppercase transition-all cursor-pointer flex items-center gap-2 ${
+                attendanceSubTab === "kiosk"
+                  ? "bg-[#843747] text-white shadow-xs"
+                  : "bg-[#E8D4C3]/40 text-[#843747] hover:bg-[#E8D4C3]"
+              }`}
+            >
+              📱 Kiosco de Fichaje Táctil (GPS)
+            </button>
+
+            <button
+              onClick={() => setAttendanceSubTab("history")}
+              className={`px-4 py-2 rounded-xl font-black text-xs uppercase transition-all cursor-pointer flex items-center gap-2 ${
+                attendanceSubTab === "history"
+                  ? "bg-[#843747] text-white shadow-xs"
+                  : "bg-[#E8D4C3]/40 text-[#843747] hover:bg-[#E8D4C3]"
+              }`}
+            >
+              📋 Historial y Reportes PDF
+            </button>
+          </div>
+
+          <button
+            onClick={() => {
+              StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+              onShowNotification("📄 Generando informe PDF de control de personal...", "success");
+            }}
+            className="px-4 py-2 bg-[#843747] text-white font-black text-xs uppercase rounded-xl hover:bg-[#71303D] cursor-pointer hidden sm:flex items-center gap-1.5"
+          >
+            📄 Exportar PDF
+          </button>
+        </div>
+
+        {attendanceSubTab === "kiosk" ? (
+          <StaffAttendanceKiosk onShowNotification={onShowNotification} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: GPS Clock In / Out Panel */}
         <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
           <div className="space-y-4">
@@ -3053,8 +3110,10 @@ export default function AdminHub({
             )}
           </div>
         </div>
-      </motion.div>
-    );
+      </div>
+    )}
+  </motion.div>
+);
   };
 
   const renderInventario = () => {
@@ -5406,19 +5465,48 @@ export default function AdminHub({
 
     const handleFormSubmit = async (e: FormEvent) => {
       e.preventDefault();
-      if (!bookingFormName || !bookingFormPhone || !bookingFormDate) {
-        onShowNotification("⚠️ Complete los campos obligatorios.", "warning");
+      if (!bookingFormName.trim() || !bookingFormPhone.trim() || !bookingFormDate) {
+        onShowNotification("⚠️ Complete todos los campos obligatorios.", "warning");
         return;
       }
+
+      // Past date check in Argentina timezone (todayStr)
+      if (bookingFormDate < todayStr) {
+        onShowNotification("⚠️ No se pueden registrar reservas en fechas pasadas.", "warning");
+        return;
+      }
+
+      // Phone validation
+      const cleanedPhone = bookingFormPhone.replace(/\D/g, "");
+      if (cleanedPhone.length < 7) {
+        onShowNotification("⚠️ Ingrese un número de teléfono válido (mínimo 7 dígitos).", "warning");
+        return;
+      }
+
+      // Capacity & double booking check
       const tableName = bookingFormTableId.replace("mesa-", "Mesa ");
+      const selectedTable = restaurantTables.find(t => t.id === bookingFormTableId || t.name === tableName);
+      if (selectedTable && bookingFormGuests > selectedTable.capacity) {
+        onShowNotification(`⚠️ La mesa seleccionada tiene capacidad máxima para ${selectedTable.capacity} personas.`, "warning");
+        return;
+      }
+
+      const existingBooking = adminBookings.find(
+        b => b.date === bookingFormDate && b.timeSlot === bookingFormSlot && (b.tableId === bookingFormTableId || b.tableName === tableName)
+      );
+      if (existingBooking) {
+        onShowNotification(`⚠️ La ${tableName} ya se encuentra reservada para la fecha y turno seleccionado.`, "warning");
+        return;
+      }
+
       await handleAdminAddBooking({
         tableId: bookingFormTableId,
         tableName,
         date: bookingFormDate,
         timeSlot: bookingFormSlot,
         guests: bookingFormGuests,
-        customerName: bookingFormName,
-        customerPhone: bookingFormPhone
+        customerName: bookingFormName.trim(),
+        customerPhone: cleanedPhone
       });
       setIsAddingBooking(false);
       setBookingFormName("");
@@ -5515,7 +5603,8 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setCalMonthOffset(prev => prev - 1)}
-                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer"
+                  aria-label="Mes anterior"
+                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer min-h-[44px] min-w-[44px]"
                 >
                   ◀
                 </button>
@@ -5523,7 +5612,8 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setCalMonthOffset(prev => prev + 1)}
-                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer"
+                  aria-label="Mes siguiente"
+                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer min-h-[44px] min-w-[44px]"
                 >
                   ▶
                 </button>
@@ -5657,9 +5747,12 @@ export default function AdminHub({
 
             <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#332424]">
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Nombre del Cliente *</label>
+                <label htmlFor="booking_name" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Nombre del Cliente *</label>
                 <input
+                  id="booking_name"
+                  name="booking_name"
                   type="text"
+                  autoComplete="name"
                   value={bookingFormName}
                   onChange={(e) => setBookingFormName(e.target.value)}
                   placeholder="Ej: Mariano Closs"
@@ -5669,9 +5762,13 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Teléfono Celular *</label>
+                <label htmlFor="booking_phone" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Teléfono Celular *</label>
                 <input
-                  type="text"
+                  id="booking_phone"
+                  name="booking_phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                   value={bookingFormPhone}
                   onChange={(e) => setBookingFormPhone(e.target.value)}
                   placeholder="Ej: 3584123456"
@@ -5681,9 +5778,12 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Fecha de Reserva *</label>
+                <label htmlFor="booking_date" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Fecha de Reserva *</label>
                 <input
+                  id="booking_date"
+                  name="booking_date"
                   type="date"
+                  min={todayStr}
                   value={bookingFormDate}
                   onChange={(e) => setBookingFormDate(e.target.value)}
                   className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono font-bold"
@@ -5692,8 +5792,10 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Horario / Turno</label>
+                <label htmlFor="booking_slot" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Horario / Turno</label>
                 <select
+                  id="booking_slot"
+                  name="booking_slot"
                   value={bookingFormSlot}
                   onChange={(e) => setBookingFormSlot(e.target.value)}
                   className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
@@ -5710,8 +5812,10 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Asignar Mesa en Salón</label>
+                <label htmlFor="booking_table" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Asignar Mesa en Salón</label>
                 <select
+                  id="booking_table"
+                  name="booking_table"
                   value={bookingFormTableId}
                   onChange={(e) => setBookingFormTableId(e.target.value)}
                   className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
@@ -5880,9 +5984,11 @@ export default function AdminHub({
 
     const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
 
+    const normMozoQuery = mozoSearchQuery.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const filteredMenuItems = menuItems.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
-                            item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
+      const normName = (item.name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const normDesc = (item.description || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const matchesSearch = !normMozoQuery || normName.includes(normMozoQuery) || normDesc.includes(normMozoQuery);
       const matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
       return item.isAvailable !== false && matchesSearch && matchesCategory;
     });
@@ -6303,56 +6409,76 @@ export default function AdminHub({
 
           {/* Product grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
-            {filteredMenuItems.map(item => {
-              const isOut = item.stock === 0;
-              return (
-                <div
-                  key={item.id}
-                  className="bg-[#925063] border border-[#D7BBA8]/40 text-white rounded-3xl overflow-hidden flex flex-col justify-between shadow-sm relative group hover:brightness-105 transition-all"
+            {filteredMenuItems.length === 0 ? (
+              <div className="col-span-1 sm:col-span-2 p-8 rounded-3xl border border-[#D7BBA8] bg-[#FFF9F4] text-center flex flex-col items-center justify-center space-y-3">
+                <Search className="h-8 w-8 text-[#843747]/40" />
+                <p className="text-xs font-bold text-[#843747]">No se encontraron productos coincidentes con "{mozoSearchQuery}"</p>
+                <button
+                  onClick={() => { setMozoSearchQuery(""); setMozoCategory("todos"); }}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[10px] font-black uppercase tracking-wider hover:bg-[#E7C8CF] transition-all cursor-pointer min-h-[44px]"
+                  aria-label="Limpiar filtro de búsqueda de productos"
                 >
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-28 w-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <div className="h-28 w-full bg-[#843747] flex items-center justify-center text-[#E7C8CF]">
-                      <Coffee className="h-8 w-8 stroke-1" />
-                    </div>
-                  )}
-
-                  {/* Stock status badge overlay */}
-                  <div className="absolute top-2.5 right-2.5">
-                    {isOut ? (
-                      <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] tracking-wider">
-                        Sin Stock
-                      </span>
+                  Limpiar Filtro
+                </button>
+              </div>
+            ) : (
+              filteredMenuItems.map(item => {
+                const isOut = item.stock === 0;
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-[#925063] border border-[#D7BBA8]/40 text-white rounded-3xl overflow-hidden flex flex-col justify-between shadow-sm relative group hover:brightness-105 transition-all"
+                  >
+                    {item.image ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=600"; }}
+                        className="h-28 w-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                      />
                     ) : (
-                      item.stock !== undefined && (
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#E7C8CF] text-[#843747] border border-white/20 tracking-wider font-mono">
-                          Disp: {item.stock}u
-                        </span>
-                      )
+                      <div className="h-28 w-full bg-[#843747] flex items-center justify-center text-[#E7C8CF]">
+                        <Coffee className="h-8 w-8 stroke-1" />
+                      </div>
                     )}
-                  </div>
 
-                  <div className="p-4 flex justify-between items-center gap-3 bg-[#925063] border-t border-white/10">
-                    <div className="space-y-1 overflow-hidden">
-                      <strong className="text-xs font-serif font-bold text-white block truncate">{item.name}</strong>
-                      <span className="text-sm font-mono font-black text-[#FFF9F4] block">${item.price.toLocaleString("es-AR")}</span>
+                    {/* Stock status badge overlay */}
+                    <div className="absolute top-2.5 right-2.5">
+                      {isOut ? (
+                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] tracking-wider">
+                          Sin Stock
+                        </span>
+                      ) : (
+                        item.stock !== undefined && (
+                          <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#E7C8CF] text-[#843747] border border-white/20 tracking-wider font-mono">
+                            Disp: {item.stock}u
+                          </span>
+                        )
+                      )}
                     </div>
-                    <button
-                      onClick={() => handleAddMozoCart(item)}
-                      disabled={isOut}
-                      className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                        isOut 
-                          ? "bg-[#843747] opacity-50 cursor-not-allowed text-white/50" 
-                          : "bg-[#FFF9F4] text-[#843747] hover:bg-white shadow-xs font-black"
-                      }`}
-                    >
-                      <Plus className="h-5 w-5 font-black" />
-                    </button>
+
+                    <div className="p-4 flex justify-between items-center gap-3 bg-[#925063] border-t border-white/10">
+                      <div className="space-y-1 overflow-hidden">
+                        <strong className="text-xs font-serif font-bold text-white block truncate">{item.name}</strong>
+                        <span className="text-sm font-mono font-black text-[#FFF9F4] block">${item.price.toLocaleString("es-AR")}</span>
+                      </div>
+                      <button
+                        onClick={() => handleAddMozoCart(item)}
+                        disabled={isOut}
+                        aria-label={`Agregar ${item.name} — $${item.price.toLocaleString("es-AR")} — stock ${item.stock ?? 'disponible'}`}
+                        className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 min-h-[44px] min-w-[44px] ${
+                          isOut 
+                            ? "bg-[#843747] opacity-50 cursor-not-allowed text-white/50" 
+                            : "bg-[#FFF9F4] text-[#843747] hover:bg-white shadow-xs font-black"
+                        }`}
+                      >
+                        <Plus className="h-5 w-5 font-black" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -8034,19 +8160,27 @@ export default function AdminHub({
       };
     });
     const monthlyMax = Math.max(...monthlySales.map((month) => month.total), 1);
-    const paymentTotal = cashLedger.transactions.reduce(
+    const paymentTotal = totalSalesSum || cashLedger.transactions.reduce(
       (sum: number, transaction: any) => sum + Number(transaction.total || 0),
       0
     );
     const paymentMethods = [
       { name: "Efectivo", matcher: (method: string) => method === "Efectivo", color: "bg-[#4F735A]" },
-      { name: "Tarjetas", matcher: (method: string) => method.includes("Tarjeta"), color: "bg-[#843747]" },
+      { name: "Tarjetas", matcher: (method: string) => method.includes("Tarjeta") || method.includes("Débito") || method.includes("Crédito"), color: "bg-[#843747]" },
       { name: "Mercado Pago / QR", matcher: (method: string) => method.includes("Mercado"), color: "bg-[#4A7BB0]" },
-      { name: "Cuenta corriente", matcher: (method: string) => method.includes("Fiado"), color: "bg-[#B97932]" }
+      { name: "Cuenta corriente", matcher: (method: string) => method.includes("Fiado") || method.includes("Cta"), color: "bg-[#B97932]" }
     ].map((method) => {
-      const amount = cashLedger.transactions
-        .filter((transaction: any) => method.matcher(String(transaction.method || "")))
-        .reduce((sum: number, transaction: any) => sum + Number(transaction.total || 0), 0);
+      let amount = completedOrders
+        .filter((order) => method.matcher(String(order.paymentMethod || "Efectivo")))
+        .reduce((sum, order) => sum + order.total, 0);
+
+      // Fallback to cashLedger transactions if completedOrders dataset is not fully populated locally
+      if (amount === 0 && cashLedger.transactions.length > 0) {
+        amount = cashLedger.transactions
+          .filter((transaction: any) => method.matcher(String(transaction.method || "")))
+          .reduce((sum: number, transaction: any) => sum + Number(transaction.total || 0), 0);
+      }
+
       return {
         ...method,
         amount,
