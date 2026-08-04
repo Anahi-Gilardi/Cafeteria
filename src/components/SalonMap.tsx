@@ -99,11 +99,11 @@ export default function SalonMap({
       className="space-y-6 max-w-7xl mx-auto"
     >
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 shadow-sm">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control Operativo de Salón</span>
-          <h2 className="font-serif text-2xl font-bold text-[#843747] mt-0.5">📌 Plano de Mesas y Estado en Vivo</h2>
-          <p className="text-xs text-[#6F5A55] font-medium mt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Control Operativo de Salón</span>
+          <h2 className="font-serif text-2xl font-bold text-[#5C1D27] mt-0.5">📌 Plano de Mesas y Estado en Vivo</h2>
+          <p className="text-xs text-[#5E393F] font-medium mt-1">
             Gestión táctil de mesas para meseros y recepción. Seleccione una mesa para abrir comanda o consultar consumo.
           </p>
         </div>
@@ -114,8 +114,8 @@ export default function SalonMap({
             <span className="w-2 h-2 rounded-full bg-[#4F735A]"></span>
             <span>Libre</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F4DCDD] text-[#843747] border border-[#843747]/50">
-            <span className="w-2 h-2 rounded-full bg-[#843747]"></span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F4DCDD] text-[#5C1D27] border border-[#5C1D27]/50">
+            <span className="w-2 h-2 rounded-full bg-[#5C1D27]"></span>
             <span>Ocupada</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/40">
@@ -134,15 +134,15 @@ export default function SalonMap({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-[#D7BBA8] pb-3">
+      <div className="flex gap-2 border-b border-[#CFB5A0] pb-3">
         {["Todos", "Salon Principal", "Barra Alta", "Terraza Exterior"].map((sec) => (
           <button
             key={sec}
             onClick={() => setSelectedSection(sec)}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               selectedSection === sec
-                ? "bg-[#843747] text-white font-black shadow-xs"
-                : "bg-[#FFF9F4] text-[#6F5A55] hover:text-[#332424] border border-[#D7BBA8]"
+                ? "bg-[#5C1D27] text-white font-black shadow-xs"
+                : "bg-[#FAF2E6] text-[#5E393F] hover:text-[#2D0E13] border border-[#CFB5A0]"
             }`}
           >
             {sec === "Todos" ? "🏬 Todas las Áreas" : sec}

@@ -148,9 +148,9 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
       <div className="mb-6 text-center">
-        <span className="text-[10px] font-black uppercase tracking-widest text-[#E7C8CF] block mb-1">Experiencia Gastronómica & Salón</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-[#EBDAC5] block mb-1">Experiencia Gastronómica & Salón</span>
         <h1 className="font-serif text-3xl font-extrabold tracking-tight text-white sm:text-4xl italic">Reserve su Mesa</h1>
-        <p className="mx-auto mt-2 max-w-lg text-[#E8D4C3]/80 font-medium text-xs">
+        <p className="mx-auto mt-2 max-w-lg text-[#EBDAC5]/80 font-medium text-xs">
           Elija la fecha, turno y cantidad de personas para su reserva gratuita e instantánea.
         </p>
       </div>
@@ -159,30 +159,30 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
         {!isBooked ? (
           <form onSubmit={handleSubmitBooking} className="space-y-6">
             {/* Step 1: Cuándo y Quiénes */}
-            <div className="rounded-3xl border border-[#D7BBA8]/40 bg-[#FFF9F4] p-6 shadow-xl text-[#332424] space-y-4">
-              <h3 className="font-serif text-xl font-bold text-[#843747] flex items-center gap-2 border-b border-[#D7BBA8] pb-3">
-                <Clock className="h-5 w-5 text-[#843747]" /> 1. Cuándo y Quiénes
+            <div className="rounded-3xl border border-[#CFB5A0]/40 bg-[#FAF2E6] p-6 shadow-xl text-[#2D0E13] space-y-4">
+              <h3 className="font-serif text-xl font-bold text-[#5C1D27] flex items-center gap-2 border-b border-[#CFB5A0] pb-3">
+                <Clock className="h-5 w-5 text-[#5C1D27]" /> 1. Cuándo y Quiénes
               </h3>
 
               {/* Date Input */}
               <div>
-                <label htmlFor="booking-date" className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block mb-1.5 font-semibold">Fecha</label>
+                <label htmlFor="booking-date" className="text-xs font-bold uppercase tracking-wider text-[#5E393F] block mb-1.5 font-semibold">Fecha</label>
                 <div className="relative">
-                  <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#6F5A55]" />
+                  <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#5E393F]" />
                   <input
                     type="date"
                     id="booking-date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     min={new Date().toISOString().split("T")[0]}
-                    className="w-full rounded-xl border border-[#D7BBA8] bg-[#FFF9F4] py-2.5 pr-4 pl-10 text-sm font-semibold text-[#332424] outline-none focus:border-[#843747]"
+                    className="w-full rounded-xl border border-[#CFB5A0] bg-[#FAF2E6] py-2.5 pr-4 pl-10 text-sm font-semibold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                   />
                 </div>
               </div>
 
               {/* Time Slot */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block mb-1.5 font-semibold">Turno del Día</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5E393F] block mb-1.5 font-semibold">Turno del Día</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {[
                     { id: "Desayuno", label: "Desayuno", time: "8:00 - 11:00" },
@@ -199,12 +199,12 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                         onClick={() => setSelectedTimeSlot(slot.id as BookingTimeSlot)}
                         className={`flex flex-col p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                           isSel
-                            ? "border-[#843747] bg-[#843747] text-white font-black shadow-xs"
-                            : "border-[#D7BBA8] bg-white text-[#332424] hover:bg-[#E8D4C3]"
+                            ? "border-[#5C1D27] bg-[#5C1D27] text-white font-black shadow-xs"
+                            : "border-[#CFB5A0] bg-white text-[#2D0E13] hover:bg-[#EBDAC5]"
                         }`}
                       >
                         <span className="text-xs font-bold">{slot.label}</span>
-                        <span className={`text-[10px] leading-none mt-0.5 ${isSel ? "text-white/80" : "text-[#6F5A55]"}`}>{slot.time}</span>
+                        <span className={`text-[10px] leading-none mt-0.5 ${isSel ? "text-white/80" : "text-[#5E393F]"}`}>{slot.time}</span>
                       </button>
                     );
                   })}
@@ -213,8 +213,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
 
               {/* Guests */}
               <div>
-                <label htmlFor="booking-guests-selector" className="text-xs font-bold uppercase tracking-wider text-[#843747] block mb-1.5 font-semibold">Personas</label>
-                <div id="booking-guests-selector" className="flex items-center space-x-1.5 rounded-xl bg-[#71303D] p-1 border border-[#843747]/30">
+                <label htmlFor="booking-guests-selector" className="text-xs font-bold uppercase tracking-wider text-[#5C1D27] block mb-1.5 font-semibold">Personas</label>
+                <div id="booking-guests-selector" className="flex items-center space-x-1.5 rounded-xl bg-[#4A151D] p-1 border border-[#5C1D27]/30">
                   {[1, 2, 4, 6].map((num) => (
                     <button
                       type="button"
@@ -222,8 +222,8 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                       onClick={() => setSelectedGuests(num)}
                       className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                         selectedGuests === num
-                          ? "bg-gradient-to-r from-[#E7C8CF] to-[#843747] text-[#332424] font-black shadow-sm"
-                          : "text-[#FFF9F4]/70 hover:text-[#FFF9F4] bg-[#332424]"
+                          ? "bg-gradient-to-r from-[#EBDAC5] to-[#5C1D27] text-[#2D0E13] font-black shadow-sm"
+                          : "text-[#FAF2E6]/70 hover:text-[#FAF2E6] bg-[#2D0E13]"
                       }`}
                     >
                       {num === 1 ? "1p" : num === 2 ? "2p" : num === 4 ? "4p" : "6p+"}
@@ -234,24 +234,24 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
             </div>
 
             {/* Step 2: Detalles de Contacto */}
-            <div className="rounded-3xl border border-[#D7BBA8]/40 bg-[#FFF9F4] p-6 shadow-xl text-[#332424] space-y-4">
-              <h3 className="font-serif text-xl font-bold text-[#843747] flex items-center gap-2 border-b border-[#D7BBA8] pb-3">
-                <User className="h-5 w-5 text-[#843747]" /> 2. Detalles de Contacto
+            <div className="rounded-3xl border border-[#CFB5A0]/40 bg-[#FAF2E6] p-6 shadow-xl text-[#2D0E13] space-y-4">
+              <h3 className="font-serif text-xl font-bold text-[#5C1D27] flex items-center gap-2 border-b border-[#CFB5A0] pb-3">
+                <User className="h-5 w-5 text-[#5C1D27]" /> 2. Detalles de Contacto
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Name */}
                 <div>
-                  <label htmlFor="booking-name-input" className="text-xs font-bold uppercase tracking-wider text-[#843747] block mb-1.5 font-semibold">Nombre Completo *</label>
+                  <label htmlFor="booking-name-input" className="text-xs font-bold uppercase tracking-wider text-[#5C1D27] block mb-1.5 font-semibold">Nombre Completo *</label>
                   <div className="relative">
-                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#843747]" />
+                    <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#5C1D27]" />
                     <input
                       type="text"
                       id="booking-name-input"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Ingrese su nombre"
-                      className="w-full rounded-xl border border-[#D7BBA8] bg-white py-2.5 pr-4 pl-10 text-sm font-semibold text-[#332424] outline-none focus:border-[#843747]"
+                      className="w-full rounded-xl border border-[#CFB5A0] bg-white py-2.5 pr-4 pl-10 text-sm font-semibold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
@@ -259,16 +259,16 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
 
                 {/* Phone */}
                 <div>
-                  <label htmlFor="booking-phone-input" className="text-xs font-bold uppercase tracking-wider text-[#843747] block mb-1.5 font-semibold">Teléfono Móvil *</label>
+                  <label htmlFor="booking-phone-input" className="text-xs font-bold uppercase tracking-wider text-[#5C1D27] block mb-1.5 font-semibold">Teléfono Móvil *</label>
                   <div className="relative">
-                    <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#843747]" />
+                    <Phone className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#5C1D27]" />
                     <input
                       type="tel"
                       id="booking-phone-input"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
                       placeholder="ej: +54 358 504 2311"
-                      className="w-full rounded-xl border border-[#D7BBA8] bg-white py-2.5 pr-4 pl-10 text-sm font-semibold text-[#332424] outline-none focus:border-[#843747]"
+                      className="w-full rounded-xl border border-[#CFB5A0] bg-white py-2.5 pr-4 pl-10 text-sm font-semibold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
@@ -279,16 +279,16 @@ export default function TableReservation({ bookings = [], onConfirmReservation }
                 <p className="text-xs font-bold text-rose-800 bg-rose-100 border border-rose-300 p-2.5 rounded-lg">{formError}</p>
               )}
 
-              <div className="pt-3 border-t border-[#D7BBA8] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="text-xs text-[#6F5A55] leading-snug font-medium">
-                  Reservando para <strong className="text-[#843747] font-bold">{selectedGuests} personas</strong> el <strong className="text-[#332424] font-bold">{selectedDate}</strong> ({selectedTimeSlot}).
+              <div className="pt-3 border-t border-[#CFB5A0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="text-xs text-[#5E393F] leading-snug font-medium">
+                  Reservando para <strong className="text-[#5C1D27] font-bold">{selectedGuests} personas</strong> el <strong className="text-[#2D0E13] font-bold">{selectedDate}</strong> ({selectedTimeSlot}).
                 </div>
                 <button
                   type="submit"
                   id="confirm-booking-submit-btn"
                   className={`w-full sm:w-auto rounded-xl px-8 py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer ${
                     customerName.trim() && customerPhone.trim()
-                      ? "bg-[#843747] hover:bg-[#71303D]"
+                      ? "bg-[#5C1D27] hover:bg-[#4A151D]"
                       : "bg-gray-400 text-white cursor-not-allowed"
                   }`}
                   disabled={!customerName.trim() || !customerPhone.trim()}

@@ -30,22 +30,22 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#F3E7DB] text-[#332424] flex items-center justify-center p-6">
-          <div className="bg-[#FFF9F4] border-2 border-[#D7BBA8] rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-4">
+        <div className="min-h-screen bg-[#F4E8D7] text-[#2D0E13] flex items-center justify-center p-6">
+          <div className="bg-[#FAF2E6] border-2 border-[#CFB5A0] rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-4">
             <div className="h-16 w-16 bg-[#F4DCDD] text-[#A63F45] rounded-2xl mx-auto flex items-center justify-center border border-[#A63F45]/30">
               <ShieldAlert className="h-8 w-8" />
             </div>
 
-            <h2 className="font-serif text-2xl font-bold text-[#843747]">
+            <h2 className="font-serif text-2xl font-bold text-[#5C1D27]">
               Castaño — Resto Bar
             </h2>
 
-            <p className="text-xs text-[#6F5A55] font-medium leading-relaxed">
+            <p className="text-xs text-[#5E393F] font-medium leading-relaxed">
               Ocurrió un error inesperado al renderizar el módulo. El sistema ha protegido el resto de las funciones operativas del turno.
             </p>
 
             {this.state.error && (
-              <div className="p-3 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-xl text-[10px] font-mono text-[#332424] text-left overflow-x-auto max-h-24">
+              <div className="p-3 bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-xl text-[10px] font-mono text-[#2D0E13] text-left overflow-x-auto max-h-24">
                 {this.state.error.message}
               </div>
             )}
@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="pt-2 flex justify-center gap-3">
               <button
                 onClick={this.handleReset}
-                className="px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 uppercase tracking-wider"
+                className="px-5 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 uppercase tracking-wider"
               >
                 <RefreshCw className="h-4 w-4" /> Reintentar Módulo
               </button>

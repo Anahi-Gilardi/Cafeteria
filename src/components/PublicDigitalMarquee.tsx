@@ -22,8 +22,8 @@ const MenuImage: React.FC<{ src?: string; alt: string; className: string }> = ({
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
     return (
-      <div className={`${className} flex items-center justify-center bg-gradient-to-br from-[#E7C8CF] to-[#843747]`}>
-        <span className="rounded-full bg-[#FFF9F4]/90 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#843747]">
+      <div className={`${className} flex items-center justify-center bg-gradient-to-br from-[#EBDAC5] to-[#5C1D27]`}>
+        <span className="rounded-full bg-[#FAF2E6]/90 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#5C1D27]">
           Castaño
         </span>
       </div>
@@ -230,26 +230,26 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   }, [cartOrder]);
 
   return (
-    <div className="min-h-screen bg-[#F3E7DB] text-[#332424] font-sans pb-28">
+    <div className="min-h-screen bg-[#F4E8D7] text-[#2D0E13] font-sans pb-28">
       {/* Top Banner Marquee */}
-      <div className="border-b border-white/10 bg-[#71303D] px-4 py-2.5 text-center text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-xs">
+      <div className="border-b border-white/10 bg-[#4A151D] px-4 py-2.5 text-center text-[10px] font-black uppercase tracking-[0.16em] text-white sm:text-xs">
         📖 Carta Digital Informativa · Constitución 944 · Su mozo tomará el pedido en su mesa
       </div>
 
       {/* Hero Header */}
-      <header className="relative border-b border-[#D7BBA8] bg-[#FFF9F4] px-6 pb-8 pt-16">
+      <header className="relative border-b border-[#CFB5A0] bg-[#FAF2E6] px-6 pb-8 pt-16">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-7 md:flex-row">
           <div className="space-y-3 text-center md:text-left">
             <RestoBarLogo size="lg" className="justify-center md:justify-start" />
             <div>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#843747]">Carta digital informativa</span>
-              <h1 className="mt-2 font-serif text-3xl font-black tracking-tight text-[#332424] md:text-5xl">
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#5C1D27]">Carta digital informativa</span>
+              <h1 className="mt-2 font-serif text-3xl font-black tracking-tight text-[#2D0E13] md:text-5xl">
                 Conocé nuestra gastronomía.
               </h1>
             </div>
-            <p className="flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#6F5A55] md:justify-start">
-              <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#843747]" /> Constitución 944, Río Cuarto</span>
-              <span className="flex items-center gap-1"><PhoneCall className="h-3.5 w-3.5 text-[#843747]" /> 358 5042311</span>
+            <p className="flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#5E393F] md:justify-start">
+              <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#5C1D27]" /> Constitución 944, Río Cuarto</span>
+              <span className="flex items-center gap-1"><PhoneCall className="h-3.5 w-3.5 text-[#5C1D27]" /> 358 5042311</span>
             </p>
           </div>
 
@@ -266,15 +266,15 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   onShowNotification("⚠️ No hay una carta sincronizada disponible para descargar.", "warning");
                 }
               }}
-              className="flex items-center gap-2 rounded-full border border-[#843747]/25 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#843747] transition-colors hover:bg-[#E7C8CF]/40 cursor-pointer"
+              className="flex items-center gap-2 rounded-full border border-[#5C1D27]/25 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-wider text-[#5C1D27] transition-colors hover:bg-[#EBDAC5]/40 cursor-pointer"
             >
-              <FileText className="h-4 w-4 text-[#843747]" /> Descargar Carta PDF
+              <FileText className="h-4 w-4 text-[#5C1D27]" /> Descargar Carta PDF
             </button>
             <a
               href="https://instagram.com/restobardelteatro_rio4"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 rounded-full bg-[#843747] px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white transition-colors hover:bg-[#71303D]"
+              className="flex items-center gap-2 rounded-full bg-[#5C1D27] px-5 py-3 text-[10px] font-black uppercase tracking-wider text-white transition-colors hover:bg-[#4A151D]"
             >
               <Instagram className="h-4 w-4" /> Instagram
             </a>
@@ -282,11 +282,11 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         </div>
 
         {/* Read-Only Safety Notice Banner */}
-        <div className="mx-auto max-w-6xl mt-6 p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex items-center justify-between gap-3 text-xs text-[#332424]">
+        <div className="mx-auto max-w-6xl mt-6 p-3.5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl flex items-center justify-between gap-3 text-xs text-[#2D0E13]">
           <div className="flex items-center gap-2.5">
             <span className="text-base shrink-0">💡</span>
-            <p className="text-[11px] font-semibold text-[#6F5A55]">
-              <strong className="text-[#843747]">Menú Interactivo & Pedidos:</strong> Seleccione sus platos, bebidas y postres preferidos presionando <span className="text-[#843747] font-black">+ AGREGAR AL PEDIDO</span>. Luego podrá enviar su comanda completa por WhatsApp con un solo clic.
+            <p className="text-[11px] font-semibold text-[#5E393F]">
+              <strong className="text-[#5C1D27]">Menú Interactivo & Pedidos:</strong> Seleccione sus platos, bebidas y postres preferidos presionando <span className="text-[#5C1D27] font-black">+ AGREGAR AL PEDIDO</span>. Luego podrá enviar su comanda completa por WhatsApp con un solo clic.
             </p>
           </div>
         </div>
@@ -294,13 +294,13 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
       {/* Featured Items Carousel */}
       <section className="max-w-6xl mx-auto py-8 px-6 space-y-4">
-        <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+        <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
           <div>
-            <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">Recomendaciones</span>
-            <h2 className="font-serif text-2xl font-bold text-[#332424]">Destacados de la Carta</h2>
+            <span className="text-[10px] font-black uppercase text-[#5C1D27] tracking-widest block">Recomendaciones</span>
+            <h2 className="font-serif text-2xl font-bold text-[#2D0E13]">Destacados de la Carta</h2>
           </div>
           {todayMenu && (
-            <span className="text-xs font-black text-[#843747] bg-[#E7C8CF] border border-[#D1AD95] px-3.5 py-1.5 rounded-full font-mono shadow-xs">
+            <span className="text-xs font-black text-[#5C1D27] bg-[#EBDAC5] border border-[#D1AD95] px-3.5 py-1.5 rounded-full font-mono shadow-xs">
               ⭐ Menú del Día ${todayMenu.price.toLocaleString("es-AR")}
             </span>
           )}
@@ -308,32 +308,32 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredDishes.map((item) => (
-            <div key={item.id} className="bg-white border-2 border-[#D7BBA8] rounded-3xl overflow-hidden shadow-lg flex flex-col justify-between group hover:border-[#843747] hover:shadow-xl transition-all">
-              <div className="relative h-44 overflow-hidden bg-[#F3E7DB]">
+            <div key={item.id} className="bg-white border-2 border-[#CFB5A0] rounded-3xl overflow-hidden shadow-lg flex flex-col justify-between group hover:border-[#5C1D27] hover:shadow-xl transition-all">
+              <div className="relative h-44 overflow-hidden bg-[#F4E8D7]">
                 <MenuImage src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <span className="absolute top-3 right-3 px-3 py-1 rounded-full bg-white/95 text-[#843747] text-xs font-black font-mono border border-[#843747] shadow-md">
+                <span className="absolute top-3 right-3 px-3 py-1 rounded-full bg-white/95 text-[#5C1D27] text-xs font-black font-mono border border-[#5C1D27] shadow-md">
                   ${item.price.toLocaleString("es-AR")}
                 </span>
               </div>
               <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-serif text-base font-bold text-[#332424]">{item.name}</h3>
-                  <p className="text-xs text-[#6F5A55] line-clamp-2 leading-relaxed mt-1">{item.description}</p>
+                  <h3 className="font-serif text-base font-bold text-[#2D0E13]">{item.name}</h3>
+                  <p className="text-xs text-[#5E393F] line-clamp-2 leading-relaxed mt-1">{item.description}</p>
                 </div>
                 {cartOrder[item.id] ? (
-                  <div className="mt-3 flex items-center justify-between bg-[#E8D4C3] border border-[#843747] rounded-xl p-1 shadow-xs">
+                  <div className="mt-3 flex items-center justify-between bg-[#EBDAC5] border border-[#5C1D27] rounded-xl p-1 shadow-xs">
                     <button
                       type="button"
                       onClick={() => handleRemoveFromCart(item.id)}
-                      className="h-7 w-7 rounded-lg bg-[#843747] text-white font-black text-sm flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                      className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white font-black text-sm flex items-center justify-center cursor-pointer hover:bg-[#4A151D]"
                     >
                       -
                     </button>
-                    <span className="text-xs font-black font-mono text-[#843747]">{cartOrder[item.id].quantity} en pedido</span>
+                    <span className="text-xs font-black font-mono text-[#5C1D27]">{cartOrder[item.id].quantity} en pedido</span>
                     <button
                       type="button"
                       onClick={() => handleAddToCart(item)}
-                      className="h-7 w-7 rounded-lg bg-[#843747] text-white font-black text-sm flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                      className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white font-black text-sm flex items-center justify-center cursor-pointer hover:bg-[#4A151D]"
                     >
                       +
                     </button>
@@ -342,7 +342,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   <button
                     type="button"
                     onClick={() => handleAddToCart(item)}
-                    className="w-full mt-3 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black uppercase tracking-wider text-center block shadow-xs transition-all cursor-pointer"
+                    className="w-full mt-3 py-2 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black uppercase tracking-wider text-center block shadow-xs transition-all cursor-pointer"
                   >
                     + Agregar al pedido
                   </button>
@@ -355,7 +355,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
       {/* Main Menu Categories & Self-Ordering List */}
       <section className="max-w-6xl mx-auto py-6 px-6 space-y-6">
-        <div className="flex border-b border-[#D7BBA8] pb-3 gap-3 overflow-x-auto text-xs font-bold">
+        <div className="flex border-b border-[#CFB5A0] pb-3 gap-3 overflow-x-auto text-xs font-bold">
           {[
             { id: "all", label: "🍽️ Ver Todo" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
@@ -374,8 +374,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap uppercase tracking-wider ${
                 selectedCategory === cat.id
-                  ? "bg-[#843747] text-white font-black shadow-md"
-                  : "bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                  ? "bg-[#5C1D27] text-white font-black shadow-md"
+                  : "bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
               }`}
             >
               {cat.label}
@@ -385,25 +385,25 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
         {/* ⭐ Menú del Día (Plato Único Semanal) Card */}
         {todayMenu && (selectedCategory === "all" || selectedCategory === "menu_diario") && (
-          <div className="bg-white border-2 border-[#843747] rounded-3xl p-6 shadow-xl space-y-5">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+          <div className="bg-white border-2 border-[#5C1D27] rounded-3xl p-6 shadow-xl space-y-5">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#CFB5A0] pb-4">
               <div className="flex items-center gap-4">
                 {todayMenu.image && (
                   <MenuImage
                     src={todayMenu.image}
                     alt={todayMenu.title}
-                    className="h-20 w-24 rounded-2xl object-cover border-2 border-[#843747] shadow-md shrink-0"
+                    className="h-20 w-24 rounded-2xl object-cover border-2 border-[#5C1D27] shadow-md shrink-0"
                   />
                 )}
                 <div>
-                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-widest block">⭐ Plato Único del Día ({todayMenu.dayOfWeek})</span>
-                  <h3 className="font-serif text-2xl font-bold text-[#332424]">{todayMenu.title}</h3>
-                  <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">"{todayMenu.description}"</p>
+                  <span className="text-[10px] font-black uppercase text-[#5C1D27] tracking-widest block">⭐ Plato Único del Día ({todayMenu.dayOfWeek})</span>
+                  <h3 className="font-serif text-2xl font-bold text-[#2D0E13]">{todayMenu.title}</h3>
+                  <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">"{todayMenu.description}"</p>
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs text-[#6F5A55] block font-bold">Precio ($ ARS)</span>
-                <span className="text-3xl font-black font-mono text-[#843747]">${todayMenu.price.toLocaleString("es-AR")}</span>
+                <span className="text-xs text-[#5E393F] block font-bold">Precio ($ ARS)</span>
+                <span className="text-3xl font-black font-mono text-[#5C1D27]">${todayMenu.price.toLocaleString("es-AR")}</span>
               </div>
             </div>
 
@@ -446,7 +446,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             </div>
             {/* 4 Main Dishes Photo Gallery */}
             <div>
-              <label className="text-[10px] font-black uppercase text-[#843747] block mb-2">📸 Platos Elegibles del Menú Diario (Seleccione uno):</label>
+              <label className="text-[10px] font-black uppercase text-[#5C1D27] block mb-2">📸 Platos Elegibles del Menú Diario (Seleccione uno):</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {dailyComboState.mains.slice(0, 4).map((mainName, idx) => {
                   const imgUrl = dailyComboState.mainImages?.[idx];
@@ -457,14 +457,14 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                       onClick={() => setSelectedMain(mainName)}
                       className={`p-2.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center text-center space-y-2 ${
                         isSelected
-                          ? "border-[#843747] bg-[#E8D4C3]/50 shadow-md scale-[1.02]"
-                          : "border-[#D7BBA8]/60 bg-white hover:border-[#843747]/40"
+                          ? "border-[#5C1D27] bg-[#EBDAC5]/50 shadow-md scale-[1.02]"
+                          : "border-[#CFB5A0]/60 bg-white hover:border-[#5C1D27]/40"
                       }`}
                     >
-                      <div className="h-24 w-full rounded-xl overflow-hidden bg-[#F3E7DB]">
+                      <div className="h-24 w-full rounded-xl overflow-hidden bg-[#F4E8D7]">
                         <MenuImage src={imgUrl} alt={mainName} className="w-full h-full object-cover" />
                       </div>
-                      <strong className="text-xs font-bold text-[#332424] leading-tight line-clamp-2">{mainName}</strong>
+                      <strong className="text-xs font-bold text-[#2D0E13] leading-tight line-clamp-2">{mainName}</strong>
                     </div>
                   );
                 })}
@@ -474,11 +474,11 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 1. Plato Principal (4 Opciones) */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">1. Seleccione 1 Plato Principal (de 4 opciones)</label>
+                <label className="text-[10px] font-black uppercase text-[#5C1D27] block">1. Seleccione 1 Plato Principal (de 4 opciones)</label>
                 <select
                   value={selectedMain || dailyComboState.mains[0]}
                   onChange={(e) => setSelectedMain(e.target.value)}
-                  className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  className="w-full p-3 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                 >
                   {(dailyComboState.mains && dailyComboState.mains.length > 0
                     ? dailyComboState.mains
@@ -491,11 +491,11 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
               {/* 2. Guarnición */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-[#843747] block">2. Seleccione 1 Guarnición de Acompañamiento</label>
+                <label className="text-[10px] font-black uppercase text-[#5C1D27] block">2. Seleccione 1 Guarnición de Acompañamiento</label>
                 <select
                   value={selectedStarter}
                   onChange={(e) => setSelectedStarter(e.target.value)}
-                  className="w-full p-3 bg-white border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  className="w-full p-3 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                 >
                   {(dailyComboState.sides && dailyComboState.sides.length > 0
                     ? dailyComboState.sides
@@ -556,14 +556,14 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#843747] uppercase tracking-wider">Elija Tamaño:</span>
+                <span className="text-xs font-bold text-[#5C1D27] uppercase tracking-wider">Elija Tamaño:</span>
                 <button
                   type="button"
                   onClick={() => setSelectedSaladSize("chica")}
                   className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
                     selectedSaladSize === "chica"
-                      ? "bg-[#843747] text-white border-[#843747] shadow-sm font-black"
-                      : "bg-white text-[#332424] border-[#D7BBA8] hover:bg-[#E8D4C3]"
+                      ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm font-black"
+                      : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
                   }`}
                 >
                   🥗 Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
@@ -573,8 +573,8 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                   onClick={() => setSelectedSaladSize("grande")}
                   className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
                     selectedSaladSize === "grande"
-                      ? "bg-[#843747] text-white border-[#843747] shadow-sm font-black"
-                      : "bg-white text-[#332424] border-[#D7BBA8] hover:bg-[#E8D4C3]"
+                      ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm font-black"
+                      : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
                   }`}
                 >
                   🥗 Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
@@ -602,31 +602,31 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => (
-            <div key={item.id} className="p-4 bg-white border border-[#D7BBA8] rounded-2xl flex gap-4 items-start shadow-sm hover:shadow-md hover:border-[#843747] transition-all group">
-              <div className="relative h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden shrink-0 border border-[#D7BBA8] bg-[#F3E7DB] shadow-xs">
+            <div key={item.id} className="p-4 bg-white border border-[#CFB5A0] rounded-2xl flex gap-4 items-start shadow-sm hover:shadow-md hover:border-[#5C1D27] transition-all group">
+              <div className="relative h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden shrink-0 border border-[#CFB5A0] bg-[#F4E8D7] shadow-xs">
                 <MenuImage src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="flex-1 flex flex-col justify-between h-full min-h-[5rem] space-y-2">
                 <div>
-                  <strong className="text-sm font-bold text-[#332424] block leading-snug">{item.name}</strong>
-                  <p className="text-xs text-[#6F5A55] leading-tight line-clamp-2 mt-1">{item.description}</p>
+                  <strong className="text-sm font-bold text-[#2D0E13] block leading-snug">{item.name}</strong>
+                  <p className="text-xs text-[#5E393F] leading-tight line-clamp-2 mt-1">{item.description}</p>
                 </div>
                 <div className="flex items-center justify-between gap-2 pt-1">
-                  <span className="text-sm font-black text-[#843747] font-mono">${item.price.toLocaleString("es-AR")}</span>
+                  <span className="text-sm font-black text-[#5C1D27] font-mono">${item.price.toLocaleString("es-AR")}</span>
                   {cartOrder[item.id] ? (
-                    <div className="flex items-center gap-1.5 bg-[#E8D4C3] border border-[#843747] rounded-xl p-1 shrink-0">
+                    <div className="flex items-center gap-1.5 bg-[#EBDAC5] border border-[#5C1D27] rounded-xl p-1 shrink-0">
                       <button
                         type="button"
                         onClick={() => handleRemoveFromCart(item.id)}
-                        className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                        className="h-6 w-6 rounded-lg bg-[#5C1D27] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#4A151D]"
                       >
                         -
                       </button>
-                      <span className="text-xs font-black font-mono text-[#843747] px-1">{cartOrder[item.id].quantity}</span>
+                      <span className="text-xs font-black font-mono text-[#5C1D27] px-1">{cartOrder[item.id].quantity}</span>
                       <button
                         type="button"
                         onClick={() => handleAddToCart(item)}
-                        className="h-6 w-6 rounded-lg bg-[#843747] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#71303D]"
+                        className="h-6 w-6 rounded-lg bg-[#5C1D27] text-white font-black text-xs flex items-center justify-center cursor-pointer hover:bg-[#4A151D]"
                       >
                         +
                       </button>
@@ -635,7 +635,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                     <button
                       type="button"
                       onClick={() => handleAddToCart(item)}
-                      className="px-3 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all shadow-xs cursor-pointer"
+                      className="px-3 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all shadow-xs cursor-pointer"
                     >
                       + Agregar
                     </button>
@@ -649,13 +649,13 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
 
       {/* Sticky Floating WhatsApp Order Bar */}
       {totalCartCount > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-8 md:max-w-xl z-50 bg-[#332424] text-white border-2 border-[#843747] rounded-3xl p-4 shadow-2xl backdrop-blur-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-8 md:max-w-xl z-50 bg-[#2D0E13] text-white border-2 border-[#5C1D27] rounded-3xl p-4 shadow-2xl backdrop-blur-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#843747] text-white shrink-0 font-black shadow-md text-sm font-mono">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#5C1D27] text-white shrink-0 font-black shadow-md text-sm font-mono">
               🛒 {totalCartCount}
             </div>
             <div>
-              <strong className="block text-xs uppercase tracking-wider text-[#E8D4C3]">Tu Pedido en Progreso</strong>
+              <strong className="block text-xs uppercase tracking-wider text-[#EBDAC5]">Tu Pedido en Progreso</strong>
               <span className="text-sm font-black font-mono text-white">
                 Total: ${totalCartAmount.toLocaleString("es-AR")}
               </span>

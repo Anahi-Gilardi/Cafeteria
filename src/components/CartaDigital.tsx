@@ -135,7 +135,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
                 onShowNotification("No se pudo generar la carta PDF.", "warning");
               }
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-md transition-all cursor-pointer uppercase tracking-wider"
           >
             <FileText className="h-4 w-4 text-white" /> Descargar Carta PDF Oficial
           </button>
@@ -283,8 +283,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
             {/* Simulated App Header inside Phone */}
             <div className="bg-[#2C1810] text-white pt-9 pb-5 px-5 text-center relative z-20 border-b border-[#C2956E]/20">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-[9px] font-mono tracking-wider text-[#E8D4C3]">CARTA DIGITAL</span>
-                <span className="text-[9px] bg-[#843747] px-2.5 py-0.5 rounded-full text-white font-black tracking-wider uppercase">
+                <span className="text-[9px] font-mono tracking-wider text-[#EBDAC5]">CARTA DIGITAL</span>
+                <span className="text-[9px] bg-[#5C1D27] px-2.5 py-0.5 rounded-full text-white font-black tracking-wider uppercase">
                   📖 SOLO LECTURA
                 </span>
               </div>
@@ -315,7 +315,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
             </div>
 
             {/* Dietary & Allergen Badges Filter Bar */}
-            <div className="bg-[#FFF9F4] border-b border-[#D7BBA8] px-3 py-1.5 flex gap-1.5 overflow-x-auto scrollbar-none z-10 text-[10px]">
+            <div className="bg-[#FAF2E6] border-b border-[#CFB5A0] px-3 py-1.5 flex gap-1.5 overflow-x-auto scrollbar-none z-10 text-[10px]">
               {[
                 { id: "", label: "Todos", emoji: "🍽️" },
                 { id: "sin-tacc", label: "Sin TACC", emoji: "🌾" },
@@ -328,8 +328,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
                   onClick={() => setActiveFilter(tag.id)}
                   className={`px-2 py-0.5 rounded-lg font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
                     activeFilter === tag.id
-                      ? "bg-[#843747] text-white shadow-xs"
-                      : "bg-white border border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                      ? "bg-[#5C1D27] text-white shadow-xs"
+                      : "bg-white border border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                   }`}
                 >
                   <span>{tag.emoji}</span>
@@ -463,7 +463,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
                             </span>
 
                             <span
-                              className="rounded-full bg-[#843747] text-white font-bold text-[9px] px-3 py-1 border border-[#843747] uppercase tracking-wider shrink-0 shadow-xs"
+                              className="rounded-full bg-[#5C1D27] text-white font-bold text-[9px] px-3 py-1 border border-[#5C1D27] uppercase tracking-wider shrink-0 shadow-xs"
                             >
                               + Agregar al pedido
                             </span>

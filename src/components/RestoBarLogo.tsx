@@ -20,14 +20,14 @@ function CastanoMonogram({ className }: { className: string }) {
       aria-label="Monograma de Castaño"
       className={`${className} shrink-0 overflow-visible drop-shadow-[0_5px_10px_rgba(51,36,36,0.16)]`}
     >
-      <circle cx="32" cy="32" r="29.5" fill="#FFF9F4" stroke="#843747" strokeWidth="1.5" />
-      <circle cx="32" cy="32" r="25.5" fill="none" stroke="#D7BBA8" strokeWidth="0.75" />
+      <circle cx="32" cy="32" r="29.5" fill="#FAF2E6" stroke="#5C1D27" strokeWidth="1.5" />
+      <circle cx="32" cy="32" r="25.5" fill="none" stroke="#CFB5A0" strokeWidth="0.75" />
 
       <text
         x="32"
         y="47"
         textAnchor="middle"
-        fill="#71303D"
+        fill="#4A151D"
         fontFamily="Cinzel, Marcellus, Georgia, serif"
         fontSize="38"
         fontWeight="700"
@@ -38,7 +38,7 @@ function CastanoMonogram({ className }: { className: string }) {
       <path
         d="M20.5 16.7c3.7-5.1 7.8-2.7 11.6-.5 4.1 2.3 7.9 3.7 11.7-1.7"
         fill="none"
-        stroke="#843747"
+        stroke="#5C1D27"
         strokeWidth="3.1"
         strokeLinecap="round"
       />
@@ -66,12 +66,12 @@ export default function RestoBarLogo({
       {displayText && (
         <div className="flex flex-col text-left leading-none">
           <span
-            className={`font-serif font-black uppercase tracking-[0.15em] text-[#332424] ${dimensions.title}`}
+            className={`font-serif font-black uppercase tracking-[0.15em] text-[#2D0E13] ${dimensions.title}`}
           >
             CASTAÑO
           </span>
           <span
-            className={`mt-1 font-sans font-extrabold uppercase tracking-[0.2em] text-[#843747] ${dimensions.subtitle}`}
+            className={`mt-1 font-sans font-extrabold uppercase tracking-[0.2em] text-[#5C1D27] ${dimensions.subtitle}`}
           >
             RESTO BAR · CAFÉ
           </span>

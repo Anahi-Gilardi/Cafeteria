@@ -58,18 +58,18 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
   const reservedCount = tables.filter(t => t.status === "Reservada").length;
 
   return (
-    <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
-      <div className="flex flex-wrap justify-between items-center border-b border-[#D7BBA8] pb-4 gap-4">
+    <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6">
+      <div className="flex flex-wrap justify-between items-center border-b border-[#CFB5A0] pb-4 gap-4">
         <div>
-          <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Arquitectura & Distribución 2D</span>
-          <h3 className="font-serif text-xl font-bold text-[#843747] mt-0.5">Plano del Salón — Castaño Resto Bar</h3>
+          <span className="text-[9px] font-black uppercase tracking-widest text-[#5E393F] block">Arquitectura & Distribución 2D</span>
+          <h3 className="font-serif text-xl font-bold text-[#5C1D27] mt-0.5">Plano del Salón — Castaño Resto Bar</h3>
         </div>
 
         <div className="flex items-center gap-3">
           <span className="px-3 py-1 rounded-full bg-[#DFEADF] text-[#4F735A] border border-[#4F735A]/30 text-[10px] font-bold">
             🟢 {freeCount} Libres
           </span>
-          <span className="px-3 py-1 rounded-full bg-[#843747] text-white text-[10px] font-black">
+          <span className="px-3 py-1 rounded-full bg-[#5C1D27] text-white text-[10px] font-black">
             🔴 {occupiedCount} Ocupadas
           </span>
           <span className="px-3 py-1 rounded-full bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30 text-[10px] font-bold">
@@ -77,7 +77,7 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
           </span>
           <button
             onClick={onAddTable}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl transition-all cursor-pointer shadow-xs uppercase tracking-wider"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl transition-all cursor-pointer shadow-xs uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Crear Mesa
           </button>
@@ -87,28 +87,28 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
       <div 
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="relative w-full h-[520px] bg-[#F3E7DB]/60 border-2 border-dashed border-[#D7BBA8] rounded-3xl overflow-hidden select-none touch-none shadow-inner"
+        className="relative w-full h-[520px] bg-[#F4E8D7]/60 border-2 border-dashed border-[#CFB5A0] rounded-3xl overflow-hidden select-none touch-none shadow-inner"
       >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#843747] text-white px-6 py-1 rounded-b-xl text-[9px] font-black uppercase tracking-widest shadow-xs flex items-center gap-1.5 z-10">
-          <DoorOpen className="h-3.5 w-3.5 text-[#E8D4C3]" /> Entrada Principal — Constitución 944
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#5C1D27] text-white px-6 py-1 rounded-b-xl text-[9px] font-black uppercase tracking-widest shadow-xs flex items-center gap-1.5 z-10">
+          <DoorOpen className="h-3.5 w-3.5 text-[#EBDAC5]" /> Entrada Principal — Constitución 944
         </div>
 
         <div className="absolute bottom-0 right-8 bg-[#A63F45] text-white px-4 py-0.5 rounded-t-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-1 z-10">
           <LogOut className="h-3 w-3" /> Salida de Emergencia
         </div>
 
-        <div className="absolute top-12 left-6 bg-[#E2C6B0] border border-[#D1AD95] p-3 rounded-2xl text-[9px] font-black text-[#843747] uppercase tracking-wider shadow-xs flex items-center gap-2">
-          <Wine className="h-4 w-4 text-[#843747]" /> Barra de Tragos & Cafetería
+        <div className="absolute top-12 left-6 bg-[#E2C6B0] border border-[#D1AD95] p-3 rounded-2xl text-[9px] font-black text-[#5C1D27] uppercase tracking-wider shadow-xs flex items-center gap-2">
+          <Wine className="h-4 w-4 text-[#5C1D27]" /> Barra de Tragos & Cafetería
         </div>
 
-        <div className="absolute bottom-6 left-6 bg-[#E8D4C3]/80 border border-[#D7BBA8] p-2.5 rounded-2xl text-[9px] font-black text-[#6F5A55] uppercase tracking-wider flex items-center gap-1.5">
+        <div className="absolute bottom-6 left-6 bg-[#EBDAC5]/80 border border-[#CFB5A0] p-2.5 rounded-2xl text-[9px] font-black text-[#5E393F] uppercase tracking-wider flex items-center gap-1.5">
           <SunMedium className="h-4 w-4 text-[#B97932]" /> Terraza Exterior & Ventanal
         </div>
 
         <div 
           className="absolute inset-0 opacity-15 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(#843747 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(#5C1D27 1px, transparent 1px)",
             backgroundSize: "24px 24px"
           }}
         />
@@ -136,10 +136,10 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
                 isSelectedJoin
                   ? "ring-4 ring-amber-500 border-amber-600 bg-amber-50"
                   : isOccupied
-                  ? "bg-[#843747] text-white border-[#71303D]"
+                  ? "bg-[#5C1D27] text-white border-[#4A151D]"
                   : isReserved
                   ? "bg-[#F5E4CC] text-[#8C551A] border-[#B97932]"
-                  : "bg-[#FFF9F4] text-[#332424] border-[#D7BBA8] hover:border-[#843747]"
+                  : "bg-[#FAF2E6] text-[#2D0E13] border-[#CFB5A0] hover:border-[#5C1D27]"
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -200,7 +200,7 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
                   }}
                   title="Cambiar Estado"
                   className={`p-1 rounded-md text-[8px] font-black ${
-                    isOccupied ? "bg-white/20 hover:bg-white/30 text-white" : "bg-[#E8D4C3] hover:bg-[#D7BBA8] text-[#843747]"
+                    isOccupied ? "bg-white/20 hover:bg-white/30 text-white" : "bg-[#EBDAC5] hover:bg-[#CFB5A0] text-[#5C1D27]"
                   }`}
                 >
                   <RotateCcw className="h-3 w-3" />
@@ -231,7 +231,7 @@ export const ArchitecturalSalonMap: React.FC<ArchitecturalSalonMapProps> = ({
                       }
                     }}
                     title="Unir Mesa"
-                    className="p-1 bg-[#843747] hover:bg-[#71303D] text-white rounded-md text-[8px]"
+                    className="p-1 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-md text-[8px]"
                   >
                     <Users className="h-3 w-3" />
                   </button>
