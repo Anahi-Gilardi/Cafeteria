@@ -85,7 +85,7 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
 
   const selectedEmployee = DEFAULT_EMPLOYEES.find(e => e.id === selectedEmployeeId) || DEFAULT_EMPLOYEES[0];
 
-  const isGpsBlocked = Boolean(gpsData?.error) || (!gpsData?.latitude && !isLoadingGps);
+  const isGpsBlocked = Boolean(gpsData?.isPermissionDenied);
 
   const handleRecordMovement = async (movementType: "INGRESO" | "EGRESO") => {
     if (!selectedEmployee) return;
@@ -102,7 +102,7 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
     const freshGps = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
     setGpsData(freshGps);
 
-    if (freshGps.error || (!freshGps.latitude && !freshGps.longitude)) {
+    if (freshGps.isPermissionDenied) {
       setIsSubmitting(false);
       if (onShowNotification) {
         onShowNotification("Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar", "error");
@@ -270,31 +270,55 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                 </p>
               </div>
 
-              {/* Vista Previa Mapa Interactivo / Widget OpenStreetMap (Inalterable y Resiliente) */}
-              <div className="h-36 w-full rounded-2xl overflow-hidden border border-[#D7BBA8] relative bg-[#E8D4C3]/40 flex flex-col justify-between p-3 group">
-                <iframe
-                  title="Mapa Castaño GPS OpenStreetMap"
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  scrolling="no"
-                  marginHeight={0}
-                  marginWidth={0}
-                  src="https://www.openstreetmap.org/export/embed.html?bbox=-64.3540%2C-33.1290%2C-64.3440%2C-33.1200&layer=mapnik&marker=-33.1245%2C-64.3490"
-                  className="w-full h-full absolute inset-0 opacity-90 group-hover:opacity-100 transition-opacity"
-                />
-                <div className="relative z-10 flex justify-between items-end mt-auto pointer-events-none">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#843747] text-white text-[9px] font-black uppercase shadow-xs pointer-events-auto">
+              {/* Vector Radar Map Widget - 100% Nativo sin Bloqueo de Iframes */}
+              <div className="h-40 w-full rounded-2xl overflow-hidden border border-[#D7BBA8] relative bg-[#2D1B20] text-white p-3.5 flex flex-col justify-between shadow-inner">
+                {/* Cuadrícula Radar Estilizada */}
+                <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#843747_1px,transparent_1px),linear-gradient(to_bottom,#843747_1px,transparent_1px)] bg-[size:16px_16px]"></div>
+                
+                {/* Anillos de Geocerca (50m) */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-32 h-32 rounded-full border border-[#843747]/60 animate-ping opacity-40"></div>
+                  <div className="w-24 h-24 rounded-full border-2 border-dashed border-[#4F735A] bg-[#4F735A]/10 flex items-center justify-center">
+                    <span className="text-[8px] font-black uppercase text-[#88C69B] tracking-widest bg-[#2D1B20]/80 px-1.5 py-0.5 rounded">Radio 50m</span>
+                  </div>
+                </div>
+
+                {/* Marcador Pin Central (Castaño Resto Bar) */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="flex flex-col items-center">
+                    <span className="relative flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8D4C3] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-[#843747] border-2 border-white items-center justify-center text-[8px]">☕</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Header Widget Coordenadas */}
+                <div className="relative z-10 flex justify-between items-center bg-[#1F1215]/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-[#843747]/40">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-[#4F735A] animate-pulse"></span>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-[#E8D4C3]">GPS Radar Castaño</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-gray-300">
+                    -33.124500, -64.349000
+                  </span>
+                </div>
+
+                {/* Footer Widget Direcciones & Links */}
+                <div className="relative z-10 flex justify-between items-end">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#843747] text-white text-[9px] font-black uppercase shadow-sm">
                     📍 Constitución 944, Río Cuarto
                   </span>
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=-33.1245,-64.3490"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 rounded-lg bg-[#FFF9F4] text-[#843747] border border-[#D7BBA8] text-[9px] font-black uppercase hover:bg-[#E7C8CF] transition-all shadow-xs pointer-events-auto flex items-center gap-1"
-                  >
-                    🗺️ Abrir Mapa GPS
-                  </a>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=-33.1245,-64.3490"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-lg bg-[#FFF9F4] text-[#843747] border border-[#D7BBA8] text-[9px] font-black uppercase hover:bg-[#E7C8CF] transition-all shadow-sm flex items-center gap-1"
+                    >
+                      🗺️ Google Maps
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
