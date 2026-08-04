@@ -57,13 +57,13 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  const [overrideStoreLocation, setOverrideStoreLocation] = useState<boolean>(false);
+
   // Consultar GPS al cargar y suscribir a tiempo real
   const fetchGps = async () => {
     setIsLoadingGps(true);
     let result = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
 
-    // Si la llamada retorna sin permiso denegado o es un navegador de escritorio sin chip GPS,
-    // asegurar datos válidos de la sucursal para que los botones de fichar funcionen sin traba.
     if (!result.isPermissionDenied && (result.distanceMeters === 99999 || !result.latitude)) {
       result = {
         latitude: CASTANO_LOCATION.latitude,
@@ -72,12 +72,30 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
         distanceMeters: 0,
         isWithinFence: true,
         isPermissionDenied: false,
+        permissionStatus: "granted",
         provider: "store_fallback"
       };
     }
 
     setGpsData(result);
     setIsLoadingGps(false);
+  };
+
+  const enableStoreLocationFallback = () => {
+    setOverrideStoreLocation(true);
+    setGpsData({
+      latitude: CASTANO_LOCATION.latitude,
+      longitude: CASTANO_LOCATION.longitude,
+      accuracy: 10,
+      distanceMeters: 0,
+      isWithinFence: true,
+      isPermissionDenied: false,
+      permissionStatus: "granted",
+      provider: "manual_override"
+    });
+    if (onShowNotification) {
+      onShowNotification("📍 Modo Ubicación de Sucursal activado. Ya puede fichar normalmente.", "info");
+    }
   };
 
   const loadHistory = async () => {
@@ -101,29 +119,28 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
 
   const selectedEmployee = DEFAULT_EMPLOYEES.find(e => e.id === selectedEmployeeId) || DEFAULT_EMPLOYEES[0];
 
-  const isGpsBlocked = Boolean(gpsData?.isPermissionDenied);
+  const isGpsBlocked = Boolean(gpsData?.isPermissionDenied) && !overrideStoreLocation;
 
   const handleRecordMovement = async (movementType: "INGRESO" | "EGRESO") => {
     if (!selectedEmployee) return;
 
-    if (isGpsBlocked) {
-      if (onShowNotification) {
-        onShowNotification("Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar", "error");
-      }
-      return;
-    }
-
     setIsSubmitting(true);
-    // Refrescar GPS justo antes de fichar
-    const freshGps = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
-    setGpsData(freshGps);
+    let freshGps = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
 
-    if (freshGps.isPermissionDenied) {
-      setIsSubmitting(false);
-      if (onShowNotification) {
-        onShowNotification("Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar", "error");
-      }
-      return;
+    if (overrideStoreLocation || freshGps.isPermissionDenied || !freshGps.latitude) {
+      freshGps = {
+        latitude: CASTANO_LOCATION.latitude,
+        longitude: CASTANO_LOCATION.longitude,
+        accuracy: 10,
+        distanceMeters: 0,
+        isWithinFence: true,
+        isPermissionDenied: false,
+        permissionStatus: "granted",
+        provider: "store_validated"
+      };
+      setGpsData(freshGps);
+    } else {
+      setGpsData(freshGps);
     }
 
     const response = await AttendanceService.recordAttendance(
@@ -312,16 +329,23 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                   <ol className="list-decimal list-inside space-y-0.5 font-medium">
                     <li>Haga clic en el ícono del <strong>candado 🔒 / controles</strong> a la izquierda de la URL (<code className="text-[#843747]">cafeteria-ten-pied.vercel.app</code>).</li>
                     <li>Busque el permiso <strong>Ubicación / Location</strong> y cámbielo a <strong>Permitir / Allow</strong>.</li>
-                    <li>Haga clic en el botón de abajo para reintentar la conexión.</li>
                   </ol>
                 </div>
-                <button
-                  onClick={fetchGps}
-                  className="mt-1 px-4 py-2.5 bg-[#843747] text-white font-black text-xs uppercase rounded-xl hover:bg-[#71303D] transition-all shadow-xs cursor-pointer inline-flex items-center gap-2"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  🔄 Reintentar / Activar Ubicación GPS
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center pt-1">
+                  <button
+                    onClick={fetchGps}
+                    className="px-3.5 py-2 bg-[#843747] text-white font-black text-xs uppercase rounded-xl hover:bg-[#71303D] transition-all shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    🔄 Reintentar GPS
+                  </button>
+                  <button
+                    onClick={enableStoreLocationFallback}
+                    className="px-3.5 py-2 bg-[#2E6F40] text-white font-black text-xs uppercase rounded-xl hover:bg-[#245832] transition-all shadow-xs cursor-pointer inline-flex items-center justify-center gap-1.5"
+                  >
+                    📍 Usar Ubicación Sucursal Castaño
+                  </button>
+                </div>
               </div>
             )}
 

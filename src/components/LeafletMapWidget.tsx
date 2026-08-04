@@ -89,13 +89,27 @@ export const LeafletMapWidget: React.FC<LeafletMapWidgetProps> = ({
 
     mapInstanceRef.current = map;
 
-    // Capa de Mapa Gratuito Estilo Google Maps (OpenStreetMap Standard Tiles)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // Capa de Mapas de Alta Velocidad (CartoDB Voyager Tiles + OpenStreetMap Fallback)
+    const cartoTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       maxZoom: 19,
-      subdomains: ["a", "b", "c"]
-    }).addTo(map);
+      subdomains: "abcd",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    });
 
-    // Marcador de la Sucursal Castaño
+    const osmTileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19
+    });
+
+    cartoTileLayer.addTo(map);
+
+    // Si falla CartoDB, cambiar a OpenStreetMap tile layer
+    cartoTileLayer.on("tileerror", () => {
+      if (map && !map.hasLayer(osmTileLayer)) {
+        osmTileLayer.addTo(map);
+      }
+    });
+
+    // Marcador Sucursal Castaño
     const storeMarker = L.marker([storeLat, storeLng], { icon: StoreIcon }).addTo(map);
     storeMarker.bindPopup(`
       <div style="font-family: sans-serif; text-align: center; padding: 4px;">
@@ -104,16 +118,16 @@ export const LeafletMapWidget: React.FC<LeafletMapWidgetProps> = ({
       </div>
     `);
 
-    // Radio de Geocerca (Circle Layer)
+    // Radio de Geocerca de 50 metros
     L.circle([storeLat, storeLng], {
       radius: radiusMeters,
       color: "#843747",
       weight: 2,
       fillColor: isWithinFence ? "#2E6F40" : "#A63F45",
-      fillOpacity: 0.2
+      fillOpacity: 0.25
     }).addTo(map);
 
-    // Si las coordenadas capturadas difieren de la sucursal, agregar marcador del colaborador
+    // Marcador del empleado si difiere de la sucursal
     if (lat && lng && (lat !== storeLat || lng !== storeLng)) {
       const userMarker = L.marker([lat, lng], { icon: UserIcon }).addTo(map);
       userMarker.bindPopup(`
@@ -122,27 +136,17 @@ export const LeafletMapWidget: React.FC<LeafletMapWidgetProps> = ({
           <span style="font-size: 10px; color: #666;">Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</span>
         </div>
       `);
-
-      // Línea de distancia entre el colaborador y la sucursal
-      L.polyline(
-        [
-          [storeLat, storeLng],
-          [lat, lng]
-        ],
-        {
-          color: isWithinFence ? "#2E6F40" : "#A63F45",
-          weight: 2,
-          dashArray: "6, 6"
-        }
-      ).addTo(map);
     }
 
-    // Forzar recalculo de dimensiones del mapa Leaflet
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
+    // Recalcular tamaño del mapa Leaflet en múltiples intervalos para garantizar renderizado de tiles
+    const timer1 = setTimeout(() => map.invalidateSize(), 50);
+    const timer2 = setTimeout(() => map.invalidateSize(), 250);
+    const timer3 = setTimeout(() => map.invalidateSize(), 600);
 
     return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
