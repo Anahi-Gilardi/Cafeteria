@@ -58,7 +58,17 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   }>(() => {
     try {
       const saved = localStorage.getItem("puglia_daily_combo");
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.sides)) {
+          parsed.sides = parsed.sides.flatMap((s: string) =>
+            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+              ? ["Puré de papa", "Puré mixto"]
+              : s
+          );
+        }
+        return parsed;
+      }
     } catch (e) {}
     return {
       mains: [

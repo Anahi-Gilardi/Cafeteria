@@ -3336,7 +3336,17 @@ export default function AdminHub({
   }>(() => {
     try {
       const saved = localStorage.getItem("puglia_daily_combo");
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.sides)) {
+          parsed.sides = parsed.sides.flatMap((s: string) =>
+            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+              ? ["Puré de papa", "Puré mixto"]
+              : s
+          );
+        }
+        return parsed;
+      }
     } catch (e) {}
     return {
       mains: [
@@ -6682,13 +6692,20 @@ export default function AdminHub({
 
                 {/* 2. Side Choice */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">2. Guarnición (3 Opciones):</label>
+                  <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">2. Guarnición Acompañamiento:</label>
                   <select
-                    value={selectedSideMozo || dailyComboState.sides[0] || ""}
+                    value={selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa")}
                     onChange={(e) => setSelectedSideMozo(e.target.value)}
                     className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                   >
-                    {dailyComboState.sides.map((g) => (
+                    {(dailyComboState.sides && dailyComboState.sides.length > 0
+                      ? dailyComboState.sides.flatMap((s: string) =>
+                          s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+                            ? ["Puré de papa", "Puré mixto"]
+                            : s
+                        )
+                      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"]
+                    ).map((g) => (
                       <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
@@ -6700,7 +6717,7 @@ export default function AdminHub({
                   type="button"
                   onClick={() => {
                     const mainChoice = selectedMainMozo || dailyComboState.mains[0] || "Pollo al horno";
-                    const sideChoice = selectedSideMozo || dailyComboState.sides[0] || "Puré de papa o mixto";
+                    const sideChoice = selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa");
                     const itemToCart: MenuItem = {
                       id: `combo_diario_${Date.now()}`,
                       name: `🍱 Menú Diario (${mainChoice} c/ ${sideChoice})`,
