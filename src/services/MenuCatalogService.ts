@@ -57,6 +57,7 @@ export class MenuCatalogService {
       arca_unit_code: item.arcaUnitCode?.trim() || null,
       fiscal_enabled: item.fiscalEnabled === true,
       is_available: item.isAvailable !== false,
+      active: true,
       updated_at: new Date().toISOString()
     };
 

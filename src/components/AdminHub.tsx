@@ -84,7 +84,7 @@ const EMPTY_WEEKLY_MENUS: DailyExecutiveMenu[] = (
   mains: [],
   drinks: [],
   desserts: [],
-  active: false
+  active: true
 }));
 
 const PRODUCT_CATEGORY_LABELS: Partial<Record<MenuItem["category"], string>> = {
@@ -1078,7 +1078,8 @@ export default function AdminHub({
       arca_item_code: null,
       arca_unit_code: null,
       fiscal_enabled: false,
-      is_available: true
+      is_available: true,
+      active: true
     };
 
     try {
@@ -3656,7 +3657,7 @@ export default function AdminHub({
           mains: activeMenu.mains,
           drinks: activeMenu.drinks,
           desserts: activeMenu.desserts,
-          active: activeMenu.active,
+          active: true,
           updated_at: new Date().toISOString()
         }, { onConflict: "day_of_week" });
 
