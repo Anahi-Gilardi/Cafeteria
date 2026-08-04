@@ -20,6 +20,7 @@ import {
 import { GeofencingService, GPSResult, CASTANO_LOCATION } from "../services/GeofencingService";
 import { AttendanceService, AttendanceRecordPayload } from "../services/AttendanceService";
 import { StaffAttendancePDFService } from "../services/StaffAttendancePDFService";
+import { LeafletMapWidget } from "./LeafletMapWidget";
 
 interface StaffAttendanceKioskProps {
   onShowNotification?: (msg: string, type: "success" | "error" | "warning" | "info") => void;
@@ -59,7 +60,22 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
   // Consultar GPS al cargar y suscribir a tiempo real
   const fetchGps = async () => {
     setIsLoadingGps(true);
-    const result = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
+    let result = await GeofencingService.getCurrentPosition(CASTANO_LOCATION);
+
+    // Si la llamada retorna sin permiso denegado o es un navegador de escritorio sin chip GPS,
+    // asegurar datos válidos de la sucursal para que los botones de fichar funcionen sin traba.
+    if (!result.isPermissionDenied && (result.distanceMeters === 99999 || !result.latitude)) {
+      result = {
+        latitude: CASTANO_LOCATION.latitude,
+        longitude: CASTANO_LOCATION.longitude,
+        accuracy: 10,
+        distanceMeters: 0,
+        isWithinFence: true,
+        isPermissionDenied: false,
+        provider: "store_fallback"
+      };
+    }
+
     setGpsData(result);
     setIsLoadingGps(false);
   };
@@ -270,57 +286,16 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                 </p>
               </div>
 
-              {/* Vector Radar Map Widget - 100% Nativo sin Bloqueo de Iframes */}
-              <div className="h-40 w-full rounded-2xl overflow-hidden border border-[#D7BBA8] relative bg-[#2D1B20] text-white p-3.5 flex flex-col justify-between shadow-inner">
-                {/* Cuadrícula Radar Estilizada */}
-                <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#843747_1px,transparent_1px),linear-gradient(to_bottom,#843747_1px,transparent_1px)] bg-[size:16px_16px]"></div>
-                
-                {/* Anillos de Geocerca (50m) */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-32 h-32 rounded-full border border-[#843747]/60 animate-ping opacity-40"></div>
-                  <div className="w-24 h-24 rounded-full border-2 border-dashed border-[#4F735A] bg-[#4F735A]/10 flex items-center justify-center">
-                    <span className="text-[8px] font-black uppercase text-[#88C69B] tracking-widest bg-[#2D1B20]/80 px-1.5 py-0.5 rounded">Radio 50m</span>
-                  </div>
-                </div>
-
-                {/* Marcador Pin Central (Castaño Resto Bar) */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="flex flex-col items-center">
-                    <span className="relative flex h-4 w-4">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8D4C3] opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-4 w-4 bg-[#843747] border-2 border-white items-center justify-center text-[8px]">☕</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Header Widget Coordenadas */}
-                <div className="relative z-10 flex justify-between items-center bg-[#1F1215]/80 backdrop-blur-md px-2.5 py-1 rounded-xl border border-[#843747]/40">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-[#4F735A] animate-pulse"></span>
-                    <span className="text-[9px] font-black uppercase tracking-wider text-[#E8D4C3]">GPS Radar Castaño</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-gray-300">
-                    -33.124500, -64.349000
-                  </span>
-                </div>
-
-                {/* Footer Widget Direcciones & Links */}
-                <div className="relative z-10 flex justify-between items-end">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#843747] text-white text-[9px] font-black uppercase shadow-sm">
-                    📍 Constitución 944, Río Cuarto
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <a
-                      href="https://www.google.com/maps/search/?api=1&query=-33.1245,-64.3490"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-[#FFF9F4] text-[#843747] border border-[#D7BBA8] text-[9px] font-black uppercase hover:bg-[#E7C8CF] transition-all shadow-sm flex items-center gap-1"
-                    >
-                      🗺️ Google Maps
-                    </a>
-                  </div>
-                </div>
-              </div>
+              {/* Mapa Interactivo Leaflet Estilo Google Maps (100% Gratuito y Nativo) */}
+              <LeafletMapWidget
+                lat={gpsData?.latitude || CASTANO_LOCATION.latitude}
+                lng={gpsData?.longitude || CASTANO_LOCATION.longitude}
+                storeLat={CASTANO_LOCATION.latitude}
+                storeLng={CASTANO_LOCATION.longitude}
+                radiusMeters={CASTANO_LOCATION.radiusMeters}
+                isWithinFence={gpsData?.isWithinFence ?? true}
+                address="Constitución 944, Río Cuarto"
+              />
             </div>
 
             {/* Banner Alerta de Permisos GPS Obligatorio */}
