@@ -673,7 +673,7 @@ export default function App() {
   if (!currentUser) {
     return (
       <ErrorBoundary>
-        <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+        <div className="min-h-screen bg-[#F4E8D7] font-sans text-[#2D0E13] selection:bg-[#5C1D27] selection:text-white">
         <PublicLandingPage
           menuItems={availableMenuItems}
           isMenuLoading={isMenuLoading}
@@ -697,7 +697,7 @@ export default function App() {
   if (activeTab === "admin") {
     return (
       <ErrorBoundary>
-        <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+        <div className="min-h-screen bg-[#F4E8D7] font-sans text-[#2D0E13] selection:bg-[#5C1D27] selection:text-white">
           <Suspense fallback={<ModuleFallback />}>
             <AdminHub
               orders={orders}
@@ -722,7 +722,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3E7DB] font-sans text-[#332424] selection:bg-[#843747] selection:text-white">
+    <div className="min-h-screen bg-[#F4E8D7] font-sans text-[#2D0E13] selection:bg-[#5C1D27] selection:text-white">
       <Suspense fallback={<ModuleFallback />}>
         <AdminHub
           orders={orders}
@@ -973,36 +973,36 @@ export default function App() {
       </AnimatePresence>
 
       {/* Castaño Footer */}
-      <footer className="bg-[#E8D4C3] text-[#332424] border-t border-[#D1AD95] py-10 px-4 mt-auto">
+      <footer className="bg-[#EBDAC5] text-[#2D0E13] border-t border-[#D1AD95] py-10 px-4 mt-auto">
         <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           {/* Brand Info */}
           <div>
             <div className="flex items-center justify-center md:justify-start mb-3">
               <RestoBarLogo size="md" />
             </div>
-            <p className="text-xs text-[#6F5A55] leading-relaxed max-w-xs mx-auto md:mx-0">
+            <p className="text-xs text-[#5E393F] leading-relaxed max-w-xs mx-auto md:mx-0">
               Gastronomía de Autor, Menú Ejecutivo y Cafetería en Río Cuarto. Una propuesta única frente al Teatro Municipal con excelencia y calidez.
             </p>
           </div>
 
           {/* Opening Hours */}
           <div className="flex flex-col items-center md:items-start text-xs font-medium">
-            <h4 className="text-[#843747] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-[#843747]" /> Horarios de Atención
+            <h4 className="text-[#5C1D27] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
+              <Clock className="h-4 w-4 text-[#5C1D27]" /> Horarios de Atención
             </h4>
-            <div className="space-y-1 text-[#332424]">
+            <div className="space-y-1 text-[#2D0E13]">
               <p>Lunes a Viernes: <span className="font-semibold">07:30 - 00:30 hs</span></p>
               <p>Sábados y Domingos: <span className="font-semibold">08:30 - 02:00 hs</span></p>
-              <p className="text-[10px] text-[#843747] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $12.500 (Incluye Entrada, Principal, Bebida y Postre)</p>
+              <p className="text-[10px] text-[#5C1D27] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $12.500 (Incluye Entrada, Principal, Bebida y Postre)</p>
             </div>
           </div>
 
           {/* Contact Details */}
           <div className="flex flex-col items-center md:items-start text-xs font-medium">
-            <h4 className="text-[#843747] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-[#843747]" /> Ubicación & Contacto
+            <h4 className="text-[#5C1D27] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-[#5C1D27]" /> Ubicación & Contacto
             </h4>
-            <div className="space-y-1 text-[#332424]">
+            <div className="space-y-1 text-[#2D0E13]">
               <p>Constitución 944 (Frente al Teatro Municipal)</p>
               <p>Río Cuarto, Provincia de Córdoba, Argentina</p>
               <p>Teléfono / Reservas: 358 5042311 / 4651847</p>
@@ -1011,7 +1011,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-7xl border-t border-[#D1AD95] mt-8 pt-4 text-center text-[10px] text-[#6F5A55] font-semibold tracking-wider uppercase">
+        <div className="mx-auto max-w-7xl border-t border-[#D1AD95] mt-8 pt-4 text-center text-[10px] text-[#5E393F] font-semibold tracking-wider uppercase">
           © 2026 Castaño — Resto Bar. Todos los derechos reservados.
         </div>
       </footer>

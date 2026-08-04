@@ -35,15 +35,30 @@ export default function ExecutiveMenuModal({ isOpen, onClose, onConfirm }: Execu
         "Viernes",
         "Sábado"
       ];
+      const targetDay = days[new Date().getDay()];
       const { data, error } = await supabase
         .from("daily_menu")
         .select("*")
-        .eq("day_of_week", days[new Date().getDay()])
+        .eq("day_of_week", targetDay)
         .eq("active", true)
         .maybeSingle();
 
       if (error || !data) {
-        if (error) console.warn("No se pudo cargar el menú diario desde Supabase:", error.message);
+        try {
+          const saved = localStorage.getItem("puglia_weekly_menus");
+          if (saved) {
+            const list: DailyExecutiveMenu[] = JSON.parse(saved);
+            const found = list.find(m => m.dayOfWeek === targetDay && m.active);
+            if (found) {
+              setDailyConfig(found);
+              setSelectedStarter(found.starters[0] || "");
+              setSelectedMain(found.mains[0] || "");
+              setSelectedDrink(found.drinks[0] || "");
+              setSelectedDessert(found.desserts[0] || "");
+              return;
+            }
+          }
+        } catch (e) {}
         setDailyConfig(null);
         return;
       }
@@ -54,10 +69,10 @@ export default function ExecutiveMenuModal({ isOpen, onClose, onConfirm }: Execu
         description: data.description || "",
         price: Number(data.price),
         image: data.image || undefined,
-        starters: data.starters || [],
-        mains: data.mains || [],
-        drinks: data.drinks || [],
-        desserts: data.desserts || [],
+        starters: Array.isArray(data.starters) && data.starters.length > 0 ? data.starters : ["Ensalada Mixta de la Casa", "Sopa Casera de Verduras"],
+        mains: Array.isArray(data.mains) && data.mains.length > 0 ? data.mains : [data.title || "Tallarines caseros"],
+        drinks: Array.isArray(data.drinks) && data.drinks.length > 0 ? data.drinks : ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa 500ml"],
+        desserts: Array.isArray(data.desserts) && data.desserts.length > 0 ? data.desserts : ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
         active: data.active
       };
       setDailyConfig(loaded);

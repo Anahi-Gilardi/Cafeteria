@@ -93,11 +93,11 @@ export class MenuPDFService {
 
     // Helper to render Page 1 Cover Header Banner with QR Code
     const drawCoverHeader = () => {
-      // Header Background (Bordó Teatral #843747)
-      doc.setFillColor(132, 55, 71); // #843747
+      // Header Background (Bordó Teatral #5C1D27)
+      doc.setFillColor(132, 55, 71); // #5C1D27
       doc.rect(0, 0, pageWidth, 48, "F");
 
-      // Double decorative border in soft cream #D7BBA8
+      // Double decorative border in soft cream #CFB5A0
       doc.setDrawColor(215, 187, 168);
       doc.setLineWidth(0.7);
       doc.rect(5, 5, pageWidth - 10, 38, "S");
@@ -109,12 +109,12 @@ export class MenuPDFService {
       doc.text("CASTAÑO — RESTO BAR", 12, 18);
 
       // Subtitle & Address
-      doc.setTextColor(243, 231, 219); // Light cream #F3E7DB
+      doc.setTextColor(243, 231, 219); // Light cream #F4E8D7
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.text("CONSTITUCIÓN 944 • RÍO CUARTO, CÓRDOBA", 12, 25);
 
-      // Promo Badge Box (Cream Background #FFF9F4)
+      // Promo Badge Box (Cream Background #FAF2E6)
       doc.setFillColor(255, 249, 244);
       doc.rect(12, 29, 135, 10, "F");
       doc.setDrawColor(215, 187, 168);
@@ -243,7 +243,7 @@ export class MenuPDFService {
         drawSecondaryHeader();
       }
 
-      // Render Category Section Bar (Bordó #843747 with Cream Border)
+      // Render Category Section Bar (Bordó #5C1D27 with Cream Border)
       doc.setFillColor(132, 55, 71);
       doc.rect(10, currentY, pageWidth - 20, 8.5, "F");
 
@@ -308,7 +308,7 @@ export class MenuPDFService {
           doc.text(initials, photoX + 5, photoY + 9.5);
         }
 
-        // Product Name (Cacao #332424)
+        // Product Name (Cacao #2D0E13)
         doc.setTextColor(51, 36, 36);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
@@ -319,13 +319,13 @@ export class MenuPDFService {
 
         doc.text(displayName, textStartX, currentY + 3);
 
-        // Price (Right aligned in Bordó #843747)
+        // Price (Right aligned in Bordó #5C1D27)
         doc.setTextColor(132, 55, 71);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10.5);
         doc.text(priceStr, pageWidth - 14, currentY + 3, { align: "right" });
 
-        // Description (Subtitle #6F5A55)
+        // Description (Subtitle #5E393F)
         if (descLines.length > 0) {
           doc.setTextColor(111, 90, 85);
           doc.setFont("helvetica", "italic");
@@ -351,7 +351,7 @@ export class MenuPDFService {
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       
-      // Bottom Footer Bar (Bordó #843747)
+      // Bottom Footer Bar (Bordó #5C1D27)
       doc.setFillColor(132, 55, 71);
       doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
 

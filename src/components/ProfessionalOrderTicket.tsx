@@ -89,41 +89,41 @@ export default function ProfessionalOrderTicket({
   const totalItemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
 
   const statusBadgeStyle = {
-    Recibido: "bg-[#843747] text-white border-[#843747]",
+    Recibido: "bg-[#5C1D27] text-white border-[#5C1D27]",
     Preparando: "bg-[#B97932] text-white border-[#B97932]",
     Listo: "bg-[#4F735A] text-white border-[#4F735A]",
     Completado: "bg-[#55748A] text-white border-[#55748A]"
-  }[order.status] || "bg-[#843747] text-white";
+  }[order.status] || "bg-[#5C1D27] text-white";
 
   return (
-    <div className="w-full bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-5 text-[#332424] shadow-sm space-y-4 font-sans relative overflow-hidden">
+    <div className="w-full bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-5 text-[#2D0E13] shadow-sm space-y-4 font-sans relative overflow-hidden">
       
       {/* Top Accent Bar */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#843747]"></div>
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#5C1D27]"></div>
 
       {/* 1. ENCABEZADO (Header de Comanda) */}
-      <div className="border-b border-[#D7BBA8] pb-3 pt-1 space-y-2">
+      <div className="border-b border-[#CFB5A0] pb-3 pt-1 space-y-2">
         <div className="flex justify-between items-start gap-2">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-xs font-black text-white bg-[#843747] px-2.5 py-0.5 rounded-lg">
+              <span className="font-mono text-xs font-black text-white bg-[#5C1D27] px-2.5 py-0.5 rounded-lg">
                 #{order.id.slice(-6).toUpperCase()}
               </span>
-              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#E8D4C3] text-[#843747] border border-[#D7BBA8] font-mono">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#EBDAC5] text-[#5C1D27] border border-[#CFB5A0] font-mono">
                 {currentSlot.name.split(":")[0]}
               </span>
             </div>
 
             <div className="flex items-center gap-2 mt-1.5">
-              <MapPin className="h-4 w-4 text-[#843747]" />
-              <h3 className="font-serif text-lg font-bold text-[#843747]">
+              <MapPin className="h-4 w-4 text-[#5C1D27]" />
+              <h3 className="font-serif text-lg font-bold text-[#5C1D27]">
                 {order.priceList === "Takeaway" || order.type === "Llevar"
                   ? `Retiro en Local`
                   : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
                   ? `Delivery`
                   : `${order.tableNumber || "Mesa 1"}`}
               </h3>
-              <span className="text-[10px] text-[#6F5A55] font-bold block mt-0.5">
+              <span className="text-[10px] text-[#5E393F] font-bold block mt-0.5">
                 👤 {order.clientAccountName || order.customerName || `Atiende: ${waiterName}`}
               </span>
             </div>
@@ -142,9 +142,9 @@ export default function ProfessionalOrderTicket({
               <span>{elapsedMinutes} min</span>
             </div>
 
-            <div className="text-[9.5px] text-[#6F5A55] font-bold flex items-center justify-end gap-1 bg-[#E8D4C3] px-2.5 py-1 rounded-xl border border-[#D7BBA8] shadow-xs">
-              <User className="h-3.5 w-3.5 text-[#843747]" />
-              <span>Resp: <strong className="text-[#332424] font-mono">{order.clientAccountName || order.customerName || waiterName}</strong></span>
+            <div className="text-[9.5px] text-[#5E393F] font-bold flex items-center justify-end gap-1 bg-[#EBDAC5] px-2.5 py-1 rounded-xl border border-[#CFB5A0] shadow-xs">
+              <User className="h-3.5 w-3.5 text-[#5C1D27]" />
+              <span>Resp: <strong className="text-[#2D0E13] font-mono">{order.clientAccountName || order.customerName || waiterName}</strong></span>
             </div>
           </div>
         </div>
@@ -156,8 +156,8 @@ export default function ProfessionalOrderTicket({
         {/* Agrupación BARRA & INFUSIONES */}
         {barraItems.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1">
-              <Coffee className="h-3.5 w-3.5 text-[#843747]" />
+            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1">
+              <Coffee className="h-3.5 w-3.5 text-[#5C1D27]" />
               <span>BARRA & CAFETERÍA ({barraItems.length})</span>
             </div>
 
@@ -171,7 +171,7 @@ export default function ProfessionalOrderTicket({
                     className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
                       isChecked
                         ? "bg-[#DFEADF] border-[#4F735A] opacity-65"
-                        : "bg-[#FFF9F4] border-[#D7BBA8] hover:border-[#843747]"
+                        : "bg-[#FAF2E6] border-[#CFB5A0] hover:border-[#5C1D27]"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -179,22 +179,22 @@ export default function ProfessionalOrderTicket({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}}
-                        className="mt-1 h-4 w-4 rounded border-[#D7BBA8] text-[#843747] focus:ring-0 cursor-pointer"
+                        className="mt-1 h-4 w-4 rounded border-[#CFB5A0] text-[#5C1D27] focus:ring-0 cursor-pointer"
                       />
 
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-black text-white bg-[#843747] px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-mono font-black text-white bg-[#5C1D27] px-2 py-0.5 rounded-md">
                             {item.quantity}x
                           </span>
-                          <strong className={`text-xs font-bold ${isChecked ? "line-through text-[#6F5A55]" : "text-[#332424]"}`}>
+                          <strong className={`text-xs font-bold ${isChecked ? "line-through text-[#5E393F]" : "text-[#2D0E13]"}`}>
                             {item.name}
                           </strong>
                         </div>
 
                         {item.customizationSummary && (
                           <div className="pt-0.5">
-                            <span className="text-[9px] font-bold bg-[#F5E4CC] text-[#B97932] border border-[#D7BBA8] px-2 py-0.5 rounded-md">
+                            <span className="text-[9px] font-bold bg-[#F5E4CC] text-[#B97932] border border-[#CFB5A0] px-2 py-0.5 rounded-md">
                               {item.customizationSummary}
                             </span>
                           </div>
@@ -202,7 +202,7 @@ export default function ProfessionalOrderTicket({
                       </div>
                     </div>
 
-                    <span className="text-xs font-mono font-bold text-[#843747] shrink-0">
+                    <span className="text-xs font-mono font-bold text-[#5C1D27] shrink-0">
                       ${(item.price * item.quantity).toLocaleString("es-AR")}
                     </span>
                   </div>
@@ -215,8 +215,8 @@ export default function ProfessionalOrderTicket({
         {/* Agrupación COCINA & PARRILLA */}
         {cocinaItems.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1">
-              <Utensils className="h-3.5 w-3.5 text-[#843747]" />
+            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1">
+              <Utensils className="h-3.5 w-3.5 text-[#5C1D27]" />
               <span>COCINA & PARRILLA ({cocinaItems.length})</span>
             </div>
 
@@ -230,7 +230,7 @@ export default function ProfessionalOrderTicket({
                     className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
                       isChecked
                         ? "bg-[#DFEADF] border-[#4F735A] opacity-65"
-                        : "bg-[#FFF9F4] border-[#D7BBA8] hover:border-[#843747]"
+                        : "bg-[#FAF2E6] border-[#CFB5A0] hover:border-[#5C1D27]"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -238,22 +238,22 @@ export default function ProfessionalOrderTicket({
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => {}}
-                        className="mt-1 h-4 w-4 rounded border-[#D7BBA8] text-[#843747] focus:ring-0 cursor-pointer"
+                        className="mt-1 h-4 w-4 rounded border-[#CFB5A0] text-[#5C1D27] focus:ring-0 cursor-pointer"
                       />
 
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-black text-white bg-[#843747] px-2 py-0.5 rounded-md">
+                          <span className="text-xs font-mono font-black text-white bg-[#5C1D27] px-2 py-0.5 rounded-md">
                             {item.quantity}x
                           </span>
-                          <strong className={`text-xs font-bold ${isChecked ? "line-through text-[#6F5A55]" : "text-[#332424]"}`}>
+                          <strong className={`text-xs font-bold ${isChecked ? "line-through text-[#5E393F]" : "text-[#2D0E13]"}`}>
                             {item.name}
                           </strong>
                         </div>
 
                         {item.customizationSummary && (
                           <div className="pt-0.5">
-                            <span className="text-[9px] font-bold bg-[#F5E4CC] text-[#B97932] border border-[#D7BBA8] px-2 py-0.5 rounded-md">
+                            <span className="text-[9px] font-bold bg-[#F5E4CC] text-[#B97932] border border-[#CFB5A0] px-2 py-0.5 rounded-md">
                               {item.customizationSummary}
                             </span>
                           </div>
@@ -261,7 +261,7 @@ export default function ProfessionalOrderTicket({
                       </div>
                     </div>
 
-                    <span className="text-xs font-mono font-bold text-[#843747] shrink-0">
+                    <span className="text-xs font-mono font-bold text-[#5C1D27] shrink-0">
                       ${(item.price * item.quantity).toLocaleString("es-AR")}
                     </span>
                   </div>
@@ -273,17 +273,17 @@ export default function ProfessionalOrderTicket({
       </div>
 
       {/* 3. PIE DE COMANDA (Footer Fijo) */}
-      <div className="border-t border-[#D7BBA8] pt-3 space-y-3">
+      <div className="border-t border-[#CFB5A0] pt-3 space-y-3">
         {/* Item Counter & Status Bar */}
         <div className="flex justify-between items-center text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[#6F5A55]">Total Ítems: <strong>{totalItemCount}</strong></span>
+            <span className="font-bold text-[#5E393F]">Total Ítems: <strong>{totalItemCount}</strong></span>
             <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase font-mono ${statusBadgeStyle}`}>
               {order.status}
             </span>
           </div>
 
-          <span className="font-serif text-base font-black text-[#843747] font-mono">
+          <span className="font-serif text-base font-black text-[#5C1D27] font-mono">
             ${order.total.toLocaleString("es-AR")}
           </span>
         </div>
@@ -295,14 +295,14 @@ export default function ProfessionalOrderTicket({
               window.print();
               if (onShowNotification) onShowNotification(`🖨️ Imprimiendo pre-ticket de comanda #${order.id.slice(-6).toUpperCase()}...`, "info");
             }}
-            className="py-2 px-2 bg-[#E8D4C3] hover:bg-[#843747] hover:text-white border border-[#D7BBA8] text-[#843747] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+            className="py-2 px-2 bg-[#EBDAC5] hover:bg-[#5C1D27] hover:text-white border border-[#CFB5A0] text-[#5C1D27] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
           >
             <Printer className="h-3.5 w-3.5" /> Pre-ticket
           </button>
 
           <button
             onClick={markAllAsChecked}
-            className="py-2 px-2 bg-[#E8D4C3] hover:bg-[#4F735A] hover:text-white border border-[#D7BBA8] text-[#4F735A] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+            className="py-2 px-2 bg-[#EBDAC5] hover:bg-[#4F735A] hover:text-white border border-[#CFB5A0] text-[#4F735A] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
           >
             <CheckSquare className="h-3.5 w-3.5" /> Marcar Todo
           </button>
@@ -310,7 +310,7 @@ export default function ProfessionalOrderTicket({
           {onAddItem && (
             <button
               onClick={() => onAddItem(order.id)}
-              className="py-2 px-2 bg-[#E8D4C3] hover:bg-[#843747] hover:text-white border border-[#D7BBA8] text-[#843747] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+              className="py-2 px-2 bg-[#EBDAC5] hover:bg-[#5C1D27] hover:text-white border border-[#CFB5A0] text-[#5C1D27] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
             >
               <Plus className="h-3.5 w-3.5" /> Añadir Ítem
             </button>
@@ -319,7 +319,7 @@ export default function ProfessionalOrderTicket({
           {onRequestBill && order.tableNumber && (
             <button
               onClick={() => onRequestBill(order.tableNumber!)}
-              className="py-2 px-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+              className="py-2 px-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
             >
               <CreditCard className="h-3.5 w-3.5" /> Pedir Cuenta
             </button>

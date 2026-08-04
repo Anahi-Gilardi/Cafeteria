@@ -1,41 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;900&display=swap');
 @import "tailwindcss";
 
 :root {
-  --app-bg: #F3E7DB;
-  --surface: #FFF9F4;
-  --surface-soft: #E8D4C3;
-  --sidebar-bg: #E2C6B0;
-  --sidebar-border: #D1AD95;
+  /* Official Cafeteria Flyer Color Palette & Design Tokens */
+  --app-bg: #F4E8D7;               /* Real Flyer Warm Vintage Cream Background */
+  --surface: #FAF2E6;              /* Flyer Menu Card Interior Surface */
+  --surface-soft: #EBDAC5;         /* Soft Vintage Cream Container */
+  --sidebar-bg: #E4D0BB;
+  --sidebar-border: #CBB098;
 
-  --primary: #843747;
-  --primary-product: #925063;
-  --primary-comanda: #71303D;
-  --primary-hover: #71303D;
-  --primary-pressed: #602733;
-  --primary-soft: #E7C8CF;
+  --primary: #5C1D27;              /* Deep Burgundy Red from Flyer Title & Border */
+  --primary-product: #6C222E;      /* Rich Wine Red for Product Cards */
+  --primary-comanda: #4A131C;      /* Deep Dark Wine Red for Headers */
+  --primary-hover: #4A131C;
+  --primary-pressed: #380C13;
+  --primary-soft: #E8D3D6;
 
-  --text-primary: #332424;
-  --text-secondary: #6F5A55;
+  --badge-gold: #D49E35;           /* Flyer Gold "MENÚ" Badge */
+  --badge-gold-text: #2D0E13;
+
+  --text-primary: #2D0E13;         /* Ultra High-Contrast Dark Wine Text */
+  --text-secondary: #5E393F;       /* Elegant Burgundy Subtext */
   --text-on-primary: #FFFFFF;
-  --border: #D7BBA8;
+  --border: #CFB5A0;
+  --border-dark: #7A2E39;          /* Flyer Horizontal Divider Color */
 
-  --success: #4F735A;
-  --success-soft: #DFEADF;
-  --warning: #B97932;
-  --warning-soft: #F5E4CC;
-  --danger: #A63F45;
-  --danger-soft: #F4DCDD;
-  --info: #55748A;
-  --info-soft: #DFE8ED;
+  --success: #365B40;
+  --success-soft: #D5E4D8;
+  --warning: #B87E1D;
+  --warning-soft: #F6E7CA;
+  --danger: #96222A;
+  --danger-soft: #F6D5D8;
+  --info: #355368;
+  --info-soft: #D9E3EA;
 
-  --focus-ring: #B76879;
-  --shadow-card: 0 4px 14px rgba(51, 36, 36, 0.08);
+  --focus-ring: #7A2E39;
+  --shadow-card: 0 4px 18px rgba(45, 14, 19, 0.14);
 }
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Cinzel", "Marcellus", ui-serif, Georgia, serif;
+  --font-serif: "Oswald", "Cinzel", ui-serif, Georgia, serif;
+  --font-script: "Dancing Script", cursive;
 }
 
 /* Castaño Design System Utilities */
@@ -45,6 +51,16 @@ body {
   font-family: var(--font-sans);
   margin: 0;
   padding: 0;
+}
+
+.font-script {
+  font-family: 'Dancing Script', cursive;
+}
+
+.font-heading {
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 :focus-visible {
@@ -140,23 +156,25 @@ body {
 
 /* Glassmorphism & Gourmet Badge Utilities */
 .glass-card {
-  background: rgba(255, 249, 244, 0.85);
+  background: rgba(250, 242, 230, 0.9);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(215, 187, 168, 0.6);
+  border: 1px solid rgba(207, 181, 160, 0.7);
 }
 
 .glass-header {
-  background: rgba(243, 231, 219, 0.9);
+  background: rgba(244, 232, 215, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(215, 187, 168, 0.5);
+  border-bottom: 1px solid rgba(207, 181, 160, 0.6);
 }
 
 .gourmet-gold-badge {
-  background: linear-gradient(135deg, #FFF5E6 0%, #F5E4CC 100%);
-  border: 1px solid #B97932;
-  color: #8C551A;
+  background: linear-gradient(135deg, #D49E35 0%, #B87E1D 100%);
+  border: 1px solid #946210;
+  color: #2D0E13;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
 }
 
 .pulse-urgent {
@@ -165,13 +183,13 @@ body {
 
 @keyframes pulseUrgent {
   0% {
-    box-shadow: 0 0 0 0 rgba(166, 63, 69, 0.5);
+    box-shadow: 0 0 0 0 rgba(150, 34, 42, 0.5);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(166, 63, 69, 0);
+    box-shadow: 0 0 0 10px rgba(150, 34, 42, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(166, 63, 69, 0);
+    box-shadow: 0 0 0 0 rgba(150, 34, 42, 0);
   }
 }
 
