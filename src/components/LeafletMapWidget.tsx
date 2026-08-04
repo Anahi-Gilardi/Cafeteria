@@ -151,8 +151,8 @@ export const LeafletMapWidget: React.FC<LeafletMapWidgetProps> = ({
   }, [lat, lng, storeLat, storeLng, radiusMeters, address, isWithinFence]);
 
   return (
-    <div className="w-full h-44 rounded-2xl overflow-hidden border border-[#D7BBA8] relative bg-[#E8D4C3]/30 shadow-inner">
-      <div ref={mapContainerRef} className="w-full h-full z-0" />
+    <div className="w-full h-56 rounded-2xl overflow-hidden border border-[#D7BBA8] relative bg-[#E8D4C3]/30 shadow-inner">
+      <div id="map" ref={mapContainerRef} className="w-full h-full z-0" />
       <div className="absolute bottom-2 left-2 z-[400] bg-[#FFF9F4]/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-[#D7BBA8] shadow-sm pointer-events-auto flex items-center gap-1">
         <span className="text-[9px] font-black uppercase text-[#843747]">📍 Constitución 944, Río Cuarto</span>
       </div>

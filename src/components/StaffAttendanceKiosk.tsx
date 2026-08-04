@@ -298,21 +298,29 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
               />
             </div>
 
-            {/* Banner Alerta de Permisos GPS Obligatorio */}
+            {/* Banner Alerta Instructiva de Permisos GPS en Chrome */}
             {isGpsBlocked && (
-              <div className="p-4 bg-[#F4DCDD] border-2 border-[#A63F45] text-[#A63F45] rounded-2xl space-y-2 text-center shadow-sm">
-                <strong className="text-xs font-black uppercase tracking-wider block">
-                  ⚠️ Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar
+              <div className="p-4 bg-[#F4DCDD] border-2 border-[#A63F45] text-[#A63F45] rounded-2xl space-y-2.5 text-center shadow-sm">
+                <strong className="text-xs font-black uppercase tracking-wider block flex items-center justify-center gap-1.5">
+                  🔒 Permiso de Ubicación Bloqueado en su Navegador
                 </strong>
-                <p className="text-[10px] font-semibold text-[#843747]">
-                  El navegador requiere permisos de geolocalización activos para validar la presencia en Castaño Resto Bar.
+                <p className="text-[11px] font-medium text-[#843747] leading-relaxed">
+                  {gpsData?.error || "Debe permitir el acceso a su ubicación GPS en tiempo real para poder fichar."}
                 </p>
+                <div className="bg-[#FFF9F4] p-3 rounded-xl border border-[#D7BBA8] text-left text-[10px] text-[#332424] space-y-1">
+                  <strong className="block text-[#843747] font-bold">📌 Cómo desbloquear en Google Chrome:</strong>
+                  <ol className="list-decimal list-inside space-y-0.5 font-medium">
+                    <li>Haga clic en el ícono del <strong>candado 🔒 / controles</strong> a la izquierda de la URL (<code className="text-[#843747]">cafeteria-ten-pied.vercel.app</code>).</li>
+                    <li>Busque el permiso <strong>Ubicación / Location</strong> y cámbielo a <strong>Permitir / Allow</strong>.</li>
+                    <li>Haga clic en el botón de abajo para reintentar la conexión.</li>
+                  </ol>
+                </div>
                 <button
                   onClick={fetchGps}
-                  className="mt-1 px-4 py-2 bg-[#843747] text-white font-black text-xs uppercase rounded-xl hover:bg-[#71303D] transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                  className="mt-1 px-4 py-2.5 bg-[#843747] text-white font-black text-xs uppercase rounded-xl hover:bg-[#71303D] transition-all shadow-xs cursor-pointer inline-flex items-center gap-2"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  🔓 Activar Permiso de Ubicación GPS
+                  🔄 Reintentar / Activar Ubicación GPS
                 </button>
               </div>
             )}
