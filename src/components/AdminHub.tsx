@@ -7580,13 +7580,13 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 animate-fade-in text-[#FDFBF7]"
+        className="space-y-8 animate-fade-in text-[#2D0E13]"
       >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D4AF37]/20 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#CFB5A0] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">Abastecimiento & Logística</span>
-            <h2 className="font-serif text-3xl font-bold text-[#FDFBF7] mt-0.5">Directorio de Proveedores</h2>
-            <p className="text-xs text-[#FDFBF7]/70 mt-1">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp a proveedores de Resto Bar Del Teatro.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Abastecimiento & Logística</span>
+            <h2 className="font-serif text-3xl font-bold text-[#5C1D27] mt-0.5">Directorio de Proveedores</h2>
+            <p className="text-xs text-[#5E393F] mt-1 font-medium">Gestione contactos de compras y envíe pedidos rápidos por WhatsApp a proveedores de Resto Bar Del Teatro.</p>
           </div>
           <button
             onClick={() => setIsAddingProv(!isAddingProv)}
