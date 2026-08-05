@@ -193,3 +193,11 @@ body {
   }
 }
 
+/* Leaflet.js Map Tile Reset to prevent Tailwind max-width image conflicts */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  width: 256px !important;
+  height: 256px !important;
+}
+
