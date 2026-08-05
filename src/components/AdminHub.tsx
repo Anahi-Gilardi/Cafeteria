@@ -4472,12 +4472,17 @@ export default function AdminHub({
           {[
             { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
-            { id: "menu_ejecutivo", label: "🍱 Menú Diario" },
+            { id: "executive", label: "🍱 Menú Ejecutivo" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
-            { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
-            { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
-            { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+            { id: "promos", label: "🏷️ Promos" },
             { id: "empanadas", label: "🥟 Empanadas" },
+            { id: "pizzas_focaccias", label: "🍕 Pizzas" },
+            { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+            { id: "minutas_carnes", label: "🥩 Al Plato" },
+            { id: "guarniciones", label: "🍟 Guarniciones" },
+            { id: "lomitos", label: "🥪 Lomitos" },
+            { id: "hamburguesas", label: "🍔 Hamburguesas" },
+            { id: "sandwiches", label: "🥖 Sándwiches" },
             { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
             { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
             { id: "postres", label: "🍰 Postres" },
@@ -4649,7 +4654,34 @@ export default function AdminHub({
             )}
             <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
               {menuItems
-                .filter(item => selectedPosCategory === "todos" || item.category === selectedPosCategory || (selectedPosCategory === "pastry" && item.category === "bakery"))
+                .filter(item => {
+                  if (selectedPosCategory === "todos") return true;
+                  if (selectedPosCategory === "promos") return (item.tags && item.tags.includes("Promo")) || !!item.isOffer;
+                  if (selectedPosCategory === "empanadas") return item.category === "empanadas";
+                  if (selectedPosCategory === "pizzas_focaccias") return item.category === "pizzas_focaccias";
+                  if (selectedPosCategory === "pastas_caseras") return item.category === "pastas_caseras";
+                  if (selectedPosCategory === "minutas_carnes") {
+                    return item.category === "minutas_carnes" && (
+                      !item.tags || item.tags.includes("Al Plato") || item.tags.includes("Milanesa") || item.tags.includes("Cerdo") || item.tags.includes("Ternera")
+                    );
+                  }
+                  if (selectedPosCategory === "guarniciones") {
+                    return (item.tags && (item.tags.includes("Guarnición") || item.tags.includes("Ensalada") || item.tags.includes("Puré") || item.tags.includes("Papas"))) || false;
+                  }
+                  if (selectedPosCategory === "lomitos") return (item.tags && item.tags.includes("Lomito")) || false;
+                  if (selectedPosCategory === "hamburguesas") return (item.tags && item.tags.includes("Hamburguesa")) || false;
+                  if (selectedPosCategory === "sandwiches") {
+                    return (item.tags && (item.tags.includes("Sándwich") || item.tags.includes("Pebete") || item.tags.includes("Pebetón") || item.tags.includes("Miga") || item.tags.includes("Árabe"))) || false;
+                  }
+                  if (selectedPosCategory === "desayunos_meriendas") {
+                    return item.category === "desayunos_meriendas" && (!item.tags || !item.tags.includes("Promo"));
+                  }
+                  if (selectedPosCategory === "executive" || selectedPosCategory === "menu_ejecutivo") return item.category === "executive";
+                  if (selectedPosCategory === "bebidas_sa") return item.category === "bebidas_sa";
+                  if (selectedPosCategory === "bebidas_alcohol") return item.category === "bebidas_alcohol";
+                  if (selectedPosCategory === "postres") return item.category === "postres";
+                  return item.category === selectedPosCategory;
+                })
                 .map((item, idx) => {
                   const active = currentItem ? currentItem.id === item.id : false;
                   const itemCost = getRecipeCost(item);
@@ -5093,7 +5125,24 @@ export default function AdminHub({
 
     const posMenuItems = menuItems.filter(item => 
       item.isAvailable !== false &&
-      (selectedPosCategory === "todos" || item.category === selectedPosCategory)
+      (
+        selectedPosCategory === "todos" ||
+        (selectedPosCategory === "promos" && ((item.tags && item.tags.includes("Promo")) || item.isOffer)) ||
+        (selectedPosCategory === "empanadas" && item.category === "empanadas") ||
+        (selectedPosCategory === "pizzas_focaccias" && item.category === "pizzas_focaccias") ||
+        (selectedPosCategory === "pastas_caseras" && item.category === "pastas_caseras") ||
+        (selectedPosCategory === "minutas_carnes" && item.category === "minutas_carnes" && (!item.tags || item.tags.includes("Al Plato") || item.tags.includes("Milanesa") || item.tags.includes("Cerdo") || item.tags.includes("Ternera"))) ||
+        (selectedPosCategory === "guarniciones" && item.tags && (item.tags.includes("Guarnición") || item.tags.includes("Ensalada") || item.tags.includes("Puré") || item.tags.includes("Papas"))) ||
+        (selectedPosCategory === "lomitos" && item.tags && item.tags.includes("Lomito")) ||
+        (selectedPosCategory === "hamburguesas" && item.tags && item.tags.includes("Hamburguesa")) ||
+        (selectedPosCategory === "sandwiches" && item.tags && (item.tags.includes("Sándwich") || item.tags.includes("Pebete") || item.tags.includes("Pebetón") || item.tags.includes("Miga") || item.tags.includes("Árabe"))) ||
+        (selectedPosCategory === "desayunos_meriendas" && item.category === "desayunos_meriendas" && (!item.tags || !item.tags.includes("Promo"))) ||
+        ((selectedPosCategory === "executive" || selectedPosCategory === "menu_ejecutivo") && item.category === "executive") ||
+        (selectedPosCategory === "bebidas_sa" && item.category === "bebidas_sa") ||
+        (selectedPosCategory === "bebidas_alcohol" && item.category === "bebidas_alcohol") ||
+        (selectedPosCategory === "postres" && item.category === "postres") ||
+        item.category === selectedPosCategory
+      )
     );
 
     const pendingOrders = orders.filter(o => isOrderActive(o));

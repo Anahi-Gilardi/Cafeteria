@@ -62,10 +62,22 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
   const normQuery = normalizeStr(searchQuery);
 
   const filteredItems = menuItems.filter((item) => {
-    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    let matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    if (selectedCategory === "promos") matchesCategory = (item.tags && item.tags.includes("Promo")) || !!item.isOffer;
+    if (selectedCategory === "empanadas") matchesCategory = item.category === "empanadas";
+    if (selectedCategory === "pizzas_focaccias") matchesCategory = item.category === "pizzas_focaccias";
+    if (selectedCategory === "pastas_caseras") matchesCategory = item.category === "pastas_caseras";
+    if (selectedCategory === "minutas_carnes") matchesCategory = item.category === "minutas_carnes" && (!item.tags || item.tags.includes("Al Plato") || item.tags.includes("Milanesa") || item.tags.includes("Cerdo") || item.tags.includes("Ternera"));
+    if (selectedCategory === "guarniciones") matchesCategory = (item.tags && (item.tags.includes("Guarnición") || item.tags.includes("Ensalada") || item.tags.includes("Puré") || item.tags.includes("Papas"))) || false;
+    if (selectedCategory === "lomitos") matchesCategory = (item.tags && item.tags.includes("Lomito")) || false;
+    if (selectedCategory === "hamburguesas") matchesCategory = (item.tags && item.tags.includes("Hamburguesa")) || false;
+    if (selectedCategory === "sandwiches") matchesCategory = (item.tags && (item.tags.includes("Sándwich") || item.tags.includes("Pebete") || item.tags.includes("Pebetón") || item.tags.includes("Miga") || item.tags.includes("Árabe"))) || false;
+    if (selectedCategory === "desayunos_meriendas") matchesCategory = item.category === "desayunos_meriendas" && (!item.tags || !item.tags.includes("Promo"));
+    if (selectedCategory === "executive" || selectedCategory === "menu_ejecutivo") matchesCategory = item.category === "executive";
+
     const matchesSearch = !normQuery || normalizeStr(item.name).includes(normQuery) || 
                           normalizeStr(item.description).includes(normQuery);
-    const matchesTag = !activeFilter || (item.tags && item.tags.includes(activeFilter));
+    const matchesTag = !activeFilter || (activeFilter === "promos" ? (item.tags?.includes("Promo") || item.isOffer) : (item.tags && item.tags.includes(activeFilter)));
     return matchesCategory && matchesSearch && matchesTag;
   });
 
@@ -98,14 +110,19 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
   };
 
   const categories = [
-    { id: "all", label: "Todo", emoji: "🍽️" },
-    { id: "menu_diario", label: "⭐ Menú del Día", emoji: "⭐" },
-    { id: "executive", label: "🍱 Menú Diario", emoji: "🍱" },
-    { id: "desayunos_meriendas", label: "Desayunos, Almuerzos & Meriendas", emoji: "☕" },
-    { id: "pizzas_focaccias", label: "Pizzas & Focaccias", emoji: "🍕" },
-    { id: "minutas_carnes", label: "Minutas & Carnes", emoji: "🥩" },
-    { id: "pastas_caseras", label: "Pastas Caseras", emoji: "🍝" },
+    { id: "all", label: "Todos", emoji: "🍽️" },
+    { id: "menu_diario", label: "Menú del Día", emoji: "⭐" },
+    { id: "executive", label: "Menú Ejecutivo", emoji: "🍱" },
+    { id: "desayunos_meriendas", label: "Desayunos & Meriendas", emoji: "☕" },
+    { id: "promos", label: "Promos", emoji: "🏷️" },
     { id: "empanadas", label: "Empanadas", emoji: "🥟" },
+    { id: "pizzas_focaccias", label: "Pizzas", emoji: "🍕" },
+    { id: "pastas_caseras", label: "Pastas Caseras", emoji: "🍝" },
+    { id: "minutas_carnes", label: "Al Plato", emoji: "🥩" },
+    { id: "guarniciones", label: "Guarniciones & Ensaladas", emoji: "🍟" },
+    { id: "lomitos", label: "Lomitos", emoji: "🥪" },
+    { id: "hamburguesas", label: "Hamburguesas", emoji: "🍔" },
+    { id: "sandwiches", label: "Sándwiches & Pebetes", emoji: "🥖" },
     { id: "bebidas_sa", label: "Bebidas S/A", emoji: "🥤" },
     { id: "bebidas_alcohol", label: "Bebidas c/Alcohol", emoji: "🍸" },
     { id: "postres", label: "Postres", emoji: "🍰" },
