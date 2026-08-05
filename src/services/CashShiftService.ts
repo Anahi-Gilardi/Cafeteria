@@ -63,61 +63,19 @@ export class CashShiftService {
     ledger?: CashLedgerState;
     error?: string;
   }> {
-    // 1. Try RPC open_cash_shift
     try {
       const { data, error } = await supabase.rpc("open_cash_shift");
-      if (!error && data?.is_open && data?.opened_at) {
-        return { success: true, ledger: mapLedger(data) };
+      if (error) return { success: false, error: `${error.message} (${error.code})` };
+      if (!data?.is_open || !data?.opened_at) {
+        return { success: false, error: "Supabase no confirmó la apertura de caja" };
       }
-    } catch {
-      // Fallback
-    }
-
-    // 2. Direct table update on 'cash_ledger' in Supabase
-    try {
-      const now = new Date().toISOString();
-      const openPayload = {
-        id: "current",
-        is_open: true,
-        opened_at: now,
-        total_collected: 0,
-        cash: 0,
-        card: 0,
-        mercadopago: 0,
-        transactions: [],
-        updated_at: now
+      return { success: true, ledger: mapLedger(data) };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "No fue posible abrir la caja"
       };
-
-      const { data, error } = await supabase
-        .from("cash_ledger")
-        .upsert(openPayload)
-        .select()
-        .single();
-
-      if (!error && data) {
-        return { success: true, ledger: mapLedger(data) };
-      }
-      if (error) {
-        console.warn("Direct cash_ledger open notice:", error.message);
-      }
-    } catch (err) {
-      console.warn("Direct cash_ledger open exception:", err);
     }
-
-    // 3. Fallback state so cashier / admin is NEVER blocked from opening the register!
-    const now = new Date().toISOString();
-    return {
-      success: true,
-      ledger: {
-        totalCollected: 0,
-        cash: 0,
-        card: 0,
-        mercadopago: 0,
-        transactions: [],
-        isOpen: true,
-        openedAt: now
-      }
-    };
   }
 
   static async closeShift(
@@ -128,75 +86,21 @@ export class CashShiftService {
       return { success: false, error: "El efectivo declarado es inválido" };
     }
 
-    // 1. Try RPC close_cash_shift
     try {
       const { data, error } = await supabase.rpc("close_cash_shift", {
         p_declared_cash: Number(declaredCash.toFixed(2)),
         p_notes: notes.trim() || null
       });
-      if (!error && data?.id && data?.closed_at) {
-        return { success: true, closure: mapClosure(data) };
+      if (error) return { success: false, error: `${error.message} (${error.code})` };
+      if (!data?.id || !data?.closed_at) {
+        return { success: false, error: "Supabase no confirmó el cierre de caja" };
       }
-    } catch {
-      // Fallback
-    }
-
-    // 2. Direct table update on 'cash_ledger' in Supabase
-    const now = new Date().toISOString();
-    try {
-      const { data: currentLedger } = await supabase
-        .from("cash_ledger")
-        .select("*")
-        .eq("id", "current")
-        .maybeSingle();
-
-      const salesTotal = Number(currentLedger?.total_collected || 0);
-      const diff = Number((declaredCash - salesTotal).toFixed(2));
-
-      await supabase
-        .from("cash_ledger")
-        .upsert({
-          id: "current",
-          is_open: false,
-          opened_at: null,
-          total_collected: 0,
-          cash: 0,
-          card: 0,
-          mercadopago: 0,
-          transactions: [],
-          updated_at: now
-        });
-
-      const closureRecord: CashClosure = {
-        id: `close-${Date.now()}`,
-        user: "Cajero",
-        apertura: currentLedger?.opened_at || now,
-        cierre: now,
-        observaciones: notes.trim() || "Cierre de turno normal",
-        ventasTurno: salesTotal,
-        montoReal: declaredCash,
-        diferencia: diff,
-        transactions: Array.isArray(currentLedger?.transactions) ? currentLedger.transactions : []
+      return { success: true, closure: mapClosure(data) };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "No fue posible cerrar la caja"
       };
-
-      return { success: true, closure: closureRecord };
-    } catch (err) {
-      console.warn("Direct close shift exception:", err);
     }
-
-    return {
-      success: true,
-      closure: {
-        id: `close-${Date.now()}`,
-        user: "Cajero",
-        apertura: now,
-        cierre: now,
-        observaciones: notes.trim() || "Cierre de turno local",
-        ventasTurno: 0,
-        montoReal: declaredCash,
-        diferencia: 0,
-        transactions: []
-      }
-    };
   }
 }

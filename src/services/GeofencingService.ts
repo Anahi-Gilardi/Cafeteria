@@ -1,205 +1,220 @@
 /**
- * GeofencingService.ts
- * Servicio de Geolocalización y Geocerca para Castaño Resto Bar & Cafetería
- * Ubicación Oficial: Constitución 944, Río Cuarto, Córdoba (-33.1245, -64.3490)
+ * Geolocalización del dispositivo y validación de la geocerca de asistencia.
+ * La API del navegador funciona en equipos de escritorio y móviles, siempre en HTTPS.
  */
 
 export interface GeofenceConfig {
   latitude: number;
   longitude: number;
   radiusMeters: number;
+  maxAccuracyMeters: number;
+  name: string;
+  address: string;
 }
 
+export type GeolocationPermissionStatus =
+  | "granted"
+  | "prompt"
+  | "denied"
+  | "unsupported"
+  | "insecure_context";
+
 export interface GPSResult {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  distanceMeters: number;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  distanceMeters: number | null;
   isWithinFence: boolean;
-  permissionStatus: "granted" | "prompt" | "denied" | "unsupported" | "insecure_context";
+  permissionStatus: GeolocationPermissionStatus;
   isPermissionDenied?: boolean;
   errorCode?: number;
   error?: string;
-  provider?: string;
+  provider?: "browser_geolocation";
 }
 
-// Coordenadas oficiales de Castaño Resto Bar & Cafetería (Río Cuarto)
+export interface GPSValidation {
+  ok: boolean;
+  message: string;
+}
+
+// Punto cartográfico de Constitución 944 obtenido de OpenStreetMap/Nominatim.
 export const CASTANO_LOCATION: GeofenceConfig = {
-  latitude: -33.1245,
-  longitude: -64.3490,
-  radiusMeters: 50 // 50 metros a la redonda
+  latitude: -33.1256089,
+  longitude: -64.350237,
+  radiusMeters: 100,
+  maxAccuracyMeters: 150,
+  name: "Castaño / Resto Bar del Teatro",
+  address: "Constitución 944, Río Cuarto, Córdoba"
 };
 
+function unavailableResult(
+  permissionStatus: GeolocationPermissionStatus,
+  error: string,
+  errorCode?: number
+): GPSResult {
+  return {
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    distanceMeters: null,
+    isWithinFence: false,
+    permissionStatus,
+    isPermissionDenied: permissionStatus === "denied",
+    errorCode,
+    error
+  };
+}
+
 export class GeofencingService {
-  /**
-   * Fórmula de Haversine: Calcula la distancia en metros entre dos puntos en la Tierra
-   * @returns Distancia exacta en metros (redondeada a 1 decimal)
-   */
   public static calculateHaversineDistance(
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number
   ): number {
-    const R = 6371000; // Radio de la Tierra en metros
+    const earthRadiusMeters = 6_371_000;
     const dLat = this.toRadians(lat2 - lat1);
     const dLon = this.toRadians(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLat / 2) ** 2 +
       Math.cos(this.toRadians(lat1)) *
         Math.cos(this.toRadians(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c * 10) / 10;
+    return Math.round(earthRadiusMeters * c * 10) / 10;
   }
 
   private static toRadians(degrees: number): number {
     return (degrees * Math.PI) / 180;
   }
 
-  /**
-   * Consulta el estado del permiso de geolocalización en el navegador
-   */
-  public static async checkPermissionStatus(): Promise<"granted" | "prompt" | "denied" | "unsupported"> {
+  public static async checkPermissionStatus(): Promise<GeolocationPermissionStatus> {
+    if (typeof window !== "undefined" && window.isSecureContext === false) {
+      return "insecure_context";
+    }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       return "unsupported";
     }
-    if (navigator.permissions && navigator.permissions.query) {
-      try {
-        const result = await navigator.permissions.query({ name: "geolocation" as PermissionName });
-        return result.state as "granted" | "prompt" | "denied";
-      } catch (e) {
-        return "prompt";
-      }
+    if (!navigator.permissions?.query) return "prompt";
+
+    try {
+      const result = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+      return result.state;
+    } catch {
+      // Safari y algunos WebView no implementan Permissions API para geolocation.
+      return "prompt";
     }
-    return "prompt";
   }
 
   /**
-   * Solicita y obtiene la posición GPS en tiempo real con manejo riguroso de errores
+   * Solicita una lectura nueva. Nunca sustituye un error por la ubicación del local.
    */
   public static async getCurrentPosition(
     config: GeofenceConfig = CASTANO_LOCATION
   ): Promise<GPSResult> {
-    // 1. Verificación de soporte del navegador
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      return {
-        latitude: config.latitude,
-        longitude: config.longitude,
-        accuracy: 10,
-        distanceMeters: 0,
-        isWithinFence: true,
-        permissionStatus: "unsupported",
-        isPermissionDenied: false,
-        error: "Su navegador no soporta la API de Geolocalización. Se utiliza ubicación base de la sucursal."
-      };
-    }
-
-    // 2. Verificación de Contexto Seguro (HTTPS / localhost)
     if (typeof window !== "undefined" && window.isSecureContext === false) {
-      return {
-        latitude: config.latitude,
-        longitude: config.longitude,
-        accuracy: 10,
-        distanceMeters: 0,
-        isWithinFence: true,
-        permissionStatus: "insecure_context",
-        isPermissionDenied: false,
-        error: "⚠️ La geolocalización requiere una conexión segura (HTTPS). Ejecutando en modo seguro de sucursal."
-      };
+      return unavailableResult(
+        "insecure_context",
+        "La ubicación sólo está disponible mediante HTTPS o localhost."
+      );
     }
-
-    // 3. Consulta de permisos previa
-    const permState = await this.checkPermissionStatus();
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return unavailableResult(
+        "unsupported",
+        "Este navegador o dispositivo no ofrece geolocalización."
+      );
+    }
 
     return new Promise((resolve) => {
-      // 4. Captura con configuración de alta precisión
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          const accuracy = position.coords.accuracy || 10;
-
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          const accuracy = Math.round(position.coords.accuracy * 10) / 10;
           const distanceMeters = this.calculateHaversineDistance(
-            lat,
-            lon,
+            latitude,
+            longitude,
             config.latitude,
             config.longitude
           );
 
           resolve({
-            latitude: lat,
-            longitude: lon,
-            accuracy: Math.round(accuracy * 10) / 10,
+            latitude,
+            longitude,
+            accuracy,
             distanceMeters,
             isWithinFence: distanceMeters <= config.radiusMeters,
             permissionStatus: "granted",
             isPermissionDenied: false,
-            provider: "gps_high_accuracy"
+            provider: "browser_geolocation"
           });
         },
         (error) => {
-          // 5. Manejo explícito de los 4 códigos de error de la Geolocation API
-          let errorMsg = "Ocurrió un error desconocido al consultar el GPS.";
-          let isDenied = false;
-
-          switch (error.code) {
-            case error.PERMISSION_DENIED: // Código 1
-              isDenied = true;
-              errorMsg = "Permiso de ubicación denegado por el usuario. Haga clic en el ícono del candado 🔒 en la barra de direcciones de Chrome y permita la ubicación.";
-              break;
-
-            case error.POSITION_UNAVAILABLE: // Código 2
-              errorMsg = "Ubicación GPS no disponible en este dispositivo en este momento.";
-              break;
-
-            case error.TIMEOUT: // Código 3
-              errorMsg = "Tiempo de espera agotado (10s) al consultar la ubicación GPS.";
-              break;
-
-            default: // Código 0 / UNKNOWN_ERROR
-              errorMsg = "Error inesperado de la API de geolocalización.";
-              break;
-          }
-
-          if (isDenied) {
-            resolve({
-              latitude: 0,
-              longitude: 0,
-              accuracy: 0,
-              distanceMeters: 99999,
-              isWithinFence: false,
-              permissionStatus: "denied",
-              isPermissionDenied: true,
-              errorCode: error.code,
-              error: errorMsg
-            });
+          if (error.code === error.PERMISSION_DENIED) {
+            resolve(unavailableResult(
+              "denied",
+              "El permiso de ubicación está bloqueado. Habilítelo desde los controles del sitio y vuelva a intentar.",
+              error.code
+            ));
             return;
           }
-
-          // Fallback seguro a la ubicación oficial de Castaño para escritorios/laptops sin chip GPS satelital
-          resolve({
-            latitude: config.latitude,
-            longitude: config.longitude,
-            accuracy: 10,
-            distanceMeters: 0,
-            isWithinFence: true,
-            permissionStatus: permState,
-            isPermissionDenied: false,
-            errorCode: error.code,
-            provider: "store_fallback",
-            error: undefined
-          });
+          if (error.code === error.POSITION_UNAVAILABLE) {
+            resolve(unavailableResult(
+              "granted",
+              "El dispositivo no pudo determinar su ubicación. Active GPS o Wi‑Fi y vuelva a intentar.",
+              error.code
+            ));
+            return;
+          }
+          if (error.code === error.TIMEOUT) {
+            resolve(unavailableResult(
+              "granted",
+              "La ubicación tardó demasiado. Acérquese a una ventana o pruebe desde el teléfono.",
+              error.code
+            ));
+            return;
+          }
+          resolve(unavailableResult("prompt", "No fue posible obtener la ubicación.", error.code));
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15_000,
           maximumAge: 0
         }
       );
     });
   }
+
+  public static validateForAttendance(
+    result: GPSResult | null,
+    config: GeofenceConfig = CASTANO_LOCATION
+  ): GPSValidation {
+    if (!result) return { ok: false, message: "Autorice la ubicación antes de fichar." };
+    if (result.permissionStatus !== "granted") {
+      return { ok: false, message: result.error || "La ubicación no está autorizada." };
+    }
+    if (
+      result.latitude === null ||
+      result.longitude === null ||
+      result.accuracy === null ||
+      result.distanceMeters === null ||
+      !Number.isFinite(result.latitude) ||
+      !Number.isFinite(result.longitude)
+    ) {
+      return { ok: false, message: result.error || "La lectura GPS no es válida." };
+    }
+    if (result.accuracy <= 0 || result.accuracy > config.maxAccuracyMeters) {
+      return {
+        ok: false,
+        message: `La precisión es de ±${Math.round(result.accuracy)} m; se requieren ±${config.maxAccuracyMeters} m o menos.`
+      };
+    }
+    if (!result.isWithinFence || result.distanceMeters > config.radiusMeters) {
+      return {
+        ok: false,
+        message: `Está a ${Math.round(result.distanceMeters)} m del local; el fichaje requiere estar dentro de ${config.radiusMeters} m.`
+      };
+    }
+    return { ok: true, message: "Ubicación válida para fichar." };
+  }
 }
-
-

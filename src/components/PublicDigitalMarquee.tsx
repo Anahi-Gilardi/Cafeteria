@@ -226,7 +226,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
       return [];
     }
     if (selectedCategory === "all") {
-      return menuItems.filter(item => item.category !== "executive" && item.category !== "menu_diario");
+      return menuItems.filter(item => item.category !== "executive");
     }
     return menuItems.filter(item => item.category === selectedCategory);
   }, [menuItems, selectedCategory]);

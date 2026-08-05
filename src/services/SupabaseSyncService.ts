@@ -146,40 +146,26 @@ export class SupabaseSyncService {
   ): Promise<{ success: boolean; order?: Order; error?: string }> {
     const payload = orderPayload(order);
 
-    // 1. Try RPC transaction if available
     try {
       const idempotencyKey = `order:${order.id}`;
       const { data: rpcData, error: rpcError } = await supabase.rpc("persist_order_transaction", {
         p_order: payload,
         p_idempotency_key: idempotencyKey
       });
-      if (!rpcError && rpcData) {
-        return { success: true, order: mapOrder(rpcData) };
+      if (rpcError) {
+        const message = rpcError.code === "23514"
+          ? `Stock insuficiente: ${rpcError.message}`
+          : rpcError.message;
+        return { success: false, error: `${message} (${rpcError.code})` };
       }
-    } catch {
-      // Fallback
+      if (!rpcData) return { success: false, error: "Supabase no confirmó la comanda" };
+      return { success: true, order: mapOrder(rpcData) };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "No fue posible guardar la comanda"
+      };
     }
-
-    // 2. Direct database upsert into 'orders' table in Supabase
-    try {
-      const { data: dbData, error: dbError } = await supabase
-        .from("orders")
-        .upsert(payload)
-        .select()
-        .single();
-
-      if (!dbError && dbData) {
-        return { success: true, order: mapOrder(dbData) };
-      }
-      if (dbError) {
-        console.warn("Direct orders upsert notice:", dbError.message);
-      }
-    } catch (err) {
-      console.warn("Direct orders upsert exception:", err);
-    }
-
-    // 3. Resilient fallback to guarantee order marching for waiters & cashiers
-    return { success: true, order };
   }
 
   static async updateOrderStatus(
@@ -324,7 +310,6 @@ export class SupabaseSyncService {
     discount = 0,
     clientAccountId?: string
   ): Promise<{ success: boolean; order?: Order; transactionId: string; error?: string }> {
-    // 1. Try RPC record_order_payment
     try {
       const { data, error } = await supabase.rpc("record_order_payment", {
         p_order_id: orderId,
@@ -334,49 +319,16 @@ export class SupabaseSyncService {
         p_discount: discount,
         p_client_account_id: clientAccountId || null
       });
-      if (!error && data) {
-        return { success: true, transactionId, order: mapOrder(data) };
-      }
-    } catch {
-      // Fallback
+      if (error) return { success: false, transactionId, error: `${error.message} (${error.code})` };
+      if (!data) return { success: false, transactionId, error: "Supabase no confirmó el cobro" };
+      return { success: true, transactionId, order: mapOrder(data) };
+    } catch (error) {
+      return {
+        success: false,
+        transactionId,
+        error: error instanceof Error ? error.message : "No fue posible registrar el cobro"
+      };
     }
-
-    // 2. Direct table update on 'orders' table in Supabase
-    try {
-      const { data: updatedOrder, error: dbError } = await supabase
-        .from("orders")
-        .update({
-          status: "Completado",
-          payment_method: method,
-          discount: discount,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", orderId)
-        .select()
-        .single();
-
-      if (!dbError && updatedOrder) {
-        return { success: true, transactionId, order: mapOrder(updatedOrder) };
-      }
-    } catch (err) {
-      console.warn("Direct order payment update notice:", err);
-    }
-
-    // 3. Fallback response so POS checkout never blocks the cashier
-    return {
-      success: true,
-      transactionId,
-      order: {
-        id: orderId,
-        items: [],
-        total: amount,
-        subtotal: amount,
-        status: "Completado",
-        paymentMethod: method,
-        priceList: "Salon",
-        createdAt: new Date().toISOString()
-      }
-    };
   }
 
   static async recordPayments(
@@ -411,7 +363,6 @@ export class SupabaseSyncService {
       return { success: false, transactions, error: "Importes de pago inválidos." };
     }
 
-    // 1. Try RPC record_order_payment_batch
     try {
       const { data, error } = await supabase.rpc("record_order_payment_batch", {
         p_order_id: orderId,
@@ -424,50 +375,18 @@ export class SupabaseSyncService {
         p_client_account_id: clientAccountId || null
       });
 
-      if (!error && data) {
-        return { success: true, transactions, order: mapOrder(data) };
+      if (error) {
+        return { success: false, transactions, error: `${error.message} (${error.code})` };
       }
-    } catch {
-      // Fallback
+      if (!data) return { success: false, transactions, error: "Supabase no confirmó el cobro mixto" };
+      return { success: true, transactions, order: mapOrder(data) };
+    } catch (error) {
+      return {
+        success: false,
+        transactions,
+        error: error instanceof Error ? error.message : "No fue posible registrar el cobro mixto"
+      };
     }
-
-    // 2. Direct table update on 'orders' table in Supabase
-    const primaryMethod = transactions[0]?.method || "Efectivo";
-    try {
-      const { data: updatedOrder, error: dbError } = await supabase
-        .from("orders")
-        .update({
-          status: "Completado",
-          payment_method: primaryMethod,
-          discount: discount,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", orderId)
-        .select()
-        .single();
-
-      if (!dbError && updatedOrder) {
-        return { success: true, transactions, order: mapOrder(updatedOrder) };
-      }
-    } catch (err) {
-      console.warn("Direct order batch payments update notice:", err);
-    }
-
-    // 3. Resilient fallback response
-    return {
-      success: true,
-      transactions,
-      order: {
-        id: orderId,
-        items: [],
-        total: transactions.reduce((sum, t) => sum + t.amount, 0),
-        subtotal: transactions.reduce((sum, t) => sum + t.amount, 0),
-        status: "Completado",
-        paymentMethod: primaryMethod,
-        priceList: "Salon",
-        createdAt: new Date().toISOString()
-      }
-    };
   }
 
   static async recordClientRepayment(

@@ -353,7 +353,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               <div className="relative grid h-[430px] grid-cols-[1fr_0.43fr] gap-3 sm:h-[540px]">
                 <button
                   type="button"
-                  onClick={() => todayMenu ? setIsExecutiveModalOpen(true) : setViewMode("digital_menu")}
+                  onClick={() => setViewMode("digital_menu")}
                   className="group relative overflow-hidden rounded-[2rem] bg-[#2D0E13] text-left shadow-[0_28px_70px_rgba(51,36,36,0.2)]"
                   aria-label={todayMenu ? `Ver Menú del Día: ${todayMenu.title}` : heroItem ? `Ver ${heroItem.name} en la carta` : "Ver la carta digital"}
                 >

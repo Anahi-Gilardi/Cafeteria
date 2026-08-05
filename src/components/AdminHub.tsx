@@ -188,7 +188,6 @@ export default function AdminHub({
     }
   }, [activeSubTab]);
   const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("asistencia");
-  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
   // User Accounts Management state
   const [users, setUsers] = useState<any[]>([]);
@@ -302,9 +301,6 @@ export default function AdminHub({
   const [pendingWaiterCalls, setPendingWaiterCalls] = useState<WaiterCall[]>([]);
 
   // Staff Attendance GPS state
-  const [selectedStaffMember, setSelectedStaffMember] = useState<string>(currentUser.id);
-  const [isLocatingGPS, setIsLocatingGPS] = useState<boolean>(false);
-  const [currentGPSLoc, setCurrentGPSLoc] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [attendanceSubTab, setAttendanceSubTab] = useState<"kiosk" | "history">("kiosk");
 
   // Thermal Printer & ARCA Fiscal Billing State
@@ -717,15 +713,6 @@ export default function AdminHub({
           }
         } catch {}
 
-        // 10. Fetch attendance records allowed by the current user's RLS policy
-        try {
-          const { data: attendanceData } = await supabase
-            .from("staff_attendance")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(250);
-          if (attendanceData) setAttendanceLogs(attendanceData);
-        } catch {}
       } catch (err) {
         console.warn("Notice: loadSupabaseData partial finish:", err);
       }
@@ -790,9 +777,6 @@ export default function AdminHub({
       });
       setUsersMetadata(newMeta);
       setUsers(dbUsers);
-      if (!dbUsers.some((user) => user.id === selectedStaffMember)) {
-        setSelectedStaffMember(dbUsers[0]?.id || currentUser.id);
-      }
       const employeeNames = dbUsers
         .filter((user) => user.active !== false)
         .map((user) => user.name);
@@ -840,8 +824,8 @@ export default function AdminHub({
       onShowNotification("⚠️ Complete los campos obligatorios (Nombre, Email, Contraseña y Rol).", "warning");
       return;
     }
-    if (newUserPassword.length < 4) {
-      onShowNotification("⚠️ La contraseña o PIN debe tener al menos 4 caracteres.", "warning");
+    if (newUserPassword.length < 12) {
+      onShowNotification("⚠️ La contraseña debe tener al menos 12 caracteres.", "warning");
       return;
     }
 
@@ -2876,53 +2860,6 @@ export default function AdminHub({
     );
   };
 
-  const handleCaptureGPSAndClock = async (action: "INGRESO" | "EGRESO") => {
-    setIsLocatingGPS(true);
-    if (!("geolocation" in navigator)) {
-      setIsLocatingGPS(false);
-      onShowNotification("⚠️ Este dispositivo no permite validar la ubicación GPS.", "warning");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-        const address = `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        setCurrentGPSLoc({ lat, lng, address });
-        const { data, error } = await supabase.rpc("record_staff_attendance", {
-          p_staff_id: selectedStaffMember,
-          p_action: action,
-          p_latitude: lat,
-          p_longitude: lng,
-          p_location_address: address,
-          p_gps_accuracy: accuracy
-        });
-        setIsLocatingGPS(false);
-        if (error) {
-          console.error("Error recording attendance:", error);
-          onShowNotification(`⚠️ No se pudo registrar el fichaje: ${error.message}`, "warning");
-          return;
-        }
-        setAttendanceLogs((previous) => [
-          data,
-          ...previous.filter((record) => record.id !== data.id)
-        ]);
-        onShowNotification(
-          `✅ Fichaje de ${action} registrado y sincronizado.`,
-          action === "INGRESO" ? "success" : "info"
-        );
-      },
-      (error) => {
-        console.warn("GPS geolocation error:", error);
-        setIsLocatingGPS(false);
-        onShowNotification("⚠️ No se registró el fichaje porque no pudo validarse el GPS.", "warning");
-      },
-      { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
-    );
-  };
-
   const renderAttendance = () => {
     return (
       <motion.div
@@ -2932,7 +2869,7 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="space-y-6 text-[#332424]"
       >
-        <StaffAttendanceKiosk onShowNotification={onShowNotification} />
+        <StaffAttendanceKiosk currentUser={currentUser} onShowNotification={onShowNotification} />
       </motion.div>
     );
   };
@@ -6809,6 +6746,8 @@ export default function AdminHub({
                   <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Contraseña de Acceso</label>
                   <input
                     type="password"
+                    minLength={12}
+                    autoComplete="new-password"
                     value={newUserPassword}
                     onChange={(e) => setNewUserPassword(e.target.value)}
                     placeholder="••••••••"

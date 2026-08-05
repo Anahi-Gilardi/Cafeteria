@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev:e2e": "vite --port=3100 --host=127.0.0.1 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "node -e \"const fs=require('node:fs'); for (const p of ['dist','server.js']) fs.rmSync(p,{recursive:true,force:true})\"",
@@ -15,8 +16,9 @@
     "test": "vitest run",
     "test:db": "node test_app.js",
     "test:edge": "node scripts/verify-edge-functions.mjs",
+    "test:config": "node scripts/verify-deployment-config.mjs",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run test && npm run test:config && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",

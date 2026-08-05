@@ -19,60 +19,19 @@ const ALLOWED_ROLES = new Set<StaffRole>([
   "mesero"
 ]);
 
-const SYSTEM_CREDENTIAL_ACCOUNTS = [
-  {
-    id: "usr-cocina",
-    emails: ["cocina@castaño.com", "cocina@castano.com"],
-    passwords: ["Castaño1234", "Castano1234", "castaño1234", "castano1234"],
-    name: "Cocinero (Cocina & Chef)",
-    role: "barista" as StaffRole
-  },
-  {
-    id: "usr-dueno",
-    emails: ["dueño@castaño.com", "dueno@castano.com", "dueño@castano.com"],
-    passwords: ["Castaño2026/", "Castano2026/", "castaño2026/", "castano2026/"],
-    name: "Dueño Castaño",
-    role: "dueño" as StaffRole
-  },
-  {
-    id: "usr-caja",
-    emails: ["caja@castaño.com", "caja@castano.com"],
-    passwords: ["Mostrador1234", "mostrador1234"],
-    name: "Cajero Mostrador",
-    role: "cajero" as StaffRole
-  },
-  {
-    id: "usr-superadmin",
-    emails: ["super@admin.com"],
-    passwords: ["Superadmin1998", "superadmin1998"],
-    name: "Superadmin",
-    role: "administrador" as StaffRole
-  },
-  {
-    id: "usr-admin-legacy",
-    emails: ["admin@restobardelteatro.com", "admin"],
-    passwords: ["1998"],
-    name: "Administrador Castaño",
-    role: "administrador" as StaffRole
-  }
-];
-
-function normalizeEmail(str: string): string {
-  return (str || "")
-    .trim()
-    .toLowerCase()
-    .replace(/ñ/g, "n")
-    .replace(/á/g, "a")
-    .replace(/é/g, "e")
-    .replace(/í/g, "i")
-    .replace(/ó/g, "o")
-    .replace(/ú/g, "u");
-}
+const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<string>> = {
+  administrador: new Set(["*"]),
+  dueño: new Set(["*"]),
+  cajero: new Set(["caja:cobrar", "cash:open", "cash:close", "orders:read", "orders:update", "attendance:own"]),
+  barista: new Set(["orders:read", "orders:update", "inventory:read", "inventory:update", "attendance:own"]),
+  mesero: new Set(["orders:create", "orders:read", "orders:update", "attendance:own"])
+};
 
 export class AuthService {
   private static clearLegacySessionCache(): void {
     try {
       localStorage.removeItem("castano_session_cache");
+      localStorage.removeItem("castano_active_user");
     } catch {
       // Storage can be unavailable in hardened/private browser contexts.
     }
@@ -102,73 +61,12 @@ export class AuthService {
     passwordInput: string
   ): Promise<{ success: boolean; user?: UserRoleProfile; error?: string }> {
     const rawEmail = emailInput.trim().toLowerCase();
-    const normEmail = normalizeEmail(rawEmail);
-    const pass = passwordInput.trim();
     this.clearLegacySessionCache();
 
-    // 1. Check system accounts pre-configured credentials
-    const matchedAccount = SYSTEM_CREDENTIAL_ACCOUNTS.find((acc) => {
-      const matchEmail = acc.emails.some(
-        (e) => e.toLowerCase() === rawEmail || normalizeEmail(e) === normEmail
-      );
-      const matchPass = acc.passwords.includes(pass) || acc.passwords.includes(passwordInput);
-      return matchEmail && matchPass;
-    });
-
-    if (matchedAccount) {
-      const sysProfile: UserRoleProfile = {
-        id: matchedAccount.id,
-        authUserId: matchedAccount.id,
-        email: matchedAccount.emails[0],
-        name: matchedAccount.name,
-        role: matchedAccount.role
-      };
-      try {
-        localStorage.setItem("castano_active_user", JSON.stringify(sysProfile));
-      } catch {
-        // storage fallback
-      }
-      return { success: true, user: sysProfile };
+    if (!rawEmail.includes("@") || passwordInput.length === 0) {
+      return { success: false, error: "Ingrese un correo electrónico y una contraseña válidos." };
     }
 
-    // 2. Query users_accounts in Supabase for password column match
-    try {
-      const { data: dbUsers, error: dbErr } = await supabase
-        .from("users_accounts")
-        .select("id, auth_user_id, email, name, role, active, password");
-
-      if (!dbErr && dbUsers && Array.isArray(dbUsers)) {
-        const found = dbUsers.find((u: any) => {
-          const emailMatch =
-            u.email?.toLowerCase() === rawEmail ||
-            normalizeEmail(u.email || "") === normEmail;
-          const passMatch =
-            u.password &&
-            (u.password === pass ||
-              u.password === passwordInput ||
-              normalizeEmail(u.password) === normalizeEmail(pass));
-          return emailMatch && passMatch && u.active !== false;
-        });
-
-        if (found) {
-          const dbProfile: UserRoleProfile = {
-            id: found.id,
-            authUserId: found.auth_user_id || found.id,
-            email: found.email || rawEmail,
-            name: found.name || "Personal",
-            role: found.role
-          };
-          try {
-            localStorage.setItem("castano_active_user", JSON.stringify(dbProfile));
-          } catch {}
-          return { success: true, user: dbProfile };
-        }
-      }
-    } catch {
-      // DB error fallback
-    }
-
-    // 3. Try Supabase Auth
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: rawEmail,
@@ -267,16 +165,13 @@ export class AuthService {
   }
 
   public static isAuthorizedAdmin(role: string | undefined): boolean {
-    return role === "administrador" || role === "dueño" || role === "cajero" || role === "barista" || role === "mesero";
+    return role === "administrador" || role === "dueño";
   }
 
   public static hasPermission(role: string | undefined, permission: string): boolean {
-    if (!role) return false;
-    // Cocinero (barista) has access to all application views but CANNOT issue manual invoices
-    if (role === "barista" && (permission === "manual_invoice" || permission === "invoice:manual")) {
-      return false;
-    }
-    return true;
+    if (!role || !ALLOWED_ROLES.has(role as StaffRole)) return false;
+    const permissions = ROLE_PERMISSIONS[role as StaffRole];
+    return permissions.has("*") || permissions.has(permission);
   }
 
   public static async logout(): Promise<void> {

@@ -124,6 +124,12 @@ Los ajustes de stock, fichajes y repartos de propinas deben realizarse desde la 
 las RPC `adjust_inventory_stock`, `record_staff_attendance` y `distribute_tip_pool` aplican
 bloqueos, permisos y auditoría que una escritura directa no ofrece.
 
+El fichaje usa la geolocalización estándar del navegador (HTTPS) y el mapa gratuito de
+OpenStreetMap. La migración `202608040001_secure_attendance_geofence.sql` valida en el servidor
+la identidad autenticada, un radio de 100 metros desde Constitución 944 y una precisión máxima
+de 150 metros. No existe un reemplazo manual por la ubicación de la sucursal: si el dispositivo
+no entrega coordenadas confiables, la marca debe rechazarse.
+
 Antes de habilitar facturación, revise cada producto y complete `vat_rate`,
 `arca_item_code`, `arca_unit_code` y `fiscal_enabled = true`. Los productos sin ficha fiscal
 aprobada son rechazados por el backend y no pueden obtener CAE.
