@@ -29,6 +29,7 @@ import { StorageService } from "../services/StorageService";
 import { PresupuestoPDFService } from "../services/PresupuestoPDFService";
 import { StaffService } from "../services/StaffService";
 import LeafletMapWidget from "./LeafletMapWidget";
+import { reverseGeocodeNominatim, formatPreciseTimestamp } from "../services/NominatimService";
 import { offlineQueueService } from "../services/OfflineQueueService";
 import { arcaAdapter } from "../services/ARCAAdapter";
 import { CashClosure, CashShiftService } from "../services/CashShiftService";
@@ -189,6 +190,15 @@ export default function AdminHub({
   }, [activeSubTab]);
   const [personalSubTab, setPersonalSubTab] = useState<"asistencia" | "cuentas" | "barista" | "consumo" | "profit">("asistencia");
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
+  const [lastClockDetails, setLastClockDetails] = useState<{
+    tipo: "INGRESO" | "EGRESO";
+    timestamp: string;
+    latitud: number;
+    longitud: number;
+    calle: string;
+    numero: string;
+    direccion_completa: string;
+  } | null>(null);
 
   // User Accounts Management state
   const [users, setUsers] = useState<any[]>([]);
@@ -2935,8 +2945,26 @@ export default function AdminHub({
   const handleCaptureGPSAndClock = async (action: "INGRESO" | "EGRESO", customCoords?: { lat: number; lng: number; address: string }) => {
     setIsLocatingGPS(true);
 
-    const processClocking = async (lat: number, lng: number, accuracy: number, address: string) => {
-      setCurrentGPSLoc({ lat, lng, address });
+    const processClocking = async (lat: number, lng: number, accuracy: number, fallbackAddr?: string) => {
+      const timestampStr = formatPreciseTimestamp(new Date());
+      
+      // Perform Reverse Geocoding with OpenStreetMap (Nominatim API)
+      const geocode = await reverseGeocodeNominatim(lat, lng);
+      const direccionCompleta = fallbackAddr || geocode.direccion_completa;
+      const calleStr = geocode.calle;
+      const numeroStr = geocode.numero;
+
+      setCurrentGPSLoc({ lat, lng, address: direccionCompleta });
+      setLastClockDetails({
+        tipo: action,
+        timestamp: timestampStr,
+        latitud: lat,
+        longitud: lng,
+        calle: calleStr,
+        numero: numeroStr,
+        direccion_completa: direccionCompleta
+      });
+
       await ensureStaffProfile(selectedStaffMember);
 
       let recordData: any = null;
@@ -2948,17 +2976,26 @@ export default function AdminHub({
           p_action: action,
           p_latitude: lat,
           p_longitude: lng,
-          p_location_address: address,
+          p_location_address: direccionCompleta,
           p_gps_accuracy: accuracy
         });
         if (!error && data) {
-          recordData = data;
+          recordData = {
+            ...data,
+            tipo: action,
+            timestamp: timestampStr,
+            latitud: lat,
+            longitud: lng,
+            calle: calleStr,
+            numero: numeroStr,
+            direccion_completa: direccionCompleta
+          };
         }
       } catch (e) {
-        console.warn("RPC record_staff_attendance unavailable, using fallback:", e);
+        console.warn("RPC record_staff_attendance unavailable, using direct fallback:", e);
       }
 
-      // 2. Direct table insertion fallback
+      // 2. Direct table insertion fallback with complete schema fields
       if (!recordData) {
         try {
           const staffMember = users.find((u) => u.id === selectedStaffMember);
@@ -2968,9 +3005,16 @@ export default function AdminHub({
               staff_id: selectedStaffMember,
               staff_name: staffMember?.name || "Colaborador",
               action: action,
+              tipo: action,
+              timestamp: timestampStr,
               latitude: lat,
               longitude: lng,
-              location_address: address,
+              latitud: lat,
+              longitud: lng,
+              calle: calleStr,
+              numero: numeroStr,
+              direccion_completa: direccionCompleta,
+              location_address: direccionCompleta,
               gps_accuracy: accuracy,
               check_in_time: action === "INGRESO" ? new Date().toISOString() : null,
               check_out_time: action === "EGRESO" ? new Date().toISOString() : null,
@@ -2995,11 +3039,18 @@ export default function AdminHub({
           staff_id: selectedStaffMember,
           staff_name: staffMember?.name || "Colaborador",
           action: action,
+          tipo: action,
+          timestamp: timestampStr,
           check_in_time: action === "INGRESO" ? new Date().toISOString() : null,
           check_out_time: action === "EGRESO" ? new Date().toISOString() : null,
           latitude: lat,
           longitude: lng,
-          location_address: address,
+          latitud: lat,
+          longitud: lng,
+          calle: calleStr,
+          numero: numeroStr,
+          direccion_completa: direccionCompleta,
+          location_address: direccionCompleta,
           gps_accuracy: accuracy,
           created_at: new Date().toISOString()
         };
@@ -3018,7 +3069,7 @@ export default function AdminHub({
 
       setIsLocatingGPS(false);
       onShowNotification(
-        `✅ Fichaje de ${action} registrado correctamente (${address}).`,
+        `✅ Fichaje de ${action} registrado (${direccionCompleta}) - ${timestampStr}`,
         action === "INGRESO" ? "success" : "info"
       );
     };
@@ -3030,7 +3081,8 @@ export default function AdminHub({
     }
 
     if (!("geolocation" in navigator)) {
-      await processClocking(-33.1245, -64.3490, 10, "📍 Constitución 944, Río Cuarto, Córdoba");
+      onShowNotification("⚠️ Su navegador no soporta geolocalización GPS.", "warning");
+      setIsLocatingGPS(false);
       return;
     }
 
@@ -3039,12 +3091,17 @@ export default function AdminHub({
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const accuracy = position.coords.accuracy;
-        const formattedAddress = "📍 Constitución 944, Río Cuarto, Córdoba";
-        await processClocking(lat, lng, accuracy, formattedAddress);
+        await processClocking(lat, lng, accuracy);
       },
       async (error) => {
-        console.warn("GPS error, applying store location fallback:", error);
-        await processClocking(-33.1245, -64.3490, 10, "📍 Constitución 944, Río Cuarto, Córdoba");
+        console.warn("GPS Geolocation error code:", error.code, error.message);
+        setIsLocatingGPS(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          onShowNotification("⚠️ Permiso de ubicación GPS denegado. Es necesario habilitar la geolocalización en su navegador para fichar.", "warning");
+          return;
+        }
+        // Fallback for timeout or position unavailable
+        await processClocking(-33.1245, -64.3490, 10, "Constitución 944, Río Cuarto, Córdoba");
       },
       { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
     );
@@ -3055,11 +3112,11 @@ export default function AdminHub({
     const recordsForPDF: AttendanceRecord[] = attendanceLogs.map((log) => ({
       id: log.id,
       employee_name: log.staff_name || users.find((u) => u.id === log.staff_id)?.name || "Colaborador",
-      action: log.action || (log.check_out_time ? "EGRESO" : "INGRESO"),
-      timestamp: new Date(log.check_out_time || log.check_in_time || log.created_at).toLocaleString("es-AR"),
-      latitude: Number(log.latitude || -33.1245),
-      longitude: Number(log.longitude || -64.3490),
-      location_address: log.location_address || "📍 Constitución 944, Río Cuarto, Córdoba"
+      action: log.tipo || log.action || (log.check_out_time ? "EGRESO" : "INGRESO"),
+      timestamp: log.timestamp || formatPreciseTimestamp(new Date(log.check_out_time || log.check_in_time || log.created_at)),
+      latitude: Number(log.latitud || log.latitude || -33.1245),
+      longitude: Number(log.longitud || log.longitude || -64.3490),
+      location_address: log.direccion_completa || log.location_address || "Constitución 944, Río Cuarto, Córdoba"
     }));
 
     return (
@@ -3110,9 +3167,14 @@ export default function AdminHub({
 
               {/* 🗺️ Leaflet Interactive Map Container (250px) */}
               <LeafletMapWidget
-                currentLat={currentGPSLoc?.lat}
-                currentLng={currentGPSLoc?.lng}
+                currentLat={lastClockDetails ? lastClockDetails.latitud : (currentGPSLoc?.lat || -33.1245)}
+                currentLng={lastClockDetails ? lastClockDetails.longitud : (currentGPSLoc?.lng || -64.3490)}
                 accuracy={currentGPSLoc ? 10 : null}
+                lastClockType={lastClockDetails?.tipo}
+                lastClockTimestamp={lastClockDetails?.timestamp}
+                lastClockAddress={lastClockDetails?.direccion_completa}
+                lastClockCalle={lastClockDetails?.calle}
+                lastClockNumero={lastClockDetails?.numero}
                 storeLat={-33.1245}
                 storeLng={-64.3490}
                 storeRadiusMeters={100}
@@ -3123,7 +3185,7 @@ export default function AdminHub({
               {/* Contingency Button */}
               <button
                 type="button"
-                onClick={() => handleCaptureGPSAndClock("INGRESO", { lat: -33.1245, lng: -64.3490, address: "📍 Constitución 944, Río Cuarto, Córdoba" })}
+                onClick={() => handleCaptureGPSAndClock("INGRESO", { lat: -33.1245, lng: -64.3490, address: "Constitución 944, Río Cuarto, Córdoba" })}
                 className="w-full py-2.5 px-3 bg-[#EBDAC5] hover:bg-[#CFB5A0] text-[#5C1D27] text-[10px] font-black uppercase tracking-wider rounded-xl border border-[#CFB5A0] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
               >
                 📍 Validar Ubicación en Sucursal Castaño (Fichar Ahora)
@@ -3200,7 +3262,7 @@ export default function AdminHub({
                     </div>
                     <span className="text-[10px] text-[#5E393F] block font-mono font-semibold">⏱️ {rec.timestamp}</span>
                     <span className="text-[10px] text-[#5C1D27] block font-semibold">
-                      📍 Constitución 944, Río Cuarto, Córdoba
+                      📍 {rec.location_address}
                     </span>
                   </div>
 
