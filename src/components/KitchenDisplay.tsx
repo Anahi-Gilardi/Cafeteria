@@ -389,6 +389,27 @@ export default function KitchenDisplay({
 
           <button
             type="button"
+            onClick={async () => {
+              const confirmed = window.confirm("¿Desea limpiar y marcar como completadas todas las comandas de prueba actuales?");
+              if (!confirmed) return;
+              try {
+                const { supabase } = await import("../lib/supabase");
+                await supabase.from("orders").update({ status: "Completado", updated_at: new Date().toISOString() }).neq("status", "Completado");
+                localStorage.removeItem("resto_bar_orders");
+                window.location.reload();
+              } catch {
+                alert("No se pudieron limpiar las comandas.");
+              }
+            }}
+            className="px-3 py-2 rounded-xl bg-[#FAF2E6] border border-[#CFB5A0] text-xs font-black text-[#A63F45] hover:bg-[#F4DCDD] transition-all cursor-pointer flex items-center gap-1.5"
+            title="Limpiar y completar todas las comandas fantasmas o de prueba"
+          >
+            <Trash2 className="h-4 w-4" />
+            Limpiar Fantasmas
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowArchive((current) => !current)}
             className={`px-3 py-2 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
               showArchive
