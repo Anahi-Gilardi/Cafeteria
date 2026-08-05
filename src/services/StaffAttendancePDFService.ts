@@ -79,44 +79,55 @@ export class StaffAttendancePDFService {
       const cardWidth = (pageWidth - 28 - 12) / 3; // 3 equal cards
       const cardHeight = 16;
 
-      // Card 1: Total
+      // Card 1: Total Fichajes
       doc.setFillColor(250, 245, 238);
-      doc.roundedRect(14, currentY, cardWidth, cardHeight, 2, 2, "F");
+      doc.roundedRect(14, currentY, cardWidth, cardHeight, 2.5, 2.5, "F");
       doc.setDrawColor(207, 181, 160);
-      doc.roundedRect(14, currentY, cardWidth, cardHeight, 2, 2, "S");
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14, currentY, cardWidth, cardHeight, 2.5, 2.5, "S");
 
       doc.setTextColor(92, 29, 39);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.text("TOTAL FICHAJES", 18, currentY + 5);
+      doc.setFontSize(7.5);
+      doc.text("TOTAL FICHAJES", 18, currentY + 5.5);
       doc.setFontSize(13);
-      doc.text(`${totalRecords}`, 18, currentY + 12);
+      doc.text(`${totalRecords}`, 18, currentY + 12.5);
 
       // Card 2: Ingresos
       doc.setFillColor(238, 246, 240);
-      doc.roundedRect(14 + cardWidth + 6, currentY, cardWidth, cardHeight, 2, 2, "F");
+      doc.roundedRect(14 + cardWidth + 6, currentY, cardWidth, cardHeight, 2.5, 2.5, "F");
       doc.setDrawColor(30, 104, 56);
-      doc.roundedRect(14 + cardWidth + 6, currentY, cardWidth, cardHeight, 2, 2, "S");
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14 + cardWidth + 6, currentY, cardWidth, cardHeight, 2.5, 2.5, "S");
+
+      // Draw green indicator vector circle
+      doc.setFillColor(30, 104, 56);
+      doc.circle(14 + cardWidth + 10, currentY + 4.8, 1.2, "F");
 
       doc.setTextColor(30, 104, 56);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.text("🟢 INGRESOS (ENTRADAS)", 18 + cardWidth + 6, currentY + 5);
+      doc.setFontSize(7.5);
+      doc.text("INGRESOS (ENTRADAS)", 14 + cardWidth + 13, currentY + 5.5);
       doc.setFontSize(13);
-      doc.text(`${totalCheckins}`, 18 + cardWidth + 6, currentY + 12);
+      doc.text(`${totalCheckins}`, 14 + cardWidth + 10, currentY + 12.5);
 
       // Card 3: Egresos
       doc.setFillColor(250, 240, 242);
-      doc.roundedRect(14 + (cardWidth + 6) * 2, currentY, cardWidth, cardHeight, 2, 2, "F");
+      doc.roundedRect(14 + (cardWidth + 6) * 2, currentY, cardWidth, cardHeight, 2.5, 2.5, "F");
       doc.setDrawColor(132, 55, 71);
-      doc.roundedRect(14 + (cardWidth + 6) * 2, currentY, cardWidth, cardHeight, 2, 2, "S");
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14 + (cardWidth + 6) * 2, currentY, cardWidth, cardHeight, 2.5, 2.5, "S");
+
+      // Draw red indicator vector circle
+      doc.setFillColor(132, 55, 71);
+      doc.circle(14 + (cardWidth + 6) * 2 + 4, currentY + 4.8, 1.2, "F");
 
       doc.setTextColor(132, 55, 71);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.text("🔴 EGRESOS (SALIDAS)", 18 + (cardWidth + 6) * 2, currentY + 5);
+      doc.setFontSize(7.5);
+      doc.text("EGRESOS (SALIDAS)", 14 + (cardWidth + 6) * 2 + 7, currentY + 5.5);
       doc.setFontSize(13);
-      doc.text(`${totalCheckouts}`, 18 + (cardWidth + 6) * 2, currentY + 12);
+      doc.text(`${totalCheckouts}`, 14 + (cardWidth + 6) * 2 + 4, currentY + 12.5);
 
       currentY += cardHeight + 8;
 
