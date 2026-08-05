@@ -2845,7 +2845,7 @@ export default function AdminHub({
     return (
       <div className="space-y-6 text-[#2D0E13]">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
+          <h3 className="font-serif text-lg font-bold text-[#5C1D27]">⚖️ Cotejo de Presupuestos Multicolumna</h3>
           <p className="text-[10px] text-[#5E393F] mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
         </div>
 
@@ -3631,7 +3631,7 @@ export default function AdminHub({
                 onClick={handleGenerateAutoOrders}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-sm transition-all cursor-pointer border-none uppercase tracking-wider"
               >
-                <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos (US-2.3)
+                <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos
               </button>
               <button
                 type="button"
@@ -3653,7 +3653,7 @@ export default function AdminHub({
                   setMovQty("");
                   setIsMovementModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#EBDAC5] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#FAF2E6] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
               >
                 <Plus className="h-4 w-4" /> Registrar Movimiento
               </button>
@@ -3662,28 +3662,24 @@ export default function AdminHub({
         </div>
 
         {/* Sub-tabs header for stock submodules */}
-        <div className="flex border-b border-[#CFB5A0] pb-3 gap-6 text-xs font-bold text-[#5E393F]">
+        <div className="flex overflow-x-auto pb-2 gap-2 border-b border-[#CFB5A0] scrollbar-none mb-6">
           {[
-            { id: "general", label: "Vista General" },
-            { id: "ciegas", label: "Auditoría a Ciegas (US-2.1)" },
-            { id: "comparador", label: "Comparador de Presupuestos (US-2.2)" },
-            { id: "analitica", label: "Analítica de Consumo Real" }
+            { id: "general", label: "📊 Vista General" },
+            { id: "ciegas", label: "🔍 Auditoría de Stock" },
+            { id: "comparador", label: "⚖️ Comparador de Presupuestos" },
+            { id: "analitica", label: "📈 Analítica de Consumo" }
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setInventarioSubTab(tab.id as any)}
-              className={`pb-3 relative transition-colors cursor-pointer border-none bg-transparent ${
-                inventarioSubTab === tab.id ? "text-[#5C1D27] font-black" : "hover:text-[#2D0E13]"
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer border ${
+                inventarioSubTab === tab.id
+                  ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm font-black"
+                  : "bg-[#EBDAC5] text-[#5C1D27] border-[#CFB5A0] hover:bg-[#FAF2E6]"
               }`}
             >
               {tab.label}
-              {inventarioSubTab === tab.id && (
-                <motion.div
-                  layoutId="inventario-active-pill"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5C1D27] rounded-full"
-                />
-              )}
             </button>
           ))}
         </div>
