@@ -126,8 +126,9 @@ export class CashShiftService {
 
   /**
    * Opens cash shift for ALL users (Cajero, Mesero, Barista, Admin, Dueño).
+   * Resets cash_ledger in Supabase with initial cash float.
    */
-  static async openShift(): Promise<{
+  static async openShift(initialCash = 0): Promise<{
     success: boolean;
     ledger?: CashLedgerState;
     error?: string;
@@ -146,14 +147,14 @@ export class CashShiftService {
 
     // 2. Direct Fallback: Allow ALL users to open cash_ledger directly in Supabase
     try {
-      const { data: directData, error: directError } = await supabase
+      const { data: directData } = await supabase
         .from("cash_ledger")
         .upsert({
           id: "current",
           is_open: true,
           opened_at: openedAt,
-          total_collected: 0,
-          cash: 0,
+          total_collected: initialCash,
+          cash: initialCash,
           card: 0,
           mercadopago: 0,
           transactions: []
@@ -170,8 +171,8 @@ export class CashShiftService {
 
     // 3. Local state fallback if network/RLS blocks
     const fallbackLedger: CashLedgerState = {
-      totalCollected: 0,
-      cash: 0,
+      totalCollected: initialCash,
+      cash: initialCash,
       card: 0,
       mercadopago: 0,
       transactions: [],
@@ -204,7 +205,7 @@ export class CashShiftService {
       const newCard = (currentState?.card || 0) + (["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(method) ? amount : 0);
       const newMp = (currentState?.mercadopago || 0) + (method === "MercadoPago" ? amount : 0);
       const newTotal = (currentState?.totalCollected || 0) + amount;
-      const updatedTxs = [...(currentState?.transactions || []), transaction];
+      const updatedTxs = [transaction, ...(currentState?.transactions || [])];
 
       await supabase.from("cash_ledger").upsert({
         id: "current",
@@ -222,7 +223,7 @@ export class CashShiftService {
   }
 
   /**
-   * Closes cash shift for ALL users.
+   * Closes cash shift for ALL users. Resets cash_ledger counters to $0 in Supabase.
    */
   static async closeShift(
     declaredCash: number,
@@ -234,6 +235,23 @@ export class CashShiftService {
     }
 
     const closedAt = new Date().toISOString();
+
+    // Reset current shift counters in Supabase so the next shift starts fresh at $0
+    try {
+      await supabase.from("cash_ledger").upsert({
+        id: "current",
+        is_open: false,
+        opened_at: null,
+        total_collected: 0,
+        cash: 0,
+        card: 0,
+        mercadopago: 0,
+        transactions: [],
+        updated_at: closedAt
+      });
+    } catch (e) {
+      console.warn("Could not reset cash_ledger on shift close:", e);
+    }
 
     // 1. Try Supabase RPC close_cash_shift
     try {
@@ -250,16 +268,8 @@ export class CashShiftService {
       console.warn("RPC close_cash_shift exception:", e);
     }
 
-    // 2. Direct Fallback: Allow ALL users to close cash shift directly in Supabase
+    // 2. Direct Fallback: Insert into cash_closures in Supabase
     try {
-      await supabase
-        .from("cash_ledger")
-        .update({
-          is_open: false,
-          opened_at: null
-        })
-        .eq("id", "current");
-
       const { data: closureData } = await supabase
         .from("cash_closures")
         .insert({

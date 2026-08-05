@@ -2043,8 +2043,12 @@ export default function AdminHub({
   // Open Daily Shift
   const handleOpenShift = async () => {
     if (isShiftOperationPending) return;
+    const rawInput = window.prompt("Ingrese el fondo de caja inicial en efectivo para el nuevo turno (ARS):", "15000");
+    if (rawInput === null) return; // User cancelled
+    const initialCash = Math.max(0, parseFloat(rawInput.replace(/[^0-9.]/g, "")) || 0);
+
     setIsShiftOperationPending(true);
-    const result = await CashShiftService.openShift();
+    const result = await CashShiftService.openShift(initialCash);
     setIsShiftOperationPending(false);
     if (!result.success || !result.ledger) {
       onShowNotification(`⚠️ No se pudo abrir la caja: ${result.error || "respuesta inválida"}`, "warning");
@@ -2060,7 +2064,7 @@ export default function AdminHub({
       mercadopago: result.ledger.mercadopago,
       transactions: result.ledger.transactions
     });
-    onShowNotification("🔓 Turno fiscal de caja abierto con éxito.", "success");
+    onShowNotification(`🔓 Turno fiscal de caja abierto con éxito (Fondo inicial: $${initialCash.toLocaleString()}).`, "success");
   };
 
   const handleSaveBusinessProfile = async () => {
@@ -2122,7 +2126,7 @@ export default function AdminHub({
   const handleConfirmCloseShift = async (montoReal: number, observaciones: string) => {
     if (isShiftOperationPending) return;
     setIsShiftOperationPending(true);
-    const result = await CashShiftService.closeShift(montoReal, observaciones);
+    const result = await CashShiftService.closeShift(montoReal, observaciones, currentUser.name);
     setIsShiftOperationPending(false);
     if (!result.success || !result.closure) {
       onShowNotification(`⚠️ No se pudo cerrar la caja: ${result.error || "respuesta inválida"}`, "warning");
@@ -2143,7 +2147,7 @@ export default function AdminHub({
     setIsCloseShiftModalOpen(false);
     setCloseShiftRealCash("");
     setCloseShiftNotes("");
-    onShowNotification("🔒 Turno de caja cerrado correctamente.", "info");
+    onShowNotification("🔒 Turno de caja cerrado correctamente. Los contadores se reiniciaron a $0.", "info");
   };
 
   const getRecipeCost = (item: MenuItem) => {
