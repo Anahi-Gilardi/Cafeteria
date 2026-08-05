@@ -397,6 +397,8 @@ export default function KitchenDisplay({
                 const { supabase } = await import("../lib/supabase");
                 await supabase.from("orders").update({ status: "Completado", updated_at: new Date().toISOString() }).neq("status", "Completado");
                 localStorage.removeItem("resto_bar_orders");
+                localStorage.removeItem("castano_local_orders");
+                localStorage.removeItem("castano_offline_orders");
                 window.location.reload();
               } catch {
                 alert("No se pudieron limpiar las comandas.");
