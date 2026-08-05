@@ -3625,182 +3625,155 @@ export default function AdminHub({
             <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Módulo de Inventario</span>
             <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Stock & Materias Primas</h2>
           </div>
-          {inventarioSubTab === "general" && (
-            <div className="flex flex-wrap gap-3">
-              <button 
-                onClick={handleGenerateAutoOrders}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-sm transition-all cursor-pointer border-none uppercase tracking-wider"
-              >
-                <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setNewInsumoName("");
-                  setNewInsumoQuantity("10");
-                  setNewInsumoMinLimit("5");
-                  setNewInsumoCost("0");
-                  setIsNewInsumoModalOpen(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
-              >
-                <Plus className="h-4 w-4" /> Crear Nuevo Insumo
-              </button>
-              <button 
-                onClick={() => {
-                  setMovType("Ingreso");
-                  setMovInsumoId(insumos[0]?.id || "");
-                  setMovQty("");
-                  setIsMovementModalOpen(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#FAF2E6] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
-              >
-                <Plus className="h-4 w-4" /> Registrar Movimiento
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Sub-tabs header for stock submodules */}
-        <div className="flex overflow-x-auto pb-2 gap-2 border-b border-[#CFB5A0] scrollbar-none mb-6">
-          {[
-            { id: "general", label: "📊 Vista General" },
-            { id: "ciegas", label: "🔍 Auditoría de Stock" },
-            { id: "comparador", label: "⚖️ Comparador de Presupuestos" },
-            { id: "analitica", label: "📈 Analítica de Consumo" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setInventarioSubTab(tab.id as any)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer border ${
-                inventarioSubTab === tab.id
-                  ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm font-black"
-                  : "bg-[#EBDAC5] text-[#5C1D27] border-[#CFB5A0] hover:bg-[#FAF2E6]"
-              }`}
+          <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={handleGenerateAutoOrders}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-sm transition-all cursor-pointer border-none uppercase tracking-wider"
             >
-              {tab.label}
+              <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => {
+                setNewInsumoName("");
+                setNewInsumoQuantity("10");
+                setNewInsumoMinLimit("5");
+                setNewInsumoCost("0");
+                setIsNewInsumoModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
+            >
+              <Plus className="h-4 w-4" /> Crear Nuevo Insumo
+            </button>
+            <button 
+              onClick={() => {
+                setMovType("Ingreso");
+                setMovInsumoId(insumos[0]?.id || "");
+                setMovQty("");
+                setIsMovementModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#FAF2E6] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
+            >
+              <Plus className="h-4 w-4" /> Registrar Movimiento
+            </button>
+          </div>
         </div>
 
-        {inventarioSubTab === "general" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
-                <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Total Insumos</span>
-                <div className="text-2xl font-serif font-black text-[#5C1D27] mt-1 font-mono">{totalInsumosCount}</div>
-              </div>
-              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
-                <span className="text-[9px] font-bold text-[#A63F45] uppercase tracking-wider block flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#A63F45]"></span> Críticos
-                </span>
-                <div className="text-2xl font-serif font-black text-[#A63F45] mt-1 font-mono">{criticalInsumosCount}</div>
-              </div>
-              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
-                <span className="text-[9px] font-bold text-[#B97932] uppercase tracking-wider block flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#B97932]"></span> Stock Bajo
-                </span>
-                <div className="text-2xl font-serif font-black text-[#B97932] mt-1 font-mono">{lowStockInsumosCount}</div>
-              </div>
-              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
-                <span className="text-[9px] font-bold text-[#4F735A] uppercase tracking-wider block flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#4F735A]"></span> Stock Saludable
-                </span>
-                <div className="text-2xl font-serif font-black text-[#4F735A] mt-1 font-mono">{healthyInsumosCount}</div>
-              </div>
+        <div className="space-y-8 animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Total Insumos</span>
+              <div className="text-2xl font-serif font-black text-[#5C1D27] mt-1 font-mono">{totalInsumosCount}</div>
             </div>
-
-            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="relative w-full md:w-96">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#5C1D27]" />
-                <input 
-                  type="text"
-                  placeholder="Buscar insumo, proveedor..."
-                  value={searchInsumoQuery}
-                  onChange={(e) => setSearchInsumoQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/60 focus:border-[#5C1D27] outline-none font-bold"
-                />
-              </div>
-              <div className="text-xs font-bold text-[#5E393F] uppercase tracking-wider font-mono">
-                Mostrando {filteredInsumos.length} productos
-              </div>
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
+              <span className="text-[9px] font-bold text-[#A63F45] uppercase tracking-wider block flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#A63F45]"></span> Críticos
+              </span>
+              <div className="text-2xl font-serif font-black text-[#A63F45] mt-1 font-mono">{criticalInsumosCount}</div>
             </div>
-
-            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-x-auto scrollbar-thin scrollbar-thumb-[#CFB5A0] shadow-sm">
-              <table className="w-full min-w-[700px] text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
-                    <th className="p-4">Producto</th>
-                    <th className="p-4">Proveedor</th>
-                    <th className="p-4 text-center">Mínimo</th>
-                    <th className="p-4 text-center">Actual</th>
-                    <th className="p-4 text-center">Unidad</th>
-                    <th className="p-4 text-center">Costo unit.</th>
-                    <th className="p-4">Vencimiento</th>
-                    <th className="p-4 text-center">Estado</th>
-                    <th className="p-4 text-center">Ajuste</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#CFB5A0] text-xs">
-                  {filteredInsumos.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center">
-                        <strong className="block text-sm text-[#5C1D27]">Todavía no hay insumos registrados</strong>
-                        <span className="mt-1 block text-[11px] font-medium text-[#5E393F]">
-                          Usá “Crear Nuevo Insumo” para cargar tu primera materia prima directamente en Supabase.
-                        </span>
-                      </td>
-                    </tr>
-                  )}
-                  {filteredInsumos.map((ins, idx) => {
-                    const isExpired = ins.expirationDate ? new Date(ins.expirationDate) < new Date(new Date().setHours(0,0,0,0)) : false;
-                    const isCritical = ins.quantity <= ins.minLimit / 2;
-                    const isLow = ins.quantity <= ins.minLimit && !isCritical;
-                    const statusBadge = isExpired ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider animate-pulse">VENCIDO</span>
-                    ) : isCritical ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider">CRÍTICO</span>
-                    ) : isLow ? (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F5E4CC] border border-[#B97932]/40 text-[#B97932] rounded-full tracking-wider">BAJO</span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#DFEADF] border border-[#4F735A]/40 text-[#4F735A] rounded-full tracking-wider">OK</span>
-                    );
-
-                    return (
-                      <tr key={idx} className="hover:bg-[#EBDAC5]/40 transition-colors">
-                        <td className="p-4 font-bold text-[#2D0E13]">{ins.name}</td>
-                        <td className="p-4 text-[#5C1D27] font-semibold">{ins.provider || "Sin designar"}</td>
-                        <td className="p-4 text-center font-mono font-bold text-[#5E393F]">{ins.minLimit}</td>
-                        <td className="p-4 text-center font-mono font-black text-[#5C1D27]">{ins.quantity}</td>
-                        <td className="p-4 text-center text-[#5E393F] uppercase font-bold">{ins.unit}</td>
-                        <td className="p-4 text-center font-mono font-bold text-[#5E393F]">${Number(ins.costPerUnit || 0).toLocaleString("es-AR")}</td>
-                        <td className="p-4 font-mono font-semibold text-[#5E393F]">{ins.expirationDate || "-"}</td>
-                        <td className="p-4 text-center">{statusBadge}</td>
-                        <td className="p-4 text-center flex items-center justify-center gap-1.5">
-                          <button 
-                            onClick={() => handleAdjustInsumo(ins.id, -1)}
-                            className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white hover:bg-[#4A151D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
-                            title="Descontar 1 unidad"
-                          >
-                            -
-                          </button>
-                          <button 
-                            onClick={() => handleAdjustInsumo(ins.id, 1)}
-                            className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white hover:bg-[#4A151D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
-                            title="Aumentar 1 unidad"
-                          >
-                            +
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
+              <span className="text-[9px] font-bold text-[#B97932] uppercase tracking-wider block flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#B97932]"></span> Stock Bajo
+              </span>
+              <div className="text-2xl font-serif font-black text-[#B97932] mt-1 font-mono">{lowStockInsumosCount}</div>
+            </div>
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
+              <span className="text-[9px] font-bold text-[#4F735A] uppercase tracking-wider block flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#4F735A]"></span> Stock Saludable
+              </span>
+              <div className="text-2xl font-serif font-black text-[#4F735A] mt-1 font-mono">{healthyInsumosCount}</div>
             </div>
           </div>
-        )}
+
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#5C1D27]" />
+              <input 
+                type="text"
+                placeholder="Buscar insumo, proveedor..."
+                value={searchInsumoQuery}
+                onChange={(e) => setSearchInsumoQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/60 focus:border-[#5C1D27] outline-none font-bold"
+              />
+            </div>
+            <div className="text-xs font-bold text-[#5E393F] uppercase tracking-wider font-mono">
+              Mostrando {filteredInsumos.length} productos
+            </div>
+          </div>
+
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-x-auto scrollbar-thin scrollbar-thumb-[#CFB5A0] shadow-sm">
+            <table className="w-full min-w-[700px] text-left border-collapse">
+              <thead>
+                <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
+                  <th className="p-4">Producto</th>
+                  <th className="p-4">Proveedor</th>
+                  <th className="p-4 text-center">Mínimo</th>
+                  <th className="p-4 text-center">Actual</th>
+                  <th className="p-4 text-center">Unidad</th>
+                  <th className="p-4 text-center">Costo unit.</th>
+                  <th className="p-4">Vencimiento</th>
+                  <th className="p-4 text-center">Estado</th>
+                  <th className="p-4 text-center">Ajuste</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#CFB5A0] text-xs">
+                {filteredInsumos.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center">
+                      <strong className="block text-sm text-[#5C1D27]">Todavía no hay insumos registrados</strong>
+                      <span className="mt-1 block text-[11px] font-medium text-[#5E393F]">
+                        Usá “Crear Nuevo Insumo” para cargar tu primera materia prima directamente en Supabase.
+                      </span>
+                    </td>
+                  </tr>
+                )}
+                {filteredInsumos.map((ins, idx) => {
+                  const isExpired = ins.expirationDate ? new Date(ins.expirationDate) < new Date(new Date().setHours(0,0,0,0)) : false;
+                  const isCritical = ins.quantity <= ins.minLimit / 2;
+                  const isLow = ins.quantity <= ins.minLimit && !isCritical;
+                  const statusBadge = isExpired ? (
+                    <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider animate-pulse">VENCIDO</span>
+                  ) : isCritical ? (
+                    <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider">CRÍTICO</span>
+                  ) : isLow ? (
+                    <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#F5E4CC] border border-[#B97932]/40 text-[#B97932] rounded-full tracking-wider">BAJO</span>
+                  ) : (
+                    <span className="px-2.5 py-1 text-[8px] font-extrabold uppercase bg-[#DFEADF] border border-[#4F735A]/40 text-[#4F735A] rounded-full tracking-wider">OK</span>
+                  );
+
+                  return (
+                    <tr key={idx} className="hover:bg-[#EBDAC5]/40 transition-colors">
+                      <td className="p-4 font-bold text-[#2D0E13]">{ins.name}</td>
+                      <td className="p-4 text-[#5C1D27] font-semibold">{ins.provider || "Sin designar"}</td>
+                      <td className="p-4 text-center font-mono font-bold text-[#5E393F]">{ins.minLimit}</td>
+                      <td className="p-4 text-center font-mono font-black text-[#5C1D27]">{ins.quantity}</td>
+                      <td className="p-4 text-center text-[#5E393F] uppercase font-bold">{ins.unit}</td>
+                      <td className="p-4 text-center font-mono font-bold text-[#5E393F]">${Number(ins.costPerUnit || 0).toLocaleString("es-AR")}</td>
+                      <td className="p-4 font-mono font-semibold text-[#5E393F]">{ins.expirationDate || "-"}</td>
+                      <td className="p-4 text-center">{statusBadge}</td>
+                      <td className="p-4 text-center flex items-center justify-center gap-1.5">
+                        <button 
+                          onClick={() => handleAdjustInsumo(ins.id, -1)}
+                          className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white hover:bg-[#4A151D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
+                          title="Descontar 1 unidad"
+                        >
+                          -
+                        </button>
+                        <button 
+                          onClick={() => handleAdjustInsumo(ins.id, 1)}
+                          className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white hover:bg-[#4A151D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
+                          title="Aumentar 1 unidad"
+                        >
+                          +
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {inventarioSubTab === "ciegas" && (
           <div className="animate-fade-in">{renderBlindAudit()}</div>
