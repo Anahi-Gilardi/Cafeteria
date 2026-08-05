@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export interface AttendanceRecord {
   id: string;
@@ -14,7 +15,7 @@ export interface AttendanceRecord {
 
 export class StaffAttendancePDFService {
   /**
-   * Generates and downloads a formal Staff Attendance PDF Report for CASTAÑO
+   * Generates and downloads a formal, beautifully formatted Staff Attendance PDF Report for CASTAÑO
    */
   public static generateAttendancePDF(records: AttendanceRecord[]): void {
     try {
@@ -25,148 +26,196 @@ export class StaffAttendancePDFService {
       });
 
       const pageWidth = doc.internal.pageSize.getWidth();
-      let currentY = 15;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let currentY = 12;
 
-      // Header Dark Burgundy (#2D0E13)
+      // 1. Premium Dark Burgundy Header (#2D0E13)
       doc.setFillColor(45, 14, 19);
-      doc.rect(0, 0, pageWidth, 42, "F");
+      doc.rect(0, 0, pageWidth, 44, "F");
 
-      // Gold decorative border
+      // Double Decorative Gold Borders (#CFB5A0)
       doc.setDrawColor(207, 181, 160);
-      doc.setLineWidth(0.8);
-      doc.rect(5, 5, pageWidth - 10, 32, "S");
+      doc.setLineWidth(0.7);
+      doc.rect(6, 6, pageWidth - 12, 32, "S");
+      doc.setLineWidth(0.3);
+      doc.rect(7.5, 7.5, pageWidth - 15, 29, "S");
 
-      // Title: CASTAÑO
-      doc.setTextColor(235, 218, 197); // Cream/Gold
+      // Store Title: CASTAÑO
+      doc.setTextColor(235, 218, 197); // Gold Cream
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
-      doc.text("CASTAÑO — Resto Bar Café", pageWidth / 2, 16, { align: "center" });
+      doc.text("CASTAÑO — RESTO BAR CAFÉ", pageWidth / 2, 17, { align: "center" });
 
-      // Subtitle
+      // Store Address Subtitle
       doc.setTextColor(207, 181, 160);
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text("Constitución 944 • Río Cuarto, Córdoba", pageWidth / 2, 23, { align: "center" });
+      doc.text("CONSTITUCIÓN 944 • RÍO CUARTO, CÓRDOBA", pageWidth / 2, 23, { align: "center" });
 
+      // Document Title Banner
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("Historial de Asistencia y Turnos GPS", pageWidth / 2, 31, { align: "center" });
+      doc.text("HISTORIAL DE ASISTENCIA Y CONTROL BIOMÉTRICO GPS", pageWidth / 2, 31, { align: "center" });
 
       currentY = 50;
 
-      // Date Timestamp
+      // 2. Report Emission Metadata
       const dateStr = new Date().toLocaleString("es-AR", {
         dateStyle: "full",
-        timeStyle: "medium"
+        timeStyle: "short"
       });
-      doc.setTextColor(60, 60, 60);
-      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(8.5);
       doc.setFont("helvetica", "italic");
       doc.text(`Fecha de emisión del reporte: ${dateStr}`, 14, currentY);
-      currentY += 8;
+      currentY += 6;
 
-      // Summary Box
-      const totalCheckins = records.filter(r => r.action === "INGRESO").length;
-      const totalCheckouts = records.filter(r => r.action === "EGRESO").length;
+      // 3. Summary Metric Cards
+      const totalRecords = records.length;
+      const totalCheckins = records.filter((r) => r.action === "INGRESO").length;
+      const totalCheckouts = records.filter((r) => r.action === "EGRESO").length;
 
-      doc.setFillColor(250, 242, 230);
-      doc.roundedRect(14, currentY, pageWidth - 28, 20, 3, 3, "F");
+      const cardWidth = (pageWidth - 28 - 12) / 3; // 3 equal cards
+      const cardHeight = 16;
+
+      // Card 1: Total
+      doc.setFillColor(250, 245, 238);
+      doc.roundedRect(14, currentY, cardWidth, cardHeight, 2, 2, "F");
       doc.setDrawColor(207, 181, 160);
-      doc.rect(14, currentY, pageWidth - 28, 20, "S");
+      doc.roundedRect(14, currentY, cardWidth, cardHeight, 2, 2, "S");
 
       doc.setTextColor(92, 29, 39);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("RESUMEN GENERAL DE REGISTROS", 18, currentY + 6);
+      doc.setFontSize(8);
+      doc.text("TOTAL FICHAJES", 18, currentY + 5);
+      doc.setFontSize(13);
+      doc.text(`${totalRecords}`, 18, currentY + 12);
 
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.text(`• Total Fichajes: ${records.length}`, 18, currentY + 13);
-      doc.text(`• Ingresos (Entradas): ${totalCheckins}`, 95, currentY + 13);
-      doc.text(`• Egresos (Salidas): ${totalCheckouts}`, 150, currentY + 13);
+      // Card 2: Ingresos
+      doc.setFillColor(238, 246, 240);
+      doc.roundedRect(14 + cardWidth + 6, currentY, cardWidth, cardHeight, 2, 2, "F");
+      doc.setDrawColor(30, 104, 56);
+      doc.roundedRect(14 + cardWidth + 6, currentY, cardWidth, cardHeight, 2, 2, "S");
 
-      currentY += 28;
-
-      // Table Header
-      doc.setFillColor(92, 29, 39);
-      doc.rect(14, currentY, pageWidth - 28, 8, "F");
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(30, 104, 56);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
+      doc.text("🟢 INGRESOS (ENTRADAS)", 18 + cardWidth + 6, currentY + 5);
+      doc.setFontSize(13);
+      doc.text(`${totalCheckins}`, 18 + cardWidth + 6, currentY + 12);
 
-      doc.text("Colaborador", 16, currentY + 5.5);
-      doc.text("Rol", 52, currentY + 5.5);
-      doc.text("Tipo", 75, currentY + 5.5);
-      doc.text("Fecha y Hora", 96, currentY + 5.5);
-      doc.text("Ubicación Calle", 132, currentY + 5.5);
-      doc.text("Coordenadas GPS", 175, currentY + 5.5);
+      // Card 3: Egresos
+      doc.setFillColor(250, 240, 242);
+      doc.roundedRect(14 + (cardWidth + 6) * 2, currentY, cardWidth, cardHeight, 2, 2, "F");
+      doc.setDrawColor(132, 55, 71);
+      doc.roundedRect(14 + (cardWidth + 6) * 2, currentY, cardWidth, cardHeight, 2, 2, "S");
 
-      currentY += 10;
+      doc.setTextColor(132, 55, 71);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.text("🔴 EGRESOS (SALIDAS)", 18 + (cardWidth + 6) * 2, currentY + 5);
+      doc.setFontSize(13);
+      doc.text(`${totalCheckouts}`, 18 + (cardWidth + 6) * 2, currentY + 12);
 
-      // Table Content Rows
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(40, 40, 40);
+      currentY += cardHeight + 8;
 
-      records.forEach((rec, idx) => {
-        if (currentY > 265) {
-          doc.addPage();
-          currentY = 20;
-        }
+      // 4. AutoTable Data Preparation
+      const tableHead = [
+        ["Colaborador", "Rol", "Tipo", "Fecha y Hora", "Ubicación Calle", "Coordenadas GPS"]
+      ];
 
-        const isEven = idx % 2 === 0;
-        if (isEven) {
-          doc.setFillColor(248, 244, 238);
-          doc.rect(14, currentY - 4, pageWidth - 28, 8, "F");
-        }
+      const tableData = records.map((rec) => {
+        const roleName = rec.role
+          ? rec.role.charAt(0).toUpperCase() + rec.role.slice(1).toLowerCase()
+          : "Personal";
 
-        // Colaborador
-        doc.text((rec.employee_name || "Colaborador").slice(0, 18), 16, currentY + 1);
+        const coordsStr =
+          rec.latitude && rec.longitude
+            ? `${rec.latitude.toFixed(4)}, ${rec.longitude.toFixed(4)}`
+            : "-33.1245, -64.3490";
 
-        // Rol
-        doc.text((rec.role || "Personal").slice(0, 12), 52, currentY + 1);
+        const addressStr = rec.location_address || "Constitución 944, Río Cuarto, Córdoba";
 
-        // Tipo Badge
-        if (rec.action === "INGRESO") {
-          doc.setTextColor(46, 111, 64); // Green
-        } else {
-          doc.setTextColor(132, 55, 71); // Burgundy Red
-        }
-        doc.setFont("helvetica", "bold");
-        doc.text(rec.action, 75, currentY + 1);
-
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(40, 40, 40);
-
-        // Fecha y Hora
-        doc.text((rec.timestamp || "").slice(0, 19), 96, currentY + 1);
-
-        // Dirección Calle
-        const address = rec.location_address || "Constitución 944, Río Cuarto";
-        doc.text(address.slice(0, 24), 132, currentY + 1);
-
-        // Coordenadas GPS
-        const coords = rec.latitude && rec.longitude
-          ? `${rec.latitude.toFixed(4)}, ${rec.longitude.toFixed(4)}`
-          : "-33.1245, -64.3490";
-        doc.text(coords, 175, currentY + 1);
-
-        currentY += 8;
+        return [
+          rec.employee_name || "Colaborador",
+          roleName,
+          rec.action,
+          rec.timestamp || "-",
+          addressStr,
+          coordsStr
+        ];
       });
 
-      // Page Footer
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(120, 120, 120);
-        doc.text(
-          `Castaño — Resto Bar Café • Historial de Asistencia y Turnos GPS • Página ${i} de ${pageCount}`,
-          pageWidth / 2,
-          285,
-          { align: "center" }
-        );
-      }
+      // 5. Generate Professional AutoTable
+      autoTable(doc, {
+        startY: currentY,
+        head: tableHead,
+        body: tableData,
+        theme: "grid",
+        headStyles: {
+          fillColor: [45, 14, 19],
+          textColor: [235, 218, 197],
+          fontStyle: "bold",
+          fontSize: 8.5,
+          halign: "left",
+          valign: "middle",
+          lineWidth: 0.2,
+          lineColor: [207, 181, 160]
+        },
+        bodyStyles: {
+          textColor: [40, 40, 40],
+          fontSize: 8,
+          valign: "middle",
+          cellPadding: 3,
+          lineWidth: 0.1,
+          lineColor: [225, 215, 205]
+        },
+        alternateRowStyles: {
+          fillColor: [252, 249, 244]
+        },
+        columnStyles: {
+          0: { cellWidth: 32, fontStyle: "bold", textColor: [45, 14, 19] }, // Colaborador
+          1: { cellWidth: 24, fontStyle: "normal" },                       // Rol
+          2: { cellWidth: 24, fontStyle: "bold", halign: "center" },       // Tipo
+          3: { cellWidth: 34, fontStyle: "normal" },                       // Fecha y Hora
+          4: { cellWidth: 44, fontStyle: "normal" },                       // Ubicación Calle
+          5: { cellWidth: 24, fontStyle: "normal", halign: "center" }       // Coordenadas GPS
+        },
+        margin: { left: 14, right: 14, top: 46, bottom: 20 },
+        didParseCell: (data) => {
+          // Custom styling for Action (Tipo) column
+          if (data.section === "body" && data.column.index === 2) {
+            const cellVal = String(data.cell.raw).toUpperCase();
+            if (cellVal === "INGRESO") {
+              data.cell.styles.textColor = [30, 104, 56]; // Emerald Green
+              data.cell.styles.fillColor = [238, 246, 240];
+            } else if (cellVal === "EGRESO") {
+              data.cell.styles.textColor = [132, 55, 71]; // Burgundy Red
+              data.cell.styles.fillColor = [250, 240, 242];
+            }
+          }
+        },
+        didDrawPage: (data) => {
+          const totalPages = (doc as any).internal.getNumberOfPages();
+          const currentPage = data.pageNumber;
+
+          // Footer Line & Text
+          doc.setDrawColor(207, 181, 160);
+          doc.setLineWidth(0.4);
+          doc.line(14, pageHeight - 12, pageWidth - 14, pageHeight - 12);
+
+          doc.setFontSize(7.5);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(110, 100, 90);
+          doc.text(
+            `CASTAÑO — Resto Bar Café  •  Historial de Asistencia y Turnos GPS  •  Página ${currentPage} de ${totalPages}`,
+            pageWidth / 2,
+            pageHeight - 7,
+            { align: "center" }
+          );
+        }
+      });
 
       doc.save(`Castano_Control_Asistencia_GPS_${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err: any) {
