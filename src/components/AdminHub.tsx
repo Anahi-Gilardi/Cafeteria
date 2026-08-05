@@ -3258,6 +3258,8 @@ export default function AdminHub({
   };
 
   const renderAttendance = () => {
+    const canExportPDF = currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.id === "usr-admin-super";
+
     // Map attendance logs to AttendanceRecord format for PDF
     const recordsForPDF: AttendanceRecord[] = attendanceLogs.map((log) => ({
       id: log.id,
@@ -3378,17 +3380,19 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[#CFB5A0]">
-            <button
-              onClick={() => {
-                StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
-                onShowNotification("📄 Generando informe PDF de control de personal...", "success");
-              }}
-              className="w-full py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              📄 Descargar Reporte de Asistencia (PDF)
-            </button>
-          </div>
+          {canExportPDF && (
+            <div className="pt-3 border-t border-[#CFB5A0]">
+              <button
+                onClick={() => {
+                  StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+                  onShowNotification("📄 Generando informe PDF de control de personal...", "success");
+                }}
+                className="w-full py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                📄 Descargar Reporte de Asistencia (PDF)
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Attendance History Table */}
@@ -3398,15 +3402,17 @@ export default function AdminHub({
               <h3 className="font-serif text-xl font-bold text-[#5C1D27]">📋 Historial de Asistencia y Turnos GPS</h3>
               <p className="text-xs text-[#5E393F] font-medium">Sincronizado con tabla Supabase <code className="text-[#5C1D27]">staff_attendance</code></p>
             </div>
-            <button
-              onClick={() => {
-                StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
-                onShowNotification("📄 Descargando PDF de control de personal...", "info");
-              }}
-              className="px-3.5 py-1.5 bg-[#5C1D27] border border-[#5C1D27] text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-[#4A151D] transition-all cursor-pointer shadow-xs"
-            >
-              📄 Exportar PDF
-            </button>
+            {canExportPDF && (
+              <button
+                onClick={() => {
+                  StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+                  onShowNotification("📄 Descargando PDF de control de personal...", "info");
+                }}
+                className="px-3.5 py-1.5 bg-[#5C1D27] border border-[#5C1D27] text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-[#4A151D] transition-all cursor-pointer shadow-xs"
+              >
+                📄 Exportar PDF
+              </button>
+            )}
           </div>
 
           <div className="space-y-3 text-xs max-h-[500px] overflow-y-auto pr-1">
