@@ -187,7 +187,7 @@ export default function AdminHub({
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [activeSubTab]);
-  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("barista");
+  const [personalSubTab, setPersonalSubTab] = useState<"asistencia" | "cuentas" | "barista" | "consumo" | "profit">("asistencia");
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
   // User Accounts Management state
@@ -7421,323 +7421,352 @@ export default function AdminHub({
         exit={{ opacity: 0 }}
         className="space-y-8 text-[#2D0E13]"
       >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#CFB5A0] pb-4">
           <div>
             <span className="text-[10px] font-black uppercase tracking-widest text-[#5C1D27]">Equipo y Colaboradores</span>
             <h2 className="font-serif text-3xl font-bold text-[#5C1D27] mt-0.5">Gestión de Personal</h2>
           </div>
+
+          <div className="flex gap-2 bg-[#EBDAC5]/50 p-1.5 border border-[#CFB5A0] rounded-2xl shadow-xs">
+            <button
+              type="button"
+              onClick={() => setPersonalSubTab("asistencia")}
+              className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                personalSubTab === "asistencia"
+                  ? "bg-[#5C1D27] text-white shadow-xs"
+                  : "bg-[#FAF2E6] text-[#5C1D27] hover:bg-white"
+              }`}
+            >
+              📱 Control de Asistencia & GPS
+            </button>
+            <button
+              type="button"
+              onClick={() => setPersonalSubTab("cuentas")}
+              className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                personalSubTab === "cuentas"
+                  ? "bg-[#5C1D27] text-white shadow-xs"
+                  : "bg-[#FAF2E6] text-[#5C1D27] hover:bg-white"
+              }`}
+            >
+              👥 Cuentas Registradas
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2D0E13]">
-          {/* Form to add user: only visible to owner/administrator */}
-          {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-            <div className="lg:col-span-4 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
-              <form onSubmit={handleAddUser} className="space-y-4">
-                <div className="border-b border-[#CFB5A0] pb-2">
-                  <h3 className="font-serif text-base font-bold text-[#5C1D27]">Crear Nueva Cuenta</h3>
-                  <p className="text-[10px] text-[#5E393F] mt-0.5 font-medium">Registre empleados y asigne sus permisos de acceso.</p>
-                </div>
+        {personalSubTab === "asistencia" ? (
+          renderAttendance()
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2D0E13]">
+            {/* Form to add user: only visible to owner/administrator */}
+            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+              <div className="lg:col-span-4 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
+                <form onSubmit={handleAddUser} className="space-y-4">
+                  <div className="border-b border-[#CFB5A0] pb-2">
+                    <h3 className="font-serif text-base font-bold text-[#5C1D27]">Crear Nueva Cuenta</h3>
+                    <p className="text-[10px] text-[#5E393F] mt-0.5 font-medium">Registre empleados y asigne sus permisos de acceso.</p>
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Nombre Completo</label>
-                  <input
-                    type="text"
-                    value={newUserName}
-                    onChange={(e) => setNewUserName(e.target.value)}
-                    placeholder="Ej. Juan Pérez"
-                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Correo Electrónico</label>
-                  <input
-                    type="email"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder="juan@restobardelteatro.com"
-                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Contraseña de Acceso</label>
-                  <input
-                    type="password"
-                    value={newUserPassword}
-                    onChange={(e) => setNewUserPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Dirección Particular</label>
-                  <input
-                    type="text"
-                    value={newUserAddress}
-                    onChange={(e) => setNewUserAddress(e.target.value)}
-                    placeholder="Calle 50 nro. 123, Mar del Plata"
-                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Teléfono Personal</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Nombre Completo</label>
                     <input
                       type="text"
-                      value={newUserPhone}
-                      onChange={(e) => setNewUserPhone(e.target.value)}
-                      placeholder="+54 223 555-1234"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      placeholder="Ej. Juan Pérez"
                       className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Tel. Contacto Emerg.</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Correo Electrónico</label>
                     <input
-                      type="text"
-                      value={newUserEmergencyPhone}
-                      onChange={(e) => setNewUserEmergencyPhone(e.target.value)}
-                      placeholder="+54 223 555-9876"
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="juan@restobardelteatro.com"
                       className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Sueldo Base ($ Mensual)</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Contraseña de Acceso</label>
                     <input
-                      type="number"
-                      value={newUserSalary}
-                      onChange={(e) => setNewUserSalary(e.target.value)}
-                      placeholder="Ej. 180000"
-                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
+                      type="password"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
+
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Antigüedad (Meses)</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Dirección Particular</label>
                     <input
-                      type="number"
-                      value={newUserSeniority}
-                      onChange={(e) => setNewUserSeniority(e.target.value)}
-                      placeholder="Ej. 12"
-                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
+                      type="text"
+                      value={newUserAddress}
+                      onChange={(e) => setNewUserAddress(e.target.value)}
+                      placeholder="Calle 50 nro. 123, Mar del Plata"
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
-                </div>
 
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Rol / Cargo</label>
-                  <select
-                    value={newUserRole}
-                    onChange={(e) => setNewUserRole(e.target.value)}
-                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] font-bold text-[#2D0E13] cursor-pointer outline-none focus:border-[#5C1D27]"
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Teléfono Personal</label>
+                      <input
+                        type="text"
+                        value={newUserPhone}
+                        onChange={(e) => setNewUserPhone(e.target.value)}
+                        placeholder="+54 223 555-1234"
+                        className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Tel. Contacto Emerg.</label>
+                      <input
+                        type="text"
+                        value={newUserEmergencyPhone}
+                        onChange={(e) => setNewUserEmergencyPhone(e.target.value)}
+                        placeholder="+54 223 555-9876"
+                        className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Sueldo Base ($ Mensual)</label>
+                      <input
+                        type="number"
+                        value={newUserSalary}
+                        onChange={(e) => setNewUserSalary(e.target.value)}
+                        placeholder="Ej. 180000"
+                        className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Antigüedad (Meses)</label>
+                      <input
+                        type="number"
+                        value={newUserSeniority}
+                        onChange={(e) => setNewUserSeniority(e.target.value)}
+                        placeholder="Ej. 12"
+                        className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Rol / Cargo</label>
+                    <select
+                      value={newUserRole}
+                      onChange={(e) => setNewUserRole(e.target.value)}
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] font-bold text-[#2D0E13] cursor-pointer outline-none focus:border-[#5C1D27]"
+                    >
+                      <option value="mesero">Mesero</option>
+                      <option value="barista">Barista</option>
+                      <option value="cajero">Cajero</option>
+                      <option value="administrador">Administrador</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isCreatingUser}
+                    className={`w-full text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4 shadow-xs flex items-center justify-center gap-2 ${
+                      isCreatingUser
+                        ? "bg-[#5C1D27]/50 text-white/70 cursor-not-allowed"
+                        : "bg-[#5C1D27] hover:bg-[#4A151D] text-white"
+                    }`}
                   >
-                    <option value="mesero">Mesero</option>
-                    <option value="barista">Barista</option>
-                    <option value="cajero">Cajero</option>
-                    <option value="administrador">Administrador</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isCreatingUser}
-                  className={`w-full text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4 shadow-xs flex items-center justify-center gap-2 ${
-                    isCreatingUser
-                      ? "bg-[#5C1D27]/50 text-white/70 cursor-not-allowed"
-                      : "bg-[#5C1D27] hover:bg-[#4A151D] text-white"
-                  }`}
-                >
-                  {isCreatingUser ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin text-white" />
-                      <span>Guardando Colaborador...</span>
-                    </>
-                  ) : (
-                    <span>+ Registrar Colaborador</span>
-                  )}
-                </button>
-              </form>
-            </div>
-          )}
-
-              {/* Users list */}
-              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6" : "lg:col-span-12 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6"}>
-                <div className="border-b border-[#CFB5A0] pb-2">
-                  <h3 className="font-serif text-base font-bold text-[#5C1D27]">Cuentas Registradas</h3>
-                  <p className="text-[10px] text-[#5E393F] mt-0.5">
-                    {(currentUser.role === "administrador" || currentUser.role === "dueño") 
-                      ? "Listado completo de accesos, datos salariales y permisos del personal." 
-                      : "Directorio de contacto de colaboradores en turno."}
-                  </p>
-                </div>
-
-                <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
-                        <th className="p-3">Nombre</th>
-                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3">Email / Dirección</th>}
-                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3">Teléfono</th>}
-                        <th className="p-3">Contacto Emergencia</th>
-                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-right">Sueldo</th>}
-                        <th className="p-3 text-center">Rol</th>
-                        {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-right">Acciones</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-[#2C1810]/10">
-                      {users.map((user) => {
-                        const meta = usersMetadata[user.id] || {};
-                        return (
-                          <tr 
-                            key={user.id} 
-                            onClick={() => {
-                              if (currentUser.role === "administrador" || currentUser.role === "dueño") {
-                                setSelectedUserForPermissions(user);
-                              }
-                            }}
-                            className={`transition-colors cursor-pointer ${
-                              selectedUserForPermissions?.id === user.id 
-                                ? "bg-amber-50/40 hover:bg-amber-50/60" 
-                                : "hover:bg-stone-50/50"
-                            }`}
-                          >
-                            <td className="p-3 font-bold text-[#2C1810]">{user.name}</td>
-                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                              <td className="p-3">
-                                <span className="font-mono text-[9px] text-[#2C1810]/70 block">{user.email}</span>
-                                <span className="text-[9px] text-[#2C1810]/40 block mt-0.5">{meta.direccion || "No cargado"}</span>
-                              </td>
-                            )}
-                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                              <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">
-                                {meta.telefono || "No cargado"}
-                              </td>
-                            )}
-                            <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">
-                              {meta.telefono_contacto || "No cargado"}
-                            </td>
-                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                              <td className="p-3 text-right font-mono font-bold text-emerald-800">
-                                ${meta.sueldo ? meta.sueldo.toLocaleString() : "0"}
-                              </td>
-                            )}
-                            <td className="p-3 text-center">
-                              <span className={`px-2 py-0.5 text-[8px] font-black rounded-full uppercase ${
-                                user.role === "administrador"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : user.role === "barista"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-stone-100 text-stone-800"
-                              }`}>
-                                {user.role}
-                              </span>
-                            </td>
-                            {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-                              <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  onClick={() => handleDeleteUser(user.id, user.name)}
-                                  disabled={user.id === "usr-1" || user.id === currentUser.id}
-                                  className={`p-1.5 rounded-lg transition-all border ${
-                                    user.id === "usr-1" || user.id === currentUser.id
-                                      ? "text-stone-300 border-stone-100 cursor-not-allowed"
-                                      : "text-red-600 border-red-100 hover:bg-red-50 cursor-pointer"
-                                  }`}
-                                  title="Eliminar Cuenta"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Granular Permissions Settings panel */}
-                {(currentUser.role === "administrador" || currentUser.role === "dueño") && selectedUserForPermissions && (
-                  <div className="p-5 bg-[#FDFBF7] border border-[#C2956E]/20 rounded-2xl space-y-4">
-                    <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-2.5">
-                      <div>
-                        <span className="text-[8px] font-black uppercase text-[#C2956E] tracking-widest block">Configurar Accesos del Sistema</span>
-                        <h4 className="font-serif text-sm font-bold text-[#2C1810]">Permisos para {selectedUserForPermissions.name}</h4>
-                      </div>
-                      <span className="text-[10px] font-mono font-semibold text-[#2C1810]/60 bg-[#2C1810]/5 px-2.5 py-1 rounded-lg">
-                        Rol: {selectedUserForPermissions.role}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-semibold text-[#2C1810]/80">
-                      {[
-                        { id: "dashboard", label: "📈 Dashboard" },
-                        { id: "inventario", label: "📦 Stock & Insumos" },
-                        { id: "precios", label: "📖 Carta & Recetas" },
-                        { id: "salon", label: "🗺️ Mapa de Salón" },
-                        { id: "reservas", label: "📅 Reservas" },
-                        { id: "pedidos_mozo", label: "📋 Módulo Mozo" },
-                        { id: "caja", label: "💰 Caja & Comandas" },
-                        { id: "proveedores", label: "🤝 Proveedores" },
-                        { id: "personal", label: "👥 Personal" },
-                        { id: "reportes", label: "📊 Reportes" }
-                      ].map((mod) => {
-                        const meta = usersMetadata[selectedUserForPermissions.id] || {};
-                        const userPerms = meta.permissions || [];
-                        const hasPerm = userPerms.includes(mod.id);
-
-                        return (
-                          <label 
-                            key={mod.id}
-                            className="flex items-center gap-2.5 p-2 bg-white border border-[#2C1810]/5 rounded-xl cursor-pointer hover:bg-stone-50 select-none"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={hasPerm}
-                              disabled={selectedUserForPermissions.id === "usr-1" && mod.id === "personal"}
-                              onChange={() => {
-                                let updatedPerms = [...userPerms];
-                                if (hasPerm) {
-                                  updatedPerms = updatedPerms.filter(p => p !== mod.id);
-                                } else {
-                                  updatedPerms.push(mod.id);
-                                }
-
-                                const updatedMeta = {
-                                  ...usersMetadata,
-                                  [selectedUserForPermissions.id]: {
-                                    ...meta,
-                                    permissions: updatedPerms
-                                  }
-                                };
-                                saveUsersMetadata(updatedMeta, selectedUserForPermissions.id);
-                                onShowNotification(`⚙️ Permisos de ${selectedUserForPermissions.name} actualizados.`, "info");
-                              }}
-                              className="h-4 w-4 rounded border-stone-300 text-[#2C1810] focus:ring-[#2C1810]/30 cursor-pointer"
-                            />
-                            <span>{mod.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                    {isCreatingUser ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
+                        <span>Guardando Colaborador...</span>
+                      </>
+                    ) : (
+                      <span>+ Registrar Colaborador</span>
+                    )}
+                  </button>
+                </form>
               </div>
+            )}
+
+            {/* Users list */}
+            <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6" : "lg:col-span-12 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6"}>
+              <div className="border-b border-[#CFB5A0] pb-2">
+                <h3 className="font-serif text-base font-bold text-[#5C1D27]">Cuentas Registradas</h3>
+                <p className="text-[10px] text-[#5E393F] mt-0.5">
+                  {(currentUser.role === "administrador" || currentUser.role === "dueño") 
+                    ? "Listado completo de accesos, datos salariales y permisos del personal." 
+                    : "Directorio de contacto de colaboradores en turno."}
+                </p>
+              </div>
+
+              <div className="border border-[#2C1810]/10 rounded-2xl overflow-hidden text-xs">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-[#2C1810]/5 border-b border-[#2C1810]/10 text-[9px] font-bold uppercase tracking-wider text-[#2C1810]/60">
+                      <th className="p-3">Nombre</th>
+                      {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3">Email / Dirección</th>}
+                      {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3">Teléfono</th>}
+                      <th className="p-3">Contacto Emergencia</th>
+                      {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-right">Sueldo</th>}
+                      <th className="p-3 text-center">Rol</th>
+                      {(currentUser.role === "administrador" || currentUser.role === "dueño") && <th className="p-3 text-right">Acciones</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-[#2C1810]/10">
+                    {users.map((user) => {
+                      const meta = usersMetadata[user.id] || {};
+                      return (
+                        <tr 
+                          key={user.id} 
+                          onClick={() => {
+                            if (currentUser.role === "administrador" || currentUser.role === "dueño") {
+                              setSelectedUserForPermissions(user);
+                            }
+                          }}
+                          className={`transition-colors cursor-pointer ${
+                            selectedUserForPermissions?.id === user.id 
+                              ? "bg-amber-50/40 hover:bg-amber-50/60" 
+                              : "hover:bg-stone-50/50"
+                          }`}
+                        >
+                          <td className="p-3 font-bold text-[#2C1810]">{user.name}</td>
+                          {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                            <td className="p-3">
+                              <span className="font-mono text-[9px] text-[#2C1810]/70 block">{user.email}</span>
+                              <span className="text-[9px] text-[#2C1810]/40 block mt-0.5">{meta.direccion || "No cargado"}</span>
+                            </td>
+                          )}
+                          {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                            <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">
+                              {meta.telefono || "No cargado"}
+                            </td>
+                          )}
+                          <td className="p-3 font-mono text-[10px] text-[#2C1810]/70">
+                            {meta.telefono_contacto || "No cargado"}
+                          </td>
+                          {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                            <td className="p-3 text-right font-mono font-bold text-emerald-800">
+                              ${meta.sueldo ? meta.sueldo.toLocaleString() : "0"}
+                            </td>
+                          )}
+                          <td className="p-3 text-center">
+                            <span className={`px-2 py-0.5 text-[8px] font-black rounded-full uppercase ${
+                              user.role === "administrador"
+                                ? "bg-amber-100 text-amber-800"
+                                : user.role === "barista"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-stone-100 text-stone-800"
+                            }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
+                            <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleDeleteUser(user.id, user.name)}
+                                disabled={user.id === "usr-1" || user.id === currentUser.id}
+                                className={`p-1.5 rounded-lg transition-all border ${
+                                  user.id === "usr-1" || user.id === currentUser.id
+                                    ? "text-stone-300 border-stone-100 cursor-not-allowed"
+                                    : "text-red-600 border-red-100 hover:bg-red-50 cursor-pointer"
+                                }`}
+                                title="Eliminar Cuenta"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Granular Permissions Settings panel */}
+              {(currentUser.role === "administrador" || currentUser.role === "dueño") && selectedUserForPermissions && (
+                <div className="p-5 bg-[#FDFBF7] border border-[#C2956E]/20 rounded-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b border-[#2C1810]/10 pb-2.5">
+                    <div>
+                      <span className="text-[8px] font-black uppercase text-[#C2956E] tracking-widest block">Configurar Accesos del Sistema</span>
+                      <h4 className="font-serif text-sm font-bold text-[#2C1810]">Permisos para {selectedUserForPermissions.name}</h4>
+                    </div>
+                    <span className="text-[10px] font-mono font-semibold text-[#2C1810]/60 bg-[#2C1810]/5 px-2.5 py-1 rounded-lg">
+                      Rol: {selectedUserForPermissions.role}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-semibold text-[#2C1810]/80">
+                    {[
+                      { id: "dashboard", label: "📈 Dashboard" },
+                      { id: "inventario", label: "📦 Stock & Insumos" },
+                      { id: "precios", label: "📖 Carta & Recetas" },
+                      { id: "salon", label: "🗺️ Mapa de Salón" },
+                      { id: "reservas", label: "📅 Reservas" },
+                      { id: "pedidos_mozo", label: "📋 Módulo Mozo" },
+                      { id: "caja", label: "💰 Caja & Comandas" },
+                      { id: "proveedores", label: "🤝 Proveedores" },
+                      { id: "personal", label: "👥 Personal" },
+                      { id: "reportes", label: "📊 Reportes" }
+                    ].map((mod) => {
+                      const meta = usersMetadata[selectedUserForPermissions.id] || {};
+                      const userPerms = meta.permissions || [];
+                      const hasPerm = userPerms.includes(mod.id);
+
+                      return (
+                        <label 
+                          key={mod.id}
+                          className="flex items-center gap-2.5 p-2 bg-white border border-[#2C1810]/5 rounded-xl cursor-pointer hover:bg-stone-50 select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={hasPerm}
+                            disabled={selectedUserForPermissions.id === "usr-1" && mod.id === "personal"}
+                            onChange={() => {
+                              let updatedPerms = [...userPerms];
+                              if (hasPerm) {
+                                updatedPerms = updatedPerms.filter(p => p !== mod.id);
+                              } else {
+                                updatedPerms.push(mod.id);
+                              }
+
+                              const updatedMeta = {
+                                ...usersMetadata,
+                                [selectedUserForPermissions.id]: {
+                                  ...meta,
+                                  permissions: updatedPerms
+                                }
+                              };
+                              saveUsersMetadata(updatedMeta, selectedUserForPermissions.id);
+                              onShowNotification(`⚙️ Permisos de ${selectedUserForPermissions.name} actualizados.`, "info");
+                            }}
+                            className="h-4 w-4 rounded border-stone-300 text-[#2C1810] focus:ring-[#2C1810]/30 cursor-pointer"
+                          />
+                          <span>{mod.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-          </motion.div>
-        );
-      };
+          </div>
+        )}
+      </motion.div>
+    );
+  };
 
   const renderSalon = () => {
     const defaultCoords = [
