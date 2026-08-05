@@ -222,10 +222,10 @@ export default function KitchenDisplay({
 
   const formatOrderId = (id: string) => {
     if (!id) return "#PED-0001";
-    if (id.startsWith("PED-")) return `#${id}`;
-    const cleanNum = id.replace(/\D/g, "");
-    const shortNum = cleanNum.length > 0 ? cleanNum.slice(-4) : id.slice(-4).toUpperCase();
-    return `#PED-${shortNum}`;
+    if (id.startsWith("PED-") || id.startsWith("RET-") || id.startsWith("DEL-")) return `#${id}`;
+    const rawSuffix = id.split("-").pop() || id;
+    const shortCode = rawSuffix.slice(-4).toUpperCase();
+    return `#PED-${shortCode}`;
   };
 
   // Render a Single Kanban Comanda Card
