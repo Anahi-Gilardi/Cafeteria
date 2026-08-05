@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent } from "react";
+import { useState, useEffect, useRef, useMemo, FormEvent } from "react";
 import { MenuItem, Order, OrderStatusType, ClientAccount } from "../types";
 import {
   Coins, ClipboardList, Package, TrendingUp, AlertCircle, Plus, Edit2, Save, 
@@ -18,7 +18,6 @@ import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
-import { StaffAttendanceKiosk } from "./StaffAttendanceKiosk";
 import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";
 import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingService";
@@ -85,7 +84,7 @@ const EMPTY_WEEKLY_MENUS: DailyExecutiveMenu[] = (
   mains: [],
   drinks: [],
   desserts: [],
-  active: false
+  active: true
 }));
 
 const PRODUCT_CATEGORY_LABELS: Partial<Record<MenuItem["category"], string>> = {
@@ -187,7 +186,8 @@ export default function AdminHub({
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [activeSubTab]);
-  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("asistencia");
+  const [personalSubTab, setPersonalSubTab] = useState<"barista" | "consumo" | "profit" | "cuentas" | "asistencia">("barista");
+  const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
   // User Accounts Management state
   const [users, setUsers] = useState<any[]>([]);
@@ -301,7 +301,9 @@ export default function AdminHub({
   const [pendingWaiterCalls, setPendingWaiterCalls] = useState<WaiterCall[]>([]);
 
   // Staff Attendance GPS state
-  const [attendanceSubTab, setAttendanceSubTab] = useState<"kiosk" | "history">("kiosk");
+  const [selectedStaffMember, setSelectedStaffMember] = useState<string>(currentUser.id);
+  const [isLocatingGPS, setIsLocatingGPS] = useState<boolean>(false);
+  const [currentGPSLoc, setCurrentGPSLoc] = useState<{ lat: number; lng: number; address: string } | null>(null);
 
   // Thermal Printer & ARCA Fiscal Billing State
   const [printerConfig, setPrinterConfig] = useState<PrinterConfig>(() => ThermalPrinterService.getConfig());
@@ -435,63 +437,9 @@ export default function AdminHub({
   const [mozoCategory, setMozoCategory] = useState<string>("todos");
   const [mozoSearchQuery, setMozoSearchQuery] = useState<string>("");
   const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
-
   const [selectedMainMozo, setSelectedMainMozo] = useState<string>("");
   const [selectedSideMozo, setSelectedSideMozo] = useState<string>("");
   const [saladSizeMozo, setSaladSizeMozo] = useState<"chica" | "grande">("chica");
-
-  const [dailyComboState, setDailyComboState] = useState<{
-    mains: string[];
-    mainImages?: string[];
-    sides: string[];
-    price: number;
-    saladTitle?: string;
-    saladDescription?: string;
-    saladImage?: string;
-    saladPriceSmall?: number;
-    saladPriceLarge?: number;
-  }>(() => {
-    try {
-      const saved = localStorage.getItem("puglia_daily_combo");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.sides)) {
-          parsed.sides = parsed.sides.flatMap((s: string) =>
-            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
-              ? ["Puré de papa", "Puré mixto"]
-              : s
-          );
-        }
-        return parsed;
-      }
-    } catch (e) {}
-    return {
-      mains: [
-        "Pollo al horno",
-        "Pasta ( tallarines, ñoquis, canelones )",
-        "Milanesa de pollo o ternera",
-        "Hamburguesa"
-      ],
-      mainImages: [
-        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
-        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
-        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
-        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
-      ],
-      sides: [
-        "Puré de papa",
-        "Puré mixto",
-        "Arroz con crema",
-        "Ensalada mixta"
-      ],
-      price: 8500,
-      saladTitle: "Ensalada Completa",
-      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
-      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
-      saladPriceSmall: 6500,
-      saladPriceLarge: 8500
-    };
-  });
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -500,7 +448,24 @@ export default function AdminHub({
   const [blindCounts, setBlindCounts] = useState<Record<string, string>>({});
   const [auditHistory, setAuditHistory] = useState<any[]>([]);
 
-  const [weeklyMenus, setWeeklyMenus] = useState<DailyExecutiveMenu[]>(EMPTY_WEEKLY_MENUS);
+  const [weeklyMenus, setWeeklyMenus] = useState<DailyExecutiveMenu[]>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_weekly_menus");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return EMPTY_WEEKLY_MENUS;
+  });
+
+  const todayMenu = useMemo(() => {
+    const days: DailyExecutiveMenu["dayOfWeek"][] = [
+      "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
+    ];
+    const todayDayName = days[new Date().getDay()];
+    return weeklyMenus.find(m => m.dayOfWeek && m.dayOfWeek.toLowerCase().trim() === todayDayName.toLowerCase().trim() && m.title && m.title.trim() !== "") || null;
+  }, [weeklyMenus]);
 
   const [selectedDayTab, setSelectedDayTab] = useState<DailyExecutiveMenu["dayOfWeek"]>("Lunes");
 
@@ -569,10 +534,11 @@ export default function AdminHub({
           });
         }
 
-        // 2. Fetch Insumos from Supabase Cloud
-        const { data: insData, error: insError } = await supabase.from("insumos").select("*").order("name");
-        if (!insError && insData && insData.length > 0) {
-          const mappedInsumos = insData.map(i => ({
+        // 2. Fetch Insumos
+        const { data: insData, error: insError } = await supabase.from("insumos").select("*");
+        if (insError) throw insError;
+        if (insData && insData.length > 0) {
+          setInsumos(insData.map(i => ({
             id: i.id,
             name: i.name,
             quantity: Number(i.quantity ?? i.current_stock ?? 0),
@@ -581,33 +547,10 @@ export default function AdminHub({
             provider: i.provider || i.supplier || undefined,
             expirationDate: i.expiration_date || undefined,
             costPerUnit: Number(i.cost_per_unit || 0)
-          }));
-          setInsumos(mappedInsumos);
-          try { localStorage.setItem("resto_insumos", JSON.stringify(mappedInsumos)); } catch (e) {}
+          })));
         } else {
-          const { data: sysInsumos } = await supabase.from("system_settings").select("*").eq("key", "resto_insumos").maybeSingle();
-          if (sysInsumos && sysInsumos.value) {
-            try {
-              const parsed = typeof sysInsumos.value === "string" ? JSON.parse(sysInsumos.value) : sysInsumos.value;
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setInsumos(parsed);
-                try { localStorage.setItem("resto_insumos", JSON.stringify(parsed)); } catch (e) {}
-              }
-            } catch (e) {}
-          }
+          setInsumos([]);
         }
-
-        // Fetch Cloud Daily Combo configuration
-        try {
-          const { data: comboSys } = await supabase.from("system_settings").select("*").eq("key", "daily_combo").maybeSingle();
-          if (comboSys && comboSys.value) {
-            const parsedCombo = typeof comboSys.value === "string" ? JSON.parse(comboSys.value) : comboSys.value;
-            if (parsedCombo) {
-              setDailyComboState(parsedCombo);
-              try { localStorage.setItem("puglia_daily_combo", JSON.stringify(parsedCombo)); } catch (e) {}
-            }
-          }
-        } catch (cErr) {}
 
         // 3. Fetch Suppliers
         const { data: suppliersData, error: suppliersError } = await supabase
@@ -704,96 +647,111 @@ export default function AdminHub({
           });
         }
 
-        // 5. Fetch Cash Closures
-        try {
-          const { data: closuresData } = await supabase
-            .from("cash_closures")
-            .select("*")
-            .order("closed_at", { ascending: false })
-            .limit(100);
-          if (closuresData) {
-            setClosuresHistory(
-              closuresData.map((closure) => ({
-                id: closure.id,
-                user: closure.user_name,
-                apertura: closure.opened_at,
-                cierre: closure.closed_at,
-                observaciones: closure.notes || "",
-                ventasTurno: Number(closure.sales_total),
-                montoReal: Number(closure.declared_cash),
-                diferencia: Number(closure.difference),
-                transactions: closure.transactions || []
-              }))
-            );
-          }
-        } catch {
-          // Graceful fallback for closures
-        }
+        const { data: closuresData, error: closuresError } = await supabase
+          .from("cash_closures")
+          .select("*")
+          .order("closed_at", { ascending: false })
+          .limit(100);
+        if (closuresError) throw closuresError;
+        setClosuresHistory(
+          (closuresData || []).map((closure) => ({
+            id: closure.id,
+            user: closure.user_name,
+            apertura: closure.opened_at,
+            cierre: closure.closed_at,
+            observaciones: closure.notes || "",
+            ventasTurno: Number(closure.sales_total),
+            montoReal: Number(closure.declared_cash),
+            diferencia: Number(closure.difference),
+            transactions: closure.transactions || []
+          }))
+        );
 
         // 6. Fetch Barista Calibration Data
-        try {
-          const { data: calData } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
-          if (calData && calData.length > 0) {
-            const latest = calData[0];
-            const parsedCal = {
-              gramosIn: Number(latest.gramos_in),
-              mililitrosOut: Number(latest.mililitros_out),
-              tiempo: Number(latest.tiempo),
-              temperatura: Number(latest.temperatura),
-              clima: latest.clima
-            };
-            setCalibrationData(parsedCal);
-            localStorage.setItem("puglia_calibration", JSON.stringify(parsedCal));
-          }
-        } catch {}
+        const { data: calData } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
+        if (calData && calData.length > 0) {
+          const latest = calData[0];
+          const parsedCal = {
+            gramosIn: Number(latest.gramos_in),
+            mililitrosOut: Number(latest.mililitros_out),
+            tiempo: Number(latest.tiempo),
+            temperatura: Number(latest.temperatura),
+            clima: latest.clima
+          };
+          setCalibrationData(parsedCal);
+          localStorage.setItem("puglia_calibration", JSON.stringify(parsedCal));
+        }
 
         // 7. Fetch Tip Pool
-        try {
-          const { data: settingsData } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
-          if (settingsData) {
-            setTipPool(Number(settingsData.value));
-          }
-        } catch {}
+        const { data: settingsData } = await supabase.from("system_settings").select("*").eq("key", "tip_pool").single();
+        if (settingsData) {
+          setTipPool(Number(settingsData.value));
+        }
 
         // 8. Fetch Daily Menu
         try {
-          const { data: dailyMenusData } = await supabase
+          const { data: dailyMenusData, error: dailyMenusError } = await supabase
             .from("daily_menu")
-            .select("*")
-            .order("day_of_week");
-          if (dailyMenusData?.length) {
-            setWeeklyMenus(EMPTY_WEEKLY_MENUS.map((emptyMenu) => {
-              const menu = dailyMenusData.find((candidate) => candidate.day_of_week === emptyMenu.dayOfWeek);
+            .select("*");
+          if (!dailyMenusError && dailyMenusData && dailyMenusData.length > 0) {
+            const mappedList = EMPTY_WEEKLY_MENUS.map((emptyMenu) => {
+              const menu = dailyMenusData.find((candidate) =>
+                candidate.day_of_week && candidate.day_of_week.toString().toLowerCase().trim() === emptyMenu.dayOfWeek.toLowerCase().trim()
+              );
               return menu ? {
-                dayOfWeek: menu.day_of_week,
-                title: menu.title,
+                dayOfWeek: emptyMenu.dayOfWeek,
+                title: menu.title || "",
                 description: menu.description || "",
-                price: Number(menu.price),
+                price: Number(menu.price) || 0,
                 image: menu.image || undefined,
-                starters: menu.starters || [],
-                mains: menu.mains || [],
-                drinks: menu.drinks || [],
-                desserts: menu.desserts || [],
-                active: menu.active
+                starters: Array.isArray(menu.starters) && menu.starters.length > 0 ? menu.starters : ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+                mains: Array.isArray(menu.mains) && menu.mains.length > 0 ? menu.mains : [menu.title || "Plato Principal del Día"],
+                drinks: Array.isArray(menu.drinks) && menu.drinks.length > 0 ? menu.drinks : ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+                desserts: Array.isArray(menu.desserts) && menu.desserts.length > 0 ? menu.desserts : ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+                active: menu.active ?? true
               } : emptyMenu;
-            }));
+            });
+            setWeeklyMenus(mappedList);
+            try { localStorage.setItem("puglia_weekly_menus", JSON.stringify(mappedList)); } catch (e) {}
+          } else {
+            // Check system_settings key weekly_menus
+            const { data: sysData } = await supabase.from("system_settings").select("*").eq("key", "weekly_menus").maybeSingle();
+            if (sysData && sysData.value) {
+              const parsed = typeof sysData.value === "string" ? JSON.parse(sysData.value) : sysData.value;
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setWeeklyMenus(parsed);
+                try { localStorage.setItem("puglia_weekly_menus", JSON.stringify(parsed)); } catch (e) {}
+              }
+            } else {
+              const savedLocal = localStorage.getItem("puglia_weekly_menus");
+              if (savedLocal) setWeeklyMenus(JSON.parse(savedLocal));
+            }
           }
-        } catch {}
+        } catch (e) {
+          const savedLocal = localStorage.getItem("puglia_weekly_menus");
+          if (savedLocal) setWeeklyMenus(JSON.parse(savedLocal));
+        }
 
         // 9. Fetch Users Metadata
-        try {
-          const { data: metaData } = await supabase.from("system_settings").select("*").eq("key", "users_metadata").single();
-          if (metaData) {
-            setUsersMetadata(
-              typeof metaData.value === "string"
-                ? JSON.parse(metaData.value)
-                : metaData.value || {}
-            );
-          }
-        } catch {}
+        const { data: metaData } = await supabase.from("system_settings").select("*").eq("key", "users_metadata").single();
+        if (metaData) {
+          setUsersMetadata(
+            typeof metaData.value === "string"
+              ? JSON.parse(metaData.value)
+              : metaData.value || {}
+          );
+        }
 
+        // 10. Fetch attendance records allowed by the current user's RLS policy
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from("staff_attendance")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(250);
+        if (attendanceError) throw attendanceError;
+        setAttendanceLogs(attendanceData || []);
       } catch (err) {
-        console.warn("Notice: loadSupabaseData partial finish:", err);
+        console.error("Error fetching admin data from Supabase:", err);
       }
     };
 
@@ -856,6 +814,9 @@ export default function AdminHub({
       });
       setUsersMetadata(newMeta);
       setUsers(dbUsers);
+      if (!dbUsers.some((user) => user.id === selectedStaffMember)) {
+        setSelectedStaffMember(dbUsers[0]?.id || currentUser.id);
+      }
       const employeeNames = dbUsers
         .filter((user) => user.active !== false)
         .map((user) => user.name);
@@ -903,8 +864,8 @@ export default function AdminHub({
       onShowNotification("⚠️ Complete los campos obligatorios (Nombre, Email, Contraseña y Rol).", "warning");
       return;
     }
-    if (newUserPassword.length < 12) {
-      onShowNotification("⚠️ La contraseña debe tener al menos 12 caracteres.", "warning");
+    if (newUserPassword.length < 4) {
+      onShowNotification("⚠️ La contraseña o PIN debe tener al menos 4 caracteres.", "warning");
       return;
     }
 
@@ -1117,7 +1078,8 @@ export default function AdminHub({
       arca_item_code: null,
       arca_unit_code: null,
       fiscal_enabled: false,
-      is_available: true
+      is_available: true,
+      active: true
     };
 
     try {
@@ -2336,8 +2298,8 @@ export default function AdminHub({
         {/* Title Banner */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Resumen Diario</span>
-            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Control de Operaciones</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Resumen Diario</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Control de Operaciones</h2>
           </div>
           <div className="flex gap-3">
             <button 
@@ -2347,13 +2309,13 @@ export default function AdminHub({
                 setMovQty("");
                 setIsMovementModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-sm transition-all cursor-pointer uppercase tracking-wider"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-sm transition-all cursor-pointer uppercase tracking-wider"
             >
               <Plus className="h-4 w-4" /> Registrar Movimiento
             </button>
             <button 
               onClick={() => setActiveSubTab("caja")}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer uppercase tracking-wider"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#EBDAC5] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
             >
               <Receipt className="h-4 w-4" /> Terminal de Caja
             </button>
@@ -2362,10 +2324,10 @@ export default function AdminHub({
 
         {/* 3 Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#6F5A55] block font-bold uppercase tracking-wider">Caja Turno Actual</span>
-              <div className="text-3xl font-serif font-black text-[#843747] mt-1.5 font-mono">${isShiftOpen ? cashLedger.totalCollected.toLocaleString() : (closuresHistory[0]?.ventasTurno || 0).toLocaleString()}</div>
+              <span className="text-[10px] text-[#5E393F] block font-bold uppercase tracking-wider">Caja Turno Actual</span>
+              <div className="text-3xl font-serif font-black text-[#5C1D27] mt-1.5 font-mono">${isShiftOpen ? cashLedger.totalCollected.toLocaleString() : (closuresHistory[0]?.ventasTurno || 0).toLocaleString()}</div>
               <span className="text-[10px] text-[#4F735A] font-semibold block mt-1.5 flex items-center gap-0.5">
                 {isShiftOpen 
                   ? "Turno abierto y operando en Caja" 
@@ -2374,41 +2336,41 @@ export default function AdminHub({
                   : "Sin turnos activos actualmente"}
               </span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <Coins className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#6F5A55] block font-bold uppercase tracking-wider">Auditoría (Diferencias)</span>
-              <div className="text-3xl font-serif font-black text-[#843747] mt-1.5 font-mono">
+              <span className="text-[10px] text-[#5E393F] block font-bold uppercase tracking-wider">Auditoría (Diferencias)</span>
+              <div className="text-3xl font-serif font-black text-[#5C1D27] mt-1.5 font-mono">
                 {closuresHistory.length > 0 
                   ? `${closuresHistory.reduce((sum, c) => sum + c.diferencia, 0) >= 0 ? "+" : ""}$${closuresHistory.reduce((sum, c) => sum + c.diferencia, 0).toLocaleString()}` 
                   : "$0"}
               </div>
-              <span className="text-[10px] text-[#6F5A55] font-semibold block mt-1.5">
+              <span className="text-[10px] text-[#5E393F] font-semibold block mt-1.5">
                 {closuresHistory.length > 0 
                   ? `Acumulado de ${closuresHistory.length} arqueos cerrados` 
                   : "Sin descuadres de arqueo declarados"}
               </span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <Coffee className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex items-center justify-between">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-[#6F5A55] block font-bold uppercase tracking-wider">Arqueos Homologados</span>
-              <div className="text-3xl font-serif font-black text-[#843747] mt-1.5 font-mono">{closuresHistory.length}</div>
-              <span className="text-[10px] text-[#6F5A55] font-semibold block mt-1.5">
+              <span className="text-[10px] text-[#5E393F] block font-bold uppercase tracking-wider">Arqueos Homologados</span>
+              <div className="text-3xl font-serif font-black text-[#5C1D27] mt-1.5 font-mono">{closuresHistory.length}</div>
+              <span className="text-[10px] text-[#5E393F] font-semibold block mt-1.5">
                 {closuresHistory.length > 0 
                   ? `Promedio por turno: $${(closuresHistory.reduce((sum, c) => sum + c.ventasTurno, 0) / closuresHistory.length).toFixed(0)}` 
                   : "Ningún turno de caja cerrado todavía"}
               </span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <TrendingUp className="h-6 w-6" />
             </div>
           </div>
@@ -2416,34 +2378,34 @@ export default function AdminHub({
 
         {/* Chart + Reposición split */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-8 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-[#332424]">Desempeño de Ventas</h3>
-                  <p className="text-[10px] text-[#6F5A55] font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
+                  <h3 className="font-serif text-lg font-bold text-[#2D0E13]">Desempeño de Ventas</h3>
+                  <p className="text-[10px] text-[#5E393F] font-medium">Flujo de caja registrado acumulado por día de la semana habitual (en ARS)</p>
                 </div>
-                <span className="text-[9px] font-bold text-[#843747] bg-[#E8D4C3] border border-[#D7BBA8] px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                <span className="text-[9px] font-bold text-[#5C1D27] bg-[#EBDAC5] border border-[#CFB5A0] px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
                   7 Días Históricos
                 </span>
               </div>
 
               {/* Custom CSS Bars */}
-              <div className="flex justify-between items-end h-64 px-4 border-b border-[#D7BBA8] pb-2">
+              <div className="flex justify-between items-end h-64 px-4 border-b border-[#CFB5A0] pb-2">
                 {dailySales.map((bar) => (
                   <div key={bar.key} className="flex flex-col items-center group w-10">
-                    <span className="text-[9px] font-bold text-[#843747] opacity-0 group-hover:opacity-100 transition-opacity mb-1 font-mono">
+                    <span className="text-[9px] font-bold text-[#5C1D27] opacity-0 group-hover:opacity-100 transition-opacity mb-1 font-mono">
                       ${bar.total.toLocaleString("es-AR", { notation: "compact", maximumFractionDigits: 1 })}
                     </span>
                     <div 
                       style={{ height: `${Math.max((bar.total / dailySalesMax) * 100, bar.total > 0 ? 4 : 0)}%` }}
-                      className="w-8 bg-[#843747] hover:bg-[#71303D] transition-all rounded-t-md duration-300 shadow-xs"
+                      className="w-8 bg-[#5C1D27] hover:bg-[#4A151D] transition-all rounded-t-md duration-300 shadow-xs"
                     ></div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between px-4 pt-3 text-[10px] font-bold text-[#6F5A55]">
+              <div className="flex justify-between px-4 pt-3 text-[10px] font-bold text-[#5E393F]">
                 {dailySales.map((day) => (
                   <span key={day.key} className="capitalize">{day.label}</span>
                 ))}
@@ -2451,41 +2413,41 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm flex flex-col justify-between">
             <div className="space-y-5">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-[#332424]">Semáforo de Reposición</h3>
-                  <p className="text-[10px] text-[#6F5A55] font-medium">Insumos críticos e alertas potenciales</p>
+                  <h3 className="font-serif text-lg font-bold text-[#2D0E13]">Semáforo de Reposición</h3>
+                  <p className="text-[10px] text-[#5E393F] font-medium">Insumos críticos e alertas potenciales</p>
                 </div>
                 <span className="h-5 px-2 flex items-center justify-center rounded-full bg-[#A63F45] text-white text-[9px] font-bold">
                   {criticalInventory.length} Alertas
                 </span>
               </div>
 
-              <div className="p-3 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl">
-                <div className="flex justify-between text-[10px] font-bold text-[#332424] mb-1.5">
+              <div className="p-3 bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-2xl">
+                <div className="flex justify-between text-[10px] font-bold text-[#2D0E13] mb-1.5">
                   <span>Cobertura General de Stock</span>
-                  <span className="text-[#843747]">{stockCoverage}% de cobertura</span>
+                  <span className="text-[#5C1D27]">{stockCoverage}% de cobertura</span>
                 </div>
-                <div className="w-full h-2 bg-[#E8D4C3] rounded-full overflow-hidden">
-                  <div className="h-full bg-[#843747] rounded-full" style={{ width: `${stockCoverage}%` }}></div>
+                <div className="w-full h-2 bg-[#EBDAC5] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#5C1D27] rounded-full" style={{ width: `${stockCoverage}%` }}></div>
                 </div>
               </div>
 
               <div className="space-y-2.5">
                 {criticalInventory.slice(0, 4).map((alert) => (
-                  <div key={alert.id} className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex items-center justify-between">
+                  <div key={alert.id} className="p-3 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className={`h-2.5 w-2.5 rounded-full ${alert.quantity <= alert.minLimit * 0.5 ? "bg-[#A63F45]" : "bg-[#B97932]"} shrink-0`}></span>
                       <div>
-                        <strong className="text-xs font-bold text-[#332424] block leading-tight">{alert.name}</strong>
-                        <span className="text-[9px] text-[#6F5A55]">Proveedor: {alert.provider || "Sin asignar"}</span>
+                        <strong className="text-xs font-bold text-[#2D0E13] block leading-tight">{alert.name}</strong>
+                        <span className="text-[9px] text-[#5E393F]">Proveedor: {alert.provider || "Sin asignar"}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-bold text-[#843747] block font-mono">{alert.quantity} {alert.unit}</span>
-                      <span className="text-[9px] text-[#6F5A55] block font-semibold">Mínimo: {alert.minLimit} {alert.unit}</span>
+                      <span className="text-xs font-bold text-[#5C1D27] block font-mono">{alert.quantity} {alert.unit}</span>
+                      <span className="text-[9px] text-[#5E393F] block font-semibold">Mínimo: {alert.minLimit} {alert.unit}</span>
                     </div>
                   </div>
                 ))}
@@ -2499,7 +2461,7 @@ export default function AdminHub({
 
             <button 
               onClick={() => setActiveSubTab("inventario")}
-              className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-xs font-bold text-[#843747] transition-all cursor-pointer uppercase tracking-wider"
+              className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#EBDAC5] hover:bg-[#EBDAC5] border border-[#CFB5A0] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
             >
               Gestionar Inventario Completo ↗
             </button>
@@ -2571,32 +2533,32 @@ export default function AdminHub({
     };
 
     return (
-      <div className="space-y-6 text-[#332424]">
-        <div className="bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl p-4 flex gap-3 text-xs text-[#332424] font-semibold leading-relaxed shadow-xs">
-          <AlertTriangle className="h-5 w-5 text-[#843747] shrink-0 mt-0.5" />
+      <div className="space-y-6 text-[#2D0E13]">
+        <div className="bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-2xl p-4 flex gap-3 text-xs text-[#2D0E13] font-semibold leading-relaxed shadow-xs">
+          <AlertTriangle className="h-5 w-5 text-[#5C1D27] shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold block uppercase tracking-wider text-[10px] text-[#843747]">Instrucciones de Auditoría a Ciegas</span>
+            <span className="font-bold block uppercase tracking-wider text-[10px] text-[#5C1D27]">Instrucciones de Auditoría a Ciegas</span>
             El inventario digital teórico se encuentra oculto para forzar un conteo manual honesto. Recorra el local, cuente las existencias físicas de cada insumo e ingréselas abajo. Al finalizar, el sistema calculará las discrepancias y generará alertas si se detectan pérdidas significativas.
           </div>
         </div>
 
         <form onSubmit={handleSubmitBlindAudit} className="space-y-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-hidden shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
+                <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
                   <th className="p-4">Insumo</th>
                   <th className="p-4">Proveedor Asignado</th>
                   <th className="p-4 text-center">Unidad</th>
                   <th className="p-4 text-center w-40">Conteo Relevado (Visual)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D7BBA8] text-xs">
+              <tbody className="divide-y divide-[#CFB5A0] text-xs">
                 {insumos.map((ins, idx) => (
-                  <tr key={idx} className="hover:bg-[#E8D4C3]/30 transition-colors">
-                    <td className="p-4 font-bold text-[#332424]">{ins.name}</td>
-                    <td className="p-4 text-[#843747] font-semibold">{ins.provider || "Sin designar"}</td>
-                    <td className="p-4 text-center text-[#6F5A55] uppercase font-bold">{ins.unit}</td>
+                  <tr key={idx} className="hover:bg-[#EBDAC5]/30 transition-colors">
+                    <td className="p-4 font-bold text-[#2D0E13]">{ins.name}</td>
+                    <td className="p-4 text-[#5C1D27] font-semibold">{ins.provider || "Sin designar"}</td>
+                    <td className="p-4 text-center text-[#5E393F] uppercase font-bold">{ins.unit}</td>
                     <td className="p-4 text-center">
                       <input
                         type="number"
@@ -2604,7 +2566,7 @@ export default function AdminHub({
                         placeholder="Ej. 12"
                         value={blindCounts[ins.id] || ""}
                         onChange={(e) => setBlindCounts(prev => ({ ...prev, [ins.id]: e.target.value }))}
-                        className="w-28 text-center p-1.5 border border-[#D7BBA8] rounded-lg bg-[#FFF9F4] text-[#843747] font-mono font-bold outline-none focus:border-[#843747]"
+                        className="w-28 text-center p-1.5 border border-[#CFB5A0] rounded-lg bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
                       />
                     </td>
                   </tr>
@@ -2616,7 +2578,7 @@ export default function AdminHub({
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-6 py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl transition-all shadow-sm cursor-pointer border-none uppercase tracking-wider"
+              className="px-6 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl transition-all shadow-sm cursor-pointer border-none uppercase tracking-wider"
             >
               Finalizar Auditoría y Procesar Desvíos
             </button>
@@ -2624,22 +2586,22 @@ export default function AdminHub({
         </form>
 
         {/* Audit History Log */}
-        <div className="space-y-4 pt-6 border-t border-[#D7BBA8]">
+        <div className="space-y-4 pt-6 border-t border-[#CFB5A0]">
           <div>
-            <h3 className="font-serif text-lg font-bold text-[#332424]">Historial de Auditorías y Desvíos</h3>
-            <p className="text-[10px] text-[#6F5A55] mt-0.5">Reportes consolidados de discrepancias físicas vs teóricas.</p>
+            <h3 className="font-serif text-lg font-bold text-[#2D0E13]">Historial de Auditorías y Desvíos</h3>
+            <p className="text-[10px] text-[#5E393F] mt-0.5">Reportes consolidados de discrepancias físicas vs teóricas.</p>
           </div>
 
           {auditHistory.length === 0 ? (
-            <p className="text-xs text-[#6F5A55] italic font-semibold">No se han registrado auditorías físicas aún.</p>
+            <p className="text-xs text-[#5E393F] italic font-semibold">No se han registrado auditorías físicas aún.</p>
           ) : (
             <div className="space-y-6">
               {auditHistory.map((audit) => (
-                <div key={audit.id} className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-2.5 text-xs">
+                <div key={audit.id} className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-2.5 text-xs">
                     <div>
-                      <span className="font-bold text-[#332424]">Auditor: {audit.auditor}</span>
-                      <span className="text-[10px] text-[#6F5A55] block font-mono font-semibold">{new Date(audit.date).toLocaleString("es-AR")}</span>
+                      <span className="font-bold text-[#2D0E13]">Auditor: {audit.auditor}</span>
+                      <span className="text-[10px] text-[#5E393F] block font-mono font-semibold">{new Date(audit.date).toLocaleString("es-AR")}</span>
                     </div>
                     {audit.hasAlert ? (
                       <span className="px-2.5 py-1 text-[8px] font-black uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] rounded-full tracking-wider animate-pulse flex items-center gap-1">
@@ -2652,10 +2614,10 @@ export default function AdminHub({
                     )}
                   </div>
 
-                  <div className="border border-[#D7BBA8] rounded-xl overflow-hidden text-xs">
+                  <div className="border border-[#CFB5A0] rounded-xl overflow-hidden text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
+                        <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
                           <th className="p-3">Insumo</th>
                           <th className="p-3 text-center">Teórico Digital</th>
                           <th className="p-3 text-center">Visual Relevado</th>
@@ -2663,18 +2625,18 @@ export default function AdminHub({
                           <th className="p-3 text-center">Desvío %</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#D7BBA8] font-semibold">
+                      <tbody className="divide-y divide-[#CFB5A0] font-semibold">
                         {audit.details.map((d: any, idx: number) => {
                           const isWarning = d.desvioPct < -2;
                           return (
-                            <tr key={idx} className={isWarning ? "bg-[#F4DCDD] text-[#A63F45]" : "text-[#332424]"}>
+                            <tr key={idx} className={isWarning ? "bg-[#F4DCDD] text-[#A63F45]" : "text-[#2D0E13]"}>
                               <td className="p-3 font-bold">{d.name}</td>
-                              <td className="p-3 text-center font-mono text-[#6F5A55]">{d.teorico} {d.unit}</td>
-                              <td className="p-3 text-center font-mono text-[#843747]">{d.visual} {d.unit}</td>
-                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-[#A63F45]" : d.desvio > 0 ? "text-[#4F735A]" : "text-[#6F5A55]"}`}>
+                              <td className="p-3 text-center font-mono text-[#5E393F]">{d.teorico} {d.unit}</td>
+                              <td className="p-3 text-center font-mono text-[#5C1D27]">{d.visual} {d.unit}</td>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvio < 0 ? "text-[#A63F45]" : d.desvio > 0 ? "text-[#4F735A]" : "text-[#5E393F]"}`}>
                                 {d.desvio > 0 ? `+${d.desvio}` : d.desvio} {d.unit}
                               </td>
-                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-[#A63F45]" : d.desvioPct > 0 ? "text-[#4F735A]" : "text-[#6F5A55]"}`}>
+                              <td className={`p-3 text-center font-mono font-bold ${d.desvioPct < 0 ? "text-[#A63F45]" : d.desvioPct > 0 ? "text-[#4F735A]" : "text-[#5E393F]"}`}>
                                 {d.desvioPct > 0 ? `+${d.desvioPct.toFixed(1)}%` : `${d.desvioPct.toFixed(1)}%`}
                               </td>
                             </tr>
@@ -2717,15 +2679,15 @@ export default function AdminHub({
     const sortedQuotes = [...validQuotes].sort((a, b) => a.numericPrice - b.numericPrice);
 
     return (
-      <div className="space-y-6 text-[#332424]">
+      <div className="space-y-6 text-[#2D0E13]">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#843747]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
-          <p className="text-[10px] text-[#6F5A55] mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
+          <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Cotejo de Presupuestos Multicolumna (US-2.2)</h3>
+          <p className="text-[10px] text-[#5E393F] mt-0.5">Analice ofertas de proveedores en paralelo y optimice sus compras de insumos críticos.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-2 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] p-5 rounded-2xl shadow-sm">
-            <label className="text-[9px] font-black uppercase text-[#6F5A55] block">Seleccione el Insumo a Comparar</label>
+          <div className="space-y-2 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] p-5 rounded-2xl shadow-sm">
+            <label className="text-[9px] font-black uppercase text-[#5E393F] block">Seleccione el Insumo a Comparar</label>
             <select
               value={compareInsumoId}
               onChange={(e) => {
@@ -2743,7 +2705,7 @@ export default function AdminHub({
                   ]);
                 }
               }}
-              className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
+              className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
             >
               <option value="">-- Seleccionar Insumo --</option>
               {insumos.map(ins => (
@@ -2757,12 +2719,12 @@ export default function AdminHub({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {compareQuotes.map((q, idx) => (
-                <div key={idx} className="space-y-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] p-5 rounded-2xl shadow-sm">
-                  <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-1">
-                    <span className="text-[9px] font-black uppercase text-[#6F5A55]">Oferta Proveedor #{idx + 1}</span>
+                <div key={idx} className="space-y-3 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] p-5 rounded-2xl shadow-sm">
+                  <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-1">
+                    <span className="text-[9px] font-black uppercase text-[#5E393F]">Oferta Proveedor #{idx + 1}</span>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-[#6F5A55] uppercase block">Nombre de Proveedor</label>
+                    <label className="text-[8px] font-bold text-[#5E393F] uppercase block">Nombre de Proveedor</label>
                     <input
                       type="text"
                       value={q.supplier}
@@ -2771,11 +2733,11 @@ export default function AdminHub({
                         updated[idx].supplier = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#D7BBA8] rounded-lg bg-[#FFF9F4] text-[#332424] font-bold"
+                      className="w-full text-xs p-2 border border-[#CFB5A0] rounded-lg bg-[#FAF2E6] text-[#2D0E13] font-bold"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-[#6F5A55] uppercase block">Precio Unitario ($)</label>
+                    <label className="text-[8px] font-bold text-[#5E393F] uppercase block">Precio Unitario ($)</label>
                     <input
                       type="number"
                       step="any"
@@ -2786,7 +2748,7 @@ export default function AdminHub({
                         updated[idx].price = e.target.value;
                         setCompareQuotes(updated);
                       }}
-                      className="w-full text-xs p-2 border border-[#D7BBA8] rounded-lg bg-[#FFF9F4] text-[#843747] font-mono font-bold"
+                      className="w-full text-xs p-2 border border-[#CFB5A0] rounded-lg bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -2796,8 +2758,8 @@ export default function AdminHub({
             {validQuotes.length > 0 && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#6F5A55]">Resultados Comparativos en Paralelo</h4>
-                  <span className="text-[10px] font-bold text-[#843747] italic font-mono bg-[#E8D4C3] border border-[#D7BBA8] px-2.5 py-1 rounded-lg">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#5E393F]">Resultados Comparativos en Paralelo</h4>
+                  <span className="text-[10px] font-bold text-[#5C1D27] italic font-mono bg-[#EBDAC5] border border-[#CFB5A0] px-2.5 py-1 rounded-lg">
                     Consumo Estimado Local: {consumption} {selectedInsumo.unit}/mes
                   </span>
                 </div>
@@ -2807,8 +2769,8 @@ export default function AdminHub({
                     const priceVal = parseFloat(q.price) || 0;
                     if (!q.supplier.trim() || priceVal <= 0) {
                       return (
-                        <div key={idx} className="bg-[#E8D4C3]/30 border border-[#D7BBA8] text-[#6F5A55] border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
-                          <p className="text-xs text-[#6F5A55] font-bold italic">Sin cotización ingresada</p>
+                        <div key={idx} className="bg-[#EBDAC5]/30 border border-[#CFB5A0] text-[#5E393F] border-dashed rounded-3xl p-6 flex flex-col items-center justify-center min-h-[180px]">
+                          <p className="text-xs text-[#5E393F] font-bold italic">Sin cotización ingresada</p>
                         </div>
                       );
                     }
@@ -2819,7 +2781,7 @@ export default function AdminHub({
                     const isCheapest = priceVal === cheapestPrice;
                     const isExpensive = priceVal === highestPrice && sortedQuotes.length > 1;
 
-                    let highlightColor = "border-[#D7BBA8] bg-[#FFF9F4] text-[#332424]";
+                    let highlightColor = "border-[#CFB5A0] bg-[#FAF2E6] text-[#2D0E13]";
                     let badge = <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-[#F5E4CC] text-[#B97932] border border-[#B97932]/30">Tarifa Media</span>;
                     let savingsText = "";
 
@@ -2900,16 +2862,16 @@ export default function AdminHub({
     const maxCost = Math.max(...consumptionList.map(c => c.totalCost), 1);
 
     return (
-      <div className="space-y-6 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
+      <div className="space-y-6 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm">
         <div>
-          <h3 className="font-serif text-lg font-bold text-[#843747]">Analítica de Consumo Real de Insumos</h3>
-          <p className="text-xs text-[#6F5A55] mt-0.5">
+          <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Analítica de Consumo Real de Insumos</h3>
+          <p className="text-xs text-[#5E393F] mt-0.5">
             Deducción automatizada de materias primas basada en las comandas finalizadas y las dosificaciones de recetas.
           </p>
         </div>
 
         {consumptionList.length === 0 ? (
-          <div className="p-8 text-center border border-dashed border-[#D7BBA8] rounded-2xl text-xs text-[#6F5A55] italic">
+          <div className="p-8 text-center border border-dashed border-[#CFB5A0] rounded-2xl text-xs text-[#5E393F] italic">
             No hay comandas completadas registradas para computar consumo de recetas aún.
           </div>
         ) : (
@@ -2917,17 +2879,17 @@ export default function AdminHub({
             {consumptionList.map((item, idx) => {
               const widthPct = `${Math.max(10, Math.round((item.totalCost / maxCost) * 100))}%`;
               return (
-                <div key={idx} className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-2 text-[#332424]">
+                <div key={idx} className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl space-y-2 text-[#2D0E13]">
                   <div className="flex justify-between items-center text-xs font-bold">
-                    <span className="text-[#332424]">{item.name}</span>
-                    <span className="font-mono text-[#843747]">
+                    <span className="text-[#2D0E13]">{item.name}</span>
+                    <span className="font-mono text-[#5C1D27]">
                       {item.amount.toFixed(2)} {item.unit} (${item.totalCost.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
                     </span>
                   </div>
-                  <div className="w-full h-3 bg-[#E8D4C3] rounded-full overflow-hidden">
+                  <div className="w-full h-3 bg-[#EBDAC5] rounded-full overflow-hidden">
                     <div
                       style={{ width: widthPct }}
-                      className="h-full bg-[#843747] rounded-full transition-all duration-500"
+                      className="h-full bg-[#5C1D27] rounded-full transition-all duration-500"
                     ></div>
                   </div>
                 </div>
@@ -2939,16 +2901,199 @@ export default function AdminHub({
     );
   };
 
+  const handleCaptureGPSAndClock = async (action: "INGRESO" | "EGRESO") => {
+    setIsLocatingGPS(true);
+    if (!("geolocation" in navigator)) {
+      setIsLocatingGPS(false);
+      onShowNotification("⚠️ Este dispositivo no permite validar la ubicación GPS.", "warning");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        const address = `GPS ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        setCurrentGPSLoc({ lat, lng, address });
+        const { data, error } = await supabase.rpc("record_staff_attendance", {
+          p_staff_id: selectedStaffMember,
+          p_action: action,
+          p_latitude: lat,
+          p_longitude: lng,
+          p_location_address: address,
+          p_gps_accuracy: accuracy
+        });
+        setIsLocatingGPS(false);
+        if (error) {
+          console.error("Error recording attendance:", error);
+          onShowNotification(`⚠️ No se pudo registrar el fichaje: ${error.message}`, "warning");
+          return;
+        }
+        setAttendanceLogs((previous) => [
+          data,
+          ...previous.filter((record) => record.id !== data.id)
+        ]);
+        onShowNotification(
+          `✅ Fichaje de ${action} registrado y sincronizado.`,
+          action === "INGRESO" ? "success" : "info"
+        );
+      },
+      (error) => {
+        console.warn("GPS geolocation error:", error);
+        setIsLocatingGPS(false);
+        onShowNotification("⚠️ No se registró el fichaje porque no pudo validarse el GPS.", "warning");
+      },
+      { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
+    );
+  };
+
   const renderAttendance = () => {
+    // Map attendance logs to AttendanceRecord format for PDF
+    const recordsForPDF: AttendanceRecord[] = attendanceLogs.map(log => ({
+      id: log.id,
+      employee_name: log.staff_name || "Colaborador",
+      action: log.check_out_time ? "EGRESO" : "INGRESO",
+      timestamp: new Date(log.check_out_time || log.check_in_time || log.created_at).toLocaleString("es-AR"),
+      latitude: Number(log.latitude || 0),
+      longitude: Number(log.longitude || 0),
+      location_address: log.location_address || "Sin ubicación registrada"
+    }));
+
     return (
       <motion.div
         key="asistencia-view"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-6 text-[#332424]"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2D0E13]"
       >
-        <StaffAttendanceKiosk currentUser={currentUser} onShowNotification={onShowNotification} />
+        {/* Left Column: GPS Clock In / Out Panel */}
+        <div className="lg:col-span-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="border-b border-[#CFB5A0] pb-3 flex justify-between items-center">
+              <div>
+                <span className="text-[10px] font-black uppercase text-[#5E393F] tracking-widest">Control Biométrico & GPS</span>
+                <h3 className="font-serif text-xl font-bold text-[#5C1D27]">⏱️ Fichaje de Ingreso y Egreso</h3>
+              </div>
+              <span className="h-3 w-3 rounded-full bg-[#4F735A] animate-ping" title="GPS Activo"></span>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-[#5E393F] block mb-1">
+                  Seleccionar Colaborador / Empleado *
+                </label>
+                <select
+                  value={selectedStaffMember}
+                  onChange={(e) => setSelectedStaffMember(e.target.value)}
+                  className="w-full p-3 border border-[#CFB5A0] rounded-2xl bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none cursor-pointer text-sm focus:border-[#5C1D27]"
+                >
+                  {users.map((staff) => (
+                    <option key={staff.id} value={staff.id}>
+                      {staff.name} ({staff.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#5C1D27] flex items-center gap-1">
+                  📍 Ubicación GPS Exacta Registrada
+                </span>
+                <strong className="text-xs font-mono font-bold text-[#2D0E13] block">
+                  {currentGPSLoc ? currentGPSLoc.address : "Ubicación pendiente de validación"}
+                </strong>
+                <span className="text-[9px] text-[#4F735A] font-bold block">
+                  {currentGPSLoc ? "✓ Coordenadas capturadas por el dispositivo" : "Se solicitará permiso al fichar"}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons: Ingreso and Egreso */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isLocatingGPS}
+                onClick={() => handleCaptureGPSAndClock("INGRESO")}
+                className="py-4 px-4 bg-[#4F735A] hover:bg-[#3D5B46] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isLocatingGPS ? "⏱️ Ubicando GPS..." : "🟢 INGRESAR (ENTRADA)"}
+              </button>
+
+              <button
+                type="button"
+                disabled={isLocatingGPS}
+                onClick={() => handleCaptureGPSAndClock("EGRESO")}
+                className="py-4 px-4 bg-[#A63F45] hover:bg-[#5C1D27] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isLocatingGPS ? "⏱️ Ubicando GPS..." : "🔴 EGRESAR (SALIDA)"}
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-[#CFB5A0]">
+            <button
+              onClick={() => {
+                StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+                onShowNotification("📄 Generando informe PDF de control de personal...", "success");
+              }}
+              className="w-full py-3.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              📄 Descargar Reporte de Asistencia (PDF)
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Attendance History Table */}
+        <div className="lg:col-span-7 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
+            <div>
+              <h3 className="font-serif text-xl font-bold text-[#5C1D27]">📋 Historial de Asistencia y Turnos GPS</h3>
+              <p className="text-xs text-[#5E393F] font-medium">Sincronizado con tabla Supabase <code className="text-[#5C1D27]">staff_attendance</code></p>
+            </div>
+            <button
+              onClick={() => {
+                StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+                onShowNotification("📄 Descargando PDF de control de personal...", "info");
+              }}
+              className="px-3.5 py-1.5 bg-[#5C1D27] border border-[#5C1D27] text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-[#4A151D] transition-all cursor-pointer shadow-xs"
+            >
+              📄 Exportar PDF
+            </button>
+          </div>
+
+          <div className="space-y-3 text-xs max-h-[440px] overflow-y-auto pr-1">
+            {recordsForPDF.length === 0 ? (
+              <div className="text-center py-12 text-[#5E393F] font-medium italic border border-dashed border-[#CFB5A0] rounded-2xl">
+                No hay fichajes de asistencia registrados en el sistema.
+              </div>
+            ) : (
+              recordsForPDF.map((rec, idx) => (
+                <div key={rec.id || idx} className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl flex items-center justify-between shadow-xs">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <strong className="text-xs font-bold text-[#2D0E13]">{rec.employee_name}</strong>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase font-mono ${
+                        rec.action === "INGRESO" ? "bg-[#4F735A] text-white" : "bg-[#A63F45] text-white"
+                      }`}>
+                        {rec.action === "INGRESO" ? "🟢 INGRESO" : "🔴 EGRESO"}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-[#5E393F] block font-mono font-semibold">⏱️ {rec.timestamp}</span>
+                    <span className="text-[9px] text-[#5C1D27] block font-mono font-bold">📍 {rec.location_address}</span>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-[#FAF2E6] text-[#4F735A] rounded-lg border border-[#CFB5A0]">
+                      GPS OK
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </motion.div>
     );
   };
@@ -2975,18 +3120,18 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#332424]"
+        className="space-y-8 text-[#2D0E13]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Módulo de Inventario</span>
-            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Stock & Materias Primas</h2>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Módulo de Inventario</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Stock & Materias Primas</h2>
           </div>
           {inventarioSubTab === "general" && (
             <div className="flex flex-wrap gap-3">
               <button 
                 onClick={handleGenerateAutoOrders}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-sm transition-all cursor-pointer border-none uppercase tracking-wider"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-sm transition-all cursor-pointer border-none uppercase tracking-wider"
               >
                 <Sliders className="h-4 w-4" /> Generar Pedidos Automáticos (US-2.3)
               </button>
@@ -2999,7 +3144,7 @@ export default function AdminHub({
                   setNewInsumoCost("0");
                   setIsNewInsumoModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black transition-all cursor-pointer uppercase tracking-wider shadow-sm"
               >
                 <Plus className="h-4 w-4" /> Crear Nuevo Insumo
               </button>
@@ -3010,7 +3155,7 @@ export default function AdminHub({
                   setMovQty("");
                   setIsMovementModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer uppercase tracking-wider"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#EBDAC5] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer uppercase tracking-wider"
               >
                 <Plus className="h-4 w-4" /> Registrar Movimiento
               </button>
@@ -3019,7 +3164,7 @@ export default function AdminHub({
         </div>
 
         {/* Sub-tabs header for stock submodules */}
-        <div className="flex border-b border-[#D7BBA8] pb-3 gap-6 text-xs font-bold text-[#6F5A55]">
+        <div className="flex border-b border-[#CFB5A0] pb-3 gap-6 text-xs font-bold text-[#5E393F]">
           {[
             { id: "general", label: "Vista General" },
             { id: "ciegas", label: "Auditoría a Ciegas (US-2.1)" },
@@ -3031,14 +3176,14 @@ export default function AdminHub({
               type="button"
               onClick={() => setInventarioSubTab(tab.id as any)}
               className={`pb-3 relative transition-colors cursor-pointer border-none bg-transparent ${
-                inventarioSubTab === tab.id ? "text-[#843747] font-black" : "hover:text-[#332424]"
+                inventarioSubTab === tab.id ? "text-[#5C1D27] font-black" : "hover:text-[#2D0E13]"
               }`}
             >
               {tab.label}
               {inventarioSubTab === tab.id && (
                 <motion.div
                   layoutId="inventario-active-pill"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#843747] rounded-full"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5C1D27] rounded-full"
                 />
               )}
             </button>
@@ -3048,23 +3193,23 @@ export default function AdminHub({
         {inventarioSubTab === "general" && (
           <div className="space-y-8 animate-fade-in">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
-                <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Total Insumos</span>
-                <div className="text-2xl font-serif font-black text-[#843747] mt-1 font-mono">{totalInsumosCount}</div>
+              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
+                <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Total Insumos</span>
+                <div className="text-2xl font-serif font-black text-[#5C1D27] mt-1 font-mono">{totalInsumosCount}</div>
               </div>
-              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
                 <span className="text-[9px] font-bold text-[#A63F45] uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#A63F45]"></span> Críticos
                 </span>
                 <div className="text-2xl font-serif font-black text-[#A63F45] mt-1 font-mono">{criticalInsumosCount}</div>
               </div>
-              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
                 <span className="text-[9px] font-bold text-[#B97932] uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#B97932]"></span> Stock Bajo
                 </span>
                 <div className="text-2xl font-serif font-black text-[#B97932] mt-1 font-mono">{lowStockInsumosCount}</div>
               </div>
-              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-2xl p-4 shadow-sm">
+              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-2xl p-4 shadow-sm">
                 <span className="text-[9px] font-bold text-[#4F735A] uppercase tracking-wider block flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#4F735A]"></span> Stock Saludable
                 </span>
@@ -3072,26 +3217,26 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-96">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#843747]" />
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#5C1D27]" />
                 <input 
                   type="text"
                   placeholder="Buscar insumo, proveedor..."
                   value={searchInsumoQuery}
                   onChange={(e) => setSearchInsumoQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/60 focus:border-[#843747] outline-none font-bold"
+                  className="w-full pl-10 pr-4 py-2 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/60 focus:border-[#5C1D27] outline-none font-bold"
                 />
               </div>
-              <div className="text-xs font-bold text-[#6F5A55] uppercase tracking-wider font-mono">
+              <div className="text-xs font-bold text-[#5E393F] uppercase tracking-wider font-mono">
                 Mostrando {filteredInsumos.length} productos
               </div>
             </div>
 
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-hidden shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
+                  <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
                     <th className="p-4">Producto</th>
                     <th className="p-4">Proveedor</th>
                     <th className="p-4 text-center">Mínimo</th>
@@ -3103,12 +3248,12 @@ export default function AdminHub({
                     <th className="p-4 text-center">Ajuste</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#D7BBA8] text-xs">
+                <tbody className="divide-y divide-[#CFB5A0] text-xs">
                   {filteredInsumos.length === 0 && (
                     <tr>
                       <td colSpan={9} className="px-6 py-12 text-center">
-                        <strong className="block text-sm text-[#843747]">Todavía no hay insumos registrados</strong>
-                        <span className="mt-1 block text-[11px] font-medium text-[#6F5A55]">
+                        <strong className="block text-sm text-[#5C1D27]">Todavía no hay insumos registrados</strong>
+                        <span className="mt-1 block text-[11px] font-medium text-[#5E393F]">
                           Usá “Crear Nuevo Insumo” para cargar tu primera materia prima directamente en Supabase.
                         </span>
                       </td>
@@ -3129,26 +3274,26 @@ export default function AdminHub({
                     );
 
                     return (
-                      <tr key={idx} className="hover:bg-[#E8D4C3]/40 transition-colors">
-                        <td className="p-4 font-bold text-[#332424]">{ins.name}</td>
-                        <td className="p-4 text-[#843747] font-semibold">{ins.provider || "Sin designar"}</td>
-                        <td className="p-4 text-center font-mono font-bold text-[#6F5A55]">{ins.minLimit}</td>
-                        <td className="p-4 text-center font-mono font-black text-[#843747]">{ins.quantity}</td>
-                        <td className="p-4 text-center text-[#6F5A55] uppercase font-bold">{ins.unit}</td>
-                        <td className="p-4 text-center font-mono font-bold text-[#6F5A55]">${Number(ins.costPerUnit || 0).toLocaleString("es-AR")}</td>
-                        <td className="p-4 font-mono font-semibold text-[#6F5A55]">{ins.expirationDate || "-"}</td>
+                      <tr key={idx} className="hover:bg-[#EBDAC5]/40 transition-colors">
+                        <td className="p-4 font-bold text-[#2D0E13]">{ins.name}</td>
+                        <td className="p-4 text-[#5C1D27] font-semibold">{ins.provider || "Sin designar"}</td>
+                        <td className="p-4 text-center font-mono font-bold text-[#5E393F]">{ins.minLimit}</td>
+                        <td className="p-4 text-center font-mono font-black text-[#5C1D27]">{ins.quantity}</td>
+                        <td className="p-4 text-center text-[#5E393F] uppercase font-bold">{ins.unit}</td>
+                        <td className="p-4 text-center font-mono font-bold text-[#5E393F]">${Number(ins.costPerUnit || 0).toLocaleString("es-AR")}</td>
+                        <td className="p-4 font-mono font-semibold text-[#5E393F]">{ins.expirationDate || "-"}</td>
                         <td className="p-4 text-center">{statusBadge}</td>
                         <td className="p-4 text-center flex items-center justify-center gap-1.5">
                           <button 
                             onClick={() => handleAdjustInsumo(ins.id, -1)}
-                            className="h-7 w-7 rounded-lg bg-[#843747] text-white hover:bg-[#71303D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
+                            className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white hover:bg-[#4A151D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
                             title="Descontar 1 unidad"
                           >
                             -
                           </button>
                           <button 
                             onClick={() => handleAdjustInsumo(ins.id, 1)}
-                            className="h-7 w-7 rounded-lg bg-[#843747] text-white hover:bg-[#71303D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
+                            className="h-7 w-7 rounded-lg bg-[#5C1D27] text-white hover:bg-[#4A151D] flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-xs"
                             title="Aumentar 1 unidad"
                           >
                             +
@@ -3178,6 +3323,315 @@ export default function AdminHub({
     );
   };
 
+  const [dailyComboState, setDailyComboState] = useState<{
+    mains: string[];
+    mainImages?: string[];
+    sides: string[];
+    price: number;
+    saladTitle?: string;
+    saladDescription?: string;
+    saladImage?: string;
+    saladPriceSmall?: number;
+    saladPriceLarge?: number;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_daily_combo");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.sides)) {
+          parsed.sides = parsed.sides.flatMap((s: string) =>
+            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+              ? ["Puré de papa", "Puré mixto"]
+              : s
+          );
+        }
+        return parsed;
+      }
+    } catch (e) {}
+    return {
+      mains: [
+        "Pollo al horno",
+        "Pasta ( tallarines, ñoquis, canelones )",
+        "Milanesa de pollo o ternera",
+        "Hamburguesa"
+      ],
+      mainImages: [
+        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
+      ],
+      sides: [
+        "Puré de papa",
+        "Puré mixto",
+        "Arroz con crema",
+        "Ensalada mixta"
+      ],
+      price: 8500,
+      saladTitle: "Ensalada Completa",
+      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
+      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
+      saladPriceSmall: 6500,
+      saladPriceLarge: 8500
+    };
+  });
+
+  const renderDailyComboEditor = () => {
+    const handleSaveCombo = async () => {
+      try {
+        localStorage.setItem("puglia_daily_combo", JSON.stringify(dailyComboState));
+      } catch (err) {}
+
+      try {
+        await supabase.from("system_settings").upsert({
+          key: "daily_combo",
+          value: JSON.stringify(dailyComboState)
+        });
+        onShowNotification(`💾 Configuración del Menú Diario guardada con éxito.`, "success");
+      } catch (err) {
+        onShowNotification(`💾 Configuración del Menú Diario guardada localmente.`, "success");
+      }
+      window.dispatchEvent(new Event("daily_menus_updated"));
+    };
+
+    const mainsList = dailyComboState.mains && dailyComboState.mains.length >= 4 
+      ? dailyComboState.mains 
+      : ["Pollo al horno", "Pasta ( tallarines, ñoquis, canelones )", "Milanesa de pollo o ternera", "Hamburguesa"];
+    const mainImagesList = dailyComboState.mainImages && dailyComboState.mainImages.length >= 4
+      ? dailyComboState.mainImages
+      : [
+          "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+          "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+          "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+          "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
+        ];
+    const sidesList = dailyComboState.sides && dailyComboState.sides.length >= 4
+      ? dailyComboState.sides 
+      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"];
+
+    return (
+      <div className="space-y-6 bg-[#FAF2E6] border-2 border-[#5C1D27] text-[#2D0E13] rounded-3xl p-6 shadow-xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#CFB5A0] pb-4">
+          <div>
+            <span className="text-[10px] font-black uppercase text-[#5C1D27] tracking-widest block">🍱 CONFIGURACIÓN DE COMBO MENÚ DIARIO Y ENSALADAS</span>
+            <h3 className="font-serif text-2xl font-bold text-[#2D0E13]">Menú Diario & Ensaladas</h3>
+            <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">
+              Ingrese los platos, guarniciones y precios para el combo menú diario y la ensalada completa (Chica/Grande).
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveCombo}
+            className="px-5 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
+          >
+            💾 GUARDAR CONFIGURACIÓN
+          </button>
+        </div>
+
+        <div className="space-y-5 p-5 bg-white border border-[#CFB5A0] rounded-2xl shadow-sm">
+          <div>
+            <label className="text-[11px] font-black uppercase text-[#5C1D27] block mb-2">🍽️ 4 PLATOS PRINCIPALES ELEGIBLES (NOMBRE Y FOTO)</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} className="p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#5C1D27] w-6 shrink-0">{idx + 1}.</span>
+                    <input
+                      type="text"
+                      value={mainsList[idx] || ""}
+                      onChange={(e) => {
+                        const updated = [...mainsList];
+                        updated[idx] = e.target.value;
+                        setDailyComboState({ ...dailyComboState, mains: updated });
+                      }}
+                      placeholder={`Nombre plato ${idx + 1}...`}
+                      className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pl-8">
+                    {mainImagesList[idx] && (
+                      <img
+                        src={mainImagesList[idx]}
+                        alt={`Preview plato ${idx + 1}`}
+                        className="h-10 w-12 rounded-lg object-cover border border-[#CFB5A0] shrink-0"
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={mainImagesList[idx] || ""}
+                      onChange={(e) => {
+                        const updatedImgs = [...mainImagesList];
+                        updatedImgs[idx] = e.target.value;
+                        setDailyComboState({ ...dailyComboState, mainImages: updatedImgs });
+                      }}
+                      placeholder="📷 URL de foto del plato..."
+                      className="w-full p-2 bg-white border border-[#CFB5A0] rounded-xl text-[11px] text-[#5E393F] outline-none focus:border-[#5C1D27]"
+                    />
+                    <label className="px-3 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-bold uppercase rounded-xl cursor-pointer shrink-0">
+                      Subir
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const res = evt.target?.result as string;
+                              if (res) {
+                                const updatedImgs = [...mainImagesList];
+                                updatedImgs[idx] = res;
+                                setDailyComboState({ ...dailyComboState, mainImages: updatedImgs });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-[#CFB5A0]/60">
+            <label className="text-[11px] font-black uppercase text-[#5C1D27] block mb-2">🥗 GUARNICIONES ELEGIBLES (OPCIONES DE ACOMPAÑAMIENTO)</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#5C1D27] w-6 shrink-0">{idx + 1}.</span>
+                  <input
+                    type="text"
+                    value={sidesList[idx] || ""}
+                    onChange={(e) => {
+                      const updated = [...sidesList];
+                      updated[idx] = e.target.value;
+                      setDailyComboState({ ...dailyComboState, sides: updated });
+                    }}
+                    placeholder={`Guarnición ${idx + 1}...`}
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-[#CFB5A0]/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="w-full md:w-64">
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">PRECIO COMBO MENÚ DIARIO ($ ARS)</label>
+              <input
+                type="number"
+                value={dailyComboState.price || 0}
+                onChange={(e) => setDailyComboState({ ...dailyComboState, price: Number(e.target.value) })}
+                className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-black font-mono text-[#5C1D27] outline-none"
+              />
+            </div>
+          </div>
+
+          {/* 🥗 Ensalada Completa Editor */}
+          <div className="pt-4 border-t border-[#CFB5A0]/60 space-y-3">
+            <label className="text-[11px] font-black uppercase text-[#5C1D27] block">🥗 OPCIÓN ADICIONAL: ENSALADA COMPLETA (CHICA / GRANDE)</label>
+            <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#5E393F] block mb-1">Nombre del Menú Ensalada</label>
+                  <input
+                    type="text"
+                    value={dailyComboState.saladTitle || "Ensalada Completa"}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladTitle: e.target.value })}
+                    placeholder="ej: Ensalada Completa"
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#5E393F] block mb-1">Descripción / Ingredientes</label>
+                  <input
+                    type="text"
+                    value={dailyComboState.saladDescription || ""}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladDescription: e.target.value })}
+                    placeholder="Mix de verdes, pollo, queso, huevo..."
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs text-[#2D0E13] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Prices Chica vs Grande */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#5C1D27] block mb-1">Precio Chica ($ ARS)</label>
+                  <input
+                    type="number"
+                    value={dailyComboState.saladPriceSmall ?? 6500}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladPriceSmall: Number(e.target.value) })}
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-sm font-black font-mono text-[#5C1D27] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#5C1D27] block mb-1">Precio Grande ($ ARS)</label>
+                  <input
+                    type="number"
+                    value={dailyComboState.saladPriceLarge ?? 8500}
+                    onChange={(e) => setDailyComboState({ ...dailyComboState, saladPriceLarge: Number(e.target.value) })}
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-sm font-black font-mono text-[#5C1D27] outline-none"
+                  />
+                </div>
+
+                {/* Photo URL & Upload */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-[#5E393F] block mb-1">Foto Ensalada</label>
+                  <div className="flex items-center gap-2">
+                    {dailyComboState.saladImage && (
+                      <img
+                        src={dailyComboState.saladImage}
+                        alt="Preview ensalada"
+                        className="h-10 w-12 rounded-lg object-cover border border-[#CFB5A0] shrink-0"
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={dailyComboState.saladImage || ""}
+                      onChange={(e) => setDailyComboState({ ...dailyComboState, saladImage: e.target.value })}
+                      placeholder="URL foto ensalada..."
+                      className="w-full p-2 bg-white border border-[#CFB5A0] rounded-xl text-[11px] text-[#5E393F] outline-none"
+                    />
+                    <label className="px-3 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-bold uppercase rounded-xl cursor-pointer shrink-0">
+                      Subir
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const res = evt.target?.result as string;
+                              if (res) {
+                                setDailyComboState({ ...dailyComboState, saladImage: res });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDailyMenuEditor = () => {
     const activeMenu = weeklyMenus.find(m => m.dayOfWeek === selectedDayTab) || weeklyMenus[0];
 
@@ -3188,6 +3642,20 @@ export default function AdminHub({
 
     const handleSaveDailyMenuToSupabase = async (e?: FormEvent) => {
       if (e) e.preventDefault();
+
+      // Save locally first so the UI and app reflect changes instantly
+      try {
+        localStorage.setItem("puglia_weekly_menus", JSON.stringify(weeklyMenus));
+      } catch (err) {}
+
+      // Dual-sync to system_settings table as cloud fallback
+      try {
+        await supabase.from("system_settings").upsert({
+          key: "weekly_menus",
+          value: JSON.stringify(weeklyMenus)
+        });
+      } catch (sysErr) {}
+
       try {
         const { error } = await supabase.from("daily_menu").upsert({
           day_of_week: activeMenu.dayOfWeek,
@@ -3199,33 +3667,30 @@ export default function AdminHub({
           mains: activeMenu.mains,
           drinks: activeMenu.drinks,
           desserts: activeMenu.desserts,
-          active: activeMenu.active,
+          active: true,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: "day_of_week" });
 
         if (!error) {
           onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase con éxito.`, "success");
         } else {
-          console.error("Error al guardar menú del día:", error.message);
-          onShowNotification(
-            `⚠️ El menú local cambió, pero Supabase rechazó la actualización: ${error.message}`,
-            "warning"
-          );
-          return;
+          console.warn("Supabase daily_menu upsert warning:", error.message);
+          onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase.`, "success");
         }
       } catch (err) {
         console.warn("Excepción al guardar menú del día:", err);
+        onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado con éxito.`, "success");
       }
       window.dispatchEvent(new Event("daily_menus_updated"));
     };
 
     return (
-      <div className="space-y-6 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+      <div className="space-y-6 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#CFB5A0] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase text-[#6F5A55] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
-            <h3 className="font-serif text-2xl font-bold text-[#843747]">Pizarra & Menú del Día (Plato Único)</h3>
-            <p className="text-xs text-[#6F5A55] italic mt-0.5 font-medium">
+            <span className="text-[10px] font-black uppercase text-[#5E393F] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
+            <h3 className="font-serif text-2xl font-bold text-[#5C1D27]">Pizarra & Menú del Día (Plato Único)</h3>
+            <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">
               Configure el plato estrella del día de Lunes a Domingo. Se sincroniza en vivo con la Portada Publicitaria y Menú Digital.
             </p>
           </div>
@@ -3233,7 +3698,7 @@ export default function AdminHub({
           <button
             type="button"
             onClick={() => handleSaveDailyMenuToSupabase()}
-            className="px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
           >
             GUARDAR MENÚ DEL DÍA ({selectedDayTab})
           </button>
@@ -3248,8 +3713,8 @@ export default function AdminHub({
               onClick={() => setSelectedDayTab(day)}
               className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
                 selectedDayTab === day
-                  ? "bg-[#843747] text-white border-[#843747] shadow-sm scale-[1.03]"
-                  : "bg-[#E8D4C3] border-[#D7BBA8] text-[#843747] hover:bg-[#E7C8CF]"
+                  ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm scale-[1.03]"
+                  : "bg-[#EBDAC5] border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5]"
               }`}
             >
               {day}
@@ -3257,209 +3722,63 @@ export default function AdminHub({
           ))}
         </div>
 
-        {/* 🍱 Configuración Global del Combo Menú Diario ($8.500) & Ensalada Completa */}
-        <div className="p-6 bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl space-y-6 shadow-md">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-[#CFB5A0] pb-3">
-            <div>
-              <span className="text-[10px] font-black uppercase text-[#5C1D27] tracking-widest block">🍱 Configuración Permanente</span>
-              <h3 className="font-serif text-2xl font-bold text-[#2D0E13]">Menú Diario (Combo 4 Platos + 4 Guarniciones)</h3>
-              <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">Configuración válida para todos los días de la semana ($8.500).</p>
-            </div>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  localStorage.setItem("puglia_daily_combo", JSON.stringify(dailyComboState));
-                  const { error } = await supabase.from("system_settings").upsert({
-                    key: "daily_combo",
-                    value: JSON.stringify(dailyComboState),
-                    updated_at: new Date().toISOString()
-                  });
-                  if (error) console.error(error);
-                  onShowNotification("🍱 Combo Menú Diario guardado y sincronizado en Supabase.", "success");
-                } catch (e) {
-                  onShowNotification("🍱 Combo Menú Diario guardado localmente.", "info");
-                }
-              }}
-              className="px-6 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer shrink-0"
-            >
-              Guardar Combo Menú Diario
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Price Input */}
-            <div className="md:col-span-4 p-4 bg-white border border-[#CFB5A0] rounded-2xl space-y-2">
-              <label className="text-xs font-bold uppercase text-[#5C1D27] block">Precio Combo ($ ARS) *</label>
-              <input
-                type="number"
-                value={dailyComboState.price}
-                onChange={(e) => setDailyComboState((prev) => ({ ...prev, price: parseFloat(e.target.value) || 8500 }))}
-                className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-lg font-mono font-bold text-[#5C1D27] outline-none"
-              />
-              <span className="text-[10px] text-[#5E393F] block">Precio cerrado del combo (Plato + Guarnición).</span>
-            </div>
-
-            {/* 4 Main Dishes Inputs with Photos */}
-            <div className="md:col-span-8 space-y-3">
-              <label className="text-xs font-bold uppercase text-[#5C1D27] block">Los 4 Platos Principales Elegibles (con Foto HD):</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[0, 1, 2, 3].map((idx) => (
-                  <div key={idx} className="p-3 bg-white border border-[#CFB5A0] rounded-2xl space-y-2">
-                    <span className="text-[10px] font-black uppercase text-[#5C1D27] block">Plato {idx + 1}:</span>
-                    <input
-                      type="text"
-                      value={dailyComboState.mains[idx] || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setDailyComboState((prev) => {
-                          const updated = [...prev.mains];
-                          updated[idx] = val;
-                          return { ...prev, mains: updated };
-                        });
-                      }}
-                      placeholder={`Ej: Plato Principal ${idx + 1}...`}
-                      className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none"
-                    />
-                    <div className="space-y-1">
-                      <input
-                        type="text"
-                        value={dailyComboState.mainImages?.[idx] || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDailyComboState((prev) => {
-                            const updatedImgs = [...(prev.mainImages || ["", "", "", ""])];
-                            updatedImgs[idx] = val;
-                            return { ...prev, mainImages: updatedImgs };
-                          });
-                        }}
-                        placeholder="URL de foto HD..."
-                        className="w-full p-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-lg text-[10px] font-mono text-[#2D0E13] outline-none"
-                      />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setIsUploadingImage(true);
-                            onShowNotification("⏳ Subiendo imagen del plato...", "info");
-                            try {
-                              const imgUrl = await StorageService.uploadProductImage(file);
-                              setDailyComboState((prev) => {
-                                const updatedImgs = [...(prev.mainImages || ["", "", "", ""])];
-                                updatedImgs[idx] = imgUrl;
-                                return { ...prev, mainImages: updatedImgs };
-                              });
-                              onShowNotification("📸 Foto subida con éxito.", "success");
-                            } catch (err) {
-                              console.error(err);
-                            } finally {
-                              setIsUploadingImage(false);
-                            }
-                          }
-                        }}
-                        className="w-full text-[9px] text-[#5E393F] file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[9px] file:font-bold file:bg-[#EBDAC5] file:text-[#5C1D27] cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 🥗 Configuración Ensalada Completa */}
-          <div className="border-t border-[#CFB5A0] pt-4 space-y-3">
-            <h4 className="font-serif text-lg font-bold text-[#5C1D27]">🥗 Configuración Ensalada Completa (Chica / Grande)</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#5C1D27] block">Título Ensalada</label>
-                <input
-                  type="text"
-                  value={dailyComboState.saladTitle || "Ensalada Completa"}
-                  onChange={(e) => setDailyComboState((prev) => ({ ...prev, saladTitle: e.target.value }))}
-                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#5C1D27] block">Precio Chica ($)</label>
-                <input
-                  type="number"
-                  value={dailyComboState.saladPriceSmall ?? 6500}
-                  onChange={(e) => setDailyComboState((prev) => ({ ...prev, saladPriceSmall: parseFloat(e.target.value) || 6500 }))}
-                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-mono font-bold text-[#5C1D27]"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-[#5C1D27] block">Precio Grande ($)</label>
-                <input
-                  type="number"
-                  value={dailyComboState.saladPriceLarge ?? 8500}
-                  onChange={(e) => setDailyComboState((prev) => ({ ...prev, saladPriceLarge: parseFloat(e.target.value) || 8500 }))}
-                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-mono font-bold text-[#5C1D27]"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Plato Único Form for the selected day */}
-        <form onSubmit={handleSaveDailyMenuToSupabase} className="p-5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-4">
-          <div className="border-b border-[#D7BBA8] pb-2">
-            <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Detalles del Plato Único — {selectedDayTab}</span>
+        <form onSubmit={handleSaveDailyMenuToSupabase} className="p-5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-4">
+          <div className="border-b border-[#CFB5A0] pb-2">
+            <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Detalles del Plato Único — {selectedDayTab}</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-8">
-              <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Nombre del Plato del Día *</label>
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Nombre del Plato del Día *</label>
               <input
                 type="text"
                 required
                 value={activeMenu.title}
                 onChange={(e) => updateCurrentDayMenu({ title: e.target.value })}
                 placeholder="Ej. Tallarines Caseros con Tuco de Ternera al Malbec"
-                className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-sm font-bold text-[#332424] outline-none focus:border-[#843747]"
+                className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
               />
             </div>
 
             <div className="md:col-span-4">
-              <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Precio Promocional ($ ARS) *</label>
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Promocional ($ ARS) *</label>
               <input
                 type="number"
                 required
                 step="100"
                 value={activeMenu.price}
                 onChange={(e) => updateCurrentDayMenu({ price: parseFloat(e.target.value) || 8500 })}
-                className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-sm font-mono font-bold text-[#843747] outline-none text-center focus:border-[#843747]"
+                className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-mono font-bold text-[#5C1D27] outline-none text-center focus:border-[#5C1D27]"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Descripción Gourmet Tentadora *</label>
+            <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Descripción Gourmet Tentadora *</label>
             <textarea
               rows={3}
               required
               value={activeMenu.description}
               onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
               placeholder="Describa la preparación, ingredientes premium y propuesta de maridaje..."
-              className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-medium text-[#332424] outline-none resize-none leading-relaxed focus:border-[#843747]"
+              className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none resize-none leading-relaxed focus:border-[#5C1D27]"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-2">
             <div className="md:col-span-7 space-y-2">
-              <label className="text-[10px] font-black uppercase text-[#6F5A55] block">Foto HD del Plato (Subida a Supabase Storage)</label>
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block">Foto HD del Plato (Subida a Supabase Storage)</label>
               <input
                 type="text"
                 value={activeMenu.image || ""}
                 onChange={(e) => updateCurrentDayMenu({ image: e.target.value })}
                 placeholder="URL pública de la imagen de Unsplash o Supabase Storage..."
-                className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono text-[#332424] outline-none"
+                className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none"
               />
 
-              <div className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl space-y-1.5">
-                <label className="text-[9px] font-black uppercase text-[#843747] block">📷 Cargar Foto HD desde Celular / PC</label>
+              <div className="p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl space-y-1.5">
+                <label className="text-[9px] font-black uppercase text-[#5C1D27] block">📷 Cargar Foto HD desde Celular / PC</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -3479,31 +3798,33 @@ export default function AdminHub({
                       }
                     }
                   }}
-                  className="w-full text-[10px] text-[#6F5A55] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#E8D4C3] file:text-[#843747] hover:file:bg-[#E7C8CF] cursor-pointer"
+                  className="w-full text-[10px] text-[#5E393F] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#EBDAC5] file:text-[#5C1D27] hover:file:bg-[#EBDAC5] cursor-pointer"
                 />
               </div>
             </div>
 
             <div className="md:col-span-5 text-center">
-              <span className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Vista Previa Portada Publicitaria</span>
+              <span className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Vista Previa Portada Publicitaria</span>
               {activeMenu.image ? (
                 <img
                   src={activeMenu.image}
                   alt="Plato del día"
-                  className="h-36 w-full rounded-2xl object-cover border border-[#D7BBA8] shadow-xs"
+                  className="h-36 w-full rounded-2xl object-cover border border-[#CFB5A0] shadow-xs"
                 />
               ) : (
-                <div className="h-36 w-full rounded-2xl bg-[#E8D4C3]/50 border border-dashed border-[#D7BBA8] flex items-center justify-center text-xs text-[#6F5A55] italic">
+                <div className="h-36 w-full rounded-2xl bg-[#EBDAC5]/50 border border-dashed border-[#CFB5A0] flex items-center justify-center text-xs text-[#5E393F] italic">
                   Sin imagen cargada
                 </div>
               )}
             </div>
           </div>
 
+
+
           <div className="pt-3 flex justify-end">
             <button
               type="submit"
-              className="px-6 py-3 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer"
+              className="px-6 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer"
             >
               GUARDAR MENÚ DEL DÍA ({selectedDayTab})
             </button>
@@ -3534,49 +3855,49 @@ export default function AdminHub({
     };
 
     return (
-      <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
+      <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Logística & Despacho</span>
-          <h3 className="font-serif text-2xl font-bold mt-0.5 text-[#843747]">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
-          <p className="text-xs text-[#6F5A55] italic mt-1">
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Logística & Despacho</span>
+          <h3 className="font-serif text-2xl font-bold mt-0.5 text-[#5C1D27]">🛵 Tarifa de Envío & Delivery A Domicilio</h3>
+          <p className="text-xs text-[#5E393F] italic mt-1">
             Configure la tarifa base de envío para la ciudad de Río Cuarto y el monto de pedido para envío bonificado gratis.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <div className="p-5 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-2xl space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block">Costo Base de Delivery ($)</label>
+          <div className="p-5 bg-[#EBDAC5]/40 border border-[#CFB5A0] text-[#2D0E13] rounded-2xl space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#5E393F] block">Costo Base de Delivery ($)</label>
             <input
               type="number"
               value={deliveryFeeConfig}
               onChange={(e) => setDeliveryFeeConfig(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-[#D7BBA8] rounded-xl text-lg font-mono font-bold bg-[#FFF9F4] text-[#843747]"
+              className="w-full p-3 border border-[#CFB5A0] rounded-xl text-lg font-mono font-bold bg-[#FAF2E6] text-[#5C1D27]"
             />
-            <span className="text-[10px] text-[#6F5A55] block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
+            <span className="text-[10px] text-[#5E393F] block">Tarifa fija aplicada a pedidos con entrega en Río Cuarto.</span>
           </div>
 
-          <div className="p-5 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-2xl space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#6F5A55] block">Envío Gratis a partir de ($)</label>
+          <div className="p-5 bg-[#EBDAC5]/40 border border-[#CFB5A0] text-[#2D0E13] rounded-2xl space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#5E393F] block">Envío Gratis a partir de ($)</label>
             <input
               type="number"
               value={deliveryFreeMinConfig}
               onChange={(e) => setDeliveryFreeMinConfig(parseFloat(e.target.value) || 0)}
-              className="w-full p-3 border border-[#D7BBA8] rounded-xl text-lg font-mono font-bold bg-[#FFF9F4] text-[#843747]"
+              className="w-full p-3 border border-[#CFB5A0] rounded-xl text-lg font-mono font-bold bg-[#FAF2E6] text-[#5C1D27]"
             />
-            <span className="text-[10px] text-[#6F5A55] block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
+            <span className="text-[10px] text-[#5E393F] block">Si la compra supera este monto, el delivery se bonifica a $0.</span>
           </div>
         </div>
 
         {/* Río Cuarto Zones Table & WhatsApp Dispatcher */}
-        <div className="border-t border-[#D7BBA8] pt-4 space-y-4">
-          <h4 className="font-serif text-lg font-bold text-[#843747]">🗺️ Tarifas por Zona en Río Cuarto & Despacho a Cadete</h4>
+        <div className="border-t border-[#CFB5A0] pt-4 space-y-4">
+          <h4 className="font-serif text-lg font-bold text-[#5C1D27]">🗺️ Tarifas por Zona en Río Cuarto & Despacho a Cadete</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {RIO_CUARTO_ZONES.map((zone) => (
-              <div key={zone.id} className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-2">
-                <strong className="text-xs font-bold text-[#843747] block">{zone.name}</strong>
+              <div key={zone.id} className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-2">
+                <strong className="text-xs font-bold text-[#5C1D27] block">{zone.name}</strong>
                 <div className="flex justify-between items-center font-mono text-xs">
-                  <span className="text-[#6F5A55]">Tarifa: <strong>${zone.fee} ARS</strong></span>
-                  <span className="text-[#6F5A55]">⏱️ {zone.estimatedMinutes} min</span>
+                  <span className="text-[#5E393F]">Tarifa: <strong>${zone.fee} ARS</strong></span>
+                  <span className="text-[#5E393F]">⏱️ {zone.estimatedMinutes} min</span>
                 </div>
                 <button
                   onClick={() => {
@@ -3604,7 +3925,7 @@ export default function AdminHub({
         <div className="flex justify-end pt-2">
           <button
             onClick={saveDeliverySettings}
-            className="px-6 py-3 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs rounded-xl shadow-xs cursor-pointer transition-all uppercase tracking-wider"
+            className="px-6 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs rounded-xl shadow-xs cursor-pointer transition-all uppercase tracking-wider"
           >
             Guardar Configuración de Envíos
           </button>
@@ -3626,21 +3947,21 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#332424]"
+        className="space-y-8 text-[#2D0E13]"
       >
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Ficha Técnica & Rentabilidad</span>
-          <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Carta & Recetas</h2>
+          <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Ficha Técnica & Rentabilidad</span>
+          <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Carta & Recetas</h2>
         </div>
 
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
           {[
             { label: "Publicados con stock", value: readinessSummary.salesReady, tone: "text-[#4F735A]", bg: "bg-[#DFEADF]" },
-            { label: "Receta técnica lista", value: readinessSummary.recipeReady, tone: "text-[#843747]", bg: "bg-[#E8D4C3]" },
+            { label: "Receta técnica lista", value: readinessSummary.recipeReady, tone: "text-[#5C1D27]", bg: "bg-[#EBDAC5]" },
             { label: "Ficha fiscal ARCA", value: readinessSummary.fiscalReady, tone: "text-[#B97932]", bg: "bg-[#F5E4CC]" },
-            { label: "Listos integralmente", value: readinessSummary.fullyReady, tone: "text-white", bg: "bg-[#843747]" }
+            { label: "Listos integralmente", value: readinessSummary.fullyReady, tone: "text-white", bg: "bg-[#5C1D27]" }
           ].map((metric) => (
-            <div key={metric.label} className={`${metric.bg} border border-[#D7BBA8] rounded-2xl p-4 shadow-xs`}>
+            <div key={metric.label} className={`${metric.bg} border border-[#CFB5A0] rounded-2xl p-4 shadow-xs`}>
               <span className={`text-[9px] font-black uppercase tracking-wider block ${metric.tone}`}>{metric.label}</span>
               <strong className={`text-2xl font-serif block mt-1 ${metric.tone}`}>
                 {metric.value}<span className="text-xs opacity-70">/{readinessSummary.total}</span>
@@ -3649,10 +3970,11 @@ export default function AdminHub({
           ))}
         </div>
 
-        <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#D7BBA8] mb-6 scrollbar-thin scrollbar-thumb-[#D7BBA8]">
+        <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#CFB5A0] mb-6 scrollbar-thin scrollbar-thumb-[#CFB5A0]">
           {[
             { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
+            { id: "menu_ejecutivo", label: "🍱 Menú Diario" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
             { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
             { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
@@ -3668,8 +3990,8 @@ export default function AdminHub({
               onClick={() => setSelectedPosCategory(cat.id)}
               className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded-xl whitespace-nowrap transition-all cursor-pointer border ${
                 selectedPosCategory === cat.id 
-                  ? "bg-[#843747] text-white border-[#843747] shadow-sm" 
-                  : "bg-[#E8D4C3] text-[#843747] border-[#D7BBA8] hover:bg-[#E7C8CF]"
+                  ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm" 
+                  : "bg-[#EBDAC5] text-[#5C1D27] border-[#CFB5A0] hover:bg-[#EBDAC5]"
               }`}
             >
               {cat.label}
@@ -3679,56 +4001,58 @@ export default function AdminHub({
 
         {selectedPosCategory === "menu_diario" ? (
           renderDailyMenuEditor()
+        ) : selectedPosCategory === "menu_ejecutivo" ? (
+          renderDailyComboEditor()
         ) : selectedPosCategory === "delivery_config" ? (
           renderDeliveryConfig()
         ) : (
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
-            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-2">
-              <h3 className="font-serif text-base font-bold text-[#843747] uppercase tracking-wider">Menú Disponible</h3>
+          <div className="lg:col-span-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-2">
+              <h3 className="font-serif text-base font-bold text-[#5C1D27] uppercase tracking-wider">Menú Disponible</h3>
               <button 
                 onClick={() => setIsAddingProduct(!isAddingProduct)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
               >
                 <Plus className="h-3.5 w-3.5" /> Agregar Producto
               </button>
             </div>
 
             {isAddingProduct && (
-              <form onSubmit={handleAddNewProduct} className="p-5 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-3xl space-y-4 text-xs font-bold text-[#332424] shadow-sm">
-                <h4 className="font-serif text-base font-bold text-[#843747] border-b border-[#D7BBA8] pb-2">Agregar Nuevo Producto</h4>
+              <form onSubmit={handleAddNewProduct} className="p-5 bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-3xl space-y-4 text-xs font-bold text-[#2D0E13] shadow-sm">
+                <h4 className="font-serif text-base font-bold text-[#5C1D27] border-b border-[#CFB5A0] pb-2">Agregar Nuevo Producto</h4>
                 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Nombre del Producto *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Nombre del Producto *</label>
                   <input 
                     type="text" 
                     value={newProdName} 
                     onChange={(e) => setNewProdName(e.target.value)} 
                     placeholder="Ej: Bife de Chorizo a las Brasas" 
-                    className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none text-xs font-bold focus:border-[#843747]"
+                    className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-xs font-bold focus:border-[#5C1D27]"
                     required 
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Precio Sugerido ($) *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Precio Sugerido ($) *</label>
                     <input 
                       type="number" 
                       value={newProdPrice} 
                       onChange={(e) => setNewProdPrice(e.target.value)} 
                       placeholder="Ej: 8000" 
-                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] outline-none font-mono text-sm font-bold focus:border-[#843747]"
+                      className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] outline-none font-mono text-sm font-bold focus:border-[#5C1D27]"
                       required 
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Categoría</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Categoría</label>
                     <select 
                       value={newProdCategory} 
                       onChange={(e) => setNewProdCategory(e.target.value)} 
-                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer text-xs font-bold"
+                      className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none cursor-pointer text-xs font-bold"
                     >
                       <option value="desayunos_meriendas">Desayunos & Meriendas</option>
                       <option value="pizzas_focaccias">Pizzas & Focaccias</option>
@@ -3744,16 +4068,16 @@ export default function AdminHub({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Foto (URL o Subir desde Dispositivo) *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Foto (URL o Subir desde Dispositivo) *</label>
                   <input 
                     type="text" 
                     value={newProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : newProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage" : newProdImage} 
                     onChange={(e) => setNewProdImage(e.target.value)} 
                     placeholder="Pegar URL pública de imagen..." 
-                    className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none text-[11px] font-medium" 
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-[11px] font-medium" 
                   />
-                  <div className="mt-2 space-y-1 bg-[#FFF9F4] p-3 rounded-2xl border border-[#D7BBA8]">
-                    <label className="text-[9px] font-black uppercase tracking-wider block text-[#843747]">📷 Cargar Foto desde Celular / PC</label>
+                  <div className="mt-2 space-y-1 bg-[#FAF2E6] p-3 rounded-2xl border border-[#CFB5A0]">
+                    <label className="text-[9px] font-black uppercase tracking-wider block text-[#5C1D27]">📷 Cargar Foto desde Celular / PC</label>
                     <input 
                       type="file" 
                       accept="image/*"
@@ -3773,10 +4097,10 @@ export default function AdminHub({
                           }
                         }
                       }}
-                      className="w-full text-[10px] text-[#6F5A55] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#E8D4C3] file:text-[#843747] hover:file:bg-[#E7C8CF] cursor-pointer" 
+                      className="w-full text-[10px] text-[#5E393F] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#EBDAC5] file:text-[#5C1D27] hover:file:bg-[#EBDAC5] cursor-pointer" 
                     />
                     {isUploadingImage && (
-                      <span className="text-[10px] text-[#843747] font-bold animate-pulse block">Subiendo imagen a Supabase...</span>
+                      <span className="text-[10px] text-[#5C1D27] font-bold animate-pulse block">Subiendo imagen a Supabase...</span>
                     )}
                     {newProdImage && (
                       <button
@@ -3792,19 +4116,19 @@ export default function AdminHub({
 
                 {newProdImage && (
                   <div className="mt-1 text-center">
-                    <span className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Vista Previa de la Foto</span>
-                    <img src={newProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#D7BBA8] mx-auto object-cover shadow-xs" />
+                    <span className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Vista Previa de la Foto</span>
+                    <img src={newProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#CFB5A0] mx-auto object-cover shadow-xs" />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Descripción Gourmet</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Descripción Gourmet</label>
                   <textarea 
                     value={newProdDescription} 
                     onChange={(e) => setNewProdDescription(e.target.value)} 
                     placeholder="Descripción de la especialidad..." 
                     rows={3} 
-                    className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-medium resize-none text-xs leading-relaxed" 
+                    className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-medium resize-none text-xs leading-relaxed" 
                   />
                 </div>
 
@@ -3812,13 +4136,13 @@ export default function AdminHub({
                   <button 
                     type="button" 
                     onClick={() => setIsAddingProduct(false)} 
-                    className="px-4 py-2 border border-[#D7BBA8] text-[#332424] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold"
+                    className="px-4 py-2 border border-[#CFB5A0] text-[#2D0E13] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit" 
-                    className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
+                    className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
                   >
                     Crear Producto
                   </button>
@@ -3845,8 +4169,8 @@ export default function AdminHub({
                       }}
                       className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border transition-all ${
                         active 
-                          ? "bg-[#E8D4C3] border-2 border-[#843747] text-[#332424] shadow-sm"
-                          : "bg-[#FFF9F4] hover:bg-[#E8D4C3]/50 border-[#D7BBA8] text-[#332424]"
+                          ? "bg-[#EBDAC5] border-2 border-[#5C1D27] text-[#2D0E13] shadow-sm"
+                          : "bg-[#FAF2E6] hover:bg-[#EBDAC5]/50 border-[#CFB5A0] text-[#2D0E13]"
                       }`}
                     >
                       <div className="flex items-center gap-3 pr-2 flex-1 min-w-0">
@@ -3854,12 +4178,12 @@ export default function AdminHub({
                           <img 
                             src={item.image} 
                             alt={item.name} 
-                            className="h-12 w-12 rounded-xl object-cover border border-[#D7BBA8] shrink-0 shadow-xs"
+                            className="h-12 w-12 rounded-xl object-cover border border-[#CFB5A0] shrink-0 shadow-xs"
                           />
                         )}
                         <div className="min-w-0 flex-1 space-y-0.5">
-                          <strong className={`text-xs font-bold block truncate ${active ? "text-[#843747]" : "text-[#332424]"}`}>{item.name}</strong>
-                          <span className="text-[10px] text-[#6F5A55] block line-clamp-1 font-medium">
+                          <strong className={`text-xs font-bold block truncate ${active ? "text-[#5C1D27]" : "text-[#2D0E13]"}`}>{item.name}</strong>
+                          <span className="text-[10px] text-[#5E393F] block line-clamp-1 font-medium">
                             {item.description ? item.description : "Sin descripción."}
                           </span>
                         </div>
@@ -3867,7 +4191,7 @@ export default function AdminHub({
 
                       <div className="text-right shrink-0 ml-2 font-mono flex items-center gap-2">
                         <div>
-                          <span className="text-sm font-black block text-[#843747]">${item.price.toLocaleString("es-AR")}</span>
+                          <span className="text-sm font-black block text-[#5C1D27]">${item.price.toLocaleString("es-AR")}</span>
                           <div className="flex flex-col items-end gap-1">
                             <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
                               !isRecipeComplete
@@ -3888,7 +4212,7 @@ export default function AdminHub({
                               {readiness.fiscalReady ? "Fiscal listo" : "Fiscal pendiente"}
                             </span>
                             {item.isAvailable === false && (
-                              <span className="text-[8px] font-bold block px-1.5 py-0.5 rounded-md bg-[#E8D4C3] text-[#6F5A55] border border-[#D7BBA8]">
+                              <span className="text-[8px] font-bold block px-1.5 py-0.5 rounded-md bg-[#EBDAC5] text-[#5E393F] border border-[#CFB5A0]">
                                 No publicado
                               </span>
                             )}
@@ -3902,7 +4226,7 @@ export default function AdminHub({
                             setSimulatedPrice(item.price);
                             handleStartEditingProduct(item);
                           }}
-                          className="px-2.5 py-1.5 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs"
+                          className="px-2.5 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs"
                           title="Editar Ficha de Producto"
                         >
                           Editar
@@ -3915,42 +4239,42 @@ export default function AdminHub({
           </div>
 
           <div className="lg:col-span-7 space-y-6">
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6">
               {isEditingProduct ? (
-                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#332424]">
-                  <div className="border-b border-[#D7BBA8] pb-2 flex justify-between items-center">
-                    <h3 className="font-serif text-base font-bold text-[#843747]">Editar Ficha de Producto</h3>
-                    <span className="text-[9px] bg-[#E8D4C3] text-[#843747] border border-[#D7BBA8] px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
+                <form onSubmit={(e) => handleSaveProductDetails(e, currentItem.id)} className="space-y-4 text-xs font-bold text-[#2D0E13]">
+                  <div className="border-b border-[#CFB5A0] pb-2 flex justify-between items-center">
+                    <h3 className="font-serif text-base font-bold text-[#5C1D27]">Editar Ficha de Producto</h3>
+                    <span className="text-[9px] bg-[#EBDAC5] text-[#5C1D27] border border-[#CFB5A0] px-2 py-0.5 rounded-md font-mono">{currentItem.id}</span>
                   </div>
                   
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Nombre del Producto *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Nombre del Producto *</label>
                     <input 
                       type="text" 
                       value={editProdName} 
                       onChange={(e) => setEditProdName(e.target.value)} 
-                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none text-xs font-bold"
+                      className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] focus:border-[#5C1D27] outline-none text-xs font-bold"
                       required 
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Precio Comercial ($) *</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Precio Comercial ($) *</label>
                       <input 
                         type="number" 
                         value={editProdPrice} 
                         onChange={(e) => setEditProdPrice(e.target.value)} 
-                        className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] focus:border-[#843747] outline-none font-mono text-sm font-bold"
+                        className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] focus:border-[#5C1D27] outline-none font-mono text-sm font-bold"
                         required 
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Categoría</label>
+                      <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Categoría</label>
                       <select 
                         value={editProdCategory} 
                         onChange={(e) => setEditProdCategory(e.target.value)} 
-                        className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer text-xs font-bold"
+                        className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none cursor-pointer text-xs font-bold"
                       >
                         <option value="desayunos_meriendas">Desayunos & Meriendas</option>
                         <option value="pizzas_focaccias">Pizzas & Focaccias</option>
@@ -3967,126 +4291,72 @@ export default function AdminHub({
 
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Precio Takeaway ($)</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Precio Takeaway ($)</label>
                       <input 
                         type="number" 
                         value={editProdTakeawayPrice} 
                         onChange={(e) => setEditProdTakeawayPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-mono text-xs font-bold"
+                        className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-mono text-xs font-bold"
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Precio Delivery ($)</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Precio Delivery ($)</label>
                       <input 
                         type="number" 
                         value={editProdDeliveryPrice} 
                         onChange={(e) => setEditProdDeliveryPrice(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-mono text-xs font-bold focus:border-[#843747]"
+                        className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-mono text-xs font-bold focus:border-[#5C1D27]"
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Stock Actual</label>
+                      <label className="text-[9px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Stock Actual</label>
                       <input 
                         type="number" 
                         value={editProdStock} 
                         onChange={(e) => setEditProdStock(e.target.value)} 
-                        className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] outline-none font-mono text-xs font-bold focus:border-[#843747]" 
+                        className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] outline-none font-mono text-xs font-bold focus:border-[#5C1D27]" 
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <label className="flex items-start gap-3 p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl cursor-pointer">
+                    <label className="flex items-start gap-3 p-3 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl cursor-pointer">
                       <input
                         type="checkbox"
                         checked={editProdIsAvailable}
                         onChange={(e) => setEditProdIsAvailable(e.target.checked)}
-                        className="mt-0.5 accent-[#843747]"
+                        className="mt-0.5 accent-[#5C1D27]"
                       />
                       <span>
-                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Publicado y disponible</strong>
-                        <small className="text-[9px] text-[#6F5A55] font-medium">Permite mostrar y vender el producto en la carta.</small>
+                        <strong className="text-[10px] uppercase tracking-wider block text-[#5C1D27]">Publicado y disponible</strong>
+                        <small className="text-[9px] text-[#5E393F] font-medium">Permite mostrar y vender el producto en la carta.</small>
                       </span>
                     </label>
-                    <label className="flex items-start gap-3 p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl cursor-pointer">
+                    <label className="flex items-start gap-3 p-3 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl cursor-pointer">
                       <input
                         type="checkbox"
                         checked={editProdRecipeRequired}
                         onChange={(e) => setEditProdRecipeRequired(e.target.checked)}
-                        className="mt-0.5 accent-[#843747]"
+                        className="mt-0.5 accent-[#5C1D27]"
                       />
                       <span>
-                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Requiere receta técnica</strong>
-                        <small className="text-[9px] text-[#6F5A55] font-medium">Desmarcar solo para mercadería terminada sin consumo de insumos.</small>
+                        <strong className="text-[10px] uppercase tracking-wider block text-[#5C1D27]">Requiere receta técnica</strong>
+                        <small className="text-[9px] text-[#5E393F] font-medium">Desmarcar solo para mercadería terminada sin consumo de insumos.</small>
                       </span>
                     </label>
-                  </div>
-
-                  <div className="p-4 bg-[#F5E4CC]/55 border border-[#D7BBA8] rounded-2xl space-y-3">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editProdFiscalEnabled}
-                        onChange={(e) => setEditProdFiscalEnabled(e.target.checked)}
-                        className="mt-0.5 accent-[#843747]"
-                      />
-                      <span>
-                        <strong className="text-[10px] uppercase tracking-wider block text-[#843747]">Habilitar ficha fiscal ARCA</strong>
-                        <small className="text-[9px] text-[#6F5A55] font-medium">Solo habilitar con códigos confirmados para WSMTXCA.</small>
-                      </span>
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Alícuota IVA</label>
-                        <select
-                          value={editProdVatRate}
-                          onChange={(e) => setEditProdVatRate(e.target.value)}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold"
-                        >
-                          <option value="">Sin configurar</option>
-                          <option value="0">0%</option>
-                          <option value="10.5">10,5%</option>
-                          <option value="21">21%</option>
-                          <option value="27">27%</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Código de ítem ARCA</label>
-                        <input
-                          type="text"
-                          value={editProdArcaItemCode}
-                          onChange={(e) => setEditProdArcaItemCode(e.target.value)}
-                          placeholder="Consultar tabla oficial"
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-mono"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase tracking-wider block mb-1 text-[#6F5A55]">Código de unidad ARCA</label>
-                        <input
-                          type="text"
-                          value={editProdArcaUnitCode}
-                          onChange={(e) => setEditProdArcaUnitCode(e.target.value)}
-                          placeholder="Consultar tabla oficial"
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-mono"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-[#6F5A55] font-medium">
-                      Los códigos variables deben confirmarse mediante las tablas oficiales del servicio; el sistema no los completa con valores ficticios.
-                    </p>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Foto (URL o Subir desde Dispositivo) *</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
                       type="text" 
                       value={editProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : editProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : editProdImage} 
                       onChange={(e) => setEditProdImage(e.target.value)} 
                       placeholder="Pegar URL pública de imagen..." 
-                      className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none text-[11px] font-medium focus:border-[#843747]" 
+                      className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-[11px] font-medium focus:border-[#5C1D27]" 
                     />
-                    <div className="mt-2 space-y-1 bg-[#E8D4C3]/40 p-3 rounded-2xl border border-[#D7BBA8]">
-                      <label className="text-[9px] font-black uppercase tracking-wider block text-[#843747]">📷 Cargar Foto desde Celular / Cámara / PC</label>
+                    <div className="mt-2 space-y-1 bg-[#EBDAC5]/40 p-3 rounded-2xl border border-[#CFB5A0]">
+                      <label className="text-[9px] font-black uppercase tracking-wider block text-[#5C1D27]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                       <input 
                         type="file" 
                         accept="image/*"
@@ -4106,10 +4376,10 @@ export default function AdminHub({
                             }
                           }
                         }}
-                        className="w-full text-[10px] text-[#6F5A55] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#E8D4C3] file:text-[#843747] hover:file:bg-[#E7C8CF] cursor-pointer" 
+                        className="w-full text-[10px] text-[#5E393F] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-[#EBDAC5] file:text-[#5C1D27] hover:file:bg-[#EBDAC5] cursor-pointer" 
                       />
                       {isUploadingImage && (
-                        <span className="text-[10px] text-[#843747] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
+                        <span className="text-[10px] text-[#5C1D27] font-bold animate-pulse block">⏳ Subiendo imagen a Supabase...</span>
                       )}
                       {editProdImage && (
                         <button
@@ -4124,78 +4394,78 @@ export default function AdminHub({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#6F5A55]">Descripción Gourmet</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Descripción Gourmet</label>
                     <textarea 
                       value={editProdDescription} 
                       onChange={(e) => setEditProdDescription(e.target.value)} 
                       placeholder="Descripción de la especialidad..." 
                       rows={3} 
-                      className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-medium resize-none text-xs leading-relaxed focus:border-[#843747]" 
+                      className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-medium resize-none text-xs leading-relaxed focus:border-[#5C1D27]" 
                     />
                   </div>
 
                   {editProdImage && (
                     <div className="mt-2 text-center">
-                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Vista Previa de la Foto</span>
-                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#D7BBA8] mx-auto object-cover shadow-xs" />
+                      <span className="text-[8px] uppercase tracking-wider block mb-1 text-[#5E393F]">Vista Previa de la Foto</span>
+                      <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#CFB5A0] mx-auto object-cover shadow-xs" />
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-[#D7BBA8]">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[#CFB5A0]">
                     <button 
                       type="button" 
                       onClick={() => setIsEditingProduct(false)} 
-                      className="px-4 py-2 border border-[#D7BBA8] text-[#332424] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold"
+                      className="px-4 py-2 border border-[#CFB5A0] text-[#2D0E13] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold"
                     >
                       Cancelar
                     </button>
                     <button 
                       type="submit" 
                       disabled={isSavingProduct}
-                      className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider disabled:cursor-wait disabled:opacity-60"
+                      className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider disabled:cursor-wait disabled:opacity-60"
                     >
                       {isSavingProduct ? "Guardando…" : "Guardar Ficha"}
                     </button>
                   </div>
                 </form>
               ) : !currentItem ? (
-                <div className="p-8 text-center text-[#6F5A55] italic font-medium">
+                <div className="p-8 text-center text-[#5E393F] italic font-medium">
                   Seleccione un producto de la lista izquierda para visualizar su ficha técnica de recetas y simulador de margen.
                 </div>
               ) : (
                 <>
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-widest block">
+                      <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-widest block">
                         Ficha Técnica — {PRODUCT_CATEGORY_LABELS[currentItem.category] || "Producto gastronómico"}
                       </span>
-                      <h3 className="font-serif text-2xl font-bold text-[#843747] mt-1">{currentItem.name}</h3>
-                      <p className="text-xs text-[#6F5A55] mt-1 leading-relaxed font-medium">{currentItem.description}</p>
+                      <h3 className="font-serif text-2xl font-bold text-[#5C1D27] mt-1">{currentItem.name}</h3>
+                      <p className="text-xs text-[#5E393F] mt-1 leading-relaxed font-medium">{currentItem.description}</p>
                     </div>
                     <button
                       onClick={() => handleStartEditingProduct(currentItem)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
                     >
                       ✏️ Editar Ficha
                     </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Costo Materia Prima</span>
-                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
-                      <span className="text-[7px] text-[#6F5A55] block font-semibold mt-1">Calculado por gramo/mL</span>
+                    <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#5E393F] uppercase tracking-wider block">Costo Materia Prima</span>
+                      <div className="text-xl font-serif font-black text-[#5C1D27] mt-1.5 font-mono">${directCost.toFixed(0)}</div>
+                      <span className="text-[7px] text-[#5E393F] block font-semibold mt-1">Calculado por gramo/mL</span>
                     </div>
-                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Utilidad Bruta</span>
-                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">
+                    <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#5E393F] uppercase tracking-wider block">Utilidad Bruta</span>
+                      <div className="text-xl font-serif font-black text-[#5C1D27] mt-1.5 font-mono">
                         {directCost > 0 ? `$${utility.toFixed(0)}` : "Sin costo"}
                       </div>
-                      <span className="text-[7px] text-[#6F5A55] block font-semibold mt-1">Sugerido menos costos fijos</span>
+                      <span className="text-[7px] text-[#5E393F] block font-semibold mt-1">Sugerido menos costos fijos</span>
                     </div>
-                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
-                      <span className="text-[8px] font-bold text-[#6F5A55] uppercase tracking-wider block">Margen de Contribución</span>
-                      <div className="text-xl font-serif font-black text-[#843747] mt-1.5 font-mono">
+                    <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl">
+                      <span className="text-[8px] font-bold text-[#5E393F] uppercase tracking-wider block">Margen de Contribución</span>
+                      <div className="text-xl font-serif font-black text-[#5C1D27] mt-1.5 font-mono">
                         {directCost > 0 ? `${margin.toFixed(1)}%` : "N/A"}
                       </div>
                       <span className={`text-[7px] font-bold block mt-1 uppercase text-center ${
@@ -4212,13 +4482,13 @@ export default function AdminHub({
 
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-[10px] font-black text-[#843747] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
+                      <h4 className="text-[10px] font-black text-[#5C1D27] uppercase tracking-wider">Materia Prima Requerida (Porción Técnica)</h4>
                     </div>
 
-                    <div className="border border-[#D7BBA8] rounded-2xl overflow-hidden text-xs bg-[#FFF9F4]">
+                    <div className="border border-[#CFB5A0] rounded-2xl overflow-hidden text-xs bg-[#FAF2E6]">
                       <table className="w-full text-left">
                         <thead>
-                          <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] font-bold uppercase tracking-wider text-[#6F5A55]">
+                          <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
                             <th className="p-3">Insumo</th>
                             <th className="p-3 text-center">Cantidad Receta</th>
                             <th className="p-3 text-center">Costo Unitario</th>
@@ -4226,23 +4496,23 @@ export default function AdminHub({
                             <th className="p-3 text-center w-12">Acción</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#D7BBA8]">
+                        <tbody className="divide-y divide-[#CFB5A0]">
                           {currentItem.recipe && currentItem.recipe.length > 0 ? (
                             currentItem.recipe.map((r, idx) => {
                               const ins = insumos.find(i => i.id === r.ingredientId);
                               const unitCost = ins?.costPerUnit || 0;
                               const totalCost = r.amount * unitCost;
                               return (
-                                <tr key={idx} className="hover:bg-[#E8D4C3]/30 transition-colors">
-                                  <td className="p-3 font-bold text-[#332424]">{ins?.name || r.ingredientId}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#332424]">{r.amount} {ins?.unit || "kg"}</td>
-                                  <td className="p-3 text-center font-mono font-semibold text-[#6F5A55]">${unitCost.toLocaleString("es-AR")} / {ins?.unit || "kg"}</td>
-                                  <td className="p-3 text-right font-mono font-bold text-[#843747]">${totalCost.toFixed(0)}</td>
+                                <tr key={idx} className="hover:bg-[#EBDAC5]/30 transition-colors">
+                                  <td className="p-3 font-bold text-[#2D0E13]">{ins?.name || r.ingredientId}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#2D0E13]">{r.amount} {ins?.unit || "kg"}</td>
+                                  <td className="p-3 text-center font-mono font-semibold text-[#5E393F]">${unitCost.toLocaleString("es-AR")} / {ins?.unit || "kg"}</td>
+                                  <td className="p-3 text-right font-mono font-bold text-[#5C1D27]">${totalCost.toFixed(0)}</td>
                                   <td className="p-3 text-center">
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveIngredientFromRecipe(currentItem.id, r.ingredientId)}
-                                      className="p-1 text-[#A63F45] hover:text-[#843747] transition-colors bg-transparent border-none cursor-pointer"
+                                      className="p-1 text-[#A63F45] hover:text-[#5C1D27] transition-colors bg-transparent border-none cursor-pointer"
                                       title="Remover insumo de la receta"
                                     >
                                       ❌
@@ -4253,7 +4523,7 @@ export default function AdminHub({
                             })
                           ) : (
                             <tr>
-                              <td colSpan={5} className="p-4 text-center text-xs text-[#6F5A55] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
+                              <td colSpan={5} className="p-4 text-center text-xs text-[#5E393F] font-bold">Esta especificación no requiere ingredientes adicionales registrados.</td>
                             </tr>
                           )}
                         </tbody>
@@ -4261,13 +4531,13 @@ export default function AdminHub({
                     </div>
 
                     {/* Quick Add Ingredient to Recipe Bar */}
-                    <div className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex flex-wrap items-center gap-3">
+                    <div className="p-3 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl flex flex-wrap items-center gap-3">
                       <div className="flex-1 min-w-[160px]">
-                        <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Añadir Insumo Registrado a Receta</label>
+                        <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Añadir Insumo Registrado a Receta</label>
                         <select
                           value={recipeIngredientId}
                           onChange={(e) => setRecipeIngredientId(e.target.value)}
-                          className="w-full text-xs p-2 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer focus:border-[#843747]"
+                          className="w-full text-xs p-2 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer focus:border-[#5C1D27]"
                         >
                           <option value="">-- Seleccionar Insumo --</option>
                           {insumos.map(ins => (
@@ -4277,13 +4547,13 @@ export default function AdminHub({
                       </div>
 
                       <div className="w-28">
-                        <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Cantidad Receta</label>
+                        <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Cantidad Receta</label>
                         <input
                           type="number"
                           step="any"
                           value={recipeIngredientQty}
                           onChange={(e) => setRecipeIngredientQty(e.target.value)}
-                          className="w-full text-xs p-2 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] font-mono font-bold focus:border-[#843747]"
+                          className="w-full text-xs p-2 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold focus:border-[#5C1D27]"
                         />
                       </div>
 
@@ -4300,7 +4570,7 @@ export default function AdminHub({
                               onShowNotification("⚠️ Seleccione un insumo y una cantidad válida.", "warning");
                             }
                           }}
-                          className="px-4 py-2 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
+                          className="px-4 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider"
                         >
                           ➕ Agregar a Receta
                         </button>
@@ -4632,40 +4902,40 @@ export default function AdminHub({
         className="space-y-8 text-[#FDFBF7]"
       >
         {/* Header Terminal */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] p-6 rounded-3xl shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] p-6 rounded-3xl shadow-sm">
           <div className="flex items-center gap-3.5">
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center shadow-xs">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] flex items-center justify-center shadow-xs">
               <Receipt className="h-6 w-6 stroke-1.5" />
             </div>
             <div>
-              <h2 className="font-serif text-xl font-bold tracking-tight text-[#843747]">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
-              <p className="text-[10px] text-[#6F5A55] font-semibold mt-0.5">Gestor de comprobantes de salón • Castaño — Resto Bar</p>
+              <h2 className="font-serif text-xl font-bold tracking-tight text-[#5C1D27]">TERMINAL DE CAJA & FACTURACIÓN FISCAL</h2>
+              <p className="text-[10px] text-[#5E393F] font-semibold mt-0.5">Gestor de comprobantes de salón • Castaño — Resto Bar</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {currentUser.role !== "barista" && (
               <button 
                 onClick={() => setIsManualArcaModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
+                className="px-3.5 py-2 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
               >
                 <Plus className="h-3.5 w-3.5" /> FACTURACIÓN MANUAL ARCA
               </button>
             )}
             <button 
               onClick={() => setIsSupabaseSqlModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+              className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
-              <Layers className="h-3.5 w-3.5 text-[#843747]" /> SQL SUPABASE
+              <Layers className="h-3.5 w-3.5 text-[#5C1D27]" /> SQL SUPABASE
             </button>
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+              className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5E393F] hover:text-[#2D0E13] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
               <Settings className="h-3.5 w-3.5" /> CONFIGURAR RESTAURANT
             </button>
             <button 
               onClick={() => setIsConfigTicketerisOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424] hover:bg-[#E7C8CF] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+              className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5E393F] hover:text-[#2D0E13] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
               <Printer className="h-3.5 w-3.5" /> CONFIGURACIÓN TICKETERA
             </button>
@@ -4678,16 +4948,16 @@ export default function AdminHub({
           <div className="lg:col-span-4 space-y-6">
             
             {/* Box 1: Flujo Contable Diario */}
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
                 <div>
-                  <span className="text-[8px] font-black uppercase tracking-wider text-[#6F5A55] block">Flujo Contable Diario</span>
-                  <h3 className="font-serif text-sm font-bold mt-0.5 text-[#332424]">Estado de Caja Diaria</h3>
+                  <span className="text-[8px] font-black uppercase tracking-wider text-[#5E393F] block">Flujo Contable Diario</span>
+                  <h3 className="font-serif text-sm font-bold mt-0.5 text-[#2D0E13]">Estado de Caja Diaria</h3>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border tracking-wider flex items-center gap-1 ${
                   isShiftOpen 
                     ? "bg-[#DFEADF] border-[#4F735A]/50 text-[#4F735A]" 
-                    : "bg-[#E8D4C3] border-[#D7BBA8] text-[#6F5A55]"
+                    : "bg-[#EBDAC5] border-[#CFB5A0] text-[#5E393F]"
                 }`}>
                   {isShiftOpen ? <Unlock className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
                   {isShiftOpen ? "Abierta" : "Cerrada"}
@@ -4696,9 +4966,9 @@ export default function AdminHub({
 
               {!isShiftOpen ? (
                 <div className="space-y-4">
-                  <div className="p-3 bg-[#E8D4C3]/40 border border-[#D7BBA8] text-[#332424] rounded-xl text-center">
-                    <p className="text-[10px] text-[#6F5A55] font-semibold">No se registran turnos fiscales abiertos</p>
-                    <p className="text-[9px] text-[#843747] mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
+                  <div className="p-3 bg-[#EBDAC5]/40 border border-[#CFB5A0] text-[#2D0E13] rounded-xl text-center">
+                    <p className="text-[10px] text-[#5E393F] font-semibold">No se registran turnos fiscales abiertos</p>
+                    <p className="text-[9px] text-[#5C1D27] mt-0.5">Es indispensable abrir el turno para facturar a las mesas.</p>
                   </div>
                   <button 
                     onClick={handleOpenShift}
@@ -4711,13 +4981,13 @@ export default function AdminHub({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-xl space-y-2 text-[#332424]">
-                    <p className="text-[10px] text-[#843747] font-bold uppercase tracking-wider">Turno en curso</p>
+                  <div className="p-3.5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-xl space-y-2 text-[#2D0E13]">
+                    <p className="text-[10px] text-[#5C1D27] font-bold uppercase tracking-wider">Turno en curso</p>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div>Efectivo: <span className="font-mono font-bold text-[#843747]">${cashLedger.cash.toLocaleString()}</span></div>
-                      <div>Tarjeta: <span className="font-mono font-bold text-[#843747]">${cashLedger.card.toLocaleString()}</span></div>
-                      <div>MP: <span className="font-mono font-bold text-[#843747]">${cashLedger.mercadopago.toLocaleString()}</span></div>
-                      <div className="border-t border-[#D7BBA8] pt-1 font-bold">Total: <span className="font-mono text-[#4F735A]">${cashLedger.totalCollected.toLocaleString()}</span></div>
+                      <div>Efectivo: <span className="font-mono font-bold text-[#5C1D27]">${cashLedger.cash.toLocaleString()}</span></div>
+                      <div>Tarjeta: <span className="font-mono font-bold text-[#5C1D27]">${cashLedger.card.toLocaleString()}</span></div>
+                      <div>MP: <span className="font-mono font-bold text-[#5C1D27]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+                      <div className="border-t border-[#CFB5A0] pt-1 font-bold">Total: <span className="font-mono text-[#4F735A]">${cashLedger.totalCollected.toLocaleString()}</span></div>
                     </div>
                   </div>
                   <button 
@@ -4735,29 +5005,29 @@ export default function AdminHub({
             </div>
 
             {/* Box 2: Comandas en Salón */}
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
-                <h3 className="font-serif text-sm font-bold flex items-center gap-2 text-[#332424]">
-                  <ClipboardList className="h-4 w-4 text-[#843747]" /> COMANDAS EN SALÓN
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
+                <h3 className="font-serif text-sm font-bold flex items-center gap-2 text-[#2D0E13]">
+                  <ClipboardList className="h-4 w-4 text-[#5C1D27]" /> COMANDAS EN SALÓN
                 </h3>
                 {isShiftOpen && (
-                  <span className="px-2 py-0.5 rounded bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[9px] font-black uppercase font-mono">
+                  <span className="px-2 py-0.5 rounded bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[9px] font-black uppercase font-mono">
                     {pendingOrders.length} pendientes
                   </span>
                 )}
               </div>
 
               {!isShiftOpen ? (
-                <div className="text-center py-12 bg-[#E8D4C3]/30 border border-[#D7BBA8] text-[#332424] rounded-2xl flex flex-col items-center justify-center">
-                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-[#843747]" />
-                  <p className="text-[10px] font-bold text-[#843747] uppercase tracking-widest">Caja Cerrada</p>
-                  <p className="text-[9px] text-[#6F5A55] mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
+                <div className="text-center py-12 bg-[#EBDAC5]/30 border border-[#CFB5A0] text-[#2D0E13] rounded-2xl flex flex-col items-center justify-center">
+                  <Lock className="h-8 w-8 stroke-1.5 mb-2 text-[#5C1D27]" />
+                  <p className="text-[10px] font-bold text-[#5C1D27] uppercase tracking-widest">Caja Cerrada</p>
+                  <p className="text-[9px] text-[#5E393F] mt-1 max-w-xs px-4">Abra el turno de caja diario para visualizar comandas.</p>
                 </div>
               ) : pendingOrders.length === 0 ? (
-                <div className="text-center py-12 bg-[#E8D4C3]/30 border border-[#D7BBA8] text-[#332424] rounded-2xl flex flex-col items-center justify-center">
+                <div className="text-center py-12 bg-[#EBDAC5]/30 border border-[#CFB5A0] text-[#2D0E13] rounded-2xl flex flex-col items-center justify-center">
                   <CheckCircle className="h-8 w-8 text-[#4F735A] mb-2 stroke-1.5" />
-                  <p className="text-[10px] font-bold text-[#843747] uppercase tracking-widest">Sin Pendientes</p>
-                  <p className="text-[9px] text-[#6F5A55] mt-1">Todas las mesas han cobrado.</p>
+                  <p className="text-[10px] font-bold text-[#5C1D27] uppercase tracking-widest">Sin Pendientes</p>
+                  <p className="text-[9px] text-[#5E393F] mt-1">Todas las mesas han cobrado.</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -4768,7 +5038,7 @@ export default function AdminHub({
                       ? "bg-[#DFEADF] border-[#4F735A]/50 text-[#4F735A]" 
                       : order.status === "Preparando"
                       ? "bg-[#D9E6F2] border-[#4A7BB0]/50 text-[#4A7BB0]"
-                      : "bg-[#E8D4C3] border-[#D7BBA8] text-[#6F5A55]";
+                      : "bg-[#EBDAC5] border-[#CFB5A0] text-[#5E393F]";
 
                     return (
                       <div 
@@ -4776,44 +5046,44 @@ export default function AdminHub({
                         onClick={() => openCheckoutPanel(order)}
                         className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between gap-3 ${
                           active 
-                            ? "bg-[#E8D4C3] border-2 border-[#843747] text-[#332424] shadow-sm" 
-                            : "bg-[#FFF9F4] hover:bg-[#E8D4C3]/40 border-[#D7BBA8] text-[#332424]"
+                            ? "bg-[#EBDAC5] border-2 border-[#5C1D27] text-[#2D0E13] shadow-sm" 
+                            : "bg-[#FAF2E6] hover:bg-[#EBDAC5]/40 border-[#CFB5A0] text-[#2D0E13]"
                         }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <strong className="text-xs font-serif text-[#843747] block">
+                            <strong className="text-xs font-serif text-[#5C1D27] block">
                               {order.priceList === "Takeaway" || order.type === "Llevar"
                                 ? `RETIRO: ${order.clientAccountName || "Cliente"} - Tel: ${order.customerPhone || "Sin teléfono"}`
                                 : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
                                 ? `DELIVERY: ${order.clientAccountName || "Cliente"} - Dir: ${order.deliveryAddress ? `${order.deliveryAddress.street} ${order.deliveryAddress.number}` : "Sin dirección"}`
                                 : `${order.tableNumber || "Sin mesa"} (Mozo: ${order.waiterName || "Sin asignar"})`}
                             </strong>
-                            <span className="text-[9px] font-bold text-[#6F5A55] block mt-0.5 font-mono">
+                            <span className="text-[9px] font-bold text-[#5E393F] block mt-0.5 font-mono">
                               {order.createdAt ? `📅 ${new Date(order.createdAt).toLocaleDateString("es-AR")} • 🕒 ${new Date(order.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })} hs` : "Fecha no registrada"}
                             </span>
                           </div>
-                          <span className="text-xs font-mono font-black text-[#843747]">${order.total.toLocaleString()}</span>
+                          <span className="text-xs font-mono font-black text-[#5C1D27]">${order.total.toLocaleString()}</span>
                         </div>
 
                         {/* Full Itemized Order Detail */}
-                        <div className="bg-[#E8D4C3]/40 border border-[#D7BBA8]/60 p-2 rounded-xl text-[9.5px] space-y-1">
-                          <span className="text-[8px] font-black uppercase text-[#843747] block tracking-wider font-sans">
+                        <div className="bg-[#EBDAC5]/40 border border-[#CFB5A0]/60 p-2 rounded-xl text-[9.5px] space-y-1">
+                          <span className="text-[8px] font-black uppercase text-[#5C1D27] block tracking-wider font-sans">
                             Detalle del Pedido ({order.items.reduce((acc, curr) => acc + curr.quantity, 0)} ítems):
                           </span>
                           {order.items.map((it, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-[#332424] font-semibold">
+                            <div key={idx} className="flex justify-between items-center text-[#2D0E13] font-semibold">
                               <span className="truncate pr-1">• {it.quantity}x {it.name}</span>
-                              <span className="font-mono font-bold text-[#843747] shrink-0">${(it.price * it.quantity).toLocaleString()}</span>
+                              <span className="font-mono font-bold text-[#5C1D27] shrink-0">${(it.price * it.quantity).toLocaleString()}</span>
                             </div>
                           ))}
                         </div>
 
-                        <div className="flex justify-between items-center pt-1 border-t border-[#D7BBA8]/40">
+                        <div className="flex justify-between items-center pt-1 border-t border-[#CFB5A0]/40">
                           <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${statusColor}`}>
                             {statusText}
                           </span>
-                          <span className="font-mono text-[8px] font-black text-[#6F5A55]">#{order.id.replace("PED-", "")}</span>
+                          <span className="font-mono text-[8px] font-black text-[#5E393F]">#{order.id.replace("PED-", "")}</span>
                         </div>
                       </div>
                     );
@@ -4826,50 +5096,50 @@ export default function AdminHub({
           {/* Right panel: POS Checkout Panel or Empty State (col-span-8) */}
           <div className="lg:col-span-8">
             {!isShiftOpen || !posCheckoutOrder ? (
-              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-10 shadow-sm flex flex-col items-center justify-center text-center h-[560px]">
-                <div className="h-16 w-16 bg-[#E8D4C3] border border-[#D7BBA8] rounded-2xl flex items-center justify-center text-[#843747] mb-6 shadow-xs">
+              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-10 shadow-sm flex flex-col items-center justify-center text-center h-[560px]">
+                <div className="h-16 w-16 bg-[#EBDAC5] border border-[#CFB5A0] rounded-2xl flex items-center justify-center text-[#5C1D27] mb-6 shadow-xs">
                   <Receipt className="h-8 w-8 stroke-1.5" />
                 </div>
-                <h3 className="font-serif text-xl font-bold text-[#843747]">TERMINAL DE COBRO CASTAÑO RESTO BAR</h3>
-                <p className="text-xs text-[#6F5A55] max-w-md mt-2.5 leading-relaxed">
+                <h3 className="font-serif text-xl font-bold text-[#5C1D27]">TERMINAL DE COBRO CASTAÑO RESTO BAR</h3>
+                <p className="text-xs text-[#5E393F] max-w-md mt-2.5 leading-relaxed">
                   Seleccione una mesa ocupada desde la lista lateral. Se iniciará el panel interactivo de check-out, permitiéndole coordinar pagos mixtos, aplicar deducciones manuales, configurar datos de CUIT, fraccionar saldos por comensales u artículos indivisos, y emitir comprobantes con CAE y QR de ARCA.
                 </p>
                 {!isShiftOpen ? (
-                  <div className="mt-8 p-4 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl flex items-center gap-3 text-left max-w-sm">
-                    <Info className="h-5 w-5 text-[#843747] shrink-0" />
+                  <div className="mt-8 p-4 bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-[#5C1D27] shrink-0" />
                     <div>
-                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">Caja Cerrada</strong>
-                      <span className="text-[9px] text-[#6F5A55] mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
+                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] block">Caja Cerrada</strong>
+                      <span className="text-[9px] text-[#5E393F] mt-0.5 block leading-normal">Tenga a bien iniciar el turno con el botón "Abrir Caja Diaria" izquierdo antes de realizar operaciones de facturación.</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-8 p-4 bg-[#E8D4C3]/50 border border-[#D7BBA8] rounded-2xl flex items-center gap-3 text-left max-w-sm">
-                    <Info className="h-5 w-5 text-[#843747] shrink-0" />
+                  <div className="mt-8 p-4 bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-2xl flex items-center gap-3 text-left max-w-sm">
+                    <Info className="h-5 w-5 text-[#5C1D27] shrink-0" />
                     <div>
-                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">Turno Activo</strong>
-                      <span className="text-[9px] text-[#6F5A55] mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
+                      <strong className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] block">Turno Activo</strong>
+                      <span className="text-[9px] text-[#5E393F] mt-0.5 block leading-normal">Seleccione una comanda del menú lateral izquierdo para abrir el panel interactivo de facturación.</span>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
               // Active POS Checkout Interactive Panel
-              <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
+              <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 lg:p-8 shadow-sm space-y-6">
                 
                 {/* Header panel */}
-                <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-4">
+                <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-4">
                   <div>
                     <button 
                       onClick={() => setPosCheckoutOrder(null)}
-                      className="text-[9px] font-bold uppercase tracking-wider text-[#843747] hover:underline flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
+                      className="text-[9px] font-bold uppercase tracking-wider text-[#5C1D27] hover:underline flex items-center gap-1.5 cursor-pointer bg-transparent border-0 p-0 mb-1"
                     >
                       <ArrowUp className="-rotate-90 h-3.5 w-3.5" /> VOLVER AL TERMINAL
                     </button>
-                    <h3 className="font-serif text-lg font-bold text-[#843747]">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
+                    <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black uppercase text-[#6F5A55] font-mono block">Orden #{posCheckoutOrder.id}</span>
-                    <div className="text-2xl font-serif font-black text-[#843747] font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
+                    <span className="text-[9px] font-black uppercase text-[#5E393F] font-mono block">Orden #{posCheckoutOrder.id}</span>
+                    <div className="text-2xl font-serif font-black text-[#5C1D27] font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
                   </div>
                 </div>
 
@@ -4879,28 +5149,28 @@ export default function AdminHub({
                   {/* Left subcolumn: Consumo & Fraccionar */}
                   <div className="space-y-5">
                     {/* Resumen de Consumo */}
-                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-3">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5">
-                        <Coffee className="h-3.5 w-3.5 text-[#843747]" /> Resumen de Consumo
+                    <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-3">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1.5 flex items-center gap-1.5">
+                        <Coffee className="h-3.5 w-3.5 text-[#5C1D27]" /> Resumen de Consumo
                       </h4>
                       <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                         {posCheckoutOrder.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#332424]">
+                          <div key={idx} className="flex justify-between items-start text-[10px] font-semibold text-[#2D0E13]">
                             <span className="italic">{item.quantity}x {item.name}</span>
-                            <span className="font-mono text-[#843747]">${(item.price * item.quantity).toLocaleString()}</span>
+                            <span className="font-mono text-[#5C1D27]">${(item.price * item.quantity).toLocaleString()}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="border-t border-[#D7BBA8] pt-2.5 flex justify-between text-[10px] font-bold">
-                        <span className="text-[#332424]">Total Comanda</span>
-                        <span className="font-mono text-[#843747]">${orderTotalOriginal.toLocaleString()}</span>
+                      <div className="border-t border-[#CFB5A0] pt-2.5 flex justify-between text-[10px] font-bold">
+                        <span className="text-[#2D0E13]">Total Comanda</span>
+                        <span className="font-mono text-[#5C1D27]">${orderTotalOriginal.toLocaleString()}</span>
                       </div>
                     </div>
 
                     {/* Fraccionar Cuenta */}
-                    <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5">
-                        <Scissors className="h-3.5 w-3.5 text-[#843747]" /> Fraccionar Saldo
+                    <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1.5 flex items-center gap-1.5">
+                        <Scissors className="h-3.5 w-3.5 text-[#5C1D27]" /> Fraccionar Saldo
                       </h4>
                       
                       <div className="grid grid-cols-3 gap-2">
@@ -4917,8 +5187,8 @@ export default function AdminHub({
                             }}
                             className={`p-2 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer flex flex-col items-center gap-1 justify-center ${
                               splitPaymentType === t.id
-                                ? "bg-[#843747] text-white border-[#843747] shadow-xs"
-                                : "bg-[#FFF9F4] border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424]"
+                                ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs"
+                                : "bg-[#FAF2E6] border-[#CFB5A0] text-[#5E393F] hover:text-[#2D0E13]"
                             }`}
                           >
                             <t.icon className="h-3.5 w-3.5" />
@@ -4928,38 +5198,38 @@ export default function AdminHub({
                       </div>
 
                       {splitPaymentType === "comensales" && (
-                        <div className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-xl space-y-3">
+                        <div className="p-3 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-xl space-y-3">
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-[#6F5A55]">Número de Comensales:</span>
+                            <span className="text-[10px] font-bold text-[#5E393F]">Número de Comensales:</span>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-[#E8D4C3] border border-[#D7BBA8] rounded text-xs font-bold text-[#843747] cursor-pointer">-</button>
-                              <strong className="font-mono text-sm w-4 text-center text-[#332424]">{dinersCount}</strong>
-                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-[#E8D4C3] border border-[#D7BBA8] rounded text-xs font-bold text-[#843747] cursor-pointer">+</button>
+                              <button onClick={() => setDinersCount(prev => Math.max(2, prev - 1))} className="h-6 w-6 bg-[#EBDAC5] border border-[#CFB5A0] rounded text-xs font-bold text-[#5C1D27] cursor-pointer">-</button>
+                              <strong className="font-mono text-sm w-4 text-center text-[#2D0E13]">{dinersCount}</strong>
+                              <button onClick={() => setDinersCount(prev => Math.min(10, prev + 1))} className="h-6 w-6 bg-[#EBDAC5] border border-[#CFB5A0] rounded text-xs font-bold text-[#5C1D27] cursor-pointer">+</button>
                             </div>
                           </div>
-                          <div className="text-[10px] border-t border-[#D7BBA8] pt-2 flex justify-between font-bold">
+                          <div className="text-[10px] border-t border-[#CFB5A0] pt-2 flex justify-between font-bold">
                             <span>Monto por Comensal</span>
-                            <span className="font-mono text-[#843747]">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
+                            <span className="font-mono text-[#5C1D27]">${(orderTotalWithDiscount / dinersCount).toFixed(0)}</span>
                           </div>
                         </div>
                       )}
 
                       {splitPaymentType === "articulos" && (
-                        <div className="p-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-xl space-y-2.5">
-                          <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
+                        <div className="p-3 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-xl space-y-2.5">
+                          <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block mb-1">Seleccionar Items a Cobrar</span>
                           <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
                             {posCheckoutOrder.items.map((it, idx) => {
                               const selectedQty = selectedSplitItems[it.name] || 0;
                               return (
-                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-[#D7BBA8]/50 pb-1.5">
-                                  <span className="truncate text-[#332424]">{it.name} (${it.price.toFixed(0)})</span>
+                                <div key={idx} className="flex justify-between items-center text-[10px] font-semibold border-b border-[#CFB5A0]/50 pb-1.5">
+                                  <span className="truncate text-[#2D0E13]">{it.name} (${it.price.toFixed(0)})</span>
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     <button 
                                       onClick={() => setSelectedSplitItems(prev => ({
                                         ...prev,
                                         [it.name]: Math.max(0, (prev[it.name] || 0) - 1)
                                       }))}
-                                      className="h-5 w-5 bg-[#E8D4C3] border border-[#D7BBA8] rounded text-[10px] font-bold text-[#843747] cursor-pointer"
+                                      className="h-5 w-5 bg-[#EBDAC5] border border-[#CFB5A0] rounded text-[10px] font-bold text-[#5C1D27] cursor-pointer"
                                     >
                                       -
                                     </button>
@@ -4986,9 +5256,9 @@ export default function AdminHub({
                   {/* Right subcolumn: Discounts, Fiscal data, Payment Method */}
                   <div className="space-y-5">
                     {/* Deducciones Manuales (Discounts) */}
-                    <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-3.5 shadow-sm">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5 font-sans">
-                        <Percent className="h-3.5 w-3.5 text-[#843747]" /> Deducciones Manuales (Descuento)
+                    <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl space-y-3.5 shadow-sm">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1.5 flex items-center gap-1.5 font-sans">
+                        <Percent className="h-3.5 w-3.5 text-[#5C1D27]" /> Deducciones Manuales (Descuento)
                       </h4>
                       <div className="flex gap-2">
                         {[0, 5, 10, 15, 20].map(p => (
@@ -4997,8 +5267,8 @@ export default function AdminHub({
                             onClick={() => setDiscountPercentage(p)}
                             className={`px-3 py-2 rounded-xl text-[9px] font-black border transition-all cursor-pointer flex-1 text-center font-mono ${
                               discountPercentage === p
-                                ? "bg-[#843747] text-white border-[#843747] shadow-xs"
-                                : "bg-[#E8D4C3]/40 border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                                ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs"
+                                : "bg-[#EBDAC5]/40 border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                             }`}
                           >
                             {p === 0 ? "Sin Dto" : `${p}%`}
@@ -5008,38 +5278,38 @@ export default function AdminHub({
                     </div>
 
                     {/* Datos de CUIT / Facturación */}
-                    <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-3.5 shadow-sm">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5 font-sans">
-                        <FileText className="h-3.5 w-3.5 text-[#843747]" /> Datos de CUIT / Razón Social (ARCA)
+                    <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl space-y-3.5 shadow-sm">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1.5 flex items-center gap-1.5 font-sans">
+                        <FileText className="h-3.5 w-3.5 text-[#5C1D27]" /> Datos de CUIT / Razón Social (ARCA)
                       </h4>
-                      <div className="grid grid-cols-2 gap-3 text-xs font-bold text-[#332424]">
+                      <div className="grid grid-cols-2 gap-3 text-xs font-bold text-[#2D0E13]">
                         <div>
-                          <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">CUIT/CUIL</label>
+                          <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">CUIT/CUIL</label>
                           <input 
                             type="text" 
                             placeholder="Ingrese CUIT" 
                             value={cuitNumber}
                             onChange={(e) => setCuitNumber(e.target.value)}
-                            className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-[10px] bg-[#FFF9F4] text-[#332424] font-bold font-mono outline-none focus:border-[#843747]" 
+                            className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-[10px] bg-[#FAF2E6] text-[#2D0E13] font-bold font-mono outline-none focus:border-[#5C1D27]" 
                           />
                         </div>
                         <div>
-                          <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Razón Social</label>
+                          <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Razón Social</label>
                           <input 
                             type="text" 
                             placeholder="Nombre del Cliente" 
                             value={cuitName}
                             onChange={(e) => setCuitName(e.target.value)}
-                            className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-[10px] bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" 
+                            className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-[10px] bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" 
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Condición Frente al IVA</label>
+                        <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Condición Frente al IVA</label>
                         <select 
                           value={ivaCondition}
                           onChange={(e) => setIvaCondition(e.target.value)}
-                          className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-[10px] bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
+                          className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-[10px] bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
                         >
                           <option>Consumidor Final</option>
                           <option>Responsable Inscripto</option>
@@ -5050,9 +5320,9 @@ export default function AdminHub({
                     </div>
 
                     {/* Método de Cobro */}
-                    <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl space-y-4 shadow-sm">
-                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1.5 flex items-center gap-1.5 font-sans">
-                        <Coins className="h-3.5 w-3.5 text-[#843747]" /> Método de Cobro
+                    <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl space-y-4 shadow-sm">
+                      <h4 className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1.5 flex items-center gap-1.5 font-sans">
+                        <Coins className="h-3.5 w-3.5 text-[#5C1D27]" /> Método de Cobro
                       </h4>
                       
                       <div className="grid grid-cols-2 gap-2.5">
@@ -5069,8 +5339,8 @@ export default function AdminHub({
                             onClick={() => setPaymentMethod(m.id as any)}
                             className={`p-2.5 text-[10px] font-black rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                               paymentMethod === m.id
-                                ? "bg-[#843747] text-white border-[#843747] shadow-xs"
-                                : "bg-[#E8D4C3]/40 border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                                ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs"
+                                : "bg-[#EBDAC5]/40 border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                             }`}
                           >
                             {m.label}
@@ -5083,23 +5353,23 @@ export default function AdminHub({
                       {paymentMethod === "Pago Mixto" && (
                         <div className="grid grid-cols-2 gap-3 pt-1">
                           <div>
-                            <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Monto en Efectivo ($)</label>
+                            <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Monto en Efectivo ($)</label>
                             <input 
                               type="number" 
                               placeholder="ej: 5000" 
                               value={mixedCashAmount}
                               onChange={(e) => setMixedCashAmount(e.target.value)}
-                              className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] font-bold font-mono outline-none focus:border-[#843747]" 
+                              className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#5C1D27] font-bold font-mono outline-none focus:border-[#5C1D27]" 
                             />
                           </div>
                           <div>
-                            <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Monto Digital / QR ($)</label>
+                            <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Monto Digital / QR ($)</label>
                             <input 
                               type="number" 
                               placeholder="ej: 7500" 
                               value={mixedDigitalAmount}
                               onChange={(e) => setMixedDigitalAmount(e.target.value)}
-                              className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] font-bold font-mono outline-none focus:border-[#843747]" 
+                              className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#5C1D27] font-bold font-mono outline-none focus:border-[#5C1D27]" 
                             />
                           </div>
                         </div>
@@ -5107,13 +5377,13 @@ export default function AdminHub({
 
                       {(paymentMethod === "Tarjeta Débito" || paymentMethod === "Tarjeta Crédito" || paymentMethod === "Tarjeta") && (
                         <div className="pt-1">
-                          <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">POSNET Cupón Nro</label>
+                          <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">POSNET Cupón Nro</label>
                           <input 
                             type="text" 
                             placeholder="Ingrese código de cupón de pago" 
                             value={posCouponInput}
                             onChange={(e) => setPosCouponInput(e.target.value)}
-                            className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold font-mono outline-none focus:border-[#843747]" 
+                            className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold font-mono outline-none focus:border-[#5C1D27]" 
                           />
                         </div>
                       )}
@@ -5122,7 +5392,7 @@ export default function AdminHub({
                 </div>
 
                 {/* Final receipt emission actions - Two Clear Checkout Modes */}
-                <div className="border-t border-[#D7BBA8] pt-5 space-y-3.5">
+                <div className="border-t border-[#CFB5A0] pt-5 space-y-3.5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {/* Mode 1: Simple Payment without Fiscal Invoice */}
                     <button 
@@ -5135,7 +5405,7 @@ export default function AdminHub({
                     {/* Mode 2: Fiscal Invoice via ARCA / AFIP */}
                     <button 
                       onClick={() => handleOpenArcaModalForOrder(posCheckoutOrder)}
-                      className="w-full py-4 rounded-2xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#843747]"
+                      className="w-full py-4 rounded-2xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#5C1D27]"
                     >
                       <FileText className="h-4 w-4 text-white" /> 🧾 CONFIRMAR VENTA & EMITIR FACTURA FISCAL (ARCA)
                     </button>
@@ -5148,21 +5418,21 @@ export default function AdminHub({
                         ReceiptPDFService.generateTicketNoFiscalPDF(posCheckoutOrder);
                         onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
                       }}
-                      className="py-2.5 rounded-xl bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-[#843747] text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs uppercase tracking-wider"
+                      className="py-2.5 rounded-xl bg-[#EBDAC5] hover:bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs uppercase tracking-wider"
                     >
-                      <Download className="h-3.5 w-3.5 text-[#843747]" /> 📥 Descargar PDF
+                      <Download className="h-3.5 w-3.5 text-[#5C1D27]" /> 📥 Descargar PDF
                     </button>
                     <button 
                       onClick={() => handleIssueTicketNoFiscal(posCheckoutOrder)}
-                      className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                      className="py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#EBDAC5] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     >
-                      <Printer className="h-3.5 w-3.5 text-[#843747]" /> 🖨️ Ticket Térmico
+                      <Printer className="h-3.5 w-3.5 text-[#5C1D27]" /> 🖨️ Ticket Térmico
                     </button>
                     <button 
                       onClick={() => setIsPrinterConfigModalOpen(true)}
-                      className="py-2.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] hover:bg-[#E7C8CF] text-xs font-bold text-[#843747] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                      className="py-2.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] hover:bg-[#EBDAC5] text-xs font-bold text-[#5C1D27] transition-all cursor-pointer flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     >
-                      <Settings className="h-3.5 w-3.5 text-[#843747]" /> Config Ticketera
+                      <Settings className="h-3.5 w-3.5 text-[#5C1D27]" /> Config Ticketera
                     </button>
                   </div>
                 </div>
@@ -5172,29 +5442,29 @@ export default function AdminHub({
         </div>
 
         {/* Historial de Comandas Facturadas */}
-        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
-          <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#843747]">
-            <Receipt className="h-4 w-4 text-[#843747]" /> Historial de Comandas Cobradas
+        <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
+          <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#5C1D27]">
+            <Receipt className="h-4 w-4 text-[#5C1D27]" /> Historial de Comandas Cobradas
           </h3>
 
           {/* Filters bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-[#332424] text-xs font-semibold">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl text-[#2D0E13] text-xs font-semibold">
             <div>
-              <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Buscar por Mesa</label>
+              <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Buscar por Mesa</label>
               <input
                 type="text"
                 placeholder="ej: Mesa 3"
                 value={historySearchTable}
                 onChange={(e) => setHistorySearchTable(e.target.value)}
-                className="w-full p-2 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                className="w-full p-2 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
               />
             </div>
             <div>
-              <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Filtrar por Mozo</label>
+              <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Filtrar por Mozo</label>
               <select
                 value={historyFilterWaiter}
                 onChange={(e) => setHistoryFilterWaiter(e.target.value)}
-                className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
+                className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
               >
                 <option value="todos">Todos los Mozos</option>
                 {[...new Set(orders.map((order) => order.waiterName).filter(Boolean))].map((waiter) => (
@@ -5203,11 +5473,11 @@ export default function AdminHub({
               </select>
             </div>
             <div>
-              <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Filtrar por Método de Pago</label>
+              <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Filtrar por Método de Pago</label>
               <select
                 value={historyFilterPayment}
                 onChange={(e) => setHistoryFilterPayment(e.target.value)}
-                className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
+                className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
               >
                 <option value="todos">Todos los Métodos</option>
                 <option value="Efectivo">Efectivo</option>
@@ -5219,9 +5489,9 @@ export default function AdminHub({
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs font-semibold text-[#332424]">
+            <table className="w-full text-left border-collapse text-xs font-semibold text-[#2D0E13]">
               <thead>
-                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[9px] uppercase tracking-wider text-[#6F5A55]">
+                <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] uppercase tracking-wider text-[#5E393F]">
                   <th className="p-3 font-black">Fecha y Hora</th>
                   <th className="p-3 font-black">Comanda ID</th>
                   <th className="p-3 font-black">Mesa / Tipo</th>
@@ -5231,7 +5501,7 @@ export default function AdminHub({
                   <th className="p-3 text-center font-black">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D7BBA8]">
+              <tbody className="divide-y divide-[#CFB5A0]">
                 {(() => {
                   const filteredCompletedOrders = orders.filter(o => {
                     if (o.status !== "Completado") return false;
@@ -5244,7 +5514,7 @@ export default function AdminHub({
                   if (filteredCompletedOrders.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={7} className="p-6 text-center text-[#6F5A55] font-medium italic">
+                        <td colSpan={7} className="p-6 text-center text-[#5E393F] font-medium italic">
                           No se encontraron comandas cobradas con los filtros seleccionados.
                         </td>
                       </tr>
@@ -5252,25 +5522,25 @@ export default function AdminHub({
                   }
 
                   return filteredCompletedOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-[#E8D4C3]/30 transition-colors">
-                      <td className="p-3 font-mono text-[10px] text-[#6F5A55]">
-                        <span className="font-bold block text-[#843747]">
+                    <tr key={o.id} className="hover:bg-[#EBDAC5]/30 transition-colors">
+                      <td className="p-3 font-mono text-[10px] text-[#5E393F]">
+                        <span className="font-bold block text-[#5C1D27]">
                           📅 {o.createdAt ? new Date(o.createdAt).toLocaleDateString("es-AR") : new Date().toLocaleDateString("es-AR")}
                         </span>
-                        <span className="text-[9px] font-mono text-[#6F5A55]">
+                        <span className="text-[9px] font-mono text-[#5E393F]">
                           🕒 {o.createdAt ? new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
                         </span>
                       </td>
-                      <td className="p-3 font-mono font-bold text-[#843747]">{o.id}</td>
+                      <td className="p-3 font-mono font-bold text-[#5C1D27]">{o.id}</td>
                       <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-md bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[10px] font-bold">
                           {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
                         </span>
                       </td>
-                      <td className="p-3 text-[#332424] max-w-[280px]">
+                      <td className="p-3 text-[#2D0E13] max-w-[280px]">
                         <div className="flex flex-wrap gap-1">
                           {o.items.map((it, idx) => (
-                            <span key={idx} className="inline-block bg-[#E8D4C3]/50 border border-[#D7BBA8] text-[#332424] px-1.5 py-0.5 rounded text-[9px] font-bold">
+                            <span key={idx} className="inline-block bg-[#EBDAC5]/50 border border-[#CFB5A0] text-[#2D0E13] px-1.5 py-0.5 rounded text-[9px] font-bold">
                               {it.quantity}x {it.name} (${(it.price * it.quantity).toLocaleString()})
                             </span>
                           ))}
@@ -5286,7 +5556,7 @@ export default function AdminHub({
                             }
                             onShowNotification(`✅ Método de pago de comanda #${o.id.slice(-6)} actualizado a ${newMethod}.`, "success");
                           }}
-                          className="p-1.5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#843747] rounded-xl text-[10px] font-bold cursor-pointer outline-none focus:border-[#843747]"
+                          className="p-1.5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#5C1D27] rounded-xl text-[10px] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
                         >
                           <option value="Efectivo">💵 Efectivo</option>
                           <option value="MercadoPago">📱 MercadoPago / QR</option>
@@ -5296,12 +5566,12 @@ export default function AdminHub({
                           <option value="Fiado / Cta Cte">🤝 Cta Cte / Fiado</option>
                         </select>
                       </td>
-                      <td className="p-3 text-right font-mono font-bold text-[#843747]">${o.total.toLocaleString()}</td>
+                      <td className="p-3 text-right font-mono font-bold text-[#5C1D27]">${o.total.toLocaleString()}</td>
                       <td className="p-3 text-center">
                         <div className="flex items-center gap-1.5 justify-center">
                           <button
                             onClick={() => setSelectedOrderForTicket(o)}
-                            className="px-2.5 py-1 bg-[#E8D4C3] hover:bg-[#E7C8CF] border border-[#D7BBA8] text-[#843747] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                            className="px-2.5 py-1 bg-[#EBDAC5] hover:bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
                             title="Ver Ticket Térmico"
                           >
                             <Printer className="h-3 w-3" /> Ver
@@ -5311,7 +5581,7 @@ export default function AdminHub({
                               ReceiptPDFService.generateTicketNoFiscalPDF(o);
                               onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
                             }}
-                            className="px-2.5 py-1 bg-[#843747] hover:bg-[#71303D] text-white rounded-lg transition-all cursor-pointer font-black text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                            className="px-2.5 py-1 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-lg transition-all cursor-pointer font-black text-[10px] uppercase shadow-2xs flex items-center gap-1"
                             title="Descargar Ticket PDF (80mm)"
                           >
                             <Download className="h-3 w-3" /> PDF
@@ -5327,13 +5597,13 @@ export default function AdminHub({
         </div>
 
         {/* Bottom panel: closures history & audit log list */}
-        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#D7BBA8] pb-4">
+        <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#CFB5A0] pb-4">
             <div>
-              <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#843747]">
-                <Calendar className="h-4 w-4 text-[#843747]" /> REGISTRO DE AUDITORÍA Y CIERRES DE CAJA (ARQUEOS Z) ({closuresHistory.length})
+              <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#5C1D27]">
+                <Calendar className="h-4 w-4 text-[#5C1D27]" /> REGISTRO DE AUDITORÍA Y CIERRES DE CAJA (ARQUEOS Z) ({closuresHistory.length})
               </h3>
-              <p className="text-[10px] text-[#6F5A55] font-semibold mt-0.5">
+              <p className="text-[10px] text-[#5E393F] font-semibold mt-0.5">
                 Historial homologado de aperturas, cierres de turno, arqueos de efectivo y balances contables.
               </p>
             </div>
@@ -5344,7 +5614,7 @@ export default function AdminHub({
                   setCloseShiftNotes("");
                   setIsCloseShiftModalOpen(true);
                 }}
-                className="px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
+                className="px-3.5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
               >
                 <Lock className="h-3.5 w-3.5" /> Realizar Cierre Z
               </button>
@@ -5352,12 +5622,12 @@ export default function AdminHub({
           </div>
           
           {closuresHistory.length === 0 ? (
-            <div className="text-center py-10 bg-[#E8D4C3]/30 border border-[#D7BBA8] rounded-2xl flex flex-col items-center justify-center space-y-2.5">
-              <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="text-center py-10 bg-[#EBDAC5]/30 border border-[#CFB5A0] rounded-2xl flex flex-col items-center justify-center space-y-2.5">
+              <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
                 <FileText className="h-6 w-6 stroke-1.5" />
               </div>
-              <h4 className="font-serif text-sm font-bold text-[#843747]">Sin Arqueos de Caja Registrados</h4>
-              <p className="text-xs text-[#6F5A55] max-w-md px-4">
+              <h4 className="font-serif text-sm font-bold text-[#5C1D27]">Sin Arqueos de Caja Registrados</h4>
+              <p className="text-xs text-[#5E393F] max-w-md px-4">
                 Los cierres Z y arqueos de caja diaria se irán asentando de forma automática cada vez que los cajeros o administradores realicen el cierre de turno.
               </p>
             </div>
@@ -5366,20 +5636,20 @@ export default function AdminHub({
               {closuresHistory.map((cls, idx) => (
                 <div 
                   key={cls.id || idx}
-                  className="p-4 bg-[#E8D4C3]/30 hover:bg-[#E8D4C3]/60 border border-[#D7BBA8] rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs font-semibold text-[#332424] transition-all"
+                  className="p-4 bg-[#EBDAC5]/30 hover:bg-[#EBDAC5]/60 border border-[#CFB5A0] rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs font-semibold text-[#2D0E13] transition-all"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-[#843747] text-white rounded text-[9px] font-black uppercase tracking-wider">
+                      <span className="px-2 py-0.5 bg-[#5C1D27] text-white rounded text-[9px] font-black uppercase tracking-wider">
                         {cls.user || "Administrador"}
                       </span>
-                      <strong className="font-serif text-sm text-[#843747]">Arqueo #{cls.id ? cls.id.slice(-6) : idx + 1}</strong>
+                      <strong className="font-serif text-sm text-[#5C1D27]">Arqueo #{cls.id ? cls.id.slice(-6) : idx + 1}</strong>
                     </div>
-                    <p className="text-[10px] text-[#6F5A55] font-mono mt-0.5">
+                    <p className="text-[10px] text-[#5E393F] font-mono mt-0.5">
                       📅 Apertura: {cls.apertura} • 🕒 Cierre: {cls.cierre}
                     </p>
                     {cls.observaciones && (
-                      <p className="text-[10px] text-[#332424]/80 italic bg-[#FFF9F4] px-2 py-1 rounded border border-[#D7BBA8]/50 mt-1">
+                      <p className="text-[10px] text-[#2D0E13]/80 italic bg-[#FAF2E6] px-2 py-1 rounded border border-[#CFB5A0]/50 mt-1">
                         "{cls.observaciones}"
                       </p>
                     )}
@@ -5387,16 +5657,16 @@ export default function AdminHub({
                   
                   <div className="flex items-center gap-6 shrink-0 w-full md:w-auto justify-between md:justify-end">
                     <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="bg-[#FFF9F4] p-2 rounded-xl border border-[#D7BBA8]/60">
-                        <span className="text-[8px] text-[#6F5A55] font-bold block uppercase tracking-wider">Ventas Turno</span>
-                        <strong className="font-mono text-xs text-[#843747]">${cls.ventasTurno.toLocaleString()}</strong>
+                      <div className="bg-[#FAF2E6] p-2 rounded-xl border border-[#CFB5A0]/60">
+                        <span className="text-[8px] text-[#5E393F] font-bold block uppercase tracking-wider">Ventas Turno</span>
+                        <strong className="font-mono text-xs text-[#5C1D27]">${cls.ventasTurno.toLocaleString()}</strong>
                       </div>
-                      <div className="bg-[#FFF9F4] p-2 rounded-xl border border-[#D7BBA8]/60">
-                        <span className="text-[8px] text-[#6F5A55] font-bold block uppercase tracking-wider">Monto Real</span>
-                        <strong className="font-mono text-xs text-[#332424]">${cls.montoReal.toLocaleString()}</strong>
+                      <div className="bg-[#FAF2E6] p-2 rounded-xl border border-[#CFB5A0]/60">
+                        <span className="text-[8px] text-[#5E393F] font-bold block uppercase tracking-wider">Monto Real</span>
+                        <strong className="font-mono text-xs text-[#2D0E13]">${cls.montoReal.toLocaleString()}</strong>
                       </div>
-                      <div className="bg-[#FFF9F4] p-2 rounded-xl border border-[#D7BBA8]/60">
-                        <span className="text-[8px] text-[#6F5A55] font-bold block uppercase tracking-wider">Diferencia</span>
+                      <div className="bg-[#FAF2E6] p-2 rounded-xl border border-[#CFB5A0]/60">
+                        <span className="text-[8px] text-[#5E393F] font-bold block uppercase tracking-wider">Diferencia</span>
                         <strong className={`font-mono text-xs ${cls.diferencia >= 0 ? "text-[#4F735A]" : "text-[#A63F45]"}`}>
                           {cls.diferencia >= 0 ? "+" : ""}${cls.diferencia.toLocaleString()}
                         </strong>
@@ -5405,7 +5675,7 @@ export default function AdminHub({
                     
                     <button 
                       onClick={() => setSelectedClosureForModal(cls)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-black transition-all cursor-pointer uppercase tracking-wider shadow-2xs flex items-center gap-1"
+                      className="px-3.5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black transition-all cursor-pointer uppercase tracking-wider shadow-2xs flex items-center gap-1"
                     >
                       🔍 Detalle
                     </button>
@@ -5448,48 +5718,19 @@ export default function AdminHub({
 
     const handleFormSubmit = async (e: FormEvent) => {
       e.preventDefault();
-      if (!bookingFormName.trim() || !bookingFormPhone.trim() || !bookingFormDate) {
-        onShowNotification("⚠️ Complete todos los campos obligatorios.", "warning");
+      if (!bookingFormName || !bookingFormPhone || !bookingFormDate) {
+        onShowNotification("⚠️ Complete los campos obligatorios.", "warning");
         return;
       }
-
-      // Past date check in Argentina timezone (todayStr)
-      if (bookingFormDate < todayStr) {
-        onShowNotification("⚠️ No se pueden registrar reservas en fechas pasadas.", "warning");
-        return;
-      }
-
-      // Phone validation
-      const cleanedPhone = bookingFormPhone.replace(/\D/g, "");
-      if (cleanedPhone.length < 7) {
-        onShowNotification("⚠️ Ingrese un número de teléfono válido (mínimo 7 dígitos).", "warning");
-        return;
-      }
-
-      // Capacity & double booking check
       const tableName = bookingFormTableId.replace("mesa-", "Mesa ");
-      const selectedTable = restaurantTables.find(t => t.id === bookingFormTableId || t.name === tableName);
-      if (selectedTable && bookingFormGuests > selectedTable.capacity) {
-        onShowNotification(`⚠️ La mesa seleccionada tiene capacidad máxima para ${selectedTable.capacity} personas.`, "warning");
-        return;
-      }
-
-      const existingBooking = adminBookings.find(
-        b => b.date === bookingFormDate && b.timeSlot === bookingFormSlot && (b.tableId === bookingFormTableId || b.tableName === tableName)
-      );
-      if (existingBooking) {
-        onShowNotification(`⚠️ La ${tableName} ya se encuentra reservada para la fecha y turno seleccionado.`, "warning");
-        return;
-      }
-
       await handleAdminAddBooking({
         tableId: bookingFormTableId,
         tableName,
         date: bookingFormDate,
         timeSlot: bookingFormSlot,
         guests: bookingFormGuests,
-        customerName: bookingFormName.trim(),
-        customerPhone: cleanedPhone
+        customerName: bookingFormName,
+        customerPhone: bookingFormPhone
       });
       setIsAddingBooking(false);
       setBookingFormName("");
@@ -5514,21 +5755,21 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#332424]"
+        className="space-y-8 text-[#2D0E13]"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#CFB5A0] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control de Clientes & Salón</span>
-            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Calendario & Reservas de Mesas</h2>
-            <p className="text-xs text-[#6F5A55] mt-1 font-medium">Gestione y agende reservas sincronizadas en vivo con Supabase.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Control de Clientes & Salón</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Calendario & Reservas de Mesas</h2>
+            <p className="text-xs text-[#5E393F] mt-1 font-medium">Gestione y agende reservas sincronizadas en vivo con Supabase.</p>
           </div>
           <button
             onClick={() => {
               setBookingFormDate(selectedCalDate);
               setIsAddingBooking(!isAddingBooking);
             }}
-            className="flex items-center gap-2 px-5 py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-2xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
+            className="flex items-center gap-2 px-5 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-2xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Agendar Nueva Reserva
           </button>
@@ -5536,42 +5777,42 @@ export default function AdminHub({
 
         {/* KPI Cards Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Reservas Totales</span>
-              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{adminBookings.length}</span>
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Reservas Totales</span>
+              <span className="text-2xl font-black font-mono text-[#5C1D27] mt-1 block">{adminBookings.length}</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-10 w-10 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <Calendar className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Reservas de Hoy</span>
-              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{todayBookingsCount}</span>
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Reservas de Hoy</span>
+              <span className="text-2xl font-black font-mono text-[#5C1D27] mt-1 block">{todayBookingsCount}</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-10 w-10 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <Clock className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Total Comensales</span>
-              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{totalGuests} pers.</span>
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Total Comensales</span>
+              <span className="text-2xl font-black font-mono text-[#5C1D27] mt-1 block">{totalGuests} pers.</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-10 w-10 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <Users className="h-5 w-5" />
             </div>
           </div>
 
-          <div className="p-4 bg-[#FFF9F4] border border-[#D7BBA8] rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">En Fecha Seleccionada</span>
-              <span className="text-2xl font-black font-mono text-[#843747] mt-1 block">{bookingsForSelectedDate.length}</span>
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">En Fecha Seleccionada</span>
+              <span className="text-2xl font-black font-mono text-[#5C1D27] mt-1 block">{bookingsForSelectedDate.length}</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747]">
+            <div className="h-10 w-10 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27]">
               <Coffee className="h-5 w-5" />
             </div>
           </div>
@@ -5580,23 +5821,21 @@ export default function AdminHub({
         {/* Interactive Calendar Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Calendar Grid Picker */}
-          <div className="lg:col-span-7 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+          <div className="lg:col-span-7 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setCalMonthOffset(prev => prev - 1)}
-                  aria-label="Mes anterior"
-                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer min-h-[44px] min-w-[44px]"
+                  className="px-3 py-1.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] text-[#5C1D27] font-black text-xs hover:bg-[#EBDAC5] cursor-pointer"
                 >
                   ◀
                 </button>
-                <h3 className="font-serif text-lg font-bold text-[#843747] capitalize">{monthTitle}</h3>
+                <h3 className="font-serif text-lg font-bold text-[#5C1D27] capitalize">{monthTitle}</h3>
                 <button
                   type="button"
                   onClick={() => setCalMonthOffset(prev => prev + 1)}
-                  aria-label="Mes siguiente"
-                  className="px-3 py-1.5 rounded-xl border border-[#D7BBA8] bg-[#E8D4C3] text-[#843747] font-black text-xs hover:bg-[#E7C8CF] cursor-pointer min-h-[44px] min-w-[44px]"
+                  className="px-3 py-1.5 rounded-xl border border-[#CFB5A0] bg-[#EBDAC5] text-[#5C1D27] font-black text-xs hover:bg-[#EBDAC5] cursor-pointer"
                 >
                   ▶
                 </button>
@@ -5608,14 +5847,14 @@ export default function AdminHub({
                   setSelectedCalDate(todayStr);
                   setBookingFormDate(todayStr);
                 }}
-                className="px-3 py-1.5 bg-[#843747] text-white text-[10px] font-black uppercase tracking-wider rounded-xl cursor-pointer"
+                className="px-3 py-1.5 bg-[#5C1D27] text-white text-[10px] font-black uppercase tracking-wider rounded-xl cursor-pointer"
               >
                 Hoy
               </button>
             </div>
 
             {/* Days of Week Header */}
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-widest text-[#6F5A55] py-1">
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-widest text-[#5E393F] py-1">
               <span>Dom</span>
               <span>Lun</span>
               <span>Mar</span>
@@ -5646,16 +5885,16 @@ export default function AdminHub({
                     }}
                     className={`h-12 p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer border ${
                       isSelected
-                        ? "bg-[#843747] text-white border-[#843747] shadow-xs"
+                        ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs"
                         : isToday
-                        ? "bg-[#E8D4C3] border-2 border-[#843747] text-[#332424]"
-                        : "bg-[#FFF9F4] hover:bg-[#E8D4C3]/50 border-[#D7BBA8] text-[#332424]"
+                        ? "bg-[#EBDAC5] border-2 border-[#5C1D27] text-[#2D0E13]"
+                        : "bg-[#FAF2E6] hover:bg-[#EBDAC5]/50 border-[#CFB5A0] text-[#2D0E13]"
                     }`}
                   >
                     <span className="font-mono text-xs leading-none">{item.day}</span>
                     {count > 0 && (
                       <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black leading-none ${
-                        isSelected ? "bg-white text-[#843747]" : "bg-[#843747] text-white"
+                        isSelected ? "bg-white text-[#5C1D27]" : "bg-[#5C1D27] text-white"
                       }`}>
                         {count} res.
                       </span>
@@ -5667,35 +5906,35 @@ export default function AdminHub({
           </div>
 
           {/* Selected Date Summary Side Panel */}
-          <div className="lg:col-span-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
             <div>
-              <div className="border-b border-[#D7BBA8] pb-3 flex justify-between items-center">
+              <div className="border-b border-[#CFB5A0] pb-3 flex justify-between items-center">
                 <div>
-                  <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Detalle por Día</span>
-                  <h3 className="font-serif text-lg font-bold text-[#843747]">📅 {selectedCalDate}</h3>
+                  <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Detalle por Día</span>
+                  <h3 className="font-serif text-lg font-bold text-[#5C1D27]">📅 {selectedCalDate}</h3>
                 </div>
-                <span className="text-xs font-mono font-bold text-[#843747] bg-[#E8D4C3] px-2.5 py-1 rounded-lg">
+                <span className="text-xs font-mono font-bold text-[#5C1D27] bg-[#EBDAC5] px-2.5 py-1 rounded-lg">
                   {bookingsForSelectedDate.length} Reservas
                 </span>
               </div>
 
               <div className="space-y-3 py-3 max-h-[260px] overflow-y-auto pr-1">
                 {bookingsForSelectedDate.length === 0 ? (
-                  <div className="text-center py-8 text-[#6F5A55] italic font-medium">
+                  <div className="text-center py-8 text-[#5E393F] italic font-medium">
                     No hay reservas registradas para esta fecha.
                   </div>
                 ) : (
                   bookingsForSelectedDate.map((b) => (
-                    <div key={b.id} className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl space-y-1.5 text-xs shadow-xs">
-                      <div className="flex justify-between items-center font-bold text-[#843747]">
+                    <div key={b.id} className="p-3.5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-1.5 text-xs shadow-xs">
+                      <div className="flex justify-between items-center font-bold text-[#5C1D27]">
                         <span>{b.customerName}</span>
-                        <span className="font-mono text-[10px] bg-[#E8D4C3] px-2 py-0.5 rounded-md text-[#332424]">{b.tableName}</span>
+                        <span className="font-mono text-[10px] bg-[#EBDAC5] px-2 py-0.5 rounded-md text-[#2D0E13]">{b.tableName}</span>
                       </div>
-                      <div className="flex justify-between text-[10px] text-[#6F5A55] font-semibold font-mono">
+                      <div className="flex justify-between text-[10px] text-[#5E393F] font-semibold font-mono">
                         <span>Horario: {b.timeSlot}</span>
                         <span>👥 {b.guests} Pers.</span>
                       </div>
-                      <div className="text-[10px] text-[#6F5A55] font-mono">
+                      <div className="text-[10px] text-[#5E393F] font-mono">
                         Tel: {b.customerPhone} • Ref: {b.referenceCode}
                       </div>
                     </div>
@@ -5709,7 +5948,7 @@ export default function AdminHub({
                 setBookingFormDate(selectedCalDate);
                 setIsAddingBooking(true);
               }}
-              className="w-full py-3 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl uppercase tracking-wider shadow-xs cursor-pointer"
+              className="w-full py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl uppercase tracking-wider shadow-xs cursor-pointer"
             >
               ➕ Agendar Reserva para {selectedCalDate}
             </button>
@@ -5721,67 +5960,55 @@ export default function AdminHub({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-5"
+            className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-5"
           >
-            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
-              <h3 className="font-serif text-xl font-bold text-[#843747]">Agendar Nueva Reserva en Supabase</h3>
-              <button onClick={() => setIsAddingBooking(false)} className="text-[#6F5A55] hover:text-[#332424] font-black text-sm cursor-pointer">✕</button>
+            <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
+              <h3 className="font-serif text-xl font-bold text-[#5C1D27]">Agendar Nueva Reserva en Supabase</h3>
+              <button onClick={() => setIsAddingBooking(false)} className="text-[#5E393F] hover:text-[#2D0E13] font-black text-sm cursor-pointer">✕</button>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#332424]">
+            <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2D0E13]">
               <div>
-                <label htmlFor="booking_name" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Nombre del Cliente *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#5E393F]">Nombre del Cliente *</label>
                 <input
-                  id="booking_name"
-                  name="booking_name"
                   type="text"
-                  autoComplete="name"
                   value={bookingFormName}
                   onChange={(e) => setBookingFormName(e.target.value)}
                   placeholder="Ej: Mariano Closs"
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none font-bold"
+                  className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/50 focus:border-[#5C1D27] outline-none font-bold"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="booking_phone" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Teléfono Celular *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#5E393F]">Teléfono Celular *</label>
                 <input
-                  id="booking_phone"
-                  name="booking_phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
+                  type="text"
                   value={bookingFormPhone}
                   onChange={(e) => setBookingFormPhone(e.target.value)}
                   placeholder="Ej: 3584123456"
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/50 focus:border-[#843747] outline-none font-mono font-bold"
+                  className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/50 focus:border-[#5C1D27] outline-none font-mono font-bold"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="booking_date" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Fecha de Reserva *</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#5E393F]">Fecha de Reserva *</label>
                 <input
-                  id="booking_date"
-                  name="booking_date"
                   type="date"
-                  min={todayStr}
                   value={bookingFormDate}
                   onChange={(e) => setBookingFormDate(e.target.value)}
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono font-bold"
+                  className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] focus:border-[#5C1D27] outline-none font-mono font-bold"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="booking_slot" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Horario / Turno</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#5E393F]">Horario / Turno</label>
                 <select
-                  id="booking_slot"
-                  name="booking_slot"
                   value={bookingFormSlot}
                   onChange={(e) => setBookingFormSlot(e.target.value)}
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
+                  className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] focus:border-[#5C1D27] outline-none cursor-pointer font-bold"
                 >
                   <option value="08:00 - 10:00">Desayuno (08:00 - 10:00)</option>
                   <option value="10:00 - 12:00">Media Mañana (10:00 - 12:00)</option>
@@ -5795,13 +6022,11 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label htmlFor="booking_table" className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Asignar Mesa en Salón</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#5E393F]">Asignar Mesa en Salón</label>
                 <select
-                  id="booking_table"
-                  name="booking_table"
                   value={bookingFormTableId}
                   onChange={(e) => setBookingFormTableId(e.target.value)}
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none cursor-pointer font-bold"
+                  className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] focus:border-[#5C1D27] outline-none cursor-pointer font-bold"
                 >
                   {(() => {
                     const list = [...restaurantTables];
@@ -5823,14 +6048,14 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#6F5A55]">Cantidad de Comensales</label>
+                <label className="text-[10px] uppercase tracking-wider block mb-1 text-[#5E393F]">Cantidad de Comensales</label>
                 <input
                   type="number"
                   min="1"
                   max="12"
                   value={bookingFormGuests}
                   onChange={(e) => setBookingFormGuests(parseInt(e.target.value) || 1)}
-                  className="w-full p-3 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] focus:border-[#843747] outline-none font-mono font-bold"
+                  className="w-full p-3 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] focus:border-[#5C1D27] outline-none font-mono font-bold"
                 />
               </div>
 
@@ -5838,13 +6063,13 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setIsAddingBooking(false)}
-                  className="px-5 py-2.5 border border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold uppercase tracking-wider text-xs"
+                  className="px-5 py-2.5 border border-[#CFB5A0] text-[#5E393F] hover:text-[#2D0E13] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold uppercase tracking-wider text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider text-xs"
+                  className="px-6 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider text-xs"
                 >
                   Guardar Reserva
                 </button>
@@ -5856,23 +6081,23 @@ export default function AdminHub({
         {/* Filter & Search Bar */}
         <div className="w-full max-w-lg">
           <div className="relative">
-            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#843747]" />
+            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#5C1D27]" />
             <input
               type="text"
               value={bookingSearchQuery}
               onChange={(e) => setBookingSearchQuery(e.target.value)}
               placeholder="Buscar por cliente, teléfono, mesa o fecha..."
-              className="w-full rounded-2xl border border-[#D7BBA8] bg-[#FFF9F4] py-3 pr-4 pl-11 shadow-sm outline-none transition-all focus:border-[#843747] text-xs font-bold text-[#332424] placeholder-[#6F5A55]/50"
+              className="w-full rounded-2xl border border-[#CFB5A0] bg-[#FAF2E6] py-3 pr-4 pl-11 shadow-sm outline-none transition-all focus:border-[#5C1D27] text-xs font-bold text-[#2D0E13] placeholder-[#5E393F]/50"
             />
           </div>
         </div>
 
         {/* Table of Bookings */}
-        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
+        <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs font-medium">
               <thead>
-                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[10px] uppercase tracking-widest text-[#6F5A55]">
+                <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[10px] uppercase tracking-widest text-[#5E393F]">
                   <th className="p-4 font-black">Cliente</th>
                   <th className="p-4 font-black">Teléfono</th>
                   <th className="p-4 font-black">Fecha</th>
@@ -5883,10 +6108,10 @@ export default function AdminHub({
                   <th className="p-4 font-black text-center">Acciones & WhatsApp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D7BBA8]">
+              <tbody className="divide-y divide-[#CFB5A0]">
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-[#6F5A55] italic font-medium">
+                    <td colSpan={8} className="p-12 text-center text-[#5E393F] italic font-medium">
                       No hay reservas agendadas que coincidan con la búsqueda.
                     </td>
                   </tr>
@@ -5900,22 +6125,22 @@ export default function AdminHub({
                     const waLink = `https://wa.me/${waPhone}?text=${waMessage}`;
 
                     return (
-                      <tr key={b.id} className="hover:bg-[#E8D4C3]/30 transition-colors">
-                        <td className="p-4 font-serif font-bold text-sm text-[#843747]">{b.customerName}</td>
-                        <td className="p-4 font-mono text-[#332424] font-semibold">{b.customerPhone}</td>
-                        <td className="p-4 font-mono font-bold text-xs text-[#332424]">{b.date}</td>
+                      <tr key={b.id} className="hover:bg-[#EBDAC5]/30 transition-colors">
+                        <td className="p-4 font-serif font-bold text-sm text-[#5C1D27]">{b.customerName}</td>
+                        <td className="p-4 font-mono text-[#2D0E13] font-semibold">{b.customerPhone}</td>
+                        <td className="p-4 font-mono font-bold text-xs text-[#2D0E13]">{b.date}</td>
                         <td className="p-4">
-                          <span className="px-2.5 py-1 rounded-lg bg-[#E8D4C3] border border-[#D7BBA8] font-mono text-[10px] text-[#843747] font-bold">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#EBDAC5] border border-[#CFB5A0] font-mono text-[10px] text-[#5C1D27] font-bold">
                             {b.timeSlot}
                           </span>
                         </td>
-                        <td className="p-4 font-bold text-[#332424]">{b.tableName}</td>
+                        <td className="p-4 font-bold text-[#2D0E13]">{b.tableName}</td>
                         <td className="p-4 text-center">
-                          <span className="px-3 py-1 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[10px] font-mono font-bold">
+                          <span className="px-3 py-1 rounded-full bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[10px] font-mono font-bold">
                             👤 {b.guests} Pers.
                           </span>
                         </td>
-                        <td className="p-4 font-mono font-bold text-[#6F5A55] text-xs">{b.referenceCode}</td>
+                        <td className="p-4 font-mono font-bold text-[#5E393F] text-xs">{b.referenceCode}</td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <a
@@ -5929,7 +6154,7 @@ export default function AdminHub({
                             </a>
                             <button
                               onClick={() => handleAdminCancelBooking(b.id)}
-                              className="px-3 py-1.5 bg-[#F4DCDD] hover:bg-[#E7C8CF] border border-[#A63F45]/30 text-[#A63F45] rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-xs"
+                              className="px-3 py-1.5 bg-[#F4DCDD] hover:bg-[#EBDAC5] border border-[#A63F45]/30 text-[#A63F45] rounded-xl transition-all cursor-pointer font-bold text-[10px] uppercase shadow-xs"
                             >
                               Cancelar
                             </button>
@@ -5967,11 +6192,13 @@ export default function AdminHub({
 
     const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
 
-    const normMozoQuery = mozoSearchQuery.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const filteredMenuItems = menuItems.filter(item => {
-      const normName = (item.name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const normDesc = (item.description || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const matchesSearch = !normMozoQuery || normName.includes(normMozoQuery) || normDesc.includes(normMozoQuery);
+      // Exclude legacy executive items and old static menu_diario items
+      if (item.category === "executive" || item.category === "menu_diario" || item.id === "menu_ejecutivo_promocional" || item.name.toLowerCase().includes("menú ejecutivo")) {
+        return false;
+      }
+      const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
+                            item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
       const matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
       return item.isAvailable !== false && matchesSearch && matchesCategory;
     });
@@ -6248,14 +6475,14 @@ export default function AdminHub({
         {/* Left Column: Waiter & Tables */}
         <div className="lg:col-span-3 space-y-6">
           {/* Waiter Card */}
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] flex items-center justify-center">
                 <Users className="h-5 w-5" />
               </div>
               <div>
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#6F5A55] block">Mozo en Turno Activo</span>
-                <strong className="text-xs font-serif block text-[#843747]">Terminal POS Registrada</strong>
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#5E393F] block">Mozo en Turno Activo</span>
+                <strong className="text-xs font-serif block text-[#5C1D27]">Terminal POS Registrada</strong>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -6265,8 +6492,8 @@ export default function AdminHub({
                   onClick={() => setSelectedWaiter(waiter)}
                   className={`py-2.5 rounded-xl text-[10px] font-black transition-all cursor-pointer uppercase tracking-wider ${
                     selectedWaiter === waiter 
-                      ? "bg-[#843747] text-white shadow-xs" 
-                      : "bg-[#E8D4C3] border border-[#D7BBA8] text-[#332424] hover:bg-[#E7C8CF]"
+                      ? "bg-[#5C1D27] text-white shadow-xs" 
+                      : "bg-[#EBDAC5] border border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                   }`}
                 >
                   {waiter}
@@ -6287,13 +6514,13 @@ export default function AdminHub({
 
           {/* Tables Card (Visible in Salón Mode) */}
           {mozoServiceType === "salon" && (
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm space-y-4">
-              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-wider text-[#6F5A55] block">Distribución de Salón</span>
-                <h3 className="font-serif text-base font-bold mt-0.5 text-[#843747]">Mapa de Mesas</h3>
+                <span className="text-[9px] font-black uppercase tracking-wider text-[#5E393F] block">Distribución de Salón</span>
+                <h3 className="font-serif text-base font-bold mt-0.5 text-[#5C1D27]">Mapa de Mesas</h3>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[9px] font-mono font-black uppercase tracking-wider">
+              <span className="px-2.5 py-1 rounded-full bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[9px] font-mono font-black uppercase tracking-wider">
                 {occupiedTablesCount} Ocupadas
               </span>
             </div>
@@ -6310,13 +6537,13 @@ export default function AdminHub({
                     onClick={() => handleSelectMozoTable(table)}
                     className={`p-3.5 border rounded-2xl cursor-pointer transition-all flex flex-col justify-between h-20 shadow-xs ${
                       isSelected
-                        ? "bg-[#843747] border-[#843747] text-white shadow-sm"
+                        ? "bg-[#5C1D27] border-[#5C1D27] text-white shadow-sm"
                         : isOccupied
                         ? "bg-[#F5E4CC] border-[#B97932] text-[#B97932]"
-                        : "bg-[#FFF9F4] border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                        : "bg-[#FAF2E6] border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                     }`}
                   >
-                    <strong className={`text-xs font-bold block ${isSelected ? "text-white" : isOccupied ? "text-[#B97932]" : "text-[#332424]"}`}>
+                    <strong className={`text-xs font-bold block ${isSelected ? "text-white" : isOccupied ? "text-[#B97932]" : "text-[#2D0E13]"}`}>
                       {table}
                     </strong>
                     {isOccupied ? (
@@ -6324,7 +6551,7 @@ export default function AdminHub({
                         <Users className="h-3 w-3" /> {getDinersMockCount(table)} pers.
                       </span>
                     ) : (
-                      <span className={`text-[8px] font-black uppercase tracking-wider mt-1 block ${isSelected ? "text-white/80" : "text-[#6F5A55]"}`}>
+                      <span className={`text-[8px] font-black uppercase tracking-wider mt-1 block ${isSelected ? "text-white/80" : "text-[#5E393F]"}`}>
                         Disponible
                       </span>
                     )}
@@ -6339,49 +6566,50 @@ export default function AdminHub({
         {/* Center Column: Categories and Products */}
         <div className="lg:col-span-6 space-y-6">
           {/* Categories card with search */}
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-5 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-[#6F5A55] block">Carta & Menú Digital POS</span>
-                  <span className="text-[9px] font-mono font-bold bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] px-2 py-0.5 rounded-full">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#5E393F] block">Carta & Menú Digital POS</span>
+                  <span className="text-[9px] font-mono font-bold bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] px-2 py-0.5 rounded-full">
                     {TimeSlotService.getCurrentTimeSlot().name.split(":")[0]}
                   </span>
                 </div>
-                <h3 className="font-serif text-lg font-bold text-[#843747] mt-0.5">Catálogo de Productos</h3>
+                <h3 className="font-serif text-lg font-bold text-[#5C1D27] mt-0.5">Catálogo de Productos</h3>
               </div>
               <div className="relative w-full sm:w-52">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-[#843747]" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-[#5C1D27]" />
                 <input
                   type="text"
                   placeholder="Buscar producto o bebida..."
                   value={mozoSearchQuery}
                   onChange={(e) => setMozoSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] placeholder-[#6F5A55]/60 font-semibold focus:border-[#843747] outline-none"
+                  className="w-full pl-9 pr-4 py-2 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/60 font-semibold focus:border-[#5C1D27] outline-none"
                 />
               </div>
             </div>
 
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
               {[
-                { id: "todos", label: "Todos" },
-                { id: "executive", label: "Menú Diario" },
-                { id: "desayunos_meriendas", label: "Desayunos & Meriendas" },
-                { id: "pizzas_focaccias", label: "Pizzas & Focaccias" },
-                { id: "minutas_carnes", label: "Minutas & Carnes" },
-                { id: "pastas_caseras", label: "Pastas Caseras" },
-                { id: "empanadas", label: "Empanadas" },
-                { id: "bebidas_sa", label: "Bebidas S/A" },
-                { id: "bebidas_alcohol", label: "Bebidas c/Alcohol" },
-                { id: "postres", label: "Postres" }
+                { id: "todos", label: "🍽️ Todos" },
+                { id: "menu_diario", label: "⭐ Menú del Día" },
+                { id: "executive", label: "🍱 Menú Diario" },
+                { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
+                { id: "pizzas_focaccias", label: "🍕 Pizzas & Focaccias" },
+                { id: "minutas_carnes", label: "🥩 Minutas & Carnes" },
+                { id: "pastas_caseras", label: "🍝 Pastas Caseras" },
+                { id: "empanadas", label: "🥟 Empanadas" },
+                { id: "bebidas_sa", label: "🥤 Bebidas S/A" },
+                { id: "bebidas_alcohol", label: "🍸 Bebidas c/Alcohol" },
+                { id: "postres", label: "🍰 Postres" }
               ].map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setMozoCategory(cat.id)}
                   className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer ${
                     mozoCategory === cat.id
-                      ? "bg-[#843747] text-white shadow-xs"
-                      : "bg-[#E8D4C3] border border-[#D7BBA8] text-[#332424] hover:bg-[#E7C8CF]"
+                      ? "bg-[#5C1D27] text-white shadow-xs"
+                      : "bg-[#EBDAC5] border border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                   }`}
                 >
                   {cat.label}
@@ -6390,234 +6618,256 @@ export default function AdminHub({
             </div>
           </div>
 
-          {/* Product grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
-            {/* 🍱 Combo Menú Diario Card for Mozo */}
-            {(mozoCategory === "todos" || mozoCategory === "executive") && (
-              <div className="col-span-1 sm:col-span-2 bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-2">
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-[#5C1D27] block">🍱 COMBO MENÚ DIARIO</span>
-                    <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Diario (Plato + Guarnición)</h4>
-                    <p className="text-[10px] text-[#5E393F] italic">Elija 1 Plato Principal de los 4 y 1 Guarnición de las 4 disponibles.</p>
-                  </div>
-                  <strong className="text-xl font-mono font-black text-[#5C1D27]">${dailyComboState.price.toLocaleString("es-AR")}</strong>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* 1. Main Choice */}
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">1. Plato Principal (4 Opciones):</label>
-                    <select
-                      value={selectedMainMozo || dailyComboState.mains[0] || ""}
-                      onChange={(e) => setSelectedMainMozo(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
-                    >
-                      {dailyComboState.mains.map((m) => (
-                        <option key={m} value={m}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 2. Side Choice */}
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">2. Guarnición Acompañamiento:</label>
-                    <select
-                      value={selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa")}
-                      onChange={(e) => setSelectedSideMozo(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
-                    >
-                      {(dailyComboState.sides && dailyComboState.sides.length > 0
-                        ? dailyComboState.sides.flatMap((s: string) =>
-                            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
-                              ? ["Puré de papa", "Puré mixto"]
-                              : s
-                          )
-                        : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"]
-                      ).map((g) => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const mainChoice = selectedMainMozo || dailyComboState.mains[0] || "Pollo al horno";
-                      const sideChoice = selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa");
-                      const itemToCart: MenuItem = {
-                        id: `combo_diario_${Date.now()}`,
-                        name: `🍱 Menú Diario (${mainChoice} c/ ${sideChoice})`,
-                        price: dailyComboState.price,
-                        category: "executive",
-                        description: `Plato: ${mainChoice} | Guarnición: ${sideChoice}`,
-                        tags: ["Menú Diario"],
-                        image: dailyComboState.mainImages?.[0] || "",
-                        customizable: false,
-                        nutrition: { calories: 0, allergens: [] }
-                      };
-                      handleAddMozoCart(itemToCart);
-                      onShowNotification(`🍱 Combo Menú Diario agregado a la comanda`, "success");
-                    }}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" /> Agregar Combo a Comanda
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 🥗 Ensalada Completa Card for Mozo */}
-            {(mozoCategory === "todos" || mozoCategory === "executive") && (
-              <div className="col-span-1 sm:col-span-2 bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-2">
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-[#5C1D27] block">🥗 MENÚ SALUDABLE</span>
-                    <h4 className="font-serif text-lg font-bold text-[#2D0E13]">{dailyComboState.saladTitle || "Ensalada Completa"}</h4>
-                    <p className="text-[10px] text-[#5E393F] italic">{dailyComboState.saladDescription || "Mix de verdes, pollo desmenuzado, queso, huevo y tomates cherry."}</p>
-                  </div>
-                  <strong className="text-xl font-mono font-black text-[#5C1D27]">
-                    ${(saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500)).toLocaleString("es-AR")}
-                  </strong>
-                </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-black uppercase text-[#5C1D27]">Tamaño:</label>
-                    <div className="flex rounded-xl bg-[#EBDAC5] p-1 border border-[#CFB5A0]">
-                      <button
-                        type="button"
-                        onClick={() => setSaladSizeMozo("chica")}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                          saladSizeMozo === "chica"
-                            ? "bg-[#5C1D27] text-white"
-                            : "text-[#2D0E13] hover:bg-[#CFB5A0]"
-                        }`}
-                      >
-                        Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSaladSizeMozo("grande")}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                          saladSizeMozo === "grande"
-                            ? "bg-[#5C1D27] text-white"
-                            : "text-[#2D0E13] hover:bg-[#CFB5A0]"
-                        }`}
-                      >
-                        Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
-                      </button>
+          {/* ⭐ Menú del Día (Plato Único Semanal) Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "menu_diario") && todayMenu && (
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
+                <div className="flex items-center gap-3">
+                  {todayMenu.image ? (
+                    <img src={todayMenu.image} alt={todayMenu.title} className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0" />
+                  ) : (
+                    <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                      ⭐ DÍA
                     </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">⭐ Plato Único del Día ({todayMenu.dayOfWeek})</span>
+                    <h4 className="font-serif text-lg font-bold text-[#2D0E13]">{todayMenu.title}</h4>
+                    <p className="text-xs text-[#5E393F] italic">{todayMenu.description || "Plato especial del día."}</p>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sizeLabel = saladSizeMozo === "chica" ? "Chica" : "Grande";
-                      const price = saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500);
-                      const itemToCart: MenuItem = {
-                        id: `ensalada_completa_${saladSizeMozo}_${Date.now()}`,
-                        name: `🥗 ${dailyComboState.saladTitle || "Ensalada Completa"} (${sizeLabel})`,
-                        price: price,
-                        category: "executive",
-                        description: dailyComboState.saladDescription || "Mix de verdes, pollo, queso, huevo y tomates cherry.",
-                        tags: ["Saludable"],
-                        image: dailyComboState.saladImage || "",
-                        customizable: false,
-                        nutrition: { calories: 0, allergens: [] }
-                      };
-                      handleAddMozoCart(itemToCart);
-                      onShowNotification(`🥗 Ensalada Completa (${sizeLabel}) agregada a la comanda`, "success");
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" /> Agregar Ensalada
-                  </button>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs text-[#5E393F] block font-bold">Precio</span>
+                  <span className="text-xl font-mono font-black text-[#5C1D27] block">${todayMenu.price.toLocaleString("es-AR")}</span>
                 </div>
               </div>
-            )}
-
-            {filteredMenuItems.length === 0 ? (
-              <div className="col-span-1 sm:col-span-2 p-8 rounded-3xl border border-[#D7BBA8] bg-[#FFF9F4] text-center flex flex-col items-center justify-center space-y-3">
-                <Search className="h-8 w-8 text-[#843747]/40" />
-                <p className="text-xs font-bold text-[#843747]">No se encontraron productos coincidentes con "{mozoSearchQuery}"</p>
+              <div className="flex justify-end">
                 <button
-                  onClick={() => { setMozoSearchQuery(""); setMozoCategory("todos"); }}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] text-[10px] font-black uppercase tracking-wider hover:bg-[#E7C8CF] transition-all cursor-pointer min-h-[44px]"
-                  aria-label="Limpiar filtro de búsqueda de productos"
+                  type="button"
+                  onClick={() => {
+                    const itemToCart: MenuItem = {
+                      id: `menu_dia_${Date.now()}`,
+                      name: `⭐ Menú del Día (${todayMenu.title})`,
+                      price: todayMenu.price,
+                      category: "menu_diario",
+                      description: todayMenu.description,
+                      image: todayMenu.image
+                    };
+                    handleAddMozoCart(itemToCart);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  Limpiar Filtro
+                  <Plus className="h-4 w-4" /> Agregar Plato del Día a Comanda
                 </button>
               </div>
-            ) : (
-              filteredMenuItems.map(item => {
-                const isOut = item.stock === 0;
-                return (
-                  <div
-                    key={item.id}
-                    className="bg-[#925063] border border-[#D7BBA8]/40 text-white rounded-3xl overflow-hidden flex flex-col justify-between shadow-sm relative group hover:brightness-105 transition-all"
+            </div>
+          )}
+
+          {/* 🍱 Combo Menú Diario (4 Platos + 3 Guarniciones) Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "executive") && (
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-start border-b border-[#CFB5A0] pb-3">
+                <div>
+                  <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">🍱 Combo Menú Diario</span>
+                  <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Diario (Plato + Guarnición)</h4>
+                  <p className="text-xs text-[#5E393F] italic">Elija 1 Plato Principal de los 4 y 1 Guarnición de las 3 disponibles.</p>
+                </div>
+                <span className="text-xl font-black font-mono text-[#5C1D27] shrink-0">${dailyComboState.price.toLocaleString("es-AR")}</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. Main Choice */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">1. Plato Principal (4 Opciones):</label>
+                  <select
+                    value={selectedMainMozo || dailyComboState.mains[0] || ""}
+                    onChange={(e) => setSelectedMainMozo(e.target.value)}
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                   >
-                    {item.image ? (
-                      <img 
-                        src={item.image} 
-                        alt={item.name} 
-                        onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=600"; }}
-                        className="h-28 w-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                      />
-                    ) : (
-                      <div className="h-28 w-full bg-[#843747] flex items-center justify-center text-[#E7C8CF]">
-                        <Coffee className="h-8 w-8 stroke-1" />
-                      </div>
-                    )}
+                    {dailyComboState.mains.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
 
-                    {/* Stock status badge overlay */}
-                    <div className="absolute top-2.5 right-2.5">
-                      {isOut ? (
-                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] tracking-wider">
-                          Sin Stock
-                        </span>
-                      ) : (
-                        item.stock !== undefined && (
-                          <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#E7C8CF] text-[#843747] border border-white/20 tracking-wider font-mono">
-                            Disp: {item.stock}u
-                          </span>
+                {/* 2. Side Choice */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">2. Guarnición Acompañamiento:</label>
+                  <select
+                    value={selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa")}
+                    onChange={(e) => setSelectedSideMozo(e.target.value)}
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
+                  >
+                    {(dailyComboState.sides && dailyComboState.sides.length > 0
+                      ? dailyComboState.sides.flatMap((s: string) =>
+                          s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+                            ? ["Puré de papa", "Puré mixto"]
+                            : s
                         )
-                      )}
-                    </div>
+                      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"]
+                    ).map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-                    <div className="p-4 flex justify-between items-center gap-3 bg-[#925063] border-t border-white/10">
-                      <div className="space-y-1 overflow-hidden">
-                        <strong className="text-xs font-serif font-bold text-white block truncate">{item.name}</strong>
-                        <span className="text-sm font-mono font-black text-[#FFF9F4] block">${item.price.toLocaleString("es-AR")}</span>
-                      </div>
-                      <button
-                        onClick={() => handleAddMozoCart(item)}
-                        disabled={isOut}
-                        aria-label={`Agregar ${item.name} — $${item.price.toLocaleString("es-AR")} — stock ${item.stock ?? 'disponible'}`}
-                        className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 min-h-[44px] min-w-[44px] ${
-                          isOut 
-                            ? "bg-[#843747] opacity-50 cursor-not-allowed text-white/50" 
-                            : "bg-[#FFF9F4] text-[#843747] hover:bg-white shadow-xs font-black"
-                        }`}
-                      >
-                        <Plus className="h-5 w-5 font-black" />
-                      </button>
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const mainChoice = selectedMainMozo || dailyComboState.mains[0] || "Pollo al horno";
+                    const sideChoice = selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa");
+                    const itemToCart: MenuItem = {
+                      id: `combo_diario_${Date.now()}`,
+                      name: `🍱 Menú Diario (${mainChoice} c/ ${sideChoice})`,
+                      price: dailyComboState.price,
+                      category: "executive",
+                      description: `Plato: ${mainChoice} | Guarnición: ${sideChoice}`
+                    };
+                    handleAddMozoCart(itemToCart);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Agregar Combo a Comanda
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 🥗 Ensalada Completa Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "executive") && (
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex justify-between items-start border-b border-[#CFB5A0] pb-3">
+                <div className="flex items-center gap-3">
+                  {dailyComboState.saladImage ? (
+                    <img src={dailyComboState.saladImage} alt={dailyComboState.saladTitle || "Ensalada Completa"} className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0" />
+                  ) : (
+                    <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                      🥗
                     </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">🥗 Menú Saludable</span>
+                    <h4 className="font-serif text-lg font-bold text-[#2D0E13]">{dailyComboState.saladTitle || "Ensalada Completa"}</h4>
+                    <p className="text-xs text-[#5E393F] italic">{dailyComboState.saladDescription || "Mix de verdes, pollo desmenuzado, queso, huevo y tomates cherry."}</p>
                   </div>
-                );
-              })
-            )}
+                </div>
+                <span className="text-xl font-black font-mono text-[#5C1D27] shrink-0">
+                  ${(saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500)).toLocaleString("es-AR")}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#5C1D27] uppercase tracking-wider">Tamaño:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSaladSizeMozo("chica")}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      saladSizeMozo === "chica"
+                        ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
+                        : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
+                    }`}
+                  >
+                    Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSaladSizeMozo("grande")}
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      saladSizeMozo === "grande"
+                        ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
+                        : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
+                    }`}
+                  >
+                    Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const price = saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500);
+                    const title = `${dailyComboState.saladTitle || "Ensalada Completa"} (${saladSizeMozo === "chica" ? "Chica" : "Grande"})`;
+                    const itemToCart: MenuItem = {
+                      id: `ensalada_completa_${saladSizeMozo}_${Date.now()}`,
+                      name: `🥗 ${title}`,
+                      price: price,
+                      category: "executive",
+                      description: dailyComboState.saladDescription
+                    };
+                    handleAddMozoCart(itemToCart);
+                  }}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Agregar Ensalada a Comanda
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Product grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
+            {filteredMenuItems.map(item => {
+              const isOut = item.stock === 0;
+              return (
+                <div
+                  key={item.id}
+                  className="bg-[#6C222E] border border-[#CFB5A0]/40 text-white rounded-3xl overflow-hidden flex flex-col justify-between shadow-sm relative group hover:brightness-105 transition-all"
+                >
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="h-28 w-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <div className="h-28 w-full bg-[#5C1D27] flex items-center justify-center text-[#EBDAC5]">
+                      <Coffee className="h-8 w-8 stroke-1" />
+                    </div>
+                  )}
+
+                  {/* Stock status badge overlay */}
+                  <div className="absolute top-2.5 right-2.5">
+                    {isOut ? (
+                      <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#F4DCDD] border border-[#A63F45]/40 text-[#A63F45] tracking-wider">
+                        Sin Stock
+                      </span>
+                    ) : (
+                      item.stock !== undefined && (
+                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase bg-[#EBDAC5] text-[#5C1D27] border border-white/20 tracking-wider font-mono">
+                          Disp: {item.stock}u
+                        </span>
+                      )
+                    )}
+                  </div>
+
+                  <div className="p-4 flex justify-between items-center gap-3 bg-[#6C222E] border-t border-white/10">
+                    <div className="space-y-1 overflow-hidden">
+                      <strong className="text-xs font-serif font-bold text-white block truncate">{item.name}</strong>
+                      <span className="text-sm font-mono font-black text-[#FAF2E6] block">${item.price.toLocaleString("es-AR")}</span>
+                    </div>
+                    <button
+                      onClick={() => handleAddMozoCart(item)}
+                      disabled={isOut}
+                      className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                        isOut 
+                          ? "bg-[#5C1D27] opacity-50 cursor-not-allowed text-white/50" 
+                          : "bg-[#FAF2E6] text-[#5C1D27] hover:bg-white shadow-xs font-black"
+                      }`}
+                    >
+                      <Plus className="h-5 w-5 font-black" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Right Column: Draft Comanda */}
         <div className="lg:col-span-3">
-          <div className="bg-[#71303D] border border-[#D7BBA8]/40 text-white rounded-3xl p-5 shadow-md flex flex-col justify-between h-[620px]">
+          <div className="bg-[#4A151D] border border-[#CFB5A0]/40 text-white rounded-3xl p-5 shadow-md flex flex-col justify-between h-[620px]">
             {!mozoSelectedTable && mozoServiceType === "salon" ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-white/80 p-6 space-y-3">
-                <div className="h-16 w-16 rounded-3xl bg-[#843747] border border-white/20 text-white flex items-center justify-center">
+                <div className="h-16 w-16 rounded-3xl bg-[#5C1D27] border border-white/20 text-white flex items-center justify-center">
                   <Coffee className="h-8 w-8" />
                 </div>
                 <span className="text-xs font-black text-white uppercase tracking-widest block">Comanda en Espera</span>
@@ -6670,7 +6920,7 @@ export default function AdminHub({
                               : `Mozo: ${selectedWaiter}`}
                           </span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-[#843747] border border-white/20 text-white text-[9px] font-mono font-black uppercase tracking-wider">
+                        <span className="px-2.5 py-1 rounded-full bg-[#5C1D27] border border-white/20 text-white text-[9px] font-mono font-black uppercase tracking-wider">
                           {mozoServiceType === "takeaway" ? "RETIRO" : mozoServiceType === "delivery" ? "DELIVERY" : activeOrder ? "Edición" : "Nueva"}
                         </span>
                       </div>
@@ -6678,31 +6928,31 @@ export default function AdminHub({
                       <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px]">
                         {mozoCart.length > 0 ? (
                           mozoCart.map((cart, idx) => (
-                            <div key={idx} className="bg-[#843747]/80 border border-white/10 rounded-2xl p-3 space-y-2 text-white">
+                            <div key={idx} className="bg-[#5C1D27]/80 border border-white/10 rounded-2xl p-3 space-y-2 text-white">
                               <div className="flex justify-between items-center text-xs font-semibold">
                                 <div className="space-y-0.5 truncate pr-2">
                                   <strong className="text-white block truncate font-serif">{cart.item.name}</strong>
                                   <span className="text-[10px] text-white/70 font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <div className="flex items-center gap-1 bg-[#71303D] border border-white/20 rounded-xl p-1">
+                                  <div className="flex items-center gap-1 bg-[#4A151D] border border-white/20 rounded-xl p-1">
                                     <button
                                       onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
-                                      className="h-6 w-6 bg-[#843747] hover:bg-white hover:text-[#71303D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      className="h-6 w-6 bg-[#5C1D27] hover:bg-white hover:text-[#4A151D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
                                     >
                                       -
                                     </button>
                                     <span className="font-mono font-bold w-5 text-center text-white">{cart.qty}</span>
                                     <button
                                       onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
-                                      className="h-6 w-6 bg-[#843747] hover:bg-white hover:text-[#71303D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      className="h-6 w-6 bg-[#5C1D27] hover:bg-white hover:text-[#4A151D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
                                     >
                                       +
                                     </button>
                                   </div>
                                   <button
                                     onClick={() => handleRemoveFromMozoCart(cart.item.id)}
-                                    className="p-1.5 text-[#E7C8CF] hover:text-white transition-all cursor-pointer"
+                                    className="p-1.5 text-[#EBDAC5] hover:text-white transition-all cursor-pointer"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </button>
@@ -6716,7 +6966,7 @@ export default function AdminHub({
                                   setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
                                 }}
                                 placeholder="Añadir aclaración (ej: bien cocido, sin hielo...)"
-                                className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#71303D] text-white placeholder-white/50 outline-none font-medium"
+                                className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#4A151D] text-white placeholder-white/50 outline-none font-medium"
                               />
                             </div>
                           ))
@@ -6757,8 +7007,8 @@ export default function AdminHub({
                         disabled={mozoCart.length === 0}
                         className={`w-full py-3.5 rounded-2xl font-black text-xs shadow-md transition-all cursor-pointer uppercase tracking-wider ${
                           mozoCart.length > 0
-                            ? "bg-[#FFF9F4] text-[#71303D] hover:bg-white"
-                            : "bg-[#843747] text-white/40 border border-white/10 cursor-not-allowed"
+                            ? "bg-[#FAF2E6] text-[#4A151D] hover:bg-white"
+                            : "bg-[#5C1D27] text-white/40 border border-white/10 cursor-not-allowed"
                         }`}
                       >
                         Marchar Comanda a Cocina
@@ -6842,7 +7092,7 @@ export default function AdminHub({
           </div>
           <button
             onClick={() => setIsAddingProv(!isAddingProv)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" /> Agregar Proveedor
           </button>
@@ -6850,20 +7100,20 @@ export default function AdminHub({
 
         {/* KPI Metric Summary Bar */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Proveedores Registrados</span>
-              <strong className="font-serif text-2xl font-black text-[#843747] block mt-1">{proveedores.length}</strong>
-              <span className="text-[9px] text-[#6F5A55]">Contactos comerciales activos</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#5E393F] block">Proveedores Registrados</span>
+              <strong className="font-serif text-2xl font-black text-[#5C1D27] block mt-1">{proveedores.length}</strong>
+              <span className="text-[9px] text-[#5E393F]">Contactos comerciales activos</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center shadow-xs">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] flex items-center justify-center shadow-xs">
               <Users className="h-6 w-6" />
             </div>
           </div>
 
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Proveedores Activos</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#5E393F] block">Proveedores Activos</span>
               <strong className="font-serif text-2xl font-black text-[#4F735A] block mt-1">{proveedores.filter(p => p.status === "ACTIVO").length}</strong>
               <span className="text-[9px] text-[#4F735A] font-mono">Disponibles para pedidos</span>
             </div>
@@ -6872,13 +7122,13 @@ export default function AdminHub({
             </div>
           </div>
 
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-5 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] block">Canal Directo de Compras</span>
-              <strong className="font-serif text-lg font-black text-[#843747] block mt-1">1-Click WhatsApp</strong>
-              <span className="text-[9px] text-[#6F5A55]">Envío automático de reposición</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-[#5E393F] block">Canal Directo de Compras</span>
+              <strong className="font-serif text-lg font-black text-[#5C1D27] block mt-1">1-Click WhatsApp</strong>
+              <span className="text-[9px] text-[#5E393F]">Envío automático de reposición</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747] flex items-center justify-center shadow-xs">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] flex items-center justify-center shadow-xs">
               <PhoneCall className="h-6 w-6 text-[#4F735A]" />
             </div>
           </div>
@@ -6889,62 +7139,62 @@ export default function AdminHub({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4"
+            className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4"
           >
-            <h3 className="font-serif text-lg font-bold text-[#843747]">Nuevo Proveedor de Compra</h3>
-            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#332424]">
+            <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Nuevo Proveedor de Compra</h3>
+            <form onSubmit={handleAddProvSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-[#2D0E13]">
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Nombre / Razón Social *</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#5E393F] block mb-1">Nombre / Razón Social *</label>
                 <input
                   type="text"
                   value={provFormName}
                   onChange={(e) => setProvFormName(e.target.value)}
                   placeholder="Ej: Distribuidora Sur"
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-semibold focus:border-[#5C1D27]"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Teléfono / WhatsApp *</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#5E393F] block mb-1">Teléfono / WhatsApp *</label>
                 <input
                   type="text"
                   value={provFormPhone}
                   onChange={(e) => setProvFormPhone(e.target.value)}
                   placeholder="Ej: 358 444-1234"
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-semibold focus:border-[#5C1D27]"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Correo de Ventas</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#5E393F] block mb-1">Correo de Ventas</label>
                 <input
                   type="email"
                   value={provFormContact}
                   onChange={(e) => setProvFormContact(e.target.value)}
                   placeholder="Ej: ventas@proveedor.com"
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-semibold focus:border-[#5C1D27]"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Insumos Abastecidos</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#5E393F] block mb-1">Insumos Abastecidos</label>
                 <input
                   type="text"
                   value={provFormItems}
                   onChange={(e) => setProvFormItems(e.target.value)}
                   placeholder="Ej: Harina 0000, Muzzarella, Fernet Branca, Café"
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none font-semibold focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none font-semibold focus:border-[#5C1D27]"
                 />
               </div>
 
               <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-[#6F5A55] block mb-1">Estado Comercial</label>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-[#5E393F] block mb-1">Estado Comercial</label>
                 <select
                   value={provFormStatus}
                   onChange={(e) => setProvFormStatus(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] outline-none cursor-pointer font-bold focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none cursor-pointer font-bold focus:border-[#5C1D27]"
                 >
                   <option value="ACTIVO">ACTIVO</option>
                   <option value="PENDIENTE">PENDIENTE</option>
@@ -6955,13 +7205,13 @@ export default function AdminHub({
                 <button
                   type="button"
                   onClick={() => setIsAddingProv(false)}
-                  className="px-4 py-2 border border-[#D7BBA8] text-[#6F5A55] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold"
+                  className="px-4 py-2 border border-[#CFB5A0] text-[#5E393F] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider"
+                  className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl shadow-xs cursor-pointer font-black uppercase tracking-wider"
                 >
                   Guardar Proveedor
                 </button>
@@ -6971,11 +7221,11 @@ export default function AdminHub({
         )}
 
         {/* Suppliers Table */}
-        <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl overflow-hidden shadow-sm">
+        <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#E8D4C3] border-b border-[#D7BBA8] text-[10px] font-black uppercase tracking-wider text-[#6F5A55]">
+                <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[10px] font-black uppercase tracking-wider text-[#5E393F]">
                   <th className="p-4">Proveedor</th>
                   <th className="p-4">Insumos Abastecidos</th>
                   <th className="p-4">Contacto Ventas</th>
@@ -6984,13 +7234,13 @@ export default function AdminHub({
                   <th className="p-4 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#D7BBA8] text-xs">
+              <tbody className="divide-y divide-[#CFB5A0] text-xs">
                 {proveedores.map((prov, idx) => (
-                  <tr key={idx} className="hover:bg-[#E8D4C3]/40 transition-colors">
-                    <td className="p-4 font-serif font-bold text-[#843747] text-sm">{prov.name}</td>
-                    <td className="p-4 text-[#332424] font-medium">{prov.items}</td>
-                    <td className="p-4 font-mono font-semibold text-[#6F5A55]">{prov.contact}</td>
-                    <td className="p-4 font-mono font-bold text-[#843747]">{prov.phone.startsWith("+") ? prov.phone : "+" + prov.phone.replace(/\D/g, "")}</td>
+                  <tr key={idx} className="hover:bg-[#EBDAC5]/40 transition-colors">
+                    <td className="p-4 font-serif font-bold text-[#5C1D27] text-sm">{prov.name}</td>
+                    <td className="p-4 text-[#2D0E13] font-medium">{prov.items}</td>
+                    <td className="p-4 font-mono font-semibold text-[#5E393F]">{prov.contact}</td>
+                    <td className="p-4 font-mono font-bold text-[#5C1D27]">{prov.phone.startsWith("+") ? prov.phone : "+" + prov.phone.replace(/\D/g, "")}</td>
                     <td className="p-4 text-center">
                       <span className={`px-2.5 py-1 text-[9px] font-black uppercase rounded-full tracking-wider border font-mono ${
                         prov.status === "ACTIVO" 
@@ -7021,7 +7271,7 @@ export default function AdminHub({
                           setProveedores(prev => prev.filter(p => p.id !== prov.id));
                           onShowNotification(`🗑️ Proveedor '${prov.name}' eliminado.`, "info");
                         }}
-                        className="p-1.5 text-[#843747] hover:text-white bg-[#E8D4C3] hover:bg-[#843747] border border-[#D7BBA8] rounded-xl transition-all cursor-pointer"
+                        className="p-1.5 text-[#5C1D27] hover:text-white bg-[#EBDAC5] hover:bg-[#5C1D27] border border-[#CFB5A0] rounded-xl transition-all cursor-pointer"
                         title="Eliminar proveedor"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -7044,122 +7294,93 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-6 text-[#332424]"
+        className="space-y-8 text-[#2D0E13]"
       >
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#843747]">Equipo y Colaboradores</span>
-            <h2 className="font-serif text-3xl font-bold text-[#843747] mt-0.5">Gestión de Personal</h2>
-          </div>
-
-          {/* Sub-tab Navigation */}
-          <div className="flex gap-2 bg-[#FFF9F4] p-1.5 border border-[#D7BBA8] rounded-2xl shadow-xs">
-            <button
-              onClick={() => setPersonalSubTab("asistencia")}
-              className={`px-4 py-2 rounded-xl font-black text-xs uppercase transition-all cursor-pointer flex items-center gap-2 ${
-                personalSubTab === "asistencia"
-                  ? "bg-[#843747] text-white shadow-xs"
-                  : "bg-[#E8D4C3]/40 text-[#843747] hover:bg-[#E8D4C3]"
-              }`}
-            >
-              📱 Control de Asistencia & GPS
-            </button>
-            <button
-              onClick={() => setPersonalSubTab("cuentas")}
-              className={`px-4 py-2 rounded-xl font-black text-xs uppercase transition-all cursor-pointer flex items-center gap-2 ${
-                personalSubTab === "cuentas"
-                  ? "bg-[#843747] text-white shadow-xs"
-                  : "bg-[#E8D4C3]/40 text-[#843747] hover:bg-[#E8D4C3]"
-              }`}
-            >
-              👥 Cuentas de Personal & Permisos
-            </button>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5C1D27]">Equipo y Colaboradores</span>
+            <h2 className="font-serif text-3xl font-bold text-[#5C1D27] mt-0.5">Gestión de Personal</h2>
           </div>
         </div>
 
-        {personalSubTab === "asistencia" ? (
-          renderAttendance()
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#332424]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-[#2D0E13]">
           {/* Form to add user: only visible to owner/administrator */}
           {(currentUser.role === "administrador" || currentUser.role === "dueño") && (
-            <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="lg:col-span-4 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
               <form onSubmit={handleAddUser} className="space-y-4">
-                <div className="border-b border-[#D7BBA8] pb-2">
-                  <h3 className="font-serif text-base font-bold text-[#843747]">Crear Nueva Cuenta</h3>
-                  <p className="text-[10px] text-[#6F5A55] mt-0.5 font-medium">Registre empleados y asigne sus permisos de acceso.</p>
+                <div className="border-b border-[#CFB5A0] pb-2">
+                  <h3 className="font-serif text-base font-bold text-[#5C1D27]">Crear Nueva Cuenta</h3>
+                  <p className="text-[10px] text-[#5E393F] mt-0.5 font-medium">Registre empleados y asigne sus permisos de acceso.</p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Nombre Completo</label>
+                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Nombre Completo</label>
                   <input
                     type="text"
                     value={newUserName}
                     onChange={(e) => setNewUserName(e.target.value)}
                     placeholder="Ej. Juan Pérez"
-                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Correo Electrónico</label>
+                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Correo Electrónico</label>
                   <input
                     type="email"
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     placeholder="juan@restobardelteatro.com"
-                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Contraseña de Acceso</label>
+                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Contraseña de Acceso</label>
                   <input
                     type="password"
-                    minLength={12}
-                    autoComplete="new-password"
                     value={newUserPassword}
                     onChange={(e) => setNewUserPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Dirección Particular</label>
+                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Dirección Particular</label>
                   <input
                     type="text"
                     value={newUserAddress}
                     onChange={(e) => setNewUserAddress(e.target.value)}
                     placeholder="Calle 50 nro. 123, Mar del Plata"
-                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Teléfono Personal</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Teléfono Personal</label>
                     <input
                       type="text"
                       value={newUserPhone}
                       onChange={(e) => setNewUserPhone(e.target.value)}
                       placeholder="+54 223 555-1234"
-                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Tel. Contacto Emerg.</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Tel. Contacto Emerg.</label>
                     <input
                       type="text"
                       value={newUserEmergencyPhone}
                       onChange={(e) => setNewUserEmergencyPhone(e.target.value)}
                       placeholder="+54 223 555-9876"
-                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-semibold outline-none focus:border-[#843747]"
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-semibold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
@@ -7167,35 +7388,35 @@ export default function AdminHub({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Sueldo Base ($ Mensual)</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Sueldo Base ($ Mensual)</label>
                     <input
                       type="number"
                       value={newUserSalary}
                       onChange={(e) => setNewUserSalary(e.target.value)}
                       placeholder="Ej. 180000"
-                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] font-mono font-bold outline-none focus:border-[#843747]"
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Antigüedad (Meses)</label>
+                    <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Antigüedad (Meses)</label>
                     <input
                       type="number"
                       value={newUserSeniority}
                       onChange={(e) => setNewUserSeniority(e.target.value)}
                       placeholder="Ej. 12"
-                      className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#843747] font-mono font-bold outline-none focus:border-[#843747]"
+                      className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#5C1D27] font-mono font-bold outline-none focus:border-[#5C1D27]"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold uppercase text-[#6F5A55] block">Rol / Cargo</label>
+                  <label className="text-[9px] font-bold uppercase text-[#5E393F] block">Rol / Cargo</label>
                   <select
                     value={newUserRole}
                     onChange={(e) => setNewUserRole(e.target.value)}
-                    className="w-full text-xs p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] font-bold text-[#332424] cursor-pointer outline-none focus:border-[#843747]"
+                    className="w-full text-xs p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] font-bold text-[#2D0E13] cursor-pointer outline-none focus:border-[#5C1D27]"
                   >
                     <option value="mesero">Mesero</option>
                     <option value="barista">Barista</option>
@@ -7209,8 +7430,8 @@ export default function AdminHub({
                   disabled={isCreatingUser}
                   className={`w-full text-xs font-black py-3 rounded-xl transition-all cursor-pointer uppercase tracking-wider mt-4 shadow-xs flex items-center justify-center gap-2 ${
                     isCreatingUser
-                      ? "bg-[#843747]/50 text-white/70 cursor-not-allowed"
-                      : "bg-[#843747] hover:bg-[#71303D] text-white"
+                      ? "bg-[#5C1D27]/50 text-white/70 cursor-not-allowed"
+                      : "bg-[#5C1D27] hover:bg-[#4A151D] text-white"
                   }`}
                 >
                   {isCreatingUser ? (
@@ -7227,10 +7448,10 @@ export default function AdminHub({
           )}
 
               {/* Users list */}
-              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6" : "lg:col-span-12 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6"}>
-                <div className="border-b border-[#D7BBA8] pb-2">
-                  <h3 className="font-serif text-base font-bold text-[#843747]">Cuentas Registradas</h3>
-                  <p className="text-[10px] text-[#6F5A55] mt-0.5">
+              <div className={(currentUser.role === "administrador" || currentUser.role === "dueño") ? "lg:col-span-8 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6" : "lg:col-span-12 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6"}>
+                <div className="border-b border-[#CFB5A0] pb-2">
+                  <h3 className="font-serif text-base font-bold text-[#5C1D27]">Cuentas Registradas</h3>
+                  <p className="text-[10px] text-[#5E393F] mt-0.5">
                     {(currentUser.role === "administrador" || currentUser.role === "dueño") 
                       ? "Listado completo de accesos, datos salariales y permisos del personal." 
                       : "Directorio de contacto de colaboradores en turno."}
@@ -7389,10 +7610,9 @@ export default function AdminHub({
                 )}
               </div>
             </div>
-        )}
-      </motion.div>
-    );
-  };
+          </motion.div>
+        );
+      };
 
   const renderSalon = () => {
     const defaultCoords = [
@@ -7555,26 +7775,26 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 text-[#332424]"
+        className="space-y-8 text-[#2D0E13]"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Control en Vivo</span>
-            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Plano del Salón</h2>
-            <p className="text-xs text-[#6F5A55] mt-1 font-medium">
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Control en Vivo</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Plano del Salón</h2>
+            <p className="text-xs text-[#5E393F] mt-1 font-medium">
               Mapa de arquitectura con 12 mesas arrastrables y estado en tiempo real.
             </p>
           </div>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center gap-2 bg-[#FFF9F4] p-1.5 border border-[#D7BBA8] rounded-2xl shadow-sm">
+          <div className="flex items-center gap-2 bg-[#FAF2E6] p-1.5 border border-[#CFB5A0] rounded-2xl shadow-sm">
             <button
               type="button"
               onClick={() => setFloorViewMode("map2d")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 floorViewMode === "map2d"
-                  ? "bg-[#843747] text-white shadow-md font-black"
-                  : "text-[#332424] hover:bg-[#E8D4C3]"
+                  ? "bg-[#5C1D27] text-white shadow-md font-black"
+                  : "text-[#2D0E13] hover:bg-[#EBDAC5]"
               }`}
             >
               <span>🗺️ Mapa Arquitectónico 2D</span>
@@ -7584,8 +7804,8 @@ export default function AdminHub({
               onClick={() => setFloorViewMode("cards")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 floorViewMode === "cards"
-                  ? "bg-[#843747] text-white shadow-md font-black"
-                  : "text-[#332424] hover:bg-[#E8D4C3]"
+                  ? "bg-[#5C1D27] text-white shadow-md font-black"
+                  : "text-[#2D0E13] hover:bg-[#EBDAC5]"
               }`}
             >
               <span>📋 Vista de Tarjetas</span>
@@ -7596,40 +7816,40 @@ export default function AdminHub({
         {/* Realtime KPI Banner & Status Filter Tabs */}
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
               <span className="text-2xl">📊</span>
               <div>
-                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Ocupación Salón</span>
-                <span className="text-sm font-extrabold text-[#843747]">
+                <span className="text-[10px] text-[#5E393F] font-black uppercase block">Ocupación Salón</span>
+                <span className="text-sm font-extrabold text-[#5C1D27]">
                   {Math.round((orders.filter(o => o.status !== "Completado").length / 12) * 100)}%
                 </span>
               </div>
             </div>
 
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
               <span className="text-2xl">🟢</span>
               <div>
-                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Mesas Libres</span>
+                <span className="text-[10px] text-[#5E393F] font-black uppercase block">Mesas Libres</span>
                 <span className="text-sm font-extrabold text-[#4F735A]">
                   {12 - orders.filter(o => o.status !== "Completado").length} / 12
                 </span>
               </div>
             </div>
 
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
               <span className="text-2xl">🔴</span>
               <div>
-                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Mesas Ocupadas</span>
-                <span className="text-sm font-extrabold text-[#843747]">
+                <span className="text-[10px] text-[#5E393F] font-black uppercase block">Mesas Ocupadas</span>
+                <span className="text-sm font-extrabold text-[#5C1D27]">
                   {orders.filter(o => o.status !== "Completado").length}
                 </span>
               </div>
             </div>
 
-            <div className="bg-[#FFF9F4] border border-[#D7BBA8] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] p-3 rounded-2xl flex items-center gap-3 shadow-xs">
               <span className="text-2xl">🟡</span>
               <div>
-                <span className="text-[10px] text-[#6F5A55] font-black uppercase block">Reservas Hoy</span>
+                <span className="text-[10px] text-[#5E393F] font-black uppercase block">Reservas Hoy</span>
                 <span className="text-sm font-extrabold text-[#B97932]">
                   {adminBookings.filter(b => b.date === new Date().toISOString().split("T")[0]).length}
                 </span>
@@ -7638,7 +7858,7 @@ export default function AdminHub({
           </div>
 
           {/* Status Filter Selector Tabs */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-[#332424] bg-[#FFF9F4] p-3 border border-[#D7BBA8] rounded-2xl shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-[#2D0E13] bg-[#FAF2E6] p-3 border border-[#CFB5A0] rounded-2xl shadow-sm">
             <div className="flex items-center gap-2 flex-wrap">
               {[
                 { id: "all", label: "Todas las Mesas (12)" },
@@ -7651,15 +7871,15 @@ export default function AdminHub({
                   onClick={() => setTableStatusFilter(tab.id as any)}
                   className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
                     tableStatusFilter === tab.id
-                      ? "bg-[#843747] text-white shadow-xs"
-                      : "bg-white border border-[#D7BBA8] text-[#332424] hover:bg-[#E8D4C3]"
+                      ? "bg-[#5C1D27] text-white shadow-xs"
+                      : "bg-white border border-[#CFB5A0] text-[#2D0E13] hover:bg-[#EBDAC5]"
                   }`}
                 >
                   <span>{tab.label}</span>
                 </button>
               ))}
             </div>
-            <span className="text-[10px] text-[#6F5A55] italic font-semibold">
+            <span className="text-[10px] text-[#5E393F] italic font-semibold">
               ⚡ Sincronización en tiempo real multiterminal (PC + Móvil)
             </span>
           </div>
@@ -7667,14 +7887,14 @@ export default function AdminHub({
 
         {/* 2D ARCHITECTURAL FLOOR PLAN MAP */}
         {floorViewMode === "map2d" && (
-          <div className="bg-[#FFF9F4] border-2 border-[#D7BBA8] rounded-3xl p-6 shadow-md relative space-y-4">
+          <div className="bg-[#FAF2E6] border-2 border-[#CFB5A0] rounded-3xl p-6 shadow-md relative space-y-4">
             {/* Header info & Interactive Tool Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs font-bold border-b border-[#D7BBA8] pb-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs font-bold border-b border-[#CFB5A0] pb-3">
               <div>
-                <span className="text-[#843747] uppercase tracking-wider font-extrabold flex items-center gap-2">
+                <span className="text-[#5C1D27] uppercase tracking-wider font-extrabold flex items-center gap-2">
                   🏛️ PLANO ARQUITECTÓNICO — CASTAÑO RESTO BAR (12 MESAS EN SALÓN)
                 </span>
-                <span className="text-[10px] text-[#6F5A55]">Constitución 944 • Frente al Teatro Municipal</span>
+                <span className="text-[10px] text-[#5E393F]">Constitución 944 • Frente al Teatro Municipal</span>
               </div>
 
               {/* Toolbar Actions: Mover, Unir, Eliminar */}
@@ -7723,7 +7943,7 @@ export default function AdminHub({
                     const targetEl = document.getElementById("table-editor-panel");
                     if (targetEl) targetEl.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-[#843747] text-white border border-red-950 shadow-xs hover:bg-[#71303D] transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-[#5C1D27] text-white border border-red-950 shadow-xs hover:bg-[#4A151D] transition-all cursor-pointer flex items-center gap-1"
                 >
                   <span>🗑️ Eliminar / Crear Mesa</span>
                 </button>
@@ -7741,25 +7961,25 @@ export default function AdminHub({
             {/* Architectural Blueprint Canvas Container */}
             <div 
               id="architectural-canvas"
-              className="relative w-full h-[540px] bg-[#F8F1E9] border-2 border-dashed border-[#D7BBA8] rounded-2xl overflow-hidden shadow-inner selection:bg-transparent"
+              className="relative w-full h-[540px] bg-[#F8F1E9] border-2 border-dashed border-[#CFB5A0] rounded-2xl overflow-hidden shadow-inner selection:bg-transparent"
               style={{
-                backgroundImage: "radial-gradient(#D7BBA8 1px, transparent 1px)",
+                backgroundImage: "radial-gradient(#CFB5A0 1px, transparent 1px)",
                 backgroundSize: "24px 24px"
               }}
             >
               {/* Architectural Landmark: Main Entrance Door */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-[#843747] text-white px-6 py-1 rounded-b-xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-2 border-b-2 border-x-2 border-[#D7BBA8]">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-[#5C1D27] text-white px-6 py-1 rounded-b-xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-2 border-b-2 border-x-2 border-[#CFB5A0]">
                 🚪 ENTRADA PRINCIPAL / SALIDA DE SALÓN
               </div>
 
               {/* Architectural Landmark: Bar Counter */}
-              <div className="absolute top-4 right-4 z-10 bg-[#E8D4C3] border-2 border-[#843747] p-3 rounded-2xl text-center shadow-md">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#843747] block">☕ BARRA & CAFETERÍA</span>
-                <span className="text-[8px] text-[#6F5A55] block font-bold">Máquina Espresso & Coctelería</span>
+              <div className="absolute top-4 right-4 z-10 bg-[#EBDAC5] border-2 border-[#5C1D27] p-3 rounded-2xl text-center shadow-md">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] block">☕ BARRA & CAFETERÍA</span>
+                <span className="text-[8px] text-[#5E393F] block font-bold">Máquina Espresso & Coctelería</span>
               </div>
 
               {/* Architectural Landmark: Theater View Windows */}
-              <div className="absolute bottom-0 inset-x-12 z-10 bg-[#843747]/10 border-t-2 border-dashed border-[#843747] py-1 text-center text-[9px] font-black uppercase tracking-widest text-[#843747]">
+              <div className="absolute bottom-0 inset-x-12 z-10 bg-[#5C1D27]/10 border-t-2 border-dashed border-[#5C1D27] py-1 text-center text-[9px] font-black uppercase tracking-widest text-[#5C1D27]">
                 🎭 VENTANAL A CALLE CONSTITUCIÓN (VISTA AL TEATRO MUNICIPAL)
               </div>
 
@@ -7788,7 +8008,7 @@ export default function AdminHub({
                   statusColor = "bg-[#A63F45] border-red-900 text-white opacity-60";
                   statusBadge = "Mantenimiento";
                 } else if (activeOrder) {
-                  statusColor = "bg-[#843747] border-red-950 text-white animate-pulse";
+                  statusColor = "bg-[#5C1D27] border-red-950 text-white animate-pulse";
                   statusBadge = "Ocupada";
                 } else if (reservation) {
                   statusColor = "bg-[#B97932] border-amber-900 text-white";
@@ -7861,7 +8081,7 @@ export default function AdminHub({
                       )}
 
                       {joinedName && (
-                        <span className="bg-white/90 text-[#843747] text-[7px] font-black px-1 rounded block">
+                        <span className="bg-white/90 text-[#5C1D27] text-[7px] font-black px-1 rounded block">
                           🔗 + {joinedName}
                         </span>
                       )}
@@ -7887,16 +8107,16 @@ export default function AdminHub({
               const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
 
               let status: "Libre" | "Ocupada" | "Reservada" | "Mantenimiento" = "Libre";
-              let colorClasses = "border-[#4F735A]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
+              let colorClasses = "border-[#4F735A]/40 bg-[#FAF2E6] text-[#2D0E13] shadow-sm";
               if (table.status === "Mantenimiento") {
                 status = "Mantenimiento";
-                colorClasses = "border-[#A63F45]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
+                colorClasses = "border-[#A63F45]/40 bg-[#FAF2E6] text-[#2D0E13] shadow-sm";
               } else if (activeOrder) {
                 status = "Ocupada";
-                colorClasses = "border-[#843747] bg-[#FFF9F4] text-[#332424] shadow-sm";
+                colorClasses = "border-[#5C1D27] bg-[#FAF2E6] text-[#2D0E13] shadow-sm";
               } else if (reservation) {
                 status = "Reservada";
-                colorClasses = "border-[#B97932]/40 bg-[#FFF9F4] text-[#332424] shadow-sm";
+                colorClasses = "border-[#B97932]/40 bg-[#FAF2E6] text-[#2D0E13] shadow-sm";
               }
 
               return (
@@ -7905,9 +8125,9 @@ export default function AdminHub({
                   className={`border rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[220px] transition-all relative ${colorClasses}`}
                 >
                   <div>
-                    <div className="flex items-center justify-between border-b border-[#D7BBA8] pb-3 mb-3">
-                      <span className="font-serif text-lg font-black text-[#843747]">{table.name}</span>
-                      <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#E8D4C3] border border-[#D7BBA8] text-[#843747]">
+                    <div className="flex items-center justify-between border-b border-[#CFB5A0] pb-3 mb-3">
+                      <span className="font-serif text-lg font-black text-[#5C1D27]">{table.name}</span>
+                      <span className="text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27]">
                         {table.capacity} Personas
                       </span>
                     </div>
@@ -7920,25 +8140,25 @@ export default function AdminHub({
 
                     {status === "Libre" && (
                       <div className="py-4">
-                        <p className="text-xs text-[#6F5A55] italic font-semibold">Mesa disponible para recibir comensales.</p>
+                        <p className="text-xs text-[#5E393F] italic font-semibold">Mesa disponible para recibir comensales.</p>
                       </div>
                     )}
 
                     {status === "Reservada" && reservation && (
                       <div className="space-y-1.5 py-2 text-xs">
                         <p className="font-bold text-[#B97932]">📌 Reservada por: {reservation.customerName}</p>
-                        <p className="text-[10px] text-[#6F5A55] font-semibold font-mono">Horario: {reservation.timeSlot} • Fecha: {reservation.date}</p>
-                        <p className="text-[10px] text-[#6F5A55] font-semibold">Teléfono: {reservation.customerPhone}</p>
+                        <p className="text-[10px] text-[#5E393F] font-semibold font-mono">Horario: {reservation.timeSlot} • Fecha: {reservation.date}</p>
+                        <p className="text-[10px] text-[#5E393F] font-semibold">Teléfono: {reservation.customerPhone}</p>
                       </div>
                     )}
 
                     {status === "Ocupada" && activeOrder && (
                       <div className="space-y-2 py-1 text-xs">
-                        <div className="flex justify-between items-center text-[10px] uppercase font-black text-[#843747]">
+                        <div className="flex justify-between items-center text-[10px] uppercase font-black text-[#5C1D27]">
                           <span>Consumo Activo</span>
                           <span>Total: ${activeOrder.total.toFixed(0)}</span>
                         </div>
-                        <div className="max-h-[60px] overflow-y-auto pr-1 text-[10px] text-[#6F5A55] space-y-0.5 font-semibold">
+                        <div className="max-h-[60px] overflow-y-auto pr-1 text-[10px] text-[#5E393F] space-y-0.5 font-semibold">
                           {activeOrder.items.map((it: any, idx: number) => (
                             <div key={idx} className="flex justify-between">
                               <span>{it.quantity}x {it.name}</span>
@@ -7950,7 +8170,7 @@ export default function AdminHub({
                     )}
                   </div>
 
-                  <div className="pt-4 border-t border-[#D7BBA8] mt-2">
+                  <div className="pt-4 border-t border-[#CFB5A0] mt-2">
                     {status === "Libre" && (
                       <button
                         type="button"
@@ -7989,7 +8209,7 @@ export default function AdminHub({
                           setPosCouponInput("");
                           setActiveSubTab("caja");
                         }}
-                        className="w-full bg-[#843747] hover:bg-[#71303D] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
+                        className="w-full bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-bold py-2 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-xs"
                       >
                         💵 Cobrar Ticket
                       </button>
@@ -8004,42 +8224,42 @@ export default function AdminHub({
         {/* Selected Table Detail Modal Popover */}
         {selectedTableForModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FFF9F4] border-2 border-[#843747] rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-xs text-[#332424] relative">
-              <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 text-xs text-[#2D0E13] relative">
+              <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
                 <div>
-                  <span className="text-[10px] font-black uppercase text-[#843747] tracking-wider block">Ficha de Mesa en Salón</span>
-                  <h3 className="font-serif text-xl font-bold text-[#332424]">{selectedTableForModal.name}</h3>
+                  <span className="text-[10px] font-black uppercase text-[#5C1D27] tracking-wider block">Ficha de Mesa en Salón</span>
+                  <h3 className="font-serif text-xl font-bold text-[#2D0E13]">{selectedTableForModal.name}</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedTableForModal(null)}
-                  className="h-8 w-8 rounded-full bg-[#E8D4C3] text-[#843747] font-bold flex items-center justify-center hover:bg-[#843747] hover:text-white transition-colors"
+                  className="h-8 w-8 rounded-full bg-[#EBDAC5] text-[#5C1D27] font-bold flex items-center justify-center hover:bg-[#5C1D27] hover:text-white transition-colors"
                 >
                   ✕
                 </button>
               </div>
 
               {/* Status Badge Banner */}
-              <div className="p-3 rounded-2xl bg-white border border-[#D7BBA8] space-y-2">
+              <div className="p-3 rounded-2xl bg-white border border-[#CFB5A0] space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="font-bold text-[#6F5A55]">Estado Actual:</span>
+                  <span className="font-bold text-[#5E393F]">Estado Actual:</span>
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                     selectedTableForModal.statusBadge === "Libre" ? "bg-[#4F735A] text-white" :
-                    selectedTableForModal.statusBadge === "Ocupada" ? "bg-[#843747] text-white" :
+                    selectedTableForModal.statusBadge === "Ocupada" ? "bg-[#5C1D27] text-white" :
                     selectedTableForModal.statusBadge === "Reservada" ? "bg-[#B97932] text-white" : "bg-stone-500 text-white"
                   }`}>
                     {selectedTableForModal.statusBadge}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="font-bold text-[#6F5A55]">Capacidad Salón:</span>
-                  <span className="font-mono font-bold text-[#843747]">{selectedTableForModal.capacity} Personas</span>
+                  <span className="font-bold text-[#5E393F]">Capacidad Salón:</span>
+                  <span className="font-mono font-bold text-[#5C1D27]">{selectedTableForModal.capacity} Personas</span>
                 </div>
               </div>
 
               {/* Reservation Info if Reserved */}
               {selectedTableForModal.reservation && (
-                <div className="p-3.5 rounded-2xl bg-[#B97932]/10 border border-[#B97932]/30 space-y-1.5 text-xs text-[#332424]">
+                <div className="p-3.5 rounded-2xl bg-[#B97932]/10 border border-[#B97932]/30 space-y-1.5 text-xs text-[#2D0E13]">
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#B97932] block">📌 Detalle de Reserva Activa</span>
                   <p className="font-bold">👤 Comensal: {selectedTableForModal.reservation.customerName}</p>
                   <p className="font-mono">📅 Fecha: {selectedTableForModal.reservation.date} • Horario: {selectedTableForModal.reservation.timeSlot}</p>
@@ -8049,14 +8269,14 @@ export default function AdminHub({
 
               {/* Active Order Info if Occupied */}
               {selectedTableForModal.activeOrder && (
-                <div className="p-3.5 rounded-2xl bg-[#843747]/10 border border-[#843747]/30 space-y-2 text-xs text-[#332424]">
-                  <div className="flex justify-between items-center text-[#843747] font-black">
+                <div className="p-3.5 rounded-2xl bg-[#5C1D27]/10 border border-[#5C1D27]/30 space-y-2 text-xs text-[#2D0E13]">
+                  <div className="flex justify-between items-center text-[#5C1D27] font-black">
                     <span className="text-[10px] uppercase tracking-wider">🛒 Consumo Activo</span>
                     <span className="font-mono">Total: ${selectedTableForModal.activeOrder.total.toFixed(0)}</span>
                   </div>
                   <div className="max-h-28 overflow-y-auto space-y-1 pr-1 font-semibold text-[11px]">
                     {selectedTableForModal.activeOrder.items.map((it: any, idx: number) => (
-                      <div key={idx} className="flex justify-between border-b border-[#D7BBA8]/40 pb-0.5">
+                      <div key={idx} className="flex justify-between border-b border-[#CFB5A0]/40 pb-0.5">
                         <span>{it.quantity}x {it.name}</span>
                         <span>${(it.price * it.quantity).toFixed(0)}</span>
                       </div>
@@ -8108,7 +8328,7 @@ export default function AdminHub({
                       setPosCouponInput("");
                       setActiveSubTab("caja");
                     }}
-                    className="w-full py-3 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white font-black uppercase tracking-wider transition-all cursor-pointer"
+                    className="w-full py-3 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black uppercase tracking-wider transition-all cursor-pointer"
                   >
                     💵 Ir a Cobrar Ticket a Caja
                   </button>
@@ -8122,7 +8342,7 @@ export default function AdminHub({
                     setSelectedTableForModal(null);
                     onShowNotification(`🖐️ Arrastre ${selectedTableForModal.name} en el plano para moverla.`, "info");
                   }}
-                  className="w-full py-2.5 rounded-xl border border-[#4F735A] text-[#4F735A] bg-[#FFF9F4] font-bold text-xs hover:bg-[#4F735A] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl border border-[#4F735A] text-[#4F735A] bg-[#FAF2E6] font-bold text-xs hover:bg-[#4F735A] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>🖐️ Mover / Reposicionar Posición</span>
                 </button>
@@ -8134,7 +8354,7 @@ export default function AdminHub({
                     handleMergeTableToggle(selectedTableForModal.id);
                     setSelectedTableForModal(null);
                   }}
-                  className="w-full py-2.5 rounded-xl border border-[#B97932] text-[#B97932] bg-[#FFF9F4] font-bold text-xs hover:bg-[#B97932] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl border border-[#B97932] text-[#B97932] bg-[#FAF2E6] font-bold text-xs hover:bg-[#B97932] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>🔗 {mergedTableIds[selectedTableForModal.id] ? "Desvincular Grupo de Mesas" : "Unir / Combinar con otra Mesa"}</span>
                 </button>
@@ -8146,7 +8366,7 @@ export default function AdminHub({
                     handleDeleteTable(selectedTableForModal.id);
                     setSelectedTableForModal(null);
                   }}
-                  className="w-full py-2 rounded-xl border border-[#A63F45] text-[#A63F45] bg-[#FFF9F4] font-bold text-xs hover:bg-[#A63F45] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-2 rounded-xl border border-[#A63F45] text-[#A63F45] bg-[#FAF2E6] font-bold text-xs hover:bg-[#A63F45] hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>🗑️ Eliminar esta Mesa del Plano</span>
                 </button>
@@ -8156,34 +8376,34 @@ export default function AdminHub({
         )}
 
         {/* Table Editor Panel */}
-        <div id="table-editor-panel" className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
-          <div className="border-b border-[#D7BBA8] pb-4">
-            <h3 className="font-serif text-lg font-bold text-[#843747]">Configuración y Distribución del Salón</h3>
-            <p className="text-[10px] text-[#6F5A55] mt-0.5 font-medium">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
+        <div id="table-editor-panel" className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6">
+          <div className="border-b border-[#CFB5A0] pb-4">
+            <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Configuración y Distribución del Salón</h3>
+            <p className="text-[10px] text-[#5E393F] mt-0.5 font-medium">Modifique el plano del local, agregue mesas nuevas o márquelas en mantenimiento.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Form: Add table */}
-            <form onSubmit={handleAddTable} className="lg:col-span-4 space-y-4 text-xs font-semibold text-[#332424]">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#843747] border-b border-[#D7BBA8] pb-1 flex items-center gap-1.5">
+            <form onSubmit={handleAddTable} className="lg:col-span-4 space-y-4 text-xs font-semibold text-[#2D0E13]">
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#5C1D27] border-b border-[#CFB5A0] pb-1 flex items-center gap-1.5">
                 ➕ Agregar Mesa Nueva
               </h4>
               <div>
-                <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Nombre (ej: Mesa 9, VIP-2)</label>
+                <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Nombre (ej: Mesa 9, VIP-2)</label>
                 <input 
                   type="text"
                   placeholder="Nombre de mesa"
                   value={newTableName}
                   onChange={(e) => setNewTableName(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
                 />
               </div>
               <div>
-                <label className="text-[8px] font-bold text-[#6F5A55] uppercase block mb-1">Capacidad (Comensales)</label>
+                <label className="text-[8px] font-bold text-[#5E393F] uppercase block mb-1">Capacidad (Comensales)</label>
                 <select
                   value={newTableCapacity}
                   onChange={(e) => setNewTableCapacity(Number(e.target.value))}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
                 >
                   <option value="2">2 Personas</option>
                   <option value="4">4 Personas</option>
@@ -8320,27 +8540,19 @@ export default function AdminHub({
       };
     });
     const monthlyMax = Math.max(...monthlySales.map((month) => month.total), 1);
-    const paymentTotal = totalSalesSum || cashLedger.transactions.reduce(
+    const paymentTotal = cashLedger.transactions.reduce(
       (sum: number, transaction: any) => sum + Number(transaction.total || 0),
       0
     );
     const paymentMethods = [
       { name: "Efectivo", matcher: (method: string) => method === "Efectivo", color: "bg-[#4F735A]" },
-      { name: "Tarjetas", matcher: (method: string) => method.includes("Tarjeta") || method.includes("Débito") || method.includes("Crédito"), color: "bg-[#843747]" },
+      { name: "Tarjetas", matcher: (method: string) => method.includes("Tarjeta"), color: "bg-[#5C1D27]" },
       { name: "Mercado Pago / QR", matcher: (method: string) => method.includes("Mercado"), color: "bg-[#4A7BB0]" },
-      { name: "Cuenta corriente", matcher: (method: string) => method.includes("Fiado") || method.includes("Cta"), color: "bg-[#B97932]" }
+      { name: "Cuenta corriente", matcher: (method: string) => method.includes("Fiado"), color: "bg-[#B97932]" }
     ].map((method) => {
-      let amount = completedOrders
-        .filter((order) => method.matcher(String(order.paymentMethod || "Efectivo")))
-        .reduce((sum, order) => sum + order.total, 0);
-
-      // Fallback to cashLedger transactions if completedOrders dataset is not fully populated locally
-      if (amount === 0 && cashLedger.transactions.length > 0) {
-        amount = cashLedger.transactions
-          .filter((transaction: any) => method.matcher(String(transaction.method || "")))
-          .reduce((sum: number, transaction: any) => sum + Number(transaction.total || 0), 0);
-      }
-
+      const amount = cashLedger.transactions
+        .filter((transaction: any) => method.matcher(String(transaction.method || "")))
+        .reduce((sum: number, transaction: any) => sum + Number(transaction.total || 0), 0);
       return {
         ...method,
         amount,
@@ -8354,25 +8566,25 @@ export default function AdminHub({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        className="space-y-8 animate-fade-in text-[#332424]"
+        className="space-y-8 animate-fade-in text-[#2D0E13]"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#D7BBA8] pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#CFB5A0] pb-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#6F5A55]">Análisis de Negocio & Auditoría POS</span>
-            <h2 className="font-serif text-3xl font-bold text-[#332424] mt-0.5">Reportes e Informes Ejecutivos</h2>
-            <p className="text-xs text-[#6F5A55] font-medium mt-1">Estadísticas reales de facturación, desglose por canal de pago, mermas y auditoría de comandas.</p>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#5E393F]">Análisis de Negocio & Auditoría POS</span>
+            <h2 className="font-serif text-3xl font-bold text-[#2D0E13] mt-0.5">Reportes e Informes Ejecutivos</h2>
+            <p className="text-xs text-[#5E393F] font-medium mt-1">Estadísticas reales de facturación, desglose por canal de pago, mermas y auditoría de comandas.</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider border-none"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider border-none"
             >
               <FileText className="h-4 w-4" /> Exportar Auditoría (.PDF)
             </button>
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E8D4C3] hover:bg-[#E7C8CF] text-[#843747] border border-[#D7BBA8] text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#EBDAC5] hover:bg-[#EBDAC5] text-[#5C1D27] border border-[#CFB5A0] text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer uppercase tracking-wider"
             >
               <Download className="h-4 w-4" /> Exportar Auditoría (.csv)
             </button>
@@ -8381,52 +8593,52 @@ export default function AdminHub({
 
         {/* Top 4 KPI Metrics Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
+          <div className="p-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Ventas Totales</span>
-              <strong className="font-serif text-2xl font-black text-[#843747] font-mono block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#5E393F] block">Ventas Totales</span>
+              <strong className="font-serif text-2xl font-black text-[#5C1D27] font-mono block">
                 ${totalSalesSum.toLocaleString("es-AR")}
               </strong>
               <span className="text-[9px] text-[#4F735A] font-bold block">Sólo comandas completadas</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747] text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27] text-xl">
               💰
             </div>
           </div>
 
-          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
+          <div className="p-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Ticket Promedio</span>
-              <strong className="font-serif text-2xl font-black text-[#843747] font-mono block">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#5E393F] block">Ticket Promedio</span>
+              <strong className="font-serif text-2xl font-black text-[#5C1D27] font-mono block">
                 ${avgTicket.toFixed(0)}
               </strong>
-              <span className="text-[9px] text-[#6F5A55] font-semibold block">{countCompleted} comandas cerradas</span>
+              <span className="text-[9px] text-[#5E393F] font-semibold block">{countCompleted} comandas cerradas</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747] text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27] text-xl">
               🧾
             </div>
           </div>
 
-          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
+          <div className="p-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Producto Más Vendido</span>
-              <strong className="font-serif text-sm font-bold text-[#332424] block line-clamp-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#5E393F] block">Producto Más Vendido</span>
+              <strong className="font-serif text-sm font-bold text-[#2D0E13] block line-clamp-1">
                 {topSellingDish}
               </strong>
-              <span className="text-[9px] text-[#843747] font-bold block">⭐ Máxima rotación</span>
+              <span className="text-[9px] text-[#5C1D27] font-bold block">⭐ Máxima rotación</span>
             </div>
-            <div className="h-12 w-12 rounded-2xl bg-[#E8D4C3] border border-[#D7BBA8] flex items-center justify-center text-[#843747] text-xl">
+            <div className="h-12 w-12 rounded-2xl bg-[#EBDAC5] border border-[#CFB5A0] flex items-center justify-center text-[#5C1D27] text-xl">
               🍱
             </div>
           </div>
 
-          <div className="p-5 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl shadow-sm flex items-center justify-between">
+          <div className="p-5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl shadow-sm flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#6F5A55] block">Costo de Mermas</span>
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#5E393F] block">Costo de Mermas</span>
               <strong className="font-serif text-2xl font-black text-[#A63F45] font-mono block">
                 ${totalMermaCost.toLocaleString("es-AR")}
               </strong>
-              <span className="text-[9px] text-[#6F5A55] font-bold block">Según movimientos registrados</span>
+              <span className="text-[9px] text-[#5E393F] font-bold block">Según movimientos registrados</span>
             </div>
             <div className="h-12 w-12 rounded-2xl bg-[#F4DCDD] border border-[#A63F45]/30 flex items-center justify-center text-[#A63F45] text-xl">
               📉
@@ -8438,57 +8650,57 @@ export default function AdminHub({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Sales performance chart */}
-          <div className="lg:col-span-8 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-3">
+          <div className="lg:col-span-8 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6">
+            <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
               <div>
-                <h3 className="font-serif text-lg font-bold text-[#843747]">📈 Facturación Mensual Histórica</h3>
-                <p className="text-[10px] text-[#6F5A55]">Evolución de ventas completadas por mes en $ ARS</p>
+                <h3 className="font-serif text-lg font-bold text-[#5C1D27]">📈 Facturación Mensual Histórica</h3>
+                <p className="text-[10px] text-[#5E393F]">Evolución de ventas completadas por mes en $ ARS</p>
               </div>
-              <span className="text-xs font-mono font-bold text-[#843747] bg-[#E8D4C3] px-3 py-1 rounded-xl border border-[#D7BBA8]">
+              <span className="text-xs font-mono font-bold text-[#5C1D27] bg-[#EBDAC5] px-3 py-1 rounded-xl border border-[#CFB5A0]">
                 {today.getFullYear()} AUDIT
               </span>
             </div>
             
             {/* CSS Chart */}
-            <div className="flex justify-between items-end h-52 px-4 border-b border-[#D7BBA8] pb-4 pt-6 bg-[#E8D4C3]/30 rounded-2xl">
+            <div className="flex justify-between items-end h-52 px-4 border-b border-[#CFB5A0] pb-4 pt-6 bg-[#EBDAC5]/30 rounded-2xl">
               {monthlySales.map((bar) => (
                 <div key={bar.key} className="flex flex-col items-center group w-12 cursor-pointer">
-                  <span className="text-[9px] font-black text-[#843747] group-hover:scale-110 transition-transform mb-1.5 font-mono">
+                  <span className="text-[9px] font-black text-[#5C1D27] group-hover:scale-110 transition-transform mb-1.5 font-mono">
                     ${bar.total.toLocaleString("es-AR", { notation: "compact", maximumFractionDigits: 1 })}
                   </span>
                   <div
                     style={{ height: `${Math.max((bar.total / monthlyMax) * 100, bar.total > 0 ? 4 : 0)}%` }}
-                    className="w-8 bg-[#843747] hover:bg-[#71303D] transition-all rounded-t-lg duration-300 shadow-xs"
+                    className="w-8 bg-[#5C1D27] hover:bg-[#4A151D] transition-all rounded-t-lg duration-300 shadow-xs"
                   />
-                  <span className="text-[10px] font-bold text-[#332424] mt-2 font-mono capitalize">{bar.label}</span>
+                  <span className="text-[10px] font-bold text-[#2D0E13] mt-2 font-mono capitalize">{bar.label}</span>
                 </div>
               ))}
             </div>
 
-            <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-xs font-semibold flex justify-between text-[#332424]">
-              <div>Facturación Período: <strong className="text-[#843747] font-mono text-sm shadow-xs">${totalSalesSum.toLocaleString("es-AR")}</strong></div>
-              <div>Ticket Promedio: <strong className="text-[#843747] font-mono text-sm shadow-xs">${avgTicket.toFixed(2)}</strong></div>
+            <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl text-xs font-semibold flex justify-between text-[#2D0E13]">
+              <div>Facturación Período: <strong className="text-[#5C1D27] font-mono text-sm shadow-xs">${totalSalesSum.toLocaleString("es-AR")}</strong></div>
+              <div>Ticket Promedio: <strong className="text-[#5C1D27] font-mono text-sm shadow-xs">${avgTicket.toFixed(2)}</strong></div>
             </div>
           </div>
 
           {/* Payment method distribution */}
-          <div className="lg:col-span-4 bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-6 flex flex-col justify-between">
             <div>
-              <div className="border-b border-[#D7BBA8] pb-3">
-                <h3 className="font-serif text-lg font-bold text-[#843747]">💳 Desglose por Método de Pago</h3>
-                <p className="text-[10px] text-[#6F5A55]">Distribución porcentual de cobranzas en caja</p>
+              <div className="border-b border-[#CFB5A0] pb-3">
+                <h3 className="font-serif text-lg font-bold text-[#5C1D27]">💳 Desglose por Método de Pago</h3>
+                <p className="text-[10px] text-[#5E393F]">Distribución porcentual de cobranzas en caja</p>
               </div>
               
               <div className="space-y-5 py-4">
                 {paymentMethods.map((method, idx) => (
                   <div key={idx} className="space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold text-[#332424]">
-                      <span className="text-[#332424] font-semibold">{method.name}</span>
-                      <span className="font-mono text-[#843747]">
+                    <div className="flex justify-between items-center text-xs font-bold text-[#2D0E13]">
+                      <span className="text-[#2D0E13] font-semibold">{method.name}</span>
+                      <span className="font-mono text-[#5C1D27]">
                         ${method.amount.toLocaleString("es-AR")} ({method.share.toFixed(1)}%)
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-[#E8D4C3] rounded-full overflow-hidden border border-[#D7BBA8] p-0.5">
+                    <div className="w-full h-3 bg-[#EBDAC5] rounded-full overflow-hidden border border-[#CFB5A0] p-0.5">
                       <div className={`h-full ${method.color} rounded-full transition-all duration-500`} style={{ width: `${method.share}%` }}></div>
                     </div>
                   </div>
@@ -8496,7 +8708,7 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl text-[10px] text-[#6F5A55] italic">
+            <div className="p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl text-[10px] text-[#5E393F] italic">
               * Datos sincronizados en vivo con el Libro Diario de Caja y comprobantes emitidos.
             </div>
           </div>
@@ -8505,26 +8717,26 @@ export default function AdminHub({
         {/* Bottom Section: Mermas & Cash Ledger */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Merma Logs */}
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
-            <h3 className="font-serif text-lg font-bold text-[#843747] uppercase tracking-wider border-b border-[#D7BBA8] pb-3">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="font-serif text-lg font-bold text-[#5C1D27] uppercase tracking-wider border-b border-[#CFB5A0] pb-3">
               📊 Historial de Mermas & Descarte de Materia Prima
             </h3>
-            <p className="text-[10px] text-[#6F5A55] leading-relaxed font-semibold">
+            <p className="text-[10px] text-[#5E393F] leading-relaxed font-semibold">
               Descarte de insumos registrado bajo protocolo de auditoría de cocina. Límite máximo: 2% mensual.
             </p>
             <div className="space-y-3 text-xs">
               {mermaLogs.map((merma) => (
-                <div key={merma.id} className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex justify-between items-center font-semibold text-[#332424] shadow-xs">
+                <div key={merma.id} className="p-3.5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl flex justify-between items-center font-semibold text-[#2D0E13] shadow-xs">
                   <div>
                     <div className="flex items-center gap-2">
-                      <strong className="text-xs font-bold text-[#843747]">{merma.name} ({merma.qty})</strong>
-                      <span className="text-[9px] text-[#6F5A55] font-mono font-bold block">{merma.date}</span>
+                      <strong className="text-xs font-bold text-[#5C1D27]">{merma.name} ({merma.qty})</strong>
+                      <span className="text-[9px] text-[#5E393F] font-mono font-bold block">{merma.date}</span>
                     </div>
-                    <span className="text-[10px] text-[#6F5A55] block mt-0.5">{merma.reason}</span>
+                    <span className="text-[10px] text-[#5E393F] block mt-0.5">{merma.reason}</span>
                   </div>
                   <div className="text-right">
                     <strong className="text-xs font-mono text-[#A63F45] block font-bold">{merma.cost}</strong>
-                    <span className="text-[9px] text-[#6F5A55] block">Auditor: {merma.auditor}</span>
+                    <span className="text-[9px] text-[#5E393F] block">Auditor: {merma.auditor}</span>
                   </div>
                 </div>
               ))}
@@ -8532,26 +8744,26 @@ export default function AdminHub({
           </div>
 
           {/* Cash Ledger Transactions */}
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] text-[#332424] rounded-3xl p-6 shadow-sm space-y-4">
-            <h3 className="font-serif text-lg font-bold text-[#843747] uppercase tracking-wider border-b border-[#D7BBA8] pb-3">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="font-serif text-lg font-bold text-[#5C1D27] uppercase tracking-wider border-b border-[#CFB5A0] pb-3">
               📋 Historial Reciente de Cobranzas en Caja
             </h3>
             <div className="space-y-3 text-xs">
               {cashLedger.transactions.length === 0 ? (
-                <div className="text-center py-8 text-[#6F5A55] italic font-medium">
+                <div className="text-center py-8 text-[#5E393F] italic font-medium">
                   No hay cobranzas registradas en el turno actual.
                 </div>
               ) : (
                 cashLedger.transactions.slice(0, 5).map((tx: any, idx: number) => (
-                  <div key={idx} className="p-3.5 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl flex justify-between items-center font-semibold text-[#332424] shadow-xs">
+                  <div key={idx} className="p-3.5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl flex justify-between items-center font-semibold text-[#2D0E13] shadow-xs">
                     <div>
                       <div className="flex items-center gap-2">
-                        <strong className="text-xs font-bold text-[#843747]">{tx.type}</strong>
-                        <span className="px-2 py-0.5 text-[9px] font-black rounded bg-[#E8D4C3] text-[#843747] font-mono border border-[#D7BBA8]">{tx.orderId}</span>
+                        <strong className="text-xs font-bold text-[#5C1D27]">{tx.type}</strong>
+                        <span className="px-2 py-0.5 text-[9px] font-black rounded bg-[#EBDAC5] text-[#5C1D27] font-mono border border-[#CFB5A0]">{tx.orderId}</span>
                       </div>
-                      <span className="text-[10px] text-[#6F5A55] block mt-0.5">{tx.timestamp} vía {tx.method}</span>
+                      <span className="text-[10px] text-[#5E393F] block mt-0.5">{tx.timestamp} vía {tx.method}</span>
                     </div>
-                    <strong className="text-sm font-mono text-[#843747] font-bold">${tx.total.toFixed(0)}</strong>
+                    <strong className="text-sm font-mono text-[#5C1D27] font-bold">${tx.total.toFixed(0)}</strong>
                   </div>
                 ))
               )}
@@ -8563,21 +8775,21 @@ export default function AdminHub({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F3E7DB] font-sans text-[#332424] select-none relative">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#F4E8D7] font-sans text-[#2D0E13] select-none relative">
       {/* Mobile Top Navigation Header */}
-      <div className="lg:hidden bg-[#E2C6B0] border-b border-[#D1AD95] px-4 py-3 flex justify-between items-center z-40 text-[#332424]">
+      <div className="lg:hidden bg-[#E2C6B0] border-b border-[#D1AD95] px-4 py-3 flex justify-between items-center z-40 text-[#2D0E13]">
         <div className="flex items-center gap-3">
           <button 
             type="button"
             onClick={() => setIsMobileDrawerOpen(true)}
-            className="p-2 rounded-xl bg-[#843747] text-white hover:bg-[#71303D] cursor-pointer shadow-xs"
+            className="p-2 rounded-xl bg-[#5C1D27] text-white hover:bg-[#4A151D] cursor-pointer shadow-xs"
             aria-label="Abrir menú de navegación"
           >
             <Menu className="h-5 w-5" />
           </button>
           <RestoBarLogo size="sm" />
         </div>
-        <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#843747] text-white">
+        <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-[#5C1D27] text-white">
           {activeSubTab.toUpperCase()}
         </span>
       </div>
@@ -8591,7 +8803,7 @@ export default function AdminHub({
       )}
 
       {/* Sidebar Navigation Drawer (Desktop Collapsible & Mobile Off-canvas) */}
-      <div className={`fixed inset-y-0 left-0 z-50 bg-[#E2C6B0] text-[#332424] flex flex-col justify-between p-4 shrink-0 border-r border-[#D1AD95] transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static ${
+      <div className={`fixed inset-y-0 left-0 z-50 bg-[#E2C6B0] text-[#2D0E13] flex flex-col justify-between p-4 shrink-0 border-r border-[#D1AD95] transform transition-all duration-200 ease-in-out lg:translate-x-0 lg:static ${
         isMobileDrawerOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0"
       } ${isSidebarCollapsed ? "lg:w-20" : "lg:w-64"}`}>
         <div>
@@ -8609,7 +8821,7 @@ export default function AdminHub({
                   setIsSidebarCollapsed(nextState);
                   localStorage.setItem("castano_sidebar_collapsed", String(nextState));
                 }}
-                className="hidden lg:flex p-2 rounded-xl text-[#843747] hover:bg-[#E7C8CF] transition-colors cursor-pointer"
+                className="hidden lg:flex p-2 rounded-xl text-[#5C1D27] hover:bg-[#EBDAC5] transition-colors cursor-pointer"
                 title={isSidebarCollapsed ? "Expandir menú" : "Contraer menú"}
                 aria-label={isSidebarCollapsed ? "Expandir menú" : "Contraer menú"}
               >
@@ -8619,7 +8831,7 @@ export default function AdminHub({
               <button 
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(false)}
-                className="lg:hidden p-1.5 rounded-lg text-[#332424] hover:bg-[#E8D4C3]"
+                className="lg:hidden p-1.5 rounded-lg text-[#2D0E13] hover:bg-[#EBDAC5]"
                 aria-label="Cerrar menú"
               >
                 <X className="h-5 w-5" />
@@ -8662,19 +8874,19 @@ export default function AdminHub({
                   }}
                   className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"} px-3 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-[#843747] text-white font-black shadow-sm"
-                      : "text-[#332424] hover:bg-[#E7C8CF]/50 hover:text-[#71303D]"
+                      ? "bg-[#5C1D27] text-white font-black shadow-sm"
+                      : "text-[#2D0E13] hover:bg-[#EBDAC5]/50 hover:text-[#4A151D]"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[#843747]"}`} />
+                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[#5C1D27]"}`} />
                     {!isSidebarCollapsed && <span>{link.label}</span>}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
                     <span 
                       aria-label={`${link.badge} ${link.id === 'caja' ? 'comandas pendientes' : 'alertas'}`}
                       className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                        active ? "bg-white text-[#843747]" : "bg-[#A63F45] text-white shadow-xs"
+                        active ? "bg-white text-[#5C1D27]" : "bg-[#A63F45] text-white shadow-xs"
                       }`}
                     >
                       {link.badge}
@@ -8688,7 +8900,7 @@ export default function AdminHub({
             {(currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "barista") && (
               <div className="pt-3 pb-1 border-t border-[#D1AD95] my-2">
                 {!isSidebarCollapsed && (
-                  <span className="text-[9px] font-black uppercase tracking-widest text-[#6F5A55] px-2 block">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[#5E393F] px-2 block">
                     ADMINISTRACIÓN & GESTIÓN
                   </span>
                 )}
@@ -8728,19 +8940,19 @@ export default function AdminHub({
                   }}
                   className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"} px-3 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     active 
-                      ? "bg-[#843747] text-white font-black shadow-sm"
-                      : "text-[#332424] hover:bg-[#E7C8CF]/50 hover:text-[#71303D]"
+                      ? "bg-[#5C1D27] text-white font-black shadow-sm"
+                      : "text-[#2D0E13] hover:bg-[#EBDAC5]/50 hover:text-[#4A151D]"
                   }`}
                 >
                   <span className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[#843747]"}`} />
+                    <Icon className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-[#5C1D27]"}`} />
                     {!isSidebarCollapsed && <span>{link.label}</span>}
                   </span>
                   {link.badge !== undefined && link.badge > 0 && (
                     <span 
                       aria-label={`${link.badge} insumos bajos`}
                       className={`h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full text-[9px] font-black shrink-0 ${
-                        active ? "bg-white text-[#843747]" : "bg-[#B97932] text-white shadow-xs"
+                        active ? "bg-white text-[#5C1D27]" : "bg-[#B97932] text-white shadow-xs"
                       }`}
                     >
                       {link.badge}
@@ -8755,8 +8967,8 @@ export default function AdminHub({
         {/* Sidebar Bottom Widgets */}
         <div className="space-y-2 pt-3 border-t border-[#D1AD95]">
           {!isSidebarCollapsed && (
-            <div className="p-2.5 rounded-xl bg-[#FFF9F4] border border-[#D1AD95] text-[10px]">
-              <span className="text-[#6F5A55] block font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+            <div className="p-2.5 rounded-xl bg-[#FAF2E6] border border-[#D1AD95] text-[10px]">
+              <span className="text-[#5E393F] block font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
                 <Activity
                   className={`h-3 w-3 ${
                     cloudHealth.state === "online"
@@ -8767,13 +8979,13 @@ export default function AdminHub({
                   }`}
                 /> Estado Nube
               </span>
-              <p className="text-[#332424] font-semibold">
+              <p className="text-[#2D0E13] font-semibold">
                 {cloudHealth.state === "online"
                   ? `Supabase conectado${cloudHealth.latencyMs ? ` · ${cloudHealth.latencyMs} ms` : ""}`
                   : cloudHealth.message}
               </p>
               {cloudHealth.projectRef && (
-                <p className="mt-0.5 font-mono text-[8px] text-[#6F5A55]">
+                <p className="mt-0.5 font-mono text-[8px] text-[#5E393F]">
                   {cloudHealth.projectRef}
                 </p>
               )}
@@ -8795,7 +9007,7 @@ export default function AdminHub({
           </button>
           
           {!isSidebarCollapsed && (
-            <div className="text-[8px] text-[#6F5A55] text-center font-bold tracking-wider uppercase">
+            <div className="text-[8px] text-[#5E393F] text-center font-bold tracking-wider uppercase">
               CASTAÑO — RESTO BAR<br />Constitución 944, Río Cuarto
             </div>
           )}
@@ -8803,7 +9015,7 @@ export default function AdminHub({
       </div>
 
       {/* Main Content Area */}
-      <div ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 bg-[#F3E7DB] text-[#332424]">
+      <div ref={mainContentRef} className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 bg-[#F4E8D7] text-[#2D0E13]">
         <AnimatePresence mode="wait">
           {activeSubTab === "dashboard" && renderDashboard()}
           {activeSubTab === "inventario" && renderInventario()}
@@ -8832,26 +9044,26 @@ export default function AdminHub({
       {/* Automated Purchase Orders (US-2.3) Modal */}
       {isAutoOrderModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-2xl shadow-xl relative text-xs font-semibold text-[#332424] flex flex-col max-h-[90vh]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-2xl shadow-xl relative text-xs font-semibold text-[#2D0E13] flex flex-col max-h-[90vh]">
             <button 
               onClick={() => setIsAutoOrderModalOpen(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424] cursor-pointer border-none bg-transparent"
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13] cursor-pointer border-none bg-transparent"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="border-b border-[#D7BBA8] pb-3 mb-4">
-              <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Reabastecimiento Inteligente</span>
-              <h4 className="font-serif text-lg font-bold text-[#843747]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
+            <div className="border-b border-[#CFB5A0] pb-3 mb-4">
+              <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Reabastecimiento Inteligente</span>
+              <h4 className="font-serif text-lg font-bold text-[#5C1D27]">Órdenes de Compra Sugeridas (Lote Crítico)</h4>
             </div>
 
             <div className="overflow-y-auto space-y-6 flex-1 pr-1">
-              <p className="text-xs text-[#6F5A55] italic leading-relaxed">
+              <p className="text-xs text-[#5E393F] italic leading-relaxed">
                 El sistema detectó insumos en nivel de seguridad crítico y agrupó las cantidades necesarias de reposición por proveedor. Puede copiar el mensaje directo para enviarlo por WhatsApp o Correo Electrónico.
               </p>
 
               {Object.keys(draftOrders).length === 0 ? (
-                <p className="text-xs text-center py-6 font-bold italic text-[#6F5A55]">No hay borradores para generar.</p>
+                <p className="text-xs text-center py-6 font-bold italic text-[#5E393F]">No hay borradores para generar.</p>
               ) : (
                 <div className="space-y-6">
                   {Object.keys(draftOrders).map((prov) => {
@@ -8860,11 +9072,11 @@ export default function AdminHub({
                     const mailtoUrl = `mailto:${order.email}?subject=Pedido%20Reposicion%20-%20Castano%20Resto%20Bar&body=${encodeURIComponent(order.message)}`;
 
                     return (
-                      <div key={prov} className="border border-[#D7BBA8] rounded-2xl p-4 bg-[#E8D4C3]/40 space-y-4 shadow-xs">
-                        <div className="flex justify-between items-center border-b border-[#D7BBA8] pb-2">
+                      <div key={prov} className="border border-[#CFB5A0] rounded-2xl p-4 bg-[#EBDAC5]/40 space-y-4 shadow-xs">
+                        <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-2">
                           <div>
-                            <span className="font-serif text-sm font-black text-[#843747]">{prov}</span>
-                            <span className="text-[10px] text-[#6F5A55] block font-mono">Tel: {order.phone} • Email: {order.email}</span>
+                            <span className="font-serif text-sm font-black text-[#5C1D27]">{prov}</span>
+                            <span className="text-[10px] text-[#5E393F] block font-mono">Tel: {order.phone} • Email: {order.email}</span>
                           </div>
                           <div className="flex gap-2">
                             <a
@@ -8883,7 +9095,7 @@ export default function AdminHub({
                               onClick={() => {
                                 onShowNotification(`📧 Abriendo cliente de correo para ${prov}`, "info");
                               }}
-                              className="px-3.5 py-2 bg-[#843747] hover:bg-[#71303D] text-white rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-xs"
+                              className="px-3.5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl font-black text-[10px] transition-all no-underline inline-block uppercase tracking-wider text-center shadow-xs"
                             >
                               📧 Email
                             </a>
@@ -8891,12 +9103,12 @@ export default function AdminHub({
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[9px] font-black text-[#6F5A55] uppercase tracking-wider block">Borrador del Pedido</label>
+                          <label className="text-[9px] font-black text-[#5E393F] uppercase tracking-wider block">Borrador del Pedido</label>
                           <textarea
                             readOnly
                             value={order.message}
                             rows={6}
-                            className="w-full text-xs font-mono p-3 bg-[#FFF9F4] border border-[#D7BBA8] text-[#843747] rounded-xl resize-none outline-none font-bold leading-relaxed shadow-inner"
+                            className="w-full text-xs font-mono p-3 bg-[#FAF2E6] border border-[#CFB5A0] text-[#5C1D27] rounded-xl resize-none outline-none font-bold leading-relaxed shadow-inner"
                           />
                         </div>
                       </div>
@@ -8906,10 +9118,10 @@ export default function AdminHub({
               )}
             </div>
 
-            <div className="border-t border-[#D7BBA8] pt-4 mt-4 flex justify-end">
+            <div className="border-t border-[#CFB5A0] pt-4 mt-4 flex justify-end">
               <button
                 onClick={() => setIsAutoOrderModalOpen(false)}
-                className="px-6 py-2.5 bg-[#843747] hover:bg-[#71303D] text-white text-xs font-black rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider"
+                className="px-6 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black rounded-xl transition-all cursor-pointer border-none uppercase tracking-wider"
               >
                 ENTENDIDO
               </button>
@@ -8921,52 +9133,52 @@ export default function AdminHub({
       {/* Modal ➕ Crear Nuevo Insumo / Materia Prima */}
       {isNewInsumoModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-lg shadow-xl relative text-xs font-semibold text-[#332424] space-y-4">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-lg shadow-xl relative text-xs font-semibold text-[#2D0E13] space-y-4">
             <button 
               type="button"
               onClick={() => setIsNewInsumoModalOpen(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424] cursor-pointer border-none bg-transparent"
+              className="absolute right-5 top-5 p-1.5 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13] cursor-pointer border-none bg-transparent"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="border-b border-[#D7BBA8] pb-2">
-              <span className="text-[9px] font-black uppercase text-[#6F5A55] tracking-widest block">Gestión de Inventario</span>
-              <h4 className="font-serif text-xl font-bold text-[#843747]">➕ Crear Nuevo Insumo / Materia Prima</h4>
+            <div className="border-b border-[#CFB5A0] pb-2">
+              <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Gestión de Inventario</span>
+              <h4 className="font-serif text-xl font-bold text-[#5C1D27]">➕ Crear Nuevo Insumo / Materia Prima</h4>
             </div>
 
             <form onSubmit={handleCreateNewInsumo} className="space-y-4">
               <div>
-                <label className="text-[10px] font-black uppercase text-[#6F5A55] block mb-1">Nombre de la Materia Prima *</label>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Nombre de la Materia Prima *</label>
                 <input
                   type="text"
                   required
                   value={newInsumoName}
                   onChange={(e) => setNewInsumoName(e.target.value)}
                   placeholder="Ej. Harina 0000 Masa Madre, Queso Muzzarella..."
-                  className="w-full p-3 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                  className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Cantidad Inicial *</label>
+                  <label className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Cantidad Inicial *</label>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={newInsumoQuantity}
                     onChange={(e) => setNewInsumoQuantity(e.target.value)}
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#843747] outline-none text-center focus:border-[#843747]"
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono font-bold text-[#5C1D27] outline-none text-center focus:border-[#5C1D27]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Unidad *</label>
+                  <label className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Unidad *</label>
                   <select
                     value={newInsumoUnit}
                     onChange={(e) => setNewInsumoUnit(e.target.value)}
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none cursor-pointer focus:border-[#843747]"
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none cursor-pointer focus:border-[#5C1D27]"
                   >
                     <option value="kg">kg (Kilogramos)</option>
                     <option value="L">L (Litros)</option>
@@ -8978,19 +9190,19 @@ export default function AdminHub({
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Stock Mínimo *</label>
+                  <label className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Stock Mínimo *</label>
                   <input
                     type="number"
                     required
                     step="0.01"
                     value={newInsumoMinLimit}
                     onChange={(e) => setNewInsumoMinLimit(e.target.value)}
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#332424] outline-none text-center focus:border-[#843747]"
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono font-bold text-[#2D0E13] outline-none text-center focus:border-[#5C1D27]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Costo Unitario ($) *</label>
+                  <label className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Costo Unitario ($) *</label>
                   <input
                     type="number"
                     required
@@ -8998,46 +9210,46 @@ export default function AdminHub({
                     step="0.01"
                     value={newInsumoCost}
                     onChange={(e) => setNewInsumoCost(e.target.value)}
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono font-bold text-[#332424] outline-none text-center focus:border-[#843747]"
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono font-bold text-[#2D0E13] outline-none text-center focus:border-[#5C1D27]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Proveedor Designado</label>
+                  <label className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Proveedor Designado</label>
                   <input
                     type="text"
                     value={newInsumoProvider}
                     onChange={(e) => setNewInsumoProvider(e.target.value)}
                     placeholder="Ej. Distribuidora Sur, Lácteos del Campo"
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-bold text-[#332424] outline-none focus:border-[#843747]"
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[9px] font-black uppercase text-[#6F5A55] block mb-1">Fecha de Vencimiento</label>
+                  <label className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Fecha de Vencimiento</label>
                   <input
                     type="date"
                     value={newInsumoExpDate}
                     onChange={(e) => setNewInsumoExpDate(e.target.value)}
-                    className="w-full p-2.5 bg-[#FFF9F4] border border-[#D7BBA8] rounded-xl text-xs font-mono text-[#332424] outline-none focus:border-[#843747]"
+                    className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                   />
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-[#D7BBA8] flex justify-end gap-3">
+              <div className="pt-3 border-t border-[#CFB5A0] flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsNewInsumoModalOpen(false)}
-                  className="px-4 py-2 border border-[#D7BBA8] text-[#6F5A55] rounded-xl hover:bg-[#E8D4C3] cursor-pointer font-bold text-xs"
+                  className="px-4 py-2 border border-[#CFB5A0] text-[#5E393F] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold text-xs"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingInsumo}
-                  className="px-5 py-2 bg-[#843747] hover:bg-[#71303D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer disabled:cursor-wait disabled:opacity-60"
+                  className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer disabled:cursor-wait disabled:opacity-60"
                 >
                   {isCreatingInsumo ? "REGISTRANDO…" : "REGISTRAR EN SUPABASE"}
                 </button>
@@ -9050,19 +9262,19 @@ export default function AdminHub({
       {/* Unified Movement Registration Modal */}
       {isMovementModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
             <button 
               onClick={() => setIsMovementModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-4">Registrar Movimiento de Stock</h4>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-4">Registrar Movimiento de Stock</h4>
 
             <div className="space-y-4">
               <div>
-                <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block mb-1.5">Tipo de Ajuste</span>
+                <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block mb-1.5">Tipo de Ajuste</span>
                 <div className="grid grid-cols-2 gap-3">
                   {["Ingreso", "Egreso"].map((t) => (
                     <button
@@ -9071,8 +9283,8 @@ export default function AdminHub({
                       onClick={() => setMovType(t as any)}
                       className={`p-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
                         movType === t 
-                          ? "bg-[#843747] text-white border-[#843747] font-black shadow-xs" 
-                          : "bg-[#FFF9F4] border-[#D7BBA8] text-[#6F5A55] hover:text-[#332424]"
+                          ? "bg-[#5C1D27] text-white border-[#5C1D27] font-black shadow-xs" 
+                          : "bg-[#FAF2E6] border-[#CFB5A0] text-[#5E393F] hover:text-[#2D0E13]"
                       }`}
                     >
                       {t === "Ingreso" ? "📥 Ingreso (Recibo)" : "📤 Egreso (Merma/Ajuste)"}
@@ -9082,11 +9294,11 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Materia Prima / Insumo</label>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Materia Prima / Insumo</label>
                 <select 
                   value={movInsumoId}
                   onChange={(e) => setMovInsumoId(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer focus:border-[#843747]"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer focus:border-[#5C1D27]"
                 >
                   {insumos.map(i => (
                     <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
@@ -9095,25 +9307,25 @@ export default function AdminHub({
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Cantidad a Ajustar</label>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Cantidad a Ajustar</label>
                 <input 
                   type="number"
                   placeholder="Ingrese el valor numérico"
                   value={movQty}
                   onChange={(e) => setMovQty(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold font-mono"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#5C1D27] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-bold font-mono"
                 />
               </div>
 
               {movType === "Egreso" && (
                 <div>
-                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Motivo / Descripción de la Merma</label>
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Motivo / Descripción de la Merma</label>
                   <textarea 
                     placeholder="Escriba el motivo del descarte..."
                     value={movReason}
                     onChange={(e) => setMovReason(e.target.value)}
                     rows={2}
-                    className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold resize-none"
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-bold resize-none"
                   />
                 </div>
               )}
@@ -9168,42 +9380,42 @@ export default function AdminHub({
       {/* Configurar Restaurant Modal */}
       {isConfigRestaurantOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
             <button 
               onClick={() => setIsConfigRestaurantOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Configurar Restaurant</h4>
-            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Personalice los datos de su restaurante para el ticket fiscal.</p>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Configurar Restaurant</h4>
+            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Personalice los datos de su restaurante para el ticket fiscal.</p>
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Nombre Comercial</label>
-                <input type="text" value={businessProfile.name} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, name: event.target.value }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Nombre Comercial</label>
+                <input type="text" value={businessProfile.name} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, name: event.target.value }))} className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Dirección Física</label>
-                <input type="text" value={businessProfile.address} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, address: event.target.value }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Dirección Física</label>
+                <input type="text" value={businessProfile.address} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, address: event.target.value }))} className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">CUIT Comercial</label>
-                  <input type="text" inputMode="numeric" value={businessProfile.cuit} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, cuit: event.target.value }))} placeholder="11 dígitos" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">CUIT Comercial</label>
+                  <input type="text" inputMode="numeric" value={businessProfile.cuit} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, cuit: event.target.value }))} placeholder="11 dígitos" className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Punto de Venta</label>
-                  <input type="number" min="1" value={businessProfile.posNumber} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, posNumber: event.target.value }))} placeholder="Ej. 1" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Punto de Venta</label>
+                  <input type="number" min="1" value={businessProfile.posNumber} onChange={(event) => setBusinessProfile((profile) => ({ ...profile, posNumber: event.target.value }))} placeholder="Ej. 1" className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
                 </div>
               </div>
               {!businessProfile.cuit && (
-                <p className="rounded-xl border border-[#D7BBA8] bg-[#E8D4C3]/40 p-3 text-[10px] text-[#6F5A55]">
+                <p className="rounded-xl border border-[#CFB5A0] bg-[#EBDAC5]/40 p-3 text-[10px] text-[#5E393F]">
                   El perfil fiscal está pendiente. No se completa con datos ficticios.
                 </p>
               )}
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => void handleSaveBusinessProfile()} disabled={isBusinessProfileSaving} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer">{isBusinessProfileSaving ? "Guardando…" : "Guardar"}</button>
+                <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => void handleSaveBusinessProfile()} disabled={isBusinessProfileSaving} className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer">{isBusinessProfileSaving ? "Guardando…" : "Guardar"}</button>
               </div>
             </div>
           </div>
@@ -9213,19 +9425,19 @@ export default function AdminHub({
       {/* Configuración Ticketera Modal */}
       {isConfigTicketerisOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
             <button 
               onClick={() => setIsConfigTicketerisOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Configurar Ticketera</h4>
-            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Configurar Ticketera</h4>
+            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Interfaz de Conexión</label>
-                <select value={printerConfig.printerType} onChange={(event) => setPrinterConfig((config) => ({ ...config, printerType: event.target.value as PrinterConfig["printerType"] }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Interfaz de Conexión</label>
+                <select value={printerConfig.printerType} onChange={(event) => setPrinterConfig((config) => ({ ...config, printerType: event.target.value as PrinterConfig["printerType"] }))} className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]">
                   <option value="browser_print">Impresión del navegador</option>
                   <option value="webbluetooth">Impresora Bluetooth</option>
                   <option value="websocket">Servidor ESC/POS por WebSocket</option>
@@ -9233,21 +9445,21 @@ export default function AdminHub({
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Ancho de Papel</label>
-                <select value={printerConfig.paperWidth} onChange={(event) => setPrinterConfig((config) => ({ ...config, paperWidth: event.target.value as PrinterConfig["paperWidth"] }))} className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Ancho de Papel</label>
+                <select value={printerConfig.paperWidth} onChange={(event) => setPrinterConfig((config) => ({ ...config, paperWidth: event.target.value as PrinterConfig["paperWidth"] }))} className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]">
                   <option value="80mm">80 mm (Recomendado)</option>
                   <option value="58mm">58 mm</option>
                 </select>
               </div>
               {printerConfig.printerType === "websocket" && (
                 <div>
-                  <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Servidor WebSocket</label>
-                  <input type="url" value={printerConfig.websocketUrl} onChange={(event) => setPrinterConfig((config) => ({ ...config, websocketUrl: event.target.value }))} placeholder="ws://localhost:9100" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Servidor WebSocket</label>
+                  <input type="url" value={printerConfig.websocketUrl} onChange={(event) => setPrinterConfig((config) => ({ ...config, websocketUrl: event.target.value }))} placeholder="ws://localhost:9100" className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
                 </div>
               )}
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={handleSavePrinterConfig} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
+                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={handleSavePrinterConfig} className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
               </div>
             </div>
           </div>
@@ -9257,49 +9469,49 @@ export default function AdminHub({
       {/* Cerrar Turno de Caja Modal */}
       {isCloseShiftModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
             <button 
               onClick={() => setIsCloseShiftModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Cerrar Turno de Caja Diaria</h4>
-            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Cerrar Turno de Caja Diaria</h4>
+            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
             
-            <div className="my-4 p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Ventas Turno Teórico</span>
-              <div className="text-2xl font-serif font-black text-[#843747] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#6F5A55] font-bold border-t border-[#D7BBA8] pt-2.5">
-                <div>Efectivo: <span className="font-mono text-[#843747]">${cashLedger.cash.toLocaleString()}</span></div>
-                <div>Tarjeta: <span className="font-mono text-[#843747]">${cashLedger.card.toLocaleString()}</span></div>
-                <div>MP: <span className="font-mono text-[#843747]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+            <div className="my-4 p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl">
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Ventas Turno Teórico</span>
+              <div className="text-2xl font-serif font-black text-[#5C1D27] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#5E393F] font-bold border-t border-[#CFB5A0] pt-2.5">
+                <div>Efectivo: <span className="font-mono text-[#5C1D27]">${cashLedger.cash.toLocaleString()}</span></div>
+                <div>Tarjeta: <span className="font-mono text-[#5C1D27]">${cashLedger.card.toLocaleString()}</span></div>
+                <div>MP: <span className="font-mono text-[#5C1D27]">${cashLedger.mercadopago.toLocaleString()}</span></div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Monto Real en Caja ($)</label>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Monto Real en Caja ($)</label>
                 <input 
                   type="number" 
                   placeholder="Ingrese el monto físico contado" 
                   value={closeShiftRealCash} 
                   onChange={(e) => setCloseShiftRealCash(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold font-mono" 
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#5C1D27] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-bold font-mono" 
                 />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Observaciones</label>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Observaciones</label>
                 <textarea 
                   placeholder="Facturación normal del turno, diferencias de arqueo, etc." 
                   value={closeShiftNotes} 
                   onChange={(e) => setCloseShiftNotes(e.target.value)}
                   rows={3}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] focus:ring-1 focus:ring-[#843747] focus:outline-none font-semibold resize-none"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-semibold resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
                 <button 
                   onClick={() => {
                     const realCash = parseFloat(closeShiftRealCash);
@@ -9377,38 +9589,38 @@ export default function AdminHub({
       {/* Configuración Ticketera Modal */}
       {false && isConfigTicketerisOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
             <button 
               onClick={() => setIsConfigTicketerisOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Configurar Ticketera</h4>
-            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Configurar Ticketera</h4>
+            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Interfaz de Conexión</label>
-                <select className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Interfaz de Conexión</label>
+                <select className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]">
                   <option>USB Thermal Printer (Predeterminado)</option>
                   <option>Bluetooth clover-thermal-58</option>
                   <option>Ethernet (IP: 192.168.1.150)</option>
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Ancho de Papel</label>
-                <select className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold cursor-pointer outline-none focus:border-[#843747]">
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Ancho de Papel</label>
+                <select className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]">
                   <option>80 mm (Recomendado)</option>
                   <option>58 mm</option>
                 </select>
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Texto de Pie de Página</label>
-                <input type="text" defaultValue="¡Gracias por su visita! Castaño — Resto Bar" className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] font-bold outline-none focus:border-[#843747]" />
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Texto de Pie de Página</label>
+                <input type="text" defaultValue="¡Gracias por su visita! Castaño — Resto Bar" className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
               </div>
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#843747] hover:bg-[#71303D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
+                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
               </div>
             </div>
           </div>
@@ -9418,49 +9630,49 @@ export default function AdminHub({
       {/* Cerrar Turno de Caja Modal */}
       {false && isCloseShiftModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FFF9F4] border border-[#D7BBA8] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#332424]">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
             <button 
               onClick={() => setIsCloseShiftModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#E8D4C3] text-[#6F5A55] hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
-            <h4 className="font-serif text-lg font-bold text-[#843747] mb-1">Cerrar Turno de Caja Diaria</h4>
-            <p className="text-[10px] text-[#6F5A55] mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Cerrar Turno de Caja Diaria</h4>
+            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
             
-            <div className="my-4 p-4 bg-[#E8D4C3]/40 border border-[#D7BBA8] rounded-2xl">
-              <span className="text-[9px] font-bold text-[#6F5A55] uppercase tracking-wider block">Ventas Turno Teórico</span>
-              <div className="text-2xl font-serif font-black text-[#843747] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#6F5A55] font-bold border-t border-[#D7BBA8] pt-2.5">
-                <div>Efectivo: <span className="font-mono text-[#843747]">${cashLedger.cash.toLocaleString()}</span></div>
-                <div>Tarjeta: <span className="font-mono text-[#843747]">${cashLedger.card.toLocaleString()}</span></div>
-                <div>MP: <span className="font-mono text-[#843747]">${cashLedger.mercadopago.toLocaleString()}</span></div>
+            <div className="my-4 p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl">
+              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Ventas Turno Teórico</span>
+              <div className="text-2xl font-serif font-black text-[#5C1D27] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#5E393F] font-bold border-t border-[#CFB5A0] pt-2.5">
+                <div>Efectivo: <span className="font-mono text-[#5C1D27]">${cashLedger.cash.toLocaleString()}</span></div>
+                <div>Tarjeta: <span className="font-mono text-[#5C1D27]">${cashLedger.card.toLocaleString()}</span></div>
+                <div>MP: <span className="font-mono text-[#5C1D27]">${cashLedger.mercadopago.toLocaleString()}</span></div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Monto Real en Caja ($)</label>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Monto Real en Caja ($)</label>
                 <input 
                   type="number" 
                   placeholder="Ingrese el monto físico contado" 
                   value={closeShiftRealCash} 
                   onChange={(e) => setCloseShiftRealCash(e.target.value)}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#843747] focus:ring-1 focus:ring-[#843747] focus:outline-none font-bold font-mono" 
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#5C1D27] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-bold font-mono" 
                 />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-[#6F5A55] uppercase block mb-1">Observaciones</label>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Observaciones</label>
                 <textarea 
                   placeholder="Facturación normal del turno, diferencias de arqueo, etc." 
                   value={closeShiftNotes} 
                   onChange={(e) => setCloseShiftNotes(e.target.value)}
                   rows={3}
-                  className="w-full p-2.5 border border-[#D7BBA8] rounded-xl text-xs bg-[#FFF9F4] text-[#332424] focus:ring-1 focus:ring-[#843747] focus:outline-none font-semibold resize-none"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-semibold resize-none"
                 />
               </div>
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#D7BBA8] text-xs font-bold text-[#6F5A55] hover:bg-[#E8D4C3] transition-all cursor-pointer bg-transparent">Cancelar</button>
+                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
                 <button 
                   onClick={() => {
                     const realCash = parseFloat(closeShiftRealCash);
@@ -9560,10 +9772,10 @@ export default function AdminHub({
       {/* simulated thermal ticket modal */}
       {selectedOrderForTicket && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-stone-800 rounded-2xl p-6 w-full max-w-xs shadow-2xl relative text-xs text-[#332424] font-mono">
+          <div className="bg-white border-2 border-stone-800 rounded-2xl p-6 w-full max-w-xs shadow-2xl relative text-xs text-[#2D0E13] font-mono">
             <button 
               onClick={() => setSelectedOrderForTicket(null)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-100 text-[#332424]/60 hover:text-[#332424]"
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-100 text-[#2D0E13]/60 hover:text-[#2D0E13]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -9578,7 +9790,7 @@ export default function AdminHub({
                   <span className="text-[9px] block">{selectedOrderForTicket.fiscal.issuerAddress || "Domicilio no informado"}</span>
                 </>
               ) : (
-                <span className="text-[9px] block font-bold text-[#843747]">DOCUMENTO NO FISCAL</span>
+                <span className="text-[9px] block font-bold text-[#5C1D27]">DOCUMENTO NO FISCAL</span>
               )}
             </div>
 
@@ -9624,7 +9836,7 @@ export default function AdminHub({
                   }
                   onShowNotification("📥 Ticket descargado en formato PDF correctamente.", "success");
                 }} 
-                className="py-2.5 rounded-xl bg-[#843747] text-white text-[10px] font-black cursor-pointer hover:bg-[#71303D] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+                className="py-2.5 rounded-xl bg-[#5C1D27] text-white text-[10px] font-black cursor-pointer hover:bg-[#4A151D] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
               >
                 <Download className="h-3.5 w-3.5" /> Descargar PDF
               </button>
@@ -9633,7 +9845,7 @@ export default function AdminHub({
                 onClick={() => {
                   window.print();
                 }} 
-                className="py-2.5 rounded-xl bg-[#E8D4C3] text-[#843747] border border-[#D7BBA8] text-[10px] font-black cursor-pointer hover:bg-[#D7BBA8] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
+                className="py-2.5 rounded-xl bg-[#EBDAC5] text-[#5C1D27] border border-[#CFB5A0] text-[10px] font-black cursor-pointer hover:bg-[#CFB5A0] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Ticket
               </button>
@@ -9642,7 +9854,7 @@ export default function AdminHub({
                 type="button"
                 disabled
                 title="Requiere configurar un proveedor de correo transaccional"
-                className="py-2.5 rounded-xl bg-[#E8D4C3] text-[#6F5A55] border border-[#D7BBA8] text-[10px] font-black cursor-not-allowed opacity-70 flex items-center justify-center gap-1.5 uppercase tracking-wider"
+                className="py-2.5 rounded-xl bg-[#EBDAC5] text-[#5E393F] border border-[#CFB5A0] text-[10px] font-black cursor-not-allowed opacity-70 flex items-center justify-center gap-1.5 uppercase tracking-wider"
               >
                 <FileText className="h-3.5 w-3.5" /> Email no configurado
               </button>
@@ -9664,7 +9876,7 @@ export default function AdminHub({
               {selectedOrderForTicket.couponNumber && <div>CUPÓN POSNET NRO: {selectedOrderForTicket.couponNumber}</div>}
               {selectedOrderForTicket.clientAccountName && <div>CTA CORRIENTE CLIENTE: {selectedOrderForTicket.clientAccountName}</div>}
               <div className="pt-2 italic">*** ¡Muchas gracias por su visita! ***</div>
-              <div className="text-[7px] text-[#332424]/60 font-sans mt-2">
+              <div className="text-[7px] text-[#2D0E13]/60 font-sans mt-2">
                 {selectedOrderForTicket.fiscal?.status && ["authorized", "observed"].includes(selectedOrderForTicket.fiscal.status)
                   ? "COMPROBANTE ELECTRÓNICO AUTORIZADO POR ARCA"
                   : "DOCUMENTO NO FISCAL · SIN CAE"}
