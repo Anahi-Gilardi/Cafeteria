@@ -29,7 +29,7 @@ import { StorageService } from "../services/StorageService";
 import { PresupuestoPDFService } from "../services/PresupuestoPDFService";
 import { StaffService } from "../services/StaffService";
 import LeafletMapWidget from "./LeafletMapWidget";
-import { reverseGeocodeNominatim, formatPreciseTimestamp } from "../services/NominatimService";
+import { reverseGeocodeNominatim, formatPreciseTimestamp, calculateHaversineDistance } from "../services/NominatimService";
 import { offlineQueueService } from "../services/OfflineQueueService";
 import { arcaAdapter } from "../services/ARCAAdapter";
 import { CashClosure, CashShiftService } from "../services/CashShiftService";
@@ -200,6 +200,63 @@ export default function AdminHub({
     numero: string;
     direccion_completa: string;
   } | null>(null);
+
+  const [activeShiftRecord, setActiveShiftRecord] = useState<{
+    id: string;
+    staffId: string;
+    staffName: string;
+    checkInTime: string;
+    timestamp: string;
+    latitud: number;
+    longitud: number;
+    calle: string;
+    numero: string;
+    direccion_completa: string;
+    distanceMeters: number;
+  } | null>(null);
+
+  // Restore active shift from localStorage or Supabase on load
+  useEffect(() => {
+    const staffId = currentUser?.id || "usr-admin-super";
+    try {
+      const localSaved = localStorage.getItem(`castano_active_shift_${staffId}`);
+      if (localSaved) {
+        setActiveShiftRecord(JSON.parse(localSaved));
+      }
+    } catch (e) {}
+
+    supabase
+      .from("staff_attendance")
+      .select("*")
+      .eq("staff_id", staffId)
+      .is("check_out_time", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && (data.action === "INGRESO" || data.tipo === "INGRESO")) {
+          const lat = Number(data.latitud || data.latitude || -33.1245);
+          const lng = Number(data.longitud || data.longitude || -64.3490);
+          const activeRec = {
+            id: data.id,
+            staffId: data.staff_id,
+            staffName: data.staff_name || currentUser.name || "Colaborador",
+            checkInTime: data.check_in_time || data.created_at,
+            timestamp: data.timestamp || formatPreciseTimestamp(new Date(data.check_in_time || data.created_at)),
+            latitud: lat,
+            longitud: lng,
+            calle: data.calle || "Ubicación GPS Real",
+            numero: data.numero || "",
+            direccion_completa: data.direccion_completa || data.location_address || "Río Cuarto",
+            distanceMeters: calculateHaversineDistance(lat, lng)
+          };
+          setActiveShiftRecord(activeRec);
+          try {
+            localStorage.setItem(`castano_active_shift_${staffId}`, JSON.stringify(activeRec));
+          } catch (e) {}
+        }
+      });
+  }, [currentUser?.id]);
 
   // User Accounts Management state
   const [users, setUsers] = useState<any[]>([]);
@@ -2982,124 +3039,167 @@ export default function AdminHub({
   const handleCaptureGPSAndClock = async (action: "INGRESO" | "EGRESO", customCoords?: { lat: number; lng: number; address: string }) => {
     setIsLocatingGPS(true);
 
-    const processClocking = async (lat: number, lng: number, accuracy: number, fallbackAddr?: string) => {
+    const processClocking = async (realLat: number, realLng: number, accuracy: number, customAddress?: string) => {
       const timestampStr = formatPreciseTimestamp(new Date());
-      
-      // Perform Reverse Geocoding with OpenStreetMap (Nominatim API)
-      const geocode = await reverseGeocodeNominatim(lat, lng);
-      const direccionCompleta = fallbackAddr || geocode.direccion_completa;
+
+      // Reverse geocode real device coordinates via OpenStreetMap (Nominatim API)
+      const geocode = await reverseGeocodeNominatim(realLat, realLng);
+      const direccionCompleta = customAddress || geocode.direccion_completa;
       const calleStr = geocode.calle;
       const numeroStr = geocode.numero;
 
-      const staffMember = users.find((u) => u.id === selectedStaffMember) || {
-        id: selectedStaffMember,
+      // Real Haversine distance to Sucursal Castaño (-33.1245, -64.3490)
+      const distanceMeters = calculateHaversineDistance(realLat, realLng, -33.1245, -64.3490);
+
+      const staffId = selectedStaffMember || currentUser.id || "usr-admin-super";
+      const staffMember = users.find((u) => u.id === staffId) || {
+        id: staffId,
         name: currentUser.name || "Colaborador"
       };
       const staffName = staffMember.name;
 
-      setCurrentGPSLoc({ lat, lng, address: direccionCompleta });
+      setCurrentGPSLoc({ lat: realLat, lng: realLng, address: direccionCompleta });
       setLastClockDetails({
         staffName: staffName,
         tipo: action,
         timestamp: timestampStr,
-        latitud: lat,
-        longitud: lng,
+        latitud: realLat,
+        longitud: realLng,
         calle: calleStr,
         numero: numeroStr,
         direccion_completa: direccionCompleta
       });
 
-      await ensureStaffProfile(selectedStaffMember);
+      await ensureStaffProfile(staffId);
 
       let recordData: any = null;
 
-      // 1. Try RPC record_staff_attendance first
-      try {
-        const { data, error } = await supabase.rpc("record_staff_attendance", {
-          p_staff_id: selectedStaffMember,
-          p_action: action,
-          p_latitude: lat,
-          p_longitude: lng,
-          p_location_address: direccionCompleta,
-          p_gps_accuracy: accuracy
-        });
-        if (!error && data) {
-          recordData = {
-            ...data,
-            staff_name: staffName,
-            tipo: action,
-            timestamp: timestampStr,
-            latitud: lat,
-            longitud: lng,
-            calle: calleStr,
-            numero: numeroStr,
-            direccion_completa: direccionCompleta
-          };
-        }
-      } catch (e) {
-        console.warn("RPC record_staff_attendance unavailable, using direct fallback:", e);
-      }
-
-      // 2. Direct table insertion fallback with complete schema fields
-      if (!recordData) {
+      if (action === "INGRESO") {
+        // 1. Save INGRESO in Supabase
         try {
           const { data: directData } = await supabase
             .from("staff_attendance")
             .insert({
-              staff_id: selectedStaffMember,
+              staff_id: staffId,
               staff_name: staffName,
               action: action,
               tipo: action,
               timestamp: timestampStr,
-              latitude: lat,
-              longitude: lng,
-              latitud: lat,
-              longitud: lng,
+              latitude: realLat,
+              longitude: realLng,
+              latitud: realLat,
+              longitud: realLng,
               calle: calleStr,
               numero: numeroStr,
               direccion_completa: direccionCompleta,
               location_address: direccionCompleta,
               gps_accuracy: accuracy,
-              check_in_time: action === "INGRESO" ? new Date().toISOString() : null,
-              check_out_time: action === "EGRESO" ? new Date().toISOString() : null,
+              check_in_time: new Date().toISOString(),
+              check_out_time: null,
               created_at: new Date().toISOString()
             })
             .select()
             .single();
 
-          if (directData) {
-            recordData = directData;
-          }
+          if (directData) recordData = directData;
         } catch (e) {
           console.error("Direct table insert error:", e);
         }
-      }
 
-      // 3. Construct local record object if server response was unconfirmed
-      if (!recordData) {
-        recordData = {
-          id: `fichaje-local-${Date.now()}`,
-          staff_id: selectedStaffMember,
-          staff_name: staffName,
-          action: action,
-          tipo: action,
+        if (!recordData) {
+          recordData = {
+            id: `fichaje-local-${Date.now()}`,
+            staff_id: staffId,
+            staff_name: staffName,
+            action: action,
+            tipo: action,
+            timestamp: timestampStr,
+            check_in_time: new Date().toISOString(),
+            check_out_time: null,
+            latitude: realLat,
+            longitude: realLng,
+            latitud: realLat,
+            longitud: realLng,
+            calle: calleStr,
+            numero: numeroStr,
+            direccion_completa: direccionCompleta,
+            location_address: direccionCompleta,
+            gps_accuracy: accuracy,
+            created_at: new Date().toISOString()
+          };
+        }
+
+        // PERSIST active shift until employee clocks out (EGRESO)
+        const activeRec = {
+          id: recordData.id,
+          staffId: staffId,
+          staffName: staffName,
+          checkInTime: new Date().toISOString(),
           timestamp: timestampStr,
-          check_in_time: action === "INGRESO" ? new Date().toISOString() : null,
-          check_out_time: action === "EGRESO" ? new Date().toISOString() : null,
-          latitude: lat,
-          longitude: lng,
-          latitud: lat,
-          longitud: lng,
+          latitud: realLat,
+          longitud: realLng,
           calle: calleStr,
           numero: numeroStr,
           direccion_completa: direccionCompleta,
-          location_address: direccionCompleta,
-          gps_accuracy: accuracy,
-          created_at: new Date().toISOString()
+          distanceMeters: distanceMeters
         };
+        setActiveShiftRecord(activeRec);
+        try {
+          localStorage.setItem(`castano_active_shift_${staffId}`, JSON.stringify(activeRec));
+        } catch (e) {}
+
+      } else {
+        // EGRESO (TERMINAR TURNO) -> Update record and CLEAR active shift persistence
+        try {
+          const { data: updateData } = await supabase
+            .from("staff_attendance")
+            .update({
+              check_out_time: new Date().toISOString(),
+              action: "EGRESO",
+              tipo: "EGRESO",
+              updated_at: new Date().toISOString()
+            })
+            .eq("staff_id", staffId)
+            .is("check_out_time", null)
+            .select()
+            .single();
+
+          if (updateData) recordData = updateData;
+        } catch (e) {
+          console.error("EGRESO update error:", e);
+        }
+
+        if (!recordData) {
+          recordData = {
+            id: `fichaje-egreso-${Date.now()}`,
+            staff_id: staffId,
+            staff_name: staffName,
+            action: action,
+            tipo: action,
+            timestamp: timestampStr,
+            check_in_time: activeShiftRecord?.checkInTime || new Date().toISOString(),
+            check_out_time: new Date().toISOString(),
+            latitude: realLat,
+            longitude: realLng,
+            latitud: realLat,
+            longitud: realLng,
+            calle: calleStr,
+            numero: numeroStr,
+            direccion_completa: direccionCompleta,
+            location_address: direccionCompleta,
+            gps_accuracy: accuracy,
+            created_at: new Date().toISOString()
+          };
+        }
+
+        // CLEAR active shift state & localStorage persistence on EGRESO!
+        setActiveShiftRecord(null);
+        try {
+          localStorage.removeItem(`castano_active_shift_${staffId}`);
+        } catch (e) {}
       }
 
-      // 4. Save local backup for 100% network fault tolerance
+      // Save local backup for 100% network fault tolerance
       try {
         const localSaved = JSON.parse(localStorage.getItem("castano_local_fichajes") || "[]");
         localStorage.setItem("castano_local_fichajes", JSON.stringify([recordData, ...localSaved]));
@@ -3111,10 +3211,18 @@ export default function AdminHub({
       ]);
 
       setIsLocatingGPS(false);
-      onShowNotification(
-        `✅ ${staffName}: Fichaje de ${action} registrado (${direccionCompleta}) - ${timestampStr}`,
-        action === "INGRESO" ? "success" : "info"
-      );
+
+      if (action === "INGRESO") {
+        onShowNotification(
+          `🟢 ${staffName}: Ingreso registrado a las ${timestampStr} (${direccionCompleta} - ${distanceMeters}m de sucursal).`,
+          "success"
+        );
+      } else {
+        onShowNotification(
+          `🔴 ${staffName}: Turno finalizado a las ${timestampStr} (${direccionCompleta}).`,
+          "info"
+        );
+      }
     };
 
     // Manual Contingency coords passed directly
@@ -3131,20 +3239,19 @@ export default function AdminHub({
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
+        const realLat = position.coords.latitude;
+        const realLng = position.coords.longitude;
         const accuracy = position.coords.accuracy;
-        await processClocking(lat, lng, accuracy);
+        await processClocking(realLat, realLng, accuracy);
       },
-      async (error) => {
+      (error) => {
         console.warn("GPS Geolocation error code:", error.code, error.message);
         setIsLocatingGPS(false);
         if (error.code === error.PERMISSION_DENIED) {
-          onShowNotification("⚠️ Permiso de ubicación GPS denegado. Es necesario habilitar la geolocalización en su navegador para fichar.", "warning");
-          return;
+          onShowNotification("⚠️ Permiso de ubicación GPS denegado. Solicite o habilite el acceso a la geolocalización real en su navegador para poder fichar.", "warning");
+        } else {
+          onShowNotification("⚠️ No se pudo obtener la posición GPS exacta de su dispositivo. Verifique su señal GPS e intente de nuevo.", "warning");
         }
-        // Fallback for timeout or position unavailable
-        await processClocking(-33.1245, -64.3490, 10, "Constitución 944, Río Cuarto, Córdoba");
       },
       { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
     );
@@ -3190,25 +3297,45 @@ export default function AdminHub({
               </div>
 
               {/* Status Banner */}
-              <div className="p-3.5 bg-[#DFEADF] border border-[#365B40]/40 rounded-2xl flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#2E6F40] shrink-0"></span>
-                  <span className="text-xs font-black text-[#365B40] uppercase tracking-wider">🟢 HABILITADO PARA FICHAR</span>
+              {activeShiftRecord ? (
+                <div className="p-4 bg-[#DFEADF] border-2 border-[#2E6F40] rounded-2xl flex flex-col gap-2 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-[#2E6F40] uppercase tracking-wider flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-[#2E6F40] animate-ping shrink-0"></span>
+                      🟢 TURNO EN CURSO (FICHADO)
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-white text-[#2E6F40] px-2.5 py-0.5 rounded-full border border-[#2E6F40]/30 shadow-xs">
+                      {activeShiftRecord.timestamp}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#1E4829] font-medium leading-relaxed">
+                    📍 <strong>Ubicación Fichada:</strong> {activeShiftRecord.direccion_completa}
+                    <span className="block text-[10px] font-bold text-[#2E6F40] mt-0.5 font-mono">
+                      Distancia a Sucursal: {activeShiftRecord.distanceMeters} metros
+                    </span>
+                  </p>
                 </div>
-                <span className="text-[9px] font-bold text-[#365B40] bg-white/80 px-2 py-0.5 rounded-full font-mono">Tiempo Real OK</span>
-              </div>
+              ) : (
+                <div className="p-3.5 bg-[#DFEADF] border border-[#365B40]/40 rounded-2xl flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#2E6F40] shrink-0"></span>
+                    <span className="text-xs font-black text-[#365B40] uppercase tracking-wider">🟢 HABILITADO PARA FICHAR</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-[#365B40] bg-white/80 px-2 py-0.5 rounded-full font-mono">GPS Real Activo</span>
+                </div>
+              )}
 
               {/* 🗺️ Leaflet Interactive Map Container (250px) */}
               <LeafletMapWidget
-                currentLat={lastClockDetails ? lastClockDetails.latitud : (currentGPSLoc?.lat || -33.1245)}
-                currentLng={lastClockDetails ? lastClockDetails.longitud : (currentGPSLoc?.lng || -64.3490)}
+                currentLat={lastClockDetails ? lastClockDetails.latitud : (activeShiftRecord ? activeShiftRecord.latitud : (currentGPSLoc?.lat || -33.1245))}
+                currentLng={lastClockDetails ? lastClockDetails.longitud : (activeShiftRecord ? activeShiftRecord.longitud : (currentGPSLoc?.lng || -64.3490))}
                 accuracy={currentGPSLoc ? 10 : null}
-                lastClockStaffName={lastClockDetails?.staffName || users.find((u) => u.id === selectedStaffMember)?.name || currentUser.name}
-                lastClockType={lastClockDetails?.tipo}
-                lastClockTimestamp={lastClockDetails?.timestamp}
-                lastClockAddress={lastClockDetails?.direccion_completa}
-                lastClockCalle={lastClockDetails?.calle}
-                lastClockNumero={lastClockDetails?.numero}
+                lastClockStaffName={lastClockDetails?.staffName || activeShiftRecord?.staffName || currentUser.name}
+                lastClockType={lastClockDetails?.tipo || (activeShiftRecord ? "INGRESO" : null)}
+                lastClockTimestamp={lastClockDetails?.timestamp || activeShiftRecord?.timestamp}
+                lastClockAddress={lastClockDetails?.direccion_completa || activeShiftRecord?.direccion_completa}
+                lastClockCalle={lastClockDetails?.calle || activeShiftRecord?.calle}
+                lastClockNumero={lastClockDetails?.numero || activeShiftRecord?.numero}
                 storeLat={-33.1245}
                 storeLng={-64.3490}
                 storeRadiusMeters={100}
@@ -3229,18 +3356,24 @@ export default function AdminHub({
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
+                disabled={activeShiftRecord !== null || isLocatingGPS}
                 onClick={() => handleCaptureGPSAndClock("INGRESO")}
-                className="py-4 px-4 bg-[#2E6F40] hover:bg-[#235631] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                className={`py-4 px-4 font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+                  activeShiftRecord !== null
+                    ? "bg-gray-400 text-white cursor-not-allowed opacity-75"
+                    : "bg-[#2E6F40] hover:bg-[#235631] text-white cursor-pointer"
+                }`}
               >
-                {isLocatingGPS ? "⏱️ Procesando..." : "🟢 FICHAR INGRESO"}
+                {isLocatingGPS ? "⏱️ Procesando..." : (activeShiftRecord ? "🟢 INGRESO REGISTRADO" : "🟢 FICHAR INGRESO")}
               </button>
 
               <button
                 type="button"
+                disabled={isLocatingGPS}
                 onClick={() => handleCaptureGPSAndClock("EGRESO")}
                 className="py-4 px-4 bg-[#843747] hover:bg-[#682937] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
               >
-                {isLocatingGPS ? "⏱️ Procesando..." : "🔴 FICHAR EGRESO"}
+                {isLocatingGPS ? "⏱️ Procesando..." : "🔴 FICHAR EGRESO (TERMINAR TURNO)"}
               </button>
             </div>
           </div>
