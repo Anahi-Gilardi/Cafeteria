@@ -71,13 +71,21 @@ class WaiterCallService {
   }
 
   public async getPendingCalls(): Promise<WaiterCall[]> {
-    const { data, error } = await supabase
-      .from("waiter_calls")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return (data || []).map(mapCall);
+    try {
+      const { data, error } = await supabase
+        .from("waiter_calls")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.warn("⚠️ No se pudieron cargar llamadas de mozo (waiter_calls sin permisos o tabla inexistente):", error.message);
+        return [];
+      }
+      return (data || []).map(mapCall);
+    } catch (err) {
+      console.warn("⚠️ Excepción al cargar llamadas de mozo:", err);
+      return [];
+    }
   }
 }
 

@@ -653,41 +653,51 @@ export default function AdminHub({
           }))
         );
 
-        // 5. Fetch auditable inventory waste movements
-        const { data: wasteData, error: wasteError } = await supabase
-          .from("inventory_movements")
-          .select("*")
-          .eq("movement_type", "waste")
-          .order("created_at", { ascending: false })
-          .limit(200);
-        if (wasteError) throw wasteError;
-        setMermaLogs(
-          (wasteData || []).map((movement) => ({
-            id: movement.id,
-            date: new Date(movement.created_at).toLocaleString("es-AR"),
-            name: movement.item_name,
-            qty: `${Number(movement.quantity)} ${movement.unit}`,
-            cost: `$${Number(movement.estimated_cost || 0).toLocaleString("es-AR")}`,
-            reason: movement.reason || "Descarte / ajuste operativo",
-            auditor: movement.actor_name || "Usuario autenticado"
-          }))
-        );
+        // 5. Fetch auditable inventory waste movements (con protección ante falta de permisos 42501)
+        try {
+          const { data: wasteData, error: wasteError } = await supabase
+            .from("inventory_movements")
+            .select("*")
+            .eq("movement_type", "waste")
+            .order("created_at", { ascending: false })
+            .limit(200);
+          if (!wasteError && wasteData) {
+            setMermaLogs(
+              wasteData.map((movement) => ({
+                id: movement.id,
+                date: new Date(movement.created_at).toLocaleString("es-AR"),
+                name: movement.item_name,
+                qty: `${Number(movement.quantity)} ${movement.unit}`,
+                cost: `$${Number(movement.estimated_cost || 0).toLocaleString("es-AR")}`,
+                reason: movement.reason || "Descarte / ajuste operativo",
+                auditor: movement.actor_name || "Usuario autenticado"
+              }))
+            );
+          }
+        } catch (err) {
+          console.warn("⚠️ No se cargaron mermas (inventory_movements sin permisos RLS en Supabase):", err);
+        }
 
-        const { data: inventoryAuditsData, error: inventoryAuditsError } = await supabase
-          .from("inventory_audits")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(100);
-        if (inventoryAuditsError) throw inventoryAuditsError;
-        setAuditHistory(
-          (inventoryAuditsData || []).map((audit) => ({
-            id: audit.id,
-            date: audit.created_at,
-            auditor: audit.auditor_name,
-            details: audit.details || [],
-            hasAlert: audit.has_alert
-          }))
-        );
+        try {
+          const { data: inventoryAuditsData, error: inventoryAuditsError } = await supabase
+            .from("inventory_audits")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(100);
+          if (!inventoryAuditsError && inventoryAuditsData) {
+            setAuditHistory(
+              inventoryAuditsData.map((audit) => ({
+                id: audit.id,
+                date: audit.created_at,
+                auditor: audit.auditor_name,
+                details: audit.details || [],
+                hasAlert: audit.has_alert
+              }))
+            );
+          }
+        } catch (err) {
+          console.warn("⚠️ No se cargaron auditorías (inventory_audits sin permisos RLS en Supabase):", err);
+        }
 
         // 6. Fetch Cash Ledger
         const { data: cashData, error: cashError } = await supabase
