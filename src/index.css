@@ -201,3 +201,21 @@ body {
   height: 256px !important;
 }
 
+/* Responsive Touch, Safe Area & Device Adaptation Utilities (iOS, Android, Tablet & Desktop) */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+
