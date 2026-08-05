@@ -512,11 +512,10 @@ export default function AdminHub({
           });
         }
 
-        // 2. Fetch Insumos
-        const { data: insData, error: insError } = await supabase.from("insumos").select("*");
-        if (insError) throw insError;
-        if (insData && insData.length > 0) {
-          setInsumos(insData.map(i => ({
+        // 2. Fetch Insumos from Supabase Cloud
+        const { data: insData, error: insError } = await supabase.from("insumos").select("*").order("name");
+        if (!insError && insData && insData.length > 0) {
+          const mappedInsumos = insData.map(i => ({
             id: i.id,
             name: i.name,
             quantity: Number(i.quantity ?? i.current_stock ?? 0),
@@ -525,10 +524,33 @@ export default function AdminHub({
             provider: i.provider || i.supplier || undefined,
             expirationDate: i.expiration_date || undefined,
             costPerUnit: Number(i.cost_per_unit || 0)
-          })));
+          }));
+          setInsumos(mappedInsumos);
+          try { localStorage.setItem("resto_insumos", JSON.stringify(mappedInsumos)); } catch (e) {}
         } else {
-          setInsumos([]);
+          const { data: sysInsumos } = await supabase.from("system_settings").select("*").eq("key", "resto_insumos").maybeSingle();
+          if (sysInsumos && sysInsumos.value) {
+            try {
+              const parsed = typeof sysInsumos.value === "string" ? JSON.parse(sysInsumos.value) : sysInsumos.value;
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setInsumos(parsed);
+                try { localStorage.setItem("resto_insumos", JSON.stringify(parsed)); } catch (e) {}
+              }
+            } catch (e) {}
+          }
         }
+
+        // Fetch Cloud Daily Combo configuration
+        try {
+          const { data: comboSys } = await supabase.from("system_settings").select("*").eq("key", "daily_combo").maybeSingle();
+          if (comboSys && comboSys.value) {
+            const parsedCombo = typeof comboSys.value === "string" ? JSON.parse(comboSys.value) : comboSys.value;
+            if (parsedCombo) {
+              setDailyComboState(parsedCombo);
+              try { localStorage.setItem("puglia_daily_combo", JSON.stringify(parsedCombo)); } catch (e) {}
+            }
+          }
+        } catch (cErr) {}
 
         // 3. Fetch Suppliers
         const { data: suppliersData, error: suppliersError } = await supabase

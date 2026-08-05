@@ -100,6 +100,22 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
   const [selectedSaladSize, setSelectedSaladSize] = useState<"chica" | "grande">("chica");
   const [cartOrder, setCartOrder] = useState<Record<string, { item: MenuItem; quantity: number }>>({});
 
+  useEffect(() => {
+    const fetchCloudDailyCombo = async () => {
+      try {
+        const { data: comboSys } = await supabase.from("system_settings").select("*").eq("key", "daily_combo").maybeSingle();
+        if (comboSys && comboSys.value) {
+          const parsedCombo = typeof comboSys.value === "string" ? JSON.parse(comboSys.value) : comboSys.value;
+          if (parsedCombo) {
+            setDailyComboState(parsedCombo);
+            try { localStorage.setItem("puglia_daily_combo", JSON.stringify(parsedCombo)); } catch (e) {}
+          }
+        }
+      } catch (e) {}
+    };
+    fetchCloudDailyCombo();
+  }, []);
+
   const handleAddToCart = (item: MenuItem) => {
     setCartOrder((prev) => {
       const existing = prev[item.id];
