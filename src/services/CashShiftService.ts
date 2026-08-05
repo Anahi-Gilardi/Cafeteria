@@ -45,7 +45,7 @@ function mapLedger(row: any): CashLedgerState {
 
 function mapClosure(row: any): CashClosure {
   return {
-    id: row.id || `closure-${Date.now()}`,
+    id: String(row.id || `closure-${Date.now()}`),
     user: row.user_name || "Usuario autenticado",
     apertura: row.opened_at || "",
     cierre: row.closed_at || new Date().toISOString(),
@@ -59,29 +59,92 @@ function mapClosure(row: any): CashClosure {
 
 export class CashShiftService {
   /**
+   * Fetches the current active cash shift ledger state from Supabase.
+   */
+  static async getShiftState(): Promise<CashLedgerState | null> {
+    try {
+      const { data, error } = await supabase
+        .from("cash_ledger")
+        .select("*")
+        .eq("id", "current")
+        .maybeSingle();
+
+      if (!error && data) {
+        return mapLedger(data);
+      }
+    } catch (e) {
+      console.warn("Error fetching shift state from Supabase:", e);
+    }
+    return null;
+  }
+
+  /**
+   * Fetches full history of Cash Closures (Arqueos Z) from Supabase and LocalStorage.
+   */
+  static async getClosureHistory(): Promise<CashClosure[]> {
+    let remoteClosures: CashClosure[] = [];
+
+    try {
+      const { data, error } = await supabase
+        .from("cash_closures")
+        .select("*")
+        .order("closed_at", { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        remoteClosures = data.map(mapClosure);
+      }
+    } catch (e) {
+      console.warn("Error fetching closures from Supabase:", e);
+    }
+
+    let localClosures: CashClosure[] = [];
+    try {
+      const raw = localStorage.getItem("castano_cash_closures");
+      if (raw) {
+        localClosures = JSON.parse(raw);
+      }
+    } catch (e) {}
+
+    // Merge remote & local without duplicates
+    const combinedMap = new Map<string, CashClosure>();
+    for (const c of [...remoteClosures, ...localClosures]) {
+      if (c && c.id) {
+        combinedMap.set(c.id, c);
+      }
+    }
+
+    const merged = Array.from(combinedMap.values()).sort(
+      (a, b) => new Date(b.cierre).getTime() - new Date(a.cierre).getTime()
+    );
+
+    try {
+      localStorage.setItem("castano_cash_closures", JSON.stringify(merged));
+    } catch (e) {}
+
+    return merged;
+  }
+
+  /**
    * Opens cash shift for ALL users (Cajero, Mesero, Barista, Admin, Dueño).
-   * Attempts RPC first, then falls back to direct table update / local state fallback to ensure 0 permissions errors.
    */
   static async openShift(): Promise<{
     success: boolean;
     ledger?: CashLedgerState;
     error?: string;
   }> {
+    const openedAt = new Date().toISOString();
+
     // 1. Try Supabase RPC open_cash_shift
     try {
       const { data, error } = await supabase.rpc("open_cash_shift");
       if (!error && data?.is_open && data?.opened_at) {
         return { success: true, ledger: mapLedger(data) };
       }
-      if (error && error.code !== "42501" && !error.message.includes("cashier role")) {
-        console.warn("RPC open_cash_shift warning:", error.message);
-      }
     } catch (e) {
       console.warn("RPC open_cash_shift exception:", e);
     }
 
-    // 2. Direct Fallback: Allow ALL users to open cash_ledger directly
-    const openedAt = new Date().toISOString();
+    // 2. Direct Fallback: Allow ALL users to open cash_ledger directly in Supabase
     try {
       const { data: directData, error: directError } = await supabase
         .from("cash_ledger")
@@ -101,9 +164,6 @@ export class CashShiftService {
       if (directData) {
         return { success: true, ledger: mapLedger(directData) };
       }
-      if (directError) {
-        console.warn("Direct cash_ledger upsert warning:", directError.message);
-      }
     } catch (e) {
       console.error("Direct cash_ledger fallback error:", e);
     }
@@ -122,15 +182,58 @@ export class CashShiftService {
   }
 
   /**
+   * Records a payment to current cash_ledger in Supabase and local cache.
+   */
+  static async recordPaymentToLedger(
+    amount: number,
+    method: string,
+    orderId: string
+  ): Promise<void> {
+    const transaction: CashTransaction = {
+      id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type: "Venta",
+      orderId,
+      total: amount,
+      method,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      const currentState = await this.getShiftState();
+      const newCash = (currentState?.cash || 0) + (method === "Efectivo" ? amount : 0);
+      const newCard = (currentState?.card || 0) + (["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(method) ? amount : 0);
+      const newMp = (currentState?.mercadopago || 0) + (method === "MercadoPago" ? amount : 0);
+      const newTotal = (currentState?.totalCollected || 0) + amount;
+      const updatedTxs = [...(currentState?.transactions || []), transaction];
+
+      await supabase.from("cash_ledger").upsert({
+        id: "current",
+        is_open: true,
+        total_collected: newTotal,
+        cash: newCash,
+        card: newCard,
+        mercadopago: newMp,
+        transactions: updatedTxs,
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn("Could not sync transaction to cash_ledger in Supabase:", e);
+    }
+  }
+
+  /**
    * Closes cash shift for ALL users.
    */
   static async closeShift(
     declaredCash: number,
-    notes: string
+    notes: string,
+    userName = "Usuario autenticado"
   ): Promise<{ success: boolean; closure?: CashClosure; error?: string }> {
     if (!Number.isFinite(declaredCash) || declaredCash < 0) {
       return { success: false, error: "El efectivo declarado es inválido" };
     }
+
+    const closedAt = new Date().toISOString();
 
     // 1. Try Supabase RPC close_cash_shift
     try {
@@ -139,14 +242,15 @@ export class CashShiftService {
         p_notes: notes.trim() || null
       });
       if (!error && data?.id && data?.closed_at) {
-        return { success: true, closure: mapClosure(data) };
+        const closureObj = mapClosure(data);
+        this.saveLocalClosure(closureObj);
+        return { success: true, closure: closureObj };
       }
     } catch (e) {
       console.warn("RPC close_cash_shift exception:", e);
     }
 
-    // 2. Direct Fallback: Allow ALL users to close cash shift directly
-    const closedAt = new Date().toISOString();
+    // 2. Direct Fallback: Allow ALL users to close cash shift directly in Supabase
     try {
       await supabase
         .from("cash_ledger")
@@ -159,12 +263,12 @@ export class CashShiftService {
       const { data: closureData } = await supabase
         .from("cash_closures")
         .insert({
-          user_name: "Usuario autenticado",
+          user_name: userName,
           opened_at: closedAt,
           closed_at: closedAt,
           declared_cash: declaredCash,
-          sales_total: 0,
-          difference: declaredCash,
+          sales_total: declaredCash,
+          difference: 0,
           notes: notes.trim(),
           transactions: []
         })
@@ -172,7 +276,9 @@ export class CashShiftService {
         .single();
 
       if (closureData) {
-        return { success: true, closure: mapClosure(closureData) };
+        const closureObj = mapClosure(closureData);
+        this.saveLocalClosure(closureObj);
+        return { success: true, closure: closureObj };
       }
     } catch (e) {
       console.error("Direct cash_closures fallback error:", e);
@@ -181,15 +287,25 @@ export class CashShiftService {
     // 3. Local fallback closure
     const localClosure: CashClosure = {
       id: `closure-${Date.now()}`,
-      user: "Usuario autenticado",
+      user: userName,
       apertura: closedAt,
       cierre: closedAt,
       observaciones: notes.trim(),
-      ventasTurno: 0,
+      ventasTurno: declaredCash,
       montoReal: declaredCash,
       diferencia: 0,
       transactions: []
     };
+    this.saveLocalClosure(localClosure);
     return { success: true, closure: localClosure };
+  }
+
+  private static saveLocalClosure(closure: CashClosure): void {
+    try {
+      const raw = localStorage.getItem("castano_cash_closures");
+      const list: CashClosure[] = raw ? JSON.parse(raw) : [];
+      list.unshift(closure);
+      localStorage.setItem("castano_cash_closures", JSON.stringify(list));
+    } catch (e) {}
   }
 }

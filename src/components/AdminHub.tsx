@@ -450,6 +450,37 @@ export default function AdminHub({
   const [closuresHistory, setClosuresHistory] = useState<CashClosure[]>([]);
   const [isShiftOperationPending, setIsShiftOperationPending] = useState(false);
 
+  // Sync cash closures and shift state from Supabase on mount
+  useEffect(() => {
+    let active = true;
+    const loadCajaData = async () => {
+      try {
+        const history = await CashShiftService.getClosureHistory();
+        if (active && Array.isArray(history)) {
+          setClosuresHistory(history);
+        }
+        const state = await CashShiftService.getShiftState();
+        if (active && state) {
+          setIsShiftOpen(state.isOpen);
+          if (state.openedAt) setShiftOpenTime(state.openedAt);
+          setCashLedger({
+            totalCollected: state.totalCollected,
+            cash: state.cash,
+            card: state.card,
+            mercadopago: state.mercadopago,
+            transactions: state.transactions
+          });
+        }
+      } catch (e) {
+        console.warn("Error loading initial Caja state:", e);
+      }
+    };
+    void loadCajaData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Sidebar collapse state & scroll ref
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => localStorage.getItem("castano_sidebar_collapsed") === "true");
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -5218,6 +5249,10 @@ export default function AdminHub({
             ...prev.transactions
           ]
         };
+      });
+
+      completedEntries.forEach((entry) => {
+        void CashShiftService.recordPaymentToLedger(entry.amount, entry.method, orderId);
       });
 
       if (onUpdateOrders) {
