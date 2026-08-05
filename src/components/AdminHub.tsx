@@ -5482,9 +5482,17 @@ export default function AdminHub({
                 <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
                   {pendingOrders.map((order) => {
                     const active = posCheckoutOrder?.id === order.id;
-                    const statusText = order.status === "Listo" ? "Listo" : order.status === "Preparando" ? "En Cocina" : "Pendiente";
+                    const statusText = order.status === "Listo" 
+                      ? "Listo" 
+                      : order.status === "Entregado" 
+                      ? "Entregado" 
+                      : order.status === "Preparando" 
+                      ? "En Cocina" 
+                      : "Pendiente Cobro";
                     const statusColor = order.status === "Listo" 
                       ? "bg-[#DFEADF] border-[#4F735A]/50 text-[#4F735A]" 
+                      : order.status === "Entregado"
+                      ? "bg-[#EBDAC5] border-[#5C1D27]/40 text-[#5C1D27]"
                       : order.status === "Preparando"
                       ? "bg-[#D9E6F2] border-[#4A7BB0]/50 text-[#4A7BB0]"
                       : "bg-[#EBDAC5] border-[#CFB5A0] text-[#5E393F]";

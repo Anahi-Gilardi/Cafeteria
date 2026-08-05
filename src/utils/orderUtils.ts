@@ -1,7 +1,8 @@
 import { Order } from "../types";
 
 /**
- * Returns true if an order is active (not completed, delivered, canceled, or archived).
+ * Returns true if an order is active (pending payment in Caja).
+ * Intermediate statuses like "Entregado", "Listo", "Preparando", "Recibido" remain active in Caja so they can be charged.
  */
 export function isOrderActive(order: Partial<Order> | string | undefined | null): boolean {
   if (!order) return false;
@@ -11,11 +12,9 @@ export function isOrderActive(order: Partial<Order> | string | undefined | null)
   const s = status.toLowerCase().trim();
   if (
     s === "completado" ||
-    s === "entregado" ||
     s === "cancelado" ||
     s === "archivado" ||
     s === "anulado" ||
-    s === "finalizado" ||
     s === "archivada"
   ) {
     return false;
@@ -33,7 +32,7 @@ export function isOrderActive(order: Partial<Order> | string | undefined | null)
 }
 
 /**
- * Returns true if an order is completed/delivered/archived/canceled.
+ * Returns true if an order is completed/archived/canceled.
  */
 export function isOrderCompleted(order: Partial<Order> | string | undefined | null): boolean {
   return !isOrderActive(order);
