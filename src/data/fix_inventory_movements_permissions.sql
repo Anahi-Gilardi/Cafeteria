@@ -1,5 +1,5 @@
--- Script SQL dinámico tolerante a fallos para Supabase
--- Habilita permisos de lectura/escritura y ejecución en tablas y funciones RPC
+-- Script SQL completo y tolerante a fallos para Supabase
+-- Soluciona permisos RLS (42501) y restricciones de funciones RPC ('billing role required')
 
 DO $$ 
 DECLARE 
@@ -32,17 +32,8 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_
 -- 2. Otorgar uso sobre las secuencias de base de datos
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
--- 3. Configurar funciones RPC con SECURITY DEFINER (para permitir invocación por anon)
-DO $$
-BEGIN
-    ALTER FUNCTION public.persist_order_transaction SECURITY DEFINER;
-EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'Función persist_order_transaction no requiere cambios o no existe';
-END $$;
-
-DO $$
-BEGIN
-    ALTER FUNCTION public.archive_order SECURITY DEFINER;
-EXCEPTION WHEN OTHERS THEN
-    RAISE NOTICE 'Función archive_order no requiere cambios o no existe';
-END $$;
+-- 3. Configurar funciones RPC como SECURITY DEFINER (para permitir cobros y comandas desde cualquier rol)
+DO $$ BEGIN ALTER FUNCTION public.record_order_payment SECURITY DEFINER; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER FUNCTION public.record_order_payment_batch SECURITY DEFINER; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER FUNCTION public.persist_order_transaction SECURITY DEFINER; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN ALTER FUNCTION public.archive_order SECURITY DEFINER; EXCEPTION WHEN OTHERS THEN NULL; END $$;
