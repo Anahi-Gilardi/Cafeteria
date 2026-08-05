@@ -327,7 +327,7 @@ export default function KitchenDisplay({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => handleUpdateStatus(order, "Completado")}
+                onClick={() => handleUpdateStatus(order, "Entregado")}
                 className="w-full py-2.5 px-3 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[11px] font-black uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
                 <CheckCircle2 className="h-4 w-4 text-white" /> Entregado
