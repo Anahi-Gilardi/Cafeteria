@@ -3078,7 +3078,7 @@ export default function AdminHub({
       const nowIso = new Date().toISOString();
 
       if (action === "INGRESO") {
-        // 1. Save INGRESO in Supabase with exact table columns
+        // 1. Save INGRESO in Supabase with exact schema columns
         try {
           const { data: directData, error: insertError } = await supabase
             .from("staff_attendance")
@@ -3086,20 +3086,13 @@ export default function AdminHub({
               staff_id: staffId,
               staff_name: staffName,
               date: todayStr,
-              action: action,
-              tipo: action,
-              timestamp: timestampStr,
               check_in_time: nowIso,
               check_out_time: null,
               hours_worked: 0,
-              location_address: direccionCompleta,
-              direccion_completa: direccionCompleta,
-              calle: calleStr,
-              numero: numeroStr,
+              status: "presente",
               latitude: realLat,
               longitude: realLng,
-              latitud: realLat,
-              longitud: realLng,
+              location_address: direccionCompleta,
               gps_accuracy: accuracy,
               created_at: nowIso
             })
@@ -3110,9 +3103,7 @@ export default function AdminHub({
             recordData = directData;
           } else if (insertError) {
             console.warn("Supabase staff_attendance insert error:", insertError);
-            if (insertError.code === "42501") {
-              onShowNotification("⚠️ Supabase RLS: Habilitar políticas RLS en la tabla staff_attendance.", "warning");
-            }
+            onShowNotification(`⚠️ Error al guardar en Supabase: ${insertError.message}`, "warning");
           }
         } catch (e) {
           console.error("Direct table insert error:", e);
@@ -3124,19 +3115,12 @@ export default function AdminHub({
             staff_id: staffId,
             staff_name: staffName,
             date: todayStr,
-            action: action,
-            tipo: action,
-            timestamp: timestampStr,
             check_in_time: nowIso,
             check_out_time: null,
             hours_worked: 0,
+            status: "presente",
             latitude: realLat,
             longitude: realLng,
-            latitud: realLat,
-            longitud: realLng,
-            calle: calleStr,
-            numero: numeroStr,
-            direccion_completa: direccionCompleta,
             location_address: direccionCompleta,
             gps_accuracy: accuracy,
             created_at: nowIso
@@ -3148,7 +3132,7 @@ export default function AdminHub({
           id: recordData.id,
           staffId: staffId,
           staffName: staffName,
-          checkInTime: new Date().toISOString(),
+          checkInTime: nowIso,
           timestamp: timestampStr,
           latitud: realLat,
           longitud: realLng,
@@ -3163,22 +3147,48 @@ export default function AdminHub({
         } catch (e) {}
 
       } else {
-        // EGRESO (TERMINAR TURNO) -> Update record and CLEAR active shift persistence
+        // EGRESO (TERMINAR TURNO) -> Update open shift record in Supabase
+        const hoursWorked = activeShiftRecord?.checkInTime
+          ? Number(((new Date().getTime() - new Date(activeShiftRecord.checkInTime).getTime()) / (1000 * 60 * 60)).toFixed(2))
+          : 0;
+
         try {
-          const { data: updateData } = await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from("staff_attendance")
             .update({
-              check_out_time: new Date().toISOString(),
-              action: "EGRESO",
-              tipo: "EGRESO",
-              updated_at: new Date().toISOString()
+              check_out_time: nowIso,
+              hours_worked: hoursWorked,
+              status: "completado"
             })
             .eq("staff_id", staffId)
             .is("check_out_time", null)
-            .select()
-            .single();
+            .select();
 
-          if (updateData) recordData = updateData;
+          if (updateData && updateData.length > 0) {
+            recordData = updateData[0];
+          } else {
+            // Direct insert EGRESO record if no open shift record was updated
+            const { data: egresoData } = await supabase
+              .from("staff_attendance")
+              .insert({
+                staff_id: staffId,
+                staff_name: staffName,
+                date: todayStr,
+                check_in_time: activeShiftRecord?.checkInTime || nowIso,
+                check_out_time: nowIso,
+                hours_worked: hoursWorked,
+                status: "completado",
+                latitude: realLat,
+                longitude: realLng,
+                location_address: direccionCompleta,
+                gps_accuracy: accuracy,
+                created_at: nowIso
+              })
+              .select()
+              .single();
+
+            if (egresoData) recordData = egresoData;
+          }
         } catch (e) {
           console.error("EGRESO update error:", e);
         }
@@ -3188,21 +3198,16 @@ export default function AdminHub({
             id: `fichaje-egreso-${Date.now()}`,
             staff_id: staffId,
             staff_name: staffName,
-            action: action,
-            tipo: action,
-            timestamp: timestampStr,
-            check_in_time: activeShiftRecord?.checkInTime || new Date().toISOString(),
-            check_out_time: new Date().toISOString(),
+            date: todayStr,
+            check_in_time: activeShiftRecord?.checkInTime || nowIso,
+            check_out_time: nowIso,
+            hours_worked: hoursWorked,
+            status: "completado",
             latitude: realLat,
             longitude: realLng,
-            latitud: realLat,
-            longitud: realLng,
-            calle: calleStr,
-            numero: numeroStr,
-            direccion_completa: direccionCompleta,
             location_address: direccionCompleta,
             gps_accuracy: accuracy,
-            created_at: new Date().toISOString()
+            created_at: nowIso
           };
         }
 
