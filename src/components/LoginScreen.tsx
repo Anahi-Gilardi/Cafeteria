@@ -44,12 +44,12 @@ export default function LoginScreen({
 
       onLoginSuccess(result.user);
       onShowNotification(
-        `🎭 Bienvenido/a, ${result.user.name}. Sesión verificada por Supabase Auth.`,
+        `🎭 Bienvenido/a, ${result.user.name}. Sesión iniciada con éxito.`,
         "success"
       );
     } catch {
       onShowNotification(
-        "❌ No fue posible validar la sesión con Supabase Auth.",
+        "❌ No fue posible validar las credenciales de acceso.",
         "warning"
       );
     } finally {
@@ -71,7 +71,7 @@ export default function LoginScreen({
         return;
       }
       onShowNotification(
-        "✅ Si la cuenta existe, Supabase envió un enlace para definir una nueva contraseña.",
+        "✅ Si la cuenta existe, se ha enviado un enlace por correo para definir una nueva contraseña.",
         "success"
       );
     } finally {

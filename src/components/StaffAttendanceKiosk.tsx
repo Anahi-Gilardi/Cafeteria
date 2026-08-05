@@ -401,7 +401,7 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                   {isManager ? "Historial de fichajes del personal" : "Mis fichajes"}
                 </h3>
                 <p className="mt-0.5 text-xs font-medium text-[#6F5A55]">
-                  Horarios confirmados por Supabase con coordenadas y dirección física de sucursal.
+                  Horarios confirmados en tiempo real con coordenadas y dirección física de sucursal.
                 </p>
               </div>
               {isManager && (
@@ -488,7 +488,7 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
           </div>
           <div className="flex items-center justify-between border-t border-[#D7BBA8] pt-3 text-[10px] font-bold text-[#6F5A55]">
             <span>{filteredRecords.length} fichaje(s)</span>
-            <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Fuente: Supabase</span>
+            <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Registros Verificados</span>
           </div>
         </motion.section>
       </div>

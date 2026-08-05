@@ -5378,7 +5378,7 @@ export default function AdminHub({
               onClick={() => setIsSupabaseSqlModalOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
-              <Layers className="h-3.5 w-3.5 text-[#5C1D27]" /> SQL SUPABASE
+              <Layers className="h-3.5 w-3.5 text-[#5C1D27]" /> ESQUEMA DE DATOS
             </button>
             <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
@@ -6458,7 +6458,7 @@ export default function AdminHub({
             className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-5"
           >
             <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
-              <h3 className="font-serif text-xl font-bold text-[#5C1D27]">Agendar Nueva Reserva en Supabase</h3>
+              <h3 className="font-serif text-xl font-bold text-[#5C1D27]">Agendar Nueva Reserva</h3>
               <button onClick={() => setIsAddingBooking(false)} className="text-[#5E393F] hover:text-[#2D0E13] font-black text-sm cursor-pointer">✕</button>
             </div>
 
@@ -7763,7 +7763,7 @@ export default function AdminHub({
                             .eq("id", prov.id);
                           if (error) {
                             console.error("Error deleting supplier:", error);
-                            onShowNotification("⚠️ No se pudo eliminar el proveedor de Supabase.", "warning");
+                            onShowNotification("⚠️ No se pudo eliminar el proveedor.", "warning");
                             return;
                           }
                           setProveedores(prev => prev.filter(p => p.id !== prov.id));
@@ -9504,14 +9504,9 @@ export default function AdminHub({
               </span>
               <p className="text-[#2D0E13] font-semibold">
                 {cloudHealth.state === "online"
-                  ? `Supabase conectado${cloudHealth.latencyMs ? ` · ${cloudHealth.latencyMs} ms` : ""}`
+                  ? `Servidor en línea${cloudHealth.latencyMs ? ` · ${cloudHealth.latencyMs} ms` : ""}`
                   : cloudHealth.message}
               </p>
-              {cloudHealth.projectRef && (
-                <p className="mt-0.5 font-mono text-[8px] text-[#5E393F]">
-                  {cloudHealth.projectRef}
-                </p>
-              )}
               {pendingSyncCount > 0 && (
                 <p className="mt-1 font-bold text-[#A63F45]">
                   {pendingSyncCount} pedido{pendingSyncCount === 1 ? "" : "s"} pendiente{pendingSyncCount === 1 ? "" : "s"}
@@ -9774,7 +9769,7 @@ export default function AdminHub({
                   disabled={isCreatingInsumo}
                   className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer disabled:cursor-wait disabled:opacity-60"
                 >
-                  {isCreatingInsumo ? "REGISTRANDO…" : "REGISTRAR EN SUPABASE"}
+                  {isCreatingInsumo ? "REGISTRANDO…" : "REGISTRAR INSUMO"}
                 </button>
               </div>
             </form>
@@ -9889,7 +9884,7 @@ export default function AdminHub({
                     setIsMovementModalOpen(false);
                     setMovQty("");
                     setMovReason("");
-                    onShowNotification(`✅ Movimiento de ${movType} registrado e integrado a Supabase.`, "success");
+                    onShowNotification(`✅ Movimiento de ${movType} registrado con éxito.`, "success");
                   }}
                   className="w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-[#FFDF00] via-[#D4AF37] to-[#996515] text-[#1C120C] text-xs font-black transition-all cursor-pointer gold-glow uppercase tracking-wider shadow-md"
                 >

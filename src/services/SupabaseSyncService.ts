@@ -120,7 +120,7 @@ export class SupabaseSyncService {
           projectRef: supabaseProjectRef,
           checkedAt: new Date().toISOString(),
           latencyMs: Date.now() - startedAt,
-          message: `Supabase respondió con error ${error.code || "desconocido"}`
+          message: `Servidor respondió con advertencia (${error.code || "desconocido"})`
         };
       }
       return {
@@ -136,7 +136,7 @@ export class SupabaseSyncService {
         projectRef: supabaseProjectRef,
         checkedAt: new Date().toISOString(),
         latencyMs: Date.now() - startedAt,
-        message: "Supabase no respondió"
+        message: "Servidor no disponible"
       };
     }
   }
