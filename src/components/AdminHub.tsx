@@ -440,6 +440,59 @@ export default function AdminHub({
   const [selectedSideMozo, setSelectedSideMozo] = useState<string>("");
   const [saladSizeMozo, setSaladSizeMozo] = useState<"chica" | "grande">("chica");
 
+  const [dailyComboState, setDailyComboState] = useState<{
+    mains: string[];
+    mainImages?: string[];
+    sides: string[];
+    price: number;
+    saladTitle?: string;
+    saladDescription?: string;
+    saladImage?: string;
+    saladPriceSmall?: number;
+    saladPriceLarge?: number;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_daily_combo");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.sides)) {
+          parsed.sides = parsed.sides.flatMap((s: string) =>
+            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+              ? ["Puré de papa", "Puré mixto"]
+              : s
+          );
+        }
+        return parsed;
+      }
+    } catch (e) {}
+    return {
+      mains: [
+        "Pollo al horno",
+        "Pasta ( tallarines, ñoquis, canelones )",
+        "Milanesa de pollo o ternera",
+        "Hamburguesa"
+      ],
+      mainImages: [
+        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
+      ],
+      sides: [
+        "Puré de papa",
+        "Puré mixto",
+        "Arroz con crema",
+        "Ensalada mixta"
+      ],
+      price: 8500,
+      saladTitle: "Ensalada Completa",
+      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
+      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
+      saladPriceSmall: 6500,
+      saladPriceLarge: 8500
+    };
+  });
+
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
 
