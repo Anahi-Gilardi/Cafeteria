@@ -303,29 +303,28 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                   <MapPin className="h-4 w-4" /> Geolocalización
                 </div>
                 {gpsData && (
-                  <span
-                    className="rounded-md border border-[#2E6F40]/30 bg-[#E6F4EA] px-2 py-1 text-[9px] font-black uppercase text-[#2E6F40]"
-                  >
+                  <span className="rounded-md border border-[#2E6F40]/30 bg-[#E6F4EA] px-2 py-1 text-[9px] font-black uppercase text-[#2E6F40]">
                     🟢 HABILITADO PARA FICHAR
                   </span>
                 )}
               </div>
 
               <div className="space-y-1 text-xs">
-                <strong className="block text-[#332424]">📍 {CASTANO_LOCATION.address}</strong>
+                <strong className="block text-[#843747] font-extrabold text-sm">
+                  📍 Constitución 944, Río Cuarto, Córdoba
+                </strong>
                 {hasCoordinates && gpsData ? (
                   <>
-                    <p className="font-mono text-[9px] text-[#6F5A55]">
-                      Dispositivo: {gpsData.latitude?.toFixed(6)}, {gpsData.longitude?.toFixed(6)} ·
-                      Precisión ±{gpsData.accuracy} m
+                    <p className="text-[11px] font-bold text-[#2E6F40] leading-snug">
+                      📍 Ubicación capturada: {gpsData.distanceMeters && gpsData.distanceMeters <= 100 ? "Sucursal Castaño Resto Bar" : "Río Cuarto, Córdoba"} (Precisión: ±{Math.round(gpsData.accuracy || 10)}m)
                     </p>
-                    <p className="text-[11px] font-bold text-[#2E6F40]">
-                      {gpsValidation.message}
+                    <p className="font-mono text-[9px] text-[#6F5A55]">
+                      Coordenadas: Lat {gpsData.latitude?.toFixed(5)}, Lng {gpsData.longitude?.toFixed(5)}
                     </p>
                   </>
                 ) : (
                   <p className="text-[11px] text-[#2E6F40] font-bold">
-                    📍 Ubicación de Sucursal Castaño lista para fichar.
+                    📍 Ubicación de Sucursal Castaño confirmada para fichaje.
                   </p>
                 )}
               </div>
@@ -402,7 +401,7 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                   {isManager ? "Historial de fichajes del personal" : "Mis fichajes"}
                 </h3>
                 <p className="mt-0.5 text-xs font-medium text-[#6F5A55]">
-                  Horarios confirmados por Supabase con coordenadas y hora del servidor.
+                  Horarios confirmados por Supabase con coordenadas y dirección física de sucursal.
                 </p>
               </div>
               {isManager && (
@@ -452,24 +451,37 @@ export const StaffAttendanceKiosk: React.FC<StaffAttendanceKioskProps> = ({
                   No hay fichajes para los filtros seleccionados.
                 </div>
               ) : filteredRecords.map((record) => (
-                <article key={record.id_fichaje} className="flex items-center justify-between rounded-2xl border border-[#D7BBA8] bg-[#E8D4C3]/30 p-4 shadow-xs">
-                  <div className="space-y-1">
+                <article key={record.id_fichaje} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#D7BBA8] bg-[#E8D4C3]/30 p-4 shadow-xs">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <strong>{record.nombre_empleado}</strong>
+                      <strong className="text-sm text-[#843747] font-black">{record.nombre_empleado}</strong>
                       <span className={`rounded-full px-2.5 py-0.5 font-mono text-[9px] font-black text-white ${record.tipo_movimiento === "INGRESO" ? "bg-[#2E6F40]" : "bg-[#843747]"}`}>
                         {record.tipo_movimiento}
                       </span>
                     </div>
-                    <span className="block font-mono text-[10px] font-semibold text-[#6F5A55]">
-                      {new Date(record.timestamp_servidor).toLocaleString("es-AR")}
-                    </span>
-                    <span className="block font-mono text-[9px] font-bold text-[#843747]">
-                      A {Math.round(record.distancia_metros)} m · precisión ±{Math.round(record.precision_gps)} m
-                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#332424]">
+                      <MapPin className="h-3.5 w-3.5 text-[#843747] shrink-0" />
+                      <span>{record.direccion_aproximada || "Constitución 944, Río Cuarto, Córdoba"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-[#6F5A55] font-medium">
+                      <span>🕒 {new Date(record.timestamp_servidor).toLocaleString("es-AR")}</span>
+                      <span>•</span>
+                      <span>Distancia: {Math.round(record.distancia_metros)}m</span>
+                    </div>
                   </div>
-                  <span className="rounded-lg border border-[#2E6F40]/30 bg-[#E6F4EA] px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-[#2E6F40]">
-                    GPS validado
-                  </span>
+                  <div className="flex sm:flex-col items-end justify-between gap-2 shrink-0">
+                    <span className="rounded-lg border border-[#2E6F40]/30 bg-[#E6F4EA] px-2.5 py-1 text-[8px] font-black uppercase tracking-widest text-[#2E6F40]">
+                      GPS VALIDADO
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${record.latitud},${record.longitud}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[9px] font-black uppercase text-[#843747] bg-[#FFF9F4] border border-[#D7BBA8] px-2.5 py-1 rounded-md hover:bg-[#E8D4C3] transition-all flex items-center gap-1"
+                    >
+                      🗺️ Ver en Google Maps
+                    </a>
+                  </div>
                 </article>
               ))}
             </div>
