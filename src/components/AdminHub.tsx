@@ -9098,17 +9098,15 @@ export default function AdminHub({
               { id: "reservas", label: "Reservas", icon: CalendarCheck2, badge: adminBookings.length, roles: ["administrador", "mesero"] },
               { id: "salon", label: "Mapa de Salón", icon: Armchair, roles: ["administrador", "mesero"] }
             ].filter(link => {
-              if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
-                return false;
-              }
-              if (currentUser.role === "administrador" || currentUser.role === "dueño") {
+              if (currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "cajero") {
                 return true;
               }
               const meta = usersMetadata[currentUser.id];
-              if (meta && meta.permissions) {
-                return meta.permissions.includes(link.id);
+              const userPerms = currentUser.permissions || meta?.permissions || [];
+              if (userPerms.includes("all") || userPerms.includes("*") || userPerms.includes(link.id)) {
+                return true;
               }
-              return true;
+              return link.roles.includes(currentUser.role);
             }).map((link) => {
               const active = activeSubTab === link.id;
               const Icon = link.icon;
@@ -9146,7 +9144,7 @@ export default function AdminHub({
             })}
 
             {/* Separador Visual Sutil */}
-            {(currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "barista") && (
+            {(currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "cajero" || currentUser.role === "barista") && (
               <div className="pt-3 pb-1 border-t border-[#D1AD95] my-2">
                 {!isSidebarCollapsed && (
                   <span className="text-[9px] font-black uppercase tracking-widest text-[#5E393F] px-2 block">
@@ -9164,17 +9162,15 @@ export default function AdminHub({
               { id: "proveedores", label: "Proveedores", icon: Truck, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: UsersRound, roles: ["administrador", "barista"] }
             ].filter(link => {
-              if (!link.roles.includes(currentUser.role) && currentUser.role !== "dueño" && currentUser.role !== "administrador") {
-                return false;
-              }
-              if (currentUser.role === "administrador" || currentUser.role === "dueño") {
+              if (currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.role === "cajero") {
                 return true;
               }
               const meta = usersMetadata[currentUser.id];
-              if (meta && meta.permissions) {
-                return meta.permissions.includes(link.id);
+              const userPerms = currentUser.permissions || meta?.permissions || [];
+              if (userPerms.includes("all") || userPerms.includes("*") || userPerms.includes(link.id)) {
+                return true;
               }
-              return true;
+              return link.roles.includes(currentUser.role);
             }).map((link) => {
               const active = activeSubTab === link.id;
               const Icon = link.icon;
@@ -9279,7 +9275,7 @@ export default function AdminHub({
               onOrderStatusUpdate={onOrderStatusUpdate}
               onArchiveOrder={onArchiveOrder}
               onDeleteOrder={onDeleteOrder}
-              canDeleteOrders={["administrador", "dueño"].includes(currentUser.role)}
+              canDeleteOrders={["administrador", "dueño", "cajero"].includes(currentUser.role)}
             />
           )}
           {activeSubTab === "caja" && renderCaja()}

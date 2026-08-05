@@ -22,7 +22,7 @@ const ALLOWED_ROLES = new Set<StaffRole>([
 const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<string>> = {
   administrador: new Set(["*"]),
   dueño: new Set(["*"]),
-  cajero: new Set(["caja:cobrar", "cash:open", "cash:close", "orders:read", "orders:update", "attendance:own"]),
+  cajero: new Set(["*"]),
   barista: new Set(["orders:read", "orders:update", "inventory:read", "inventory:update", "attendance:own"]),
   mesero: new Set(["orders:create", "orders:read", "orders:update", "attendance:own"])
 };
