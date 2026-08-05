@@ -118,8 +118,8 @@ Total: $${persistedOrder.total.toLocaleString("es-AR")}`;
       timestamp: new Date().toISOString()
     });
 
-    // Also offer direct wa.me trigger helper
-    WhatsAppAdapter.openWhatsAppWeb(phone, readyMsg);
+    // Enqueue formatted message without auto-opening popups (popups are triggered only when clicking manual WhatsApp buttons)
+    console.log(`[WhatsAppOrderService] Ready notification queued for order #${order.id}.`);
   }
 }
 
