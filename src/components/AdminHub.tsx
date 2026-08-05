@@ -4697,13 +4697,13 @@ export default function AdminHub({
                         setSimulatedPrice(item.price);
                         handleStartEditingProduct(item);
                       }}
-                      className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer border transition-all ${
+                      className={`p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer border transition-all ${
                         active 
                           ? "bg-[#EBDAC5] border-2 border-[#5C1D27] text-[#2D0E13] shadow-sm"
                           : "bg-[#FAF2E6] hover:bg-[#EBDAC5]/50 border-[#CFB5A0] text-[#2D0E13]"
                       }`}
                     >
-                      <div className="flex items-center gap-3 pr-2 flex-1 min-w-0">
+                      <div className="flex items-start sm:items-center gap-3 pr-0 sm:pr-2 flex-1 min-w-0 w-full sm:w-auto">
                         {item.image && (
                           <img 
                             src={item.image} 
@@ -4713,16 +4713,16 @@ export default function AdminHub({
                         )}
                         <div className="min-w-0 flex-1 space-y-0.5">
                           <strong className={`text-xs font-bold block truncate ${active ? "text-[#5C1D27]" : "text-[#2D0E13]"}`}>{item.name}</strong>
-                          <span className="text-[10px] text-[#5E393F] block line-clamp-1 font-medium">
+                          <span className="text-[10px] text-[#5E393F] block line-clamp-2 sm:line-clamp-1 font-medium leading-tight">
                             {item.description ? item.description : "Sin descripción."}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-right shrink-0 ml-2 font-mono flex items-center gap-2">
-                        <div>
-                          <span className="text-sm font-black block text-[#5C1D27]">${item.price.toLocaleString("es-AR")}</span>
-                          <div className="flex flex-col items-end gap-1">
+                      <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#CFB5A0]/40 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black font-mono block text-[#5C1D27]">${item.price.toLocaleString("es-AR")}</span>
+                          <div className="flex flex-wrap items-center sm:items-end gap-1">
                             <span className={`text-[8px] font-bold block px-1.5 py-0.5 rounded-md ${
                               !isRecipeComplete
                                 ? "bg-[#F4DCDD] text-[#A63F45] border border-[#A63F45]/30"
@@ -4756,7 +4756,7 @@ export default function AdminHub({
                             setSimulatedPrice(item.price);
                             handleStartEditingProduct(item);
                           }}
-                          className="px-2.5 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs"
+                          className="px-3 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs shrink-0"
                           title="Editar Ficha de Producto"
                         >
                           Editar
@@ -8583,141 +8583,143 @@ export default function AdminHub({
             </div>
 
             {/* Architectural Blueprint Canvas Container */}
-            <div 
-              id="architectural-canvas"
-              className="relative w-full h-[540px] bg-[#F8F1E9] border-2 border-dashed border-[#CFB5A0] rounded-2xl overflow-hidden shadow-inner selection:bg-transparent"
-              style={{
-                backgroundImage: "radial-gradient(#CFB5A0 1px, transparent 1px)",
-                backgroundSize: "24px 24px"
-              }}
-            >
-              {/* Architectural Landmark: Main Entrance Door */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-[#5C1D27] text-white px-6 py-1 rounded-b-xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-2 border-b-2 border-x-2 border-[#CFB5A0]">
-                🚪 ENTRADA PRINCIPAL / SALIDA DE SALÓN
-              </div>
+            <div className="w-full overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#CFB5A0]">
+              <div 
+                id="architectural-canvas"
+                className="relative min-w-[700px] w-full h-[540px] bg-[#F8F1E9] border-2 border-dashed border-[#CFB5A0] rounded-2xl overflow-hidden shadow-inner selection:bg-transparent"
+                style={{
+                  backgroundImage: "radial-gradient(#CFB5A0 1px, transparent 1px)",
+                  backgroundSize: "24px 24px"
+                }}
+              >
+                {/* Architectural Landmark: Main Entrance Door */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 bg-[#5C1D27] text-white px-6 py-1 rounded-b-xl text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-2 border-b-2 border-x-2 border-[#CFB5A0]">
+                  🚪 ENTRADA PRINCIPAL / SALIDA DE SALÓN
+                </div>
 
-              {/* Architectural Landmark: Bar Counter */}
-              <div className="absolute top-4 right-4 z-10 bg-[#EBDAC5] border-2 border-[#5C1D27] p-3 rounded-2xl text-center shadow-md">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] block">☕ BARRA & CAFETERÍA</span>
-                <span className="text-[8px] text-[#5E393F] block font-bold">Máquina Espresso & Coctelería</span>
-              </div>
+                {/* Architectural Landmark: Bar Counter */}
+                <div className="absolute top-4 right-4 z-10 bg-[#EBDAC5] border-2 border-[#5C1D27] p-3 rounded-2xl text-center shadow-md">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#5C1D27] block">☕ BARRA & CAFETERÍA</span>
+                  <span className="text-[8px] text-[#5E393F] block font-bold">Máquina Espresso & Coctelería</span>
+                </div>
 
-              {/* Architectural Landmark: Theater View Windows */}
-              <div className="absolute bottom-0 inset-x-12 z-10 bg-[#5C1D27]/10 border-t-2 border-dashed border-[#5C1D27] py-1 text-center text-[9px] font-black uppercase tracking-widest text-[#5C1D27]">
-                🎭 VENTANAL A CALLE CONSTITUCIÓN (VISTA AL TEATRO MUNICIPAL)
-              </div>
+                {/* Architectural Landmark: Theater View Windows */}
+                <div className="absolute bottom-0 inset-x-12 z-10 bg-[#5C1D27]/10 border-t-2 border-dashed border-[#5C1D27] py-1 text-center text-[9px] font-black uppercase tracking-widest text-[#5C1D27]">
+                  🎭 VENTANAL A CALLE CONSTITUCIÓN (VISTA AL TEATRO MUNICIPAL)
+                </div>
 
-              {/* Architectural Landmark: Terrace / Garden Outer Edge */}
-              <div className="absolute top-12 left-0 bottom-12 w-8 bg-[#4F735A]/15 border-r-2 border-dashed border-[#4F735A] flex items-center justify-center [writing-mode:vertical-lr] rotate-180 text-[9px] font-black uppercase tracking-widest text-[#4F735A]">
-                🌿 TERRAZA & PATIO EXTERIOR
-              </div>
+                {/* Architectural Landmark: Terrace / Garden Outer Edge */}
+                <div className="absolute top-12 left-0 bottom-12 w-8 bg-[#4F735A]/15 border-r-2 border-dashed border-[#4F735A] flex items-center justify-center [writing-mode:vertical-lr] rotate-180 text-[9px] font-black uppercase tracking-widest text-[#4F735A]">
+                  🌿 TERRAZA & PATIO EXTERIOR
+                </div>
 
-              {/* Render 12 Draggable Table Tokens */}
-              {activeTables.filter(table => {
-                if (tableStatusFilter === "all") return true;
-                const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
-                const todayStr = new Date().toISOString().split("T")[0];
-                const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
-                const currentBadge = activeOrder ? "Ocupada" : reservation ? "Reservada" : "Libre";
-                return currentBadge === tableStatusFilter;
-              }).map((table, index) => {
-                const pos = getStoredPos(table.id, index);
-                const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
-                const todayStr = new Date().toISOString().split("T")[0];
-                const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
+                {/* Render 12 Draggable Table Tokens */}
+                {activeTables.filter(table => {
+                  if (tableStatusFilter === "all") return true;
+                  const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
+                  const todayStr = new Date().toISOString().split("T")[0];
+                  const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
+                  const currentBadge = activeOrder ? "Ocupada" : reservation ? "Reservada" : "Libre";
+                  return currentBadge === tableStatusFilter;
+                }).map((table, index) => {
+                  const pos = getStoredPos(table.id, index);
+                  const activeOrder = orders.find(o => o.status !== "Completado" && o.tableNumber === table.name);
+                  const todayStr = new Date().toISOString().split("T")[0];
+                  const reservation = adminBookings.find(b => b.tableId === table.id && b.date === todayStr);
 
-                let statusColor = "bg-[#4F735A] border-emerald-800 text-white";
-                let statusBadge = "Libre";
-                if (table.status === "Mantenimiento") {
-                  statusColor = "bg-[#A63F45] border-red-900 text-white opacity-60";
-                  statusBadge = "Mantenimiento";
-                } else if (activeOrder) {
-                  statusColor = "bg-[#5C1D27] border-red-950 text-white animate-pulse";
-                  statusBadge = "Ocupada";
-                } else if (reservation) {
-                  statusColor = "bg-[#B97932] border-amber-900 text-white";
-                  statusBadge = "Reservada";
-                }
+                  let statusColor = "bg-[#4F735A] border-emerald-800 text-white";
+                  let statusBadge = "Libre";
+                  if (table.status === "Mantenimiento") {
+                    statusColor = "bg-[#A63F45] border-red-900 text-white opacity-60";
+                    statusBadge = "Mantenimiento";
+                  } else if (activeOrder) {
+                    statusColor = "bg-[#5C1D27] border-red-950 text-white animate-pulse";
+                    statusBadge = "Ocupada";
+                  } else if (reservation) {
+                    statusColor = "bg-[#B97932] border-amber-900 text-white";
+                    statusBadge = "Reservada";
+                  }
 
-                const joinedName = mergedTableIds[table.id];
+                  const joinedName = mergedTableIds[table.id];
 
-                return (
-                  <motion.div
-                    key={table.id}
-                    drag={isMoveModeActive}
-                    dragSnapToOrigin={true}
-                    dragMomentum={false}
-                    onDragEnd={(e: any, info) => {
-                      const container = document.getElementById("architectural-canvas");
-                      if (container) {
-                        const rect = container.getBoundingClientRect();
-                        const clientX = e.clientX || (e.changedTouches && e.changedTouches[0]?.clientX);
-                        const clientY = e.clientY || (e.changedTouches && e.changedTouches[0]?.clientY);
-                        let posX = pos.x;
-                        let posY = pos.y;
-                        if (clientX && clientY) {
-                          posX = Math.min(88, Math.max(12, ((clientX - rect.left) / rect.width) * 100));
-                          posY = Math.min(85, Math.max(15, ((clientY - rect.top) / rect.height) * 100));
-                        } else {
-                          posX = Math.min(88, Math.max(12, ((info.point.x - rect.left) / rect.width) * 100));
-                          posY = Math.min(85, Math.max(15, ((info.point.y - rect.top) / rect.height) * 100));
+                  return (
+                    <motion.div
+                      key={table.id}
+                      drag={isMoveModeActive}
+                      dragSnapToOrigin={true}
+                      dragMomentum={false}
+                      onDragEnd={(e: any, info) => {
+                        const canvas = document.getElementById("architectural-canvas");
+                        if (canvas) {
+                          const rect = canvas.getBoundingClientRect();
+                          const newX = Math.min(Math.max(((info.point.x - rect.left) / rect.width) * 100, 5), 90);
+                          const newY = Math.min(Math.max(((info.point.y - rect.top) / rect.height) * 100, 5), 90);
+                          handleSavePos(table.id, newX, newY);
                         }
-                        handleSavePos(table.id, posX, posY);
-                      }
-                    }}
-                    style={{
-                      left: `${pos.x}%`,
-                      top: `${pos.y}%`
-                    }}
-                    onClick={() => setSelectedTableForModal({ ...table, statusBadge, activeOrder, reservation })}
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-2xl border-2 shadow-xl flex flex-col justify-between p-2 cursor-grab active:cursor-grabbing transition-shadow hover:scale-105 z-20 ${statusColor}`}
-                  >
-                    {/* Top Row: Name and Capacity */}
-                    <div className="flex justify-between items-center text-[9px] font-black uppercase">
-                      <span className="truncate">{table.name}</span>
-                      <span className="bg-black/30 px-1.5 py-0.5 rounded text-[8px] font-mono">
-                        {table.capacity}p
-                      </span>
-                    </div>
-
-                    {/* Center: Main status text or reservation info */}
-                    <div className="text-center my-auto space-y-0.5">
-                      {statusBadge === "Reservada" && reservation && (
-                        <div className="leading-none">
-                          <span className="text-[9px] font-black block truncate">👤 {reservation.customerName}</span>
-                          <span className="text-[8px] opacity-90 block font-mono">⏰ {reservation.timeSlot}</span>
-                        </div>
-                      )}
-
-                      {statusBadge === "Ocupada" && activeOrder && (
-                        <div className="leading-none">
-                          <span className="text-[9px] font-black block">🛒 Ocupada</span>
-                          <span className="text-[10px] font-black font-mono block">${activeOrder.total.toFixed(0)}</span>
-                        </div>
-                      )}
-
-                      {statusBadge === "Libre" && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider block">🟢 Libre</span>
-                      )}
-
-                      {statusBadge === "Mantenimiento" && (
-                        <span className="text-[8px] font-bold uppercase block">🔧 Taller</span>
-                      )}
-
-                      {joinedName && (
-                        <span className="bg-white/90 text-[#5C1D27] text-[7px] font-black px-1 rounded block">
-                          🔗 + {joinedName}
+                      }}
+                      onClick={() => {
+                        setSelectedTableForModal({
+                          ...table,
+                          statusBadge,
+                          activeOrder: activeOrder || null,
+                          reservation: reservation || null
+                        });
+                      }}
+                      style={{
+                        position: "absolute",
+                        left: `${pos.x}%`,
+                        top: `${pos.y}%`,
+                        transform: "translate(-50%, -50%)"
+                      }}
+                      className={`w-28 h-28 rounded-2xl p-2 cursor-pointer shadow-lg border-2 flex flex-col justify-between transition-shadow hover:shadow-xl z-20 ${statusColor}`}
+                    >
+                      {/* Top Header: Table Name & Capacity */}
+                      <div className="flex justify-between items-center text-[10px] font-black border-b border-white/20 pb-1">
+                        <span className="truncate">{table.name}</span>
+                        <span className="bg-black/30 px-1.5 py-0.5 rounded text-[8px] font-mono">
+                          {table.capacity}P
                         </span>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Bottom Indicator */}
-                    <div className="text-[7px] font-mono text-center opacity-80 uppercase tracking-widest">
-                      Tocar para opciones
-                    </div>
-                  </motion.div>
-                );
-              })}
+                      {/* Center: Main status text or reservation info */}
+                      <div className="text-center my-auto space-y-0.5">
+                        {statusBadge === "Reservada" && reservation && (
+                          <div className="leading-none">
+                            <span className="text-[9px] font-black block truncate">👤 {reservation.customerName}</span>
+                            <span className="text-[8px] opacity-90 block font-mono">⏰ {reservation.timeSlot}</span>
+                          </div>
+                        )}
+
+                        {statusBadge === "Ocupada" && activeOrder && (
+                          <div className="leading-none">
+                            <span className="text-[9px] font-black block">🛒 Ocupada</span>
+                            <span className="text-[10px] font-black font-mono block">${activeOrder.total.toFixed(0)}</span>
+                          </div>
+                        )}
+
+                        {statusBadge === "Libre" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider block">🟢 Libre</span>
+                        )}
+
+                        {statusBadge === "Mantenimiento" && (
+                          <span className="text-[8px] font-bold uppercase block">🔧 Taller</span>
+                        )}
+
+                        {joinedName && (
+                          <span className="bg-white/90 text-[#5C1D27] text-[7px] font-black px-1 rounded block">
+                            🔗 + {joinedName}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Bottom Indicator */}
+                      <div className="text-[7px] font-mono text-center opacity-80 uppercase tracking-widest">
+                        Tocar para opciones
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
