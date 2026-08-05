@@ -3074,34 +3074,46 @@ export default function AdminHub({
 
       let recordData: any = null;
 
+      const todayStr = new Date().toISOString().split("T")[0];
+      const nowIso = new Date().toISOString();
+
       if (action === "INGRESO") {
-        // 1. Save INGRESO in Supabase
+        // 1. Save INGRESO in Supabase with exact table columns
         try {
-          const { data: directData } = await supabase
+          const { data: directData, error: insertError } = await supabase
             .from("staff_attendance")
             .insert({
               staff_id: staffId,
               staff_name: staffName,
+              date: todayStr,
               action: action,
               tipo: action,
               timestamp: timestampStr,
+              check_in_time: nowIso,
+              check_out_time: null,
+              hours_worked: 0,
+              location_address: direccionCompleta,
+              direccion_completa: direccionCompleta,
+              calle: calleStr,
+              numero: numeroStr,
               latitude: realLat,
               longitude: realLng,
               latitud: realLat,
               longitud: realLng,
-              calle: calleStr,
-              numero: numeroStr,
-              direccion_completa: direccionCompleta,
-              location_address: direccionCompleta,
               gps_accuracy: accuracy,
-              check_in_time: new Date().toISOString(),
-              check_out_time: null,
-              created_at: new Date().toISOString()
+              created_at: nowIso
             })
             .select()
             .single();
 
-          if (directData) recordData = directData;
+          if (directData) {
+            recordData = directData;
+          } else if (insertError) {
+            console.warn("Supabase staff_attendance insert error:", insertError);
+            if (insertError.code === "42501") {
+              onShowNotification("⚠️ Supabase RLS: Habilitar políticas RLS en la tabla staff_attendance.", "warning");
+            }
+          }
         } catch (e) {
           console.error("Direct table insert error:", e);
         }
@@ -3111,11 +3123,13 @@ export default function AdminHub({
             id: `fichaje-local-${Date.now()}`,
             staff_id: staffId,
             staff_name: staffName,
+            date: todayStr,
             action: action,
             tipo: action,
             timestamp: timestampStr,
-            check_in_time: new Date().toISOString(),
+            check_in_time: nowIso,
             check_out_time: null,
+            hours_worked: 0,
             latitude: realLat,
             longitude: realLng,
             latitud: realLat,
@@ -3125,7 +3139,7 @@ export default function AdminHub({
             direccion_completa: direccionCompleta,
             location_address: direccionCompleta,
             gps_accuracy: accuracy,
-            created_at: new Date().toISOString()
+            created_at: nowIso
           };
         }
 
