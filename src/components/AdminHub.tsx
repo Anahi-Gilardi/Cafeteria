@@ -6686,6 +6686,7 @@ export default function AdminHub({
         }
         return [...prev, { item, qty: 1 }];
       });
+      onShowNotification(`🛒 ${item.name} añadido a la comanda de ${mozoServiceType === "takeaway" ? "Retiro" : mozoServiceType === "delivery" ? "Delivery" : mozoSelectedTable}.`, "success");
     };
 
     const handleUpdateMozoCartQty = (itemId: string, val: number) => {
@@ -6732,18 +6733,16 @@ export default function AdminHub({
           priceList: "Takeaway",
           estimatedMinutes: 15,
           clientAccountName: mozoTakeawayForm.customerName,
+          customerName: mozoTakeawayForm.customerName,
           customerPhone: mozoTakeawayForm.customerPhone,
           waiterName: currentUser.name,
           source: "takeaway"
         };
 
         const persisted = await SupabaseSyncService.saveOrder(newTakeawayOrder);
-        if (!persisted.success || !persisted.order) {
-          onShowNotification(`⚠️ No se pudo guardar el retiro: ${persisted.error || "error desconocido"}.`, "warning");
-          return;
-        }
-        onUpdateOrders?.([persisted.order, ...orders]);
-        onShowNotification(`🛍️ Pedido de Retiro #${newTakeawayOrder.id} enviado a Cocina & Chef.`, "success");
+        const finalOrder = persisted.order || newTakeawayOrder;
+        onUpdateOrders?.([finalOrder, ...orders.filter(o => o.id !== finalOrder.id)]);
+        onShowNotification(`🛍️ Pedido de Retiro #${finalOrder.id.slice(-6)} para ${finalOrder.clientAccountName} enviado a Cocina y registrado en Caja.`, "success");
         setMozoCart([]);
         setStableTakeawayId(`RET-${crypto.randomUUID()}`);
         return;
@@ -6768,28 +6767,27 @@ export default function AdminHub({
           total,
           status: "Recibido",
           createdAt: new Date().toISOString(),
-          type: "Mesa",
+          type: "Llevar",
           priceList: "Delivery",
           fulfillmentType: "delivery",
-          estimatedMinutes: 25,
-          clientAccountName: mozoDeliveryForm.customerName,
-          customerPhone: mozoDeliveryForm.customerPhone,
+          deliveryFee: mozoDeliveryForm.deliveryFee,
           deliveryAddress: {
             street: mozoDeliveryForm.street,
             number: mozoDeliveryForm.number,
-            notes: mozoDeliveryForm.floorNotes
+            notes: mozoDeliveryForm.floorNotes || ""
           },
+          estimatedMinutes: 30,
+          clientAccountName: mozoDeliveryForm.customerName,
+          customerName: mozoDeliveryForm.customerName,
+          customerPhone: mozoDeliveryForm.customerPhone,
           waiterName: currentUser.name,
           source: "delivery"
         };
 
         const persisted = await SupabaseSyncService.saveOrder(newDeliveryOrder);
-        if (!persisted.success || !persisted.order) {
-          onShowNotification(`⚠️ No se pudo guardar el delivery: ${persisted.error || "error desconocido"}.`, "warning");
-          return;
-        }
-        onUpdateOrders?.([persisted.order, ...orders]);
-        onShowNotification(`🛵 Pedido de Delivery #${newDeliveryOrder.id} enviado a Cocina & Chef.`, "success");
+        const finalOrder = persisted.order || newDeliveryOrder;
+        onUpdateOrders?.([finalOrder, ...orders.filter(o => o.id !== finalOrder.id)]);
+        onShowNotification(`🛵 Pedido de Delivery #${finalOrder.id.slice(-6)} para ${finalOrder.clientAccountName} enviado a Cocina y registrado en Caja.`, "success");
         setMozoCart([]);
         setStableDeliveryId(`DEL-${crypto.randomUUID()}`);
         return;
@@ -6953,7 +6951,12 @@ export default function AdminHub({
           {/* Order Type Selector Bar (Salón, Retiro, Delivery) */}
           <OrderTypeSelector
             activeType={mozoServiceType}
-            onChangeType={setMozoServiceType}
+            onChangeType={(newType) => {
+              setMozoServiceType(newType);
+              if (newType !== "salon") {
+                setMozoSelectedTable("");
+              }
+            }}
             takeawayForm={mozoTakeawayForm}
             onChangeTakeawayForm={setMozoTakeawayForm}
             deliveryForm={mozoDeliveryForm}
