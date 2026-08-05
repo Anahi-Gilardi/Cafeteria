@@ -2707,8 +2707,8 @@ export default function AdminHub({
         </div>
 
         <form onSubmit={handleSubmitBlindAudit} className="space-y-4">
-          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-hidden shadow-sm">
-            <table className="w-full text-left border-collapse">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-x-auto scrollbar-thin scrollbar-thumb-[#CFB5A0] shadow-sm">
+            <table className="w-full min-w-[600px] text-left border-collapse">
               <thead>
                 <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
                   <th className="p-4">Insumo</th>
@@ -3727,8 +3727,8 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl overflow-x-auto scrollbar-thin scrollbar-thumb-[#CFB5A0] shadow-sm">
+              <table className="w-full min-w-[700px] text-left border-collapse">
                 <thead>
                   <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] font-bold uppercase tracking-wider text-[#5E393F]">
                     <th className="p-4">Producto</th>
