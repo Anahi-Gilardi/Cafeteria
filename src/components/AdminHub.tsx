@@ -6,7 +6,7 @@ import {
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
   Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame, Menu,
-  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen, Loader2
+  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen, Loader2, ChevronDown, ChevronUp
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DailyExecutiveMenu } from "../types";
@@ -422,6 +422,7 @@ export default function AdminHub({
   const [stableDeliveryId, setStableDeliveryId] = useState<string>(() => `DEL-${crypto.randomUUID()}`);
   const [isSupabaseSqlModalOpen, setIsSupabaseSqlModalOpen] = useState<boolean>(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
+  const [showAllHistoryOrders, setShowAllHistoryOrders] = useState<boolean>(false);
 
   useEffect(() => {
     let active = true;
@@ -5917,7 +5918,7 @@ export default function AdminHub({
               <tbody className="divide-y divide-[#CFB5A0]">
                 {(() => {
                   const filteredCompletedOrders = orders.filter(o => {
-                    if (o.status !== "Completado") return false;
+                    if (o.status !== "Completado" && o.status !== "Entregado") return false;
                     if (historySearchTable && !(o.tableNumber || "").toLowerCase().includes(historySearchTable.toLowerCase())) return false;
                     if (historyFilterWaiter !== "todos" && o.waiterName !== historyFilterWaiter) return false;
                     if (historyFilterPayment !== "todos" && (o.paymentMethod || "Efectivo").toLowerCase() !== historyFilterPayment.toLowerCase()) return false;
@@ -5934,7 +5935,9 @@ export default function AdminHub({
                     );
                   }
 
-                  return filteredCompletedOrders.map((o) => (
+                  const displayedOrders = showAllHistoryOrders ? filteredCompletedOrders : filteredCompletedOrders.slice(0, 2);
+
+                  return displayedOrders.map((o) => (
                     <tr key={o.id} className="hover:bg-[#EBDAC5]/30 transition-colors">
                       <td className="p-3 font-mono text-[10px] text-[#5E393F]">
                         <span className="font-bold block text-[#5C1D27]">
@@ -6007,6 +6010,38 @@ export default function AdminHub({
               </tbody>
             </table>
           </div>
+
+          {/* Ver más / Ver menos toggle button */}
+          {(() => {
+            const totalCount = orders.filter(o => {
+              if (o.status !== "Completado" && o.status !== "Entregado") return false;
+              if (historySearchTable && !(o.tableNumber || "").toLowerCase().includes(historySearchTable.toLowerCase())) return false;
+              if (historyFilterWaiter !== "todos" && o.waiterName !== historyFilterWaiter) return false;
+              if (historyFilterPayment !== "todos" && (o.paymentMethod || "Efectivo").toLowerCase() !== historyFilterPayment.toLowerCase()) return false;
+              return true;
+            }).length;
+
+            if (totalCount <= 2) return null;
+
+            return (
+              <div className="pt-2 text-center border-t border-[#CFB5A0]/40">
+                <button
+                  onClick={() => setShowAllHistoryOrders(!showAllHistoryOrders)}
+                  className="px-4 py-2 bg-[#EBDAC5] hover:bg-[#E0CCA7] text-[#5C1D27] border border-[#CFB5A0] rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 mx-auto cursor-pointer"
+                >
+                  {showAllHistoryOrders ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" /> Ver menos (Mostrar solo las últimas 2 comandas)
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" /> Ver más comandas cobradas ({totalCount - 2} más)
+                    </>
+                  )}
+                </button>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Bottom panel: closures history & audit log list */}
