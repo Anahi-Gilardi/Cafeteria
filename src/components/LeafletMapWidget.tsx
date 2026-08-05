@@ -7,6 +7,7 @@ interface LeafletMapWidgetProps {
   currentLat?: number | null;
   currentLng?: number | null;
   accuracy?: number | null;
+  lastClockStaffName?: string | null;
   lastClockType?: "INGRESO" | "EGRESO" | null;
   lastClockTimestamp?: string | null;
   lastClockAddress?: string | null;
@@ -27,6 +28,7 @@ export default function LeafletMapWidget({
   currentLat,
   currentLng,
   accuracy,
+  lastClockStaffName,
   lastClockType,
   lastClockTimestamp,
   lastClockAddress,
@@ -137,21 +139,26 @@ export default function LeafletMapWidget({
 
       const userIcon = L.divIcon({
         className: "custom-user-clock-pin",
-        html: `<div style="background-color: ${markerColor}; color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.35);">${markerSymbol}</div>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17]
+        html: `<div style="background-color: ${markerColor}; color: white; border: 2px solid white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">${markerSymbol}</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
       });
 
       const displayAddress = (lastClockCalle && lastClockNumero)
         ? `${lastClockCalle} ${lastClockNumero}`
         : (lastClockAddress || storeAddress);
 
+      const employeeName = lastClockStaffName || "Colaborador";
+
       const popupHTML = `
-        <div style="font-family: sans-serif; text-align: center; padding: 6px; min-width: 180px;">
-          <strong style="color: ${markerColor}; font-size: 13px; display: block; margin-bottom: 3px;">
+        <div style="font-family: sans-serif; text-align: center; padding: 6px; min-width: 190px;">
+          <div style="font-size: 14px; font-weight: 800; color: #2D0E13; margin-bottom: 3px; border-b: 1px solid #EBDAC5; pb: 4px;">
+            👤 ${employeeName}
+          </div>
+          <strong style="color: ${markerColor}; font-size: 12px; display: block; margin-top: 4px; margin-bottom: 2px;">
             ${labelType}
           </strong>
-          <span style="font-size: 11px; font-weight: bold; color: #4A151D; display: block;">
+          <span style="font-size: 11px; font-weight: bold; color: #5C1D27; display: block;">
             ⏱️ ${lastClockTimestamp || new Date().toLocaleString("es-AR")}
           </span>
           <span style="font-size: 11px; color: #2D0E13; font-weight: 600; display: block; margin-top: 3px;">
@@ -170,7 +177,7 @@ export default function LeafletMapWidget({
       map.setView([currentLat, currentLng], 17);
       marker.openPopup();
     }
-  }, [currentLat, currentLng, accuracy, lastClockType, lastClockTimestamp, lastClockAddress, lastClockCalle, lastClockNumero, storeLat, storeLng]);
+  }, [currentLat, currentLng, accuracy, lastClockStaffName, lastClockType, lastClockTimestamp, lastClockAddress, lastClockCalle, lastClockNumero, storeLat, storeLng]);
 
   const handleSwitchTileProvider = () => {
     const map = mapInstanceRef.current;

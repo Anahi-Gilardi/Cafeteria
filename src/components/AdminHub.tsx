@@ -191,6 +191,7 @@ export default function AdminHub({
   const [personalSubTab, setPersonalSubTab] = useState<"asistencia" | "cuentas" | "barista" | "consumo" | "profit">("asistencia");
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [lastClockDetails, setLastClockDetails] = useState<{
+    staffName: string;
     tipo: "INGRESO" | "EGRESO";
     timestamp: string;
     latitud: number;
@@ -946,6 +947,42 @@ export default function AdminHub({
       onShowNotification("⚠️ No se pudo eliminar la cuenta.", "warning");
     }
   };
+
+  // Live ticking digital clock for real-time timestamp display
+  const [liveTimestamp, setLiveTimestamp] = useState<string>(formatPreciseTimestamp());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTimestamp(formatPreciseTimestamp());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Real-time subscription for staff attendance logs
+  useEffect(() => {
+    if (activeSubTab !== "personal") return;
+
+    const channel = supabase
+      .channel("realtime_staff_attendance_changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "staff_attendance" },
+        (payload) => {
+          const newRecord = payload.new;
+          if (newRecord) {
+            setAttendanceLogs((prev) => [
+              newRecord,
+              ...prev.filter((item) => item.id !== newRecord.id)
+            ]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeSubTab]);
 
   useEffect(() => {
     if (activeSubTab === "personal" && personalSubTab === "cuentas") {
@@ -2954,8 +2991,15 @@ export default function AdminHub({
       const calleStr = geocode.calle;
       const numeroStr = geocode.numero;
 
+      const staffMember = users.find((u) => u.id === selectedStaffMember) || {
+        id: selectedStaffMember,
+        name: currentUser.name || "Colaborador"
+      };
+      const staffName = staffMember.name;
+
       setCurrentGPSLoc({ lat, lng, address: direccionCompleta });
       setLastClockDetails({
+        staffName: staffName,
         tipo: action,
         timestamp: timestampStr,
         latitud: lat,
@@ -2982,6 +3026,7 @@ export default function AdminHub({
         if (!error && data) {
           recordData = {
             ...data,
+            staff_name: staffName,
             tipo: action,
             timestamp: timestampStr,
             latitud: lat,
@@ -2998,12 +3043,11 @@ export default function AdminHub({
       // 2. Direct table insertion fallback with complete schema fields
       if (!recordData) {
         try {
-          const staffMember = users.find((u) => u.id === selectedStaffMember);
           const { data: directData } = await supabase
             .from("staff_attendance")
             .insert({
               staff_id: selectedStaffMember,
-              staff_name: staffMember?.name || "Colaborador",
+              staff_name: staffName,
               action: action,
               tipo: action,
               timestamp: timestampStr,
@@ -3033,11 +3077,10 @@ export default function AdminHub({
 
       // 3. Construct local record object if server response was unconfirmed
       if (!recordData) {
-        const staffMember = users.find((u) => u.id === selectedStaffMember);
         recordData = {
           id: `fichaje-local-${Date.now()}`,
           staff_id: selectedStaffMember,
-          staff_name: staffMember?.name || "Colaborador",
+          staff_name: staffName,
           action: action,
           tipo: action,
           timestamp: timestampStr,
@@ -3069,7 +3112,7 @@ export default function AdminHub({
 
       setIsLocatingGPS(false);
       onShowNotification(
-        `✅ Fichaje de ${action} registrado (${direccionCompleta}) - ${timestampStr}`,
+        `✅ ${staffName}: Fichaje de ${action} registrado (${direccionCompleta}) - ${timestampStr}`,
         action === "INGRESO" ? "success" : "info"
       );
     };
@@ -3135,7 +3178,9 @@ export default function AdminHub({
                 <span className="text-[10px] font-black uppercase text-[#5E393F] tracking-widest">Control Biométrico & GPS</span>
                 <h3 className="font-serif text-xl font-bold text-[#5C1D27]">⏱️ Fichaje de Ingreso y Egreso</h3>
               </div>
-              <span className="h-3 w-3 rounded-full bg-[#2E6F40] animate-ping" title="GPS Activo"></span>
+              <div className="text-[10px] font-mono font-bold text-[#5C1D27] bg-[#EBDAC5]/70 px-2.5 py-1 rounded-xl border border-[#CFB5A0] shadow-xs">
+                {liveTimestamp}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -3162,7 +3207,7 @@ export default function AdminHub({
                   <span className="h-2.5 w-2.5 rounded-full bg-[#2E6F40] shrink-0"></span>
                   <span className="text-xs font-black text-[#365B40] uppercase tracking-wider">🟢 HABILITADO PARA FICHAR</span>
                 </div>
-                <span className="text-[9px] font-bold text-[#365B40] bg-white/80 px-2 py-0.5 rounded-full font-mono">Tolerancia OK</span>
+                <span className="text-[9px] font-bold text-[#365B40] bg-white/80 px-2 py-0.5 rounded-full font-mono">Tiempo Real OK</span>
               </div>
 
               {/* 🗺️ Leaflet Interactive Map Container (250px) */}
@@ -3170,6 +3215,7 @@ export default function AdminHub({
                 currentLat={lastClockDetails ? lastClockDetails.latitud : (currentGPSLoc?.lat || -33.1245)}
                 currentLng={lastClockDetails ? lastClockDetails.longitud : (currentGPSLoc?.lng || -64.3490)}
                 accuracy={currentGPSLoc ? 10 : null}
+                lastClockStaffName={lastClockDetails?.staffName || users.find((u) => u.id === selectedStaffMember)?.name || currentUser.name}
                 lastClockType={lastClockDetails?.tipo}
                 lastClockTimestamp={lastClockDetails?.timestamp}
                 lastClockAddress={lastClockDetails?.direccion_completa}
