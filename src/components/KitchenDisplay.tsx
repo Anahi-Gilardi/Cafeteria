@@ -3,6 +3,7 @@ import { Clock, CheckCircle2, BookOpen, ChefHat, CookingPot, Eye, Archive, Refre
 import { useState, useEffect, useMemo, useRef } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { ArchivedOrderRecord, SupabaseSyncService } from "../services/SupabaseSyncService";
+import { isOrderActive } from "../utils/orderUtils";
 
 interface KitchenDisplayProps {
   orders: Order[];

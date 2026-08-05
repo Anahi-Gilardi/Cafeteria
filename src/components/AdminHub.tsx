@@ -18,6 +18,7 @@ import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
+import { isOrderActive } from "../utils/orderUtils";
 import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";
 import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingService";
@@ -845,7 +846,7 @@ export default function AdminHub({
           const refreshed = await SupabaseSyncService.fetchOrders();
           if (!refreshed.error) {
             onUpdateOrders?.(
-              refreshed.orders.filter((order) => order.status !== "Completado")
+              refreshed.orders.filter(isOrderActive)
             );
           }
         }
@@ -5011,8 +5012,7 @@ export default function AdminHub({
       (selectedPosCategory === "todos" || item.category === selectedPosCategory)
     );
 
-    // Orders pending payment in Caja include all active orders plus completed orders that haven't been paid yet
-    const pendingOrders = orders.filter(o => !o.paymentMethod || o.status !== "Completado");
+    const pendingOrders = orders.filter(o => isOrderActive(o));
 
     const addToPosCart = (item: MenuItem) => {
       setPosCart(prev => {
@@ -9287,7 +9287,7 @@ export default function AdminHub({
             {[
               { id: "pedidos_mozo", label: "Módulo Mozo", icon: HandPlatter, roles: ["administrador", "mesero"] },
               { id: "kds_cocina", label: "Cocina & Chef", icon: ChefHat, badge: orders.filter(o => o.status === "Recibido" || o.status === "Preparando").length, roles: ["administrador", "barista", "mesero"] },
-              { id: "caja", label: "Caja & Comandas", icon: ReceiptText, badge: orders.filter(o => o.status !== "Completado").length, roles: ["administrador", "mesero"] },
+              { id: "caja", label: "Caja & Comandas", icon: ReceiptText, badge: orders.filter(isOrderActive).length, roles: ["administrador", "mesero"] },
               { id: "reservas", label: "Reservas", icon: CalendarCheck2, badge: adminBookings.length, roles: ["administrador", "mesero"] },
               { id: "salon", label: "Mapa de Salón", icon: Armchair, roles: ["administrador", "mesero"] }
             ].filter(link => {

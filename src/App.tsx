@@ -25,6 +25,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { OrderPersistenceService } from "./services/OrderPersistenceService";
 import PasswordSetupScreen from "./components/PasswordSetupScreen";
 import { MenuSyncService } from "./services/MenuSyncService";
+import { isOrderActive } from "./utils/orderUtils";
 
 const AdminHub = lazy(() => import("./components/AdminHub"));
 const BaristaAI = lazy(() => import("./components/BaristaAI"));
@@ -224,7 +225,7 @@ export default function App() {
 
   // Sync active tracked order
   useEffect(() => {
-    const active = orders.find(o => o.status !== "Completado");
+    const active = orders.find(isOrderActive);
     setActiveTrackedOrder(active || null);
     ordersRef.current = orders;
   }, [orders]);
