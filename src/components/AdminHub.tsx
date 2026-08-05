@@ -3339,19 +3339,67 @@ export default function AdminHub({
   const renderAttendance = () => {
     const canExportPDF = currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.id === "usr-admin-super";
 
-    // Map attendance logs to AttendanceRecord format for PDF
-    const recordsForPDF: AttendanceRecord[] = attendanceLogs.map((log) => {
+    // Map attendance logs to AttendanceRecord format for PDF and history list (both INGRESO and EGRESO)
+    const recordsForPDF: AttendanceRecord[] = attendanceLogs.flatMap((log) => {
       const staffObj = users.find((u) => u.id === log.staff_id || u.name === log.staff_name);
-      return {
-        id: log.id,
-        employee_name: log.staff_name || staffObj?.name || "Colaborador",
-        role: staffObj?.role || "Personal",
-        action: log.tipo || log.action || (log.check_out_time ? "EGRESO" : "INGRESO"),
-        timestamp: log.timestamp || formatPreciseTimestamp(new Date(log.check_out_time || log.check_in_time || log.created_at)),
-        latitude: Number(log.latitud || log.latitude || -33.1245),
-        longitude: Number(log.longitud || log.longitude || -64.3490),
-        location_address: log.direccion_completa || log.location_address || "Constitución 944, Río Cuarto, Córdoba"
-      };
+      const employeeName = log.staff_name || staffObj?.name || "Colaborador";
+      const userRole = staffObj?.role || "Personal";
+      const address = log.direccion_completa || log.location_address || "Constitución 944, Río Cuarto, Córdoba";
+      const lat = Number(log.latitud || log.latitude || -33.1245);
+      const lng = Number(log.longitud || log.longitude || -64.3490);
+
+      const items: AttendanceRecord[] = [];
+
+      if (log.action === "INGRESO" || log.tipo === "INGRESO") {
+        items.push({
+          id: `${log.id}-ingreso`,
+          employee_name: employeeName,
+          role: userRole,
+          action: "INGRESO",
+          timestamp: log.timestamp || formatPreciseTimestamp(new Date(log.check_in_time || log.created_at)),
+          latitude: lat,
+          longitude: lng,
+          location_address: address
+        });
+      } else if (log.action === "EGRESO" || log.tipo === "EGRESO") {
+        items.push({
+          id: `${log.id}-egreso`,
+          employee_name: employeeName,
+          role: userRole,
+          action: "EGRESO",
+          timestamp: log.timestamp || formatPreciseTimestamp(new Date(log.check_out_time || log.created_at)),
+          latitude: lat,
+          longitude: lng,
+          location_address: address
+        });
+      } else {
+        if (log.check_out_time) {
+          items.push({
+            id: `${log.id}-egreso`,
+            employee_name: employeeName,
+            role: userRole,
+            action: "EGRESO",
+            timestamp: formatPreciseTimestamp(new Date(log.check_out_time)),
+            latitude: lat,
+            longitude: lng,
+            location_address: address
+          });
+        }
+        if (log.check_in_time) {
+          items.push({
+            id: `${log.id}-ingreso`,
+            employee_name: employeeName,
+            role: userRole,
+            action: "INGRESO",
+            timestamp: formatPreciseTimestamp(new Date(log.check_in_time)),
+            latitude: lat,
+            longitude: lng,
+            location_address: address
+          });
+        }
+      }
+
+      return items;
     });
 
     return (
@@ -3487,7 +3535,7 @@ export default function AdminHub({
           <div className="flex justify-between items-center border-b border-[#CFB5A0] pb-3">
             <div>
               <h3 className="font-serif text-xl font-bold text-[#5C1D27]">📋 Historial de Asistencia y Turnos GPS</h3>
-              <p className="text-xs text-[#5E393F] font-medium">Sincronizado con tabla Supabase <code className="text-[#5C1D27]">staff_attendance</code></p>
+              <p className="text-xs text-[#5E393F] font-medium">Registro de ingresos, egresos y geolocalización de personal en tiempo real.</p>
             </div>
             {canExportPDF && (
               <button
