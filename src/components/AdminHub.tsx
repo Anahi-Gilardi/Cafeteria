@@ -1015,23 +1015,35 @@ export default function AdminHub({
     return () => clearInterval(timer);
   }, []);
 
-  // Real-time subscription for staff attendance logs
+  // Fetch attendance records directly from Supabase staff_attendance table
+  const fetchAttendanceLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("staff_attendance")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setAttendanceLogs(data);
+      }
+    } catch (err) {
+      console.warn("Fetch attendance logs error:", err);
+    }
+  };
+
+  // Real-time subscription for staff_attendance logs and initial fetch
   useEffect(() => {
     if (activeSubTab !== "personal") return;
 
+    fetchAttendanceLogs();
+
     const channel = supabase
-      .channel("realtime_staff_attendance_changes")
+      .channel("staff_attendance_realtime")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "staff_attendance" },
-        (payload) => {
-          const newRecord = payload.new;
-          if (newRecord) {
-            setAttendanceLogs((prev) => [
-              newRecord,
-              ...prev.filter((item) => item.id !== newRecord.id)
-            ]);
-          }
+        { event: "*", schema: "public", table: "staff_attendance" },
+        () => {
+          fetchAttendanceLogs();
         }
       )
       .subscribe();
@@ -3228,6 +3240,7 @@ export default function AdminHub({
         recordData,
         ...previous.filter((record) => record.id !== recordData.id)
       ]);
+      fetchAttendanceLogs();
 
       setIsLocatingGPS(false);
 
@@ -3280,15 +3293,19 @@ export default function AdminHub({
     const canExportPDF = currentUser.role === "administrador" || currentUser.role === "dueño" || currentUser.id === "usr-admin-super";
 
     // Map attendance logs to AttendanceRecord format for PDF
-    const recordsForPDF: AttendanceRecord[] = attendanceLogs.map((log) => ({
-      id: log.id,
-      employee_name: log.staff_name || users.find((u) => u.id === log.staff_id)?.name || "Colaborador",
-      action: log.tipo || log.action || (log.check_out_time ? "EGRESO" : "INGRESO"),
-      timestamp: log.timestamp || formatPreciseTimestamp(new Date(log.check_out_time || log.check_in_time || log.created_at)),
-      latitude: Number(log.latitud || log.latitude || -33.1245),
-      longitude: Number(log.longitud || log.longitude || -64.3490),
-      location_address: log.direccion_completa || log.location_address || "Constitución 944, Río Cuarto, Córdoba"
-    }));
+    const recordsForPDF: AttendanceRecord[] = attendanceLogs.map((log) => {
+      const staffObj = users.find((u) => u.id === log.staff_id || u.name === log.staff_name);
+      return {
+        id: log.id,
+        employee_name: log.staff_name || staffObj?.name || "Colaborador",
+        role: staffObj?.role || "Personal",
+        action: log.tipo || log.action || (log.check_out_time ? "EGRESO" : "INGRESO"),
+        timestamp: log.timestamp || formatPreciseTimestamp(new Date(log.check_out_time || log.check_in_time || log.created_at)),
+        latitude: Number(log.latitud || log.latitude || -33.1245),
+        longitude: Number(log.longitud || log.longitude || -64.3490),
+        location_address: log.direccion_completa || log.location_address || "Constitución 944, Río Cuarto, Córdoba"
+      };
+    });
 
     return (
       <motion.div
@@ -3403,8 +3420,12 @@ export default function AdminHub({
             <div className="pt-3 border-t border-[#CFB5A0]">
               <button
                 onClick={() => {
-                  StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
-                  onShowNotification("📄 Generando informe PDF de control de personal...", "success");
+                  try {
+                    StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+                    onShowNotification("📄 Reporte PDF de asistencia y GPS generado y descargado con éxito.", "success");
+                  } catch (err: any) {
+                    onShowNotification(`❌ Error al exportar PDF: ${err.message || "Fallo en la generación del documento"}`, "warning");
+                  }
                 }}
                 className="w-full py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
               >
@@ -3424,8 +3445,12 @@ export default function AdminHub({
             {canExportPDF && (
               <button
                 onClick={() => {
-                  StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
-                  onShowNotification("📄 Descargando PDF de control de personal...", "info");
+                  try {
+                    StaffAttendancePDFService.generateAttendancePDF(recordsForPDF);
+                    onShowNotification("📄 Reporte PDF de asistencia y GPS generado y descargado con éxito.", "success");
+                  } catch (err: any) {
+                    onShowNotification(`❌ Error al exportar PDF: ${err.message || "Fallo en la generación del documento"}`, "warning");
+                  }
                 }}
                 className="px-3.5 py-1.5 bg-[#5C1D27] border border-[#5C1D27] text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-[#4A151D] transition-all cursor-pointer shadow-xs"
               >
