@@ -1,4 +1,7 @@
-import { MenuItem, Table } from "../types";
+import fs from "fs";
+import path from "path";
+
+const content = `import { MenuItem, Table } from "../types";
 
 export const MENU_ITEMS: MenuItem[] = [
   // 🥐 1. DESAYUNOS Y MERIENDAS
@@ -1258,3 +1261,7 @@ export const INITIAL_TABLES: Table[] = Array.from({ length: 15 }, (_, i) => ({
   status: "libre",
   zone: i < 5 ? "Planta Baja" : i < 10 ? "Mezzanine" : "Terraza"
 }));
+`;
+
+fs.writeFileSync(path.join(process.cwd(), "src/data/menu.ts"), content, "utf8");
+console.log("Updated src/data/menu.ts successfully!");
