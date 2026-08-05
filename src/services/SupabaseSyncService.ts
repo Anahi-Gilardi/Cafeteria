@@ -185,22 +185,39 @@ export class SupabaseSyncService {
     orderId: string,
     status: Order["status"]
   ): Promise<{ success: boolean; error?: string }> {
-    // Never manufacture a partial order when the requested id does not exist.
-    const { error, data } = await supabase
-      .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", orderId)
-      .select("id");
+    // 1. Instantly update local cache to prevent stale remote fetch overrides
+    try {
+      const saved = localStorage.getItem("resto_bar_orders");
+      if (saved) {
+        const localOrders: Order[] = JSON.parse(saved);
+        const updated = localOrders.map((o) => (o.id === orderId ? { ...o, status } : o));
+        localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
+      }
+    } catch {}
 
-    if (error) {
-      return { success: false, error: `${error.message} (${error.code})` };
+    // 2. Perform remote update in Supabase
+    try {
+      const { error, data } = await supabase
+        .from("orders")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .select("id");
+
+      if (error) {
+        console.warn("Supabase updateOrderStatus warning:", error.message);
+        return { success: false, error: `${error.message} (${error.code})` };
+      }
+
+      if (!data || data.length === 0) {
+        console.warn(`Comanda ${orderId} no encontrada en tabla orders para actualizar estado`);
+        return { success: false, error: `No existe la comanda ${orderId} en Supabase` };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("Exception in updateOrderStatus:", err);
+      return { success: false, error: err?.message || "Error al actualizar estado de comanda" };
     }
-
-    if (!data || data.length === 0) {
-      return { success: false, error: `No existe la comanda ${orderId} en Supabase` };
-    }
-
-    return { success: true };
   }
 
   static async archiveOrder(
@@ -529,8 +546,38 @@ export class SupabaseSyncService {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(500);
+
     if (error) return { orders: [], error: `${error.message} (${error.code})` };
-    return { orders: (data || []).map(mapOrder) };
+
+    const remoteOrders = (data || []).map(mapOrder);
+
+    // Merge with local storage status overrides to prevent resurrecting completed ghost orders
+    try {
+      const saved = localStorage.getItem("resto_bar_orders");
+      if (saved) {
+        const localOrders: Order[] = JSON.parse(saved);
+        const localStatusMap = new Map<string, Order["status"]>();
+        localOrders.forEach((o) => {
+          if (o.status === "Completado" || o.status === "Listo") {
+            localStatusMap.set(o.id, o.status);
+          }
+        });
+
+        remoteOrders.forEach((ro) => {
+          const localStatus = localStatusMap.get(ro.id);
+          if (localStatus && localStatus === "Completado" && ro.status !== "Completado") {
+            ro.status = "Completado";
+            // Fire-and-forget background sync to update remote Supabase DB record
+            void supabase
+              .from("orders")
+              .update({ status: "Completado", updated_at: new Date().toISOString() })
+              .eq("id", ro.id);
+          }
+        });
+      }
+    } catch {}
+
+    return { orders: remoteOrders };
   }
 
   static subscribeToOrders(
