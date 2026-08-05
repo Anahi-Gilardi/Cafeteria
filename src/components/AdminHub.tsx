@@ -3183,22 +3183,10 @@ export default function AdminHub({
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-[#5E393F] block mb-1">
-                  Seleccionar Colaborador / Empleado *
-                </label>
-                <select
-                  value={selectedStaffMember}
-                  onChange={(e) => setSelectedStaffMember(e.target.value)}
-                  className="w-full p-3 border border-[#CFB5A0] rounded-2xl bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none cursor-pointer text-sm focus:border-[#5C1D27]"
-                >
-                  {users.map((staff) => (
-                    <option key={staff.id} value={staff.id}>
-                      {staff.name} ({staff.role})
-                    </option>
-                  ))}
-                </select>
+              <div className="p-3 bg-[#EBDAC5]/60 border border-[#CFB5A0] rounded-2xl flex items-center justify-between shadow-xs">
+                <span className="text-xs font-bold text-[#2D0E13] flex items-center gap-1.5">
+                  👤 Colaborador Activo: <strong className="text-[#5C1D27]">{currentUser.name || "Usuario Activo"}</strong> <span className="text-[10px] font-mono font-semibold text-[#5E393F]">({currentUser.role})</span>
+                </span>
               </div>
 
               {/* Status Banner */}
@@ -3236,7 +3224,6 @@ export default function AdminHub({
               >
                 📍 Validar Ubicación en Sucursal Castaño (Fichar Ahora)
               </button>
-            </div>
 
             {/* Always Enabled Action Buttons: Ingreso (#2E6F40) & Egreso (#843747) */}
             <div className="grid grid-cols-2 gap-3 pt-2">
