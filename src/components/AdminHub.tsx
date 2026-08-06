@@ -2288,7 +2288,8 @@ export default function AdminHub({
   };
 
   const handleEmitManualArcaInvoice = async () => {
-    const val = ArcaBillingService.validateCuitOrDni(manualCustomerInfo.cuitOrDni);
+    const isConsumidorFinal = manualCustomerInfo.ivaCondition === "Consumidor Final" || !manualCustomerInfo.cuitOrDni.trim();
+    const val = ArcaBillingService.validateCuitOrDni(manualCustomerInfo.cuitOrDni, isConsumidorFinal);
     if (!val.isValid) {
       onShowNotification(`⚠️ ${val.message}`, "warning");
       return;
@@ -5936,25 +5937,14 @@ export default function AdminHub({
                   </div>
                 </div>
 
-                {/* Final receipt emission actions - Two Clear Checkout Modes */}
+                {/* Final receipt emission action - Single Main Checkout Action */}
                 <div className="border-t border-[#CFB5A0] pt-5 space-y-3.5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {/* Mode 1: Simple Payment without Fiscal Invoice */}
-                    <button 
-                      onClick={handleProcessPosCheckout}
-                      className="w-full py-4 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#4F735A]"
-                    >
-                      <CheckCircle className="h-4 w-4 text-white" /> 🟢 FINALIZAR COBRO SIMPLE (Sin Factura)
-                    </button>
-
-                    {/* Mode 2: Fiscal Invoice via ARCA / AFIP */}
-                    <button 
-                      onClick={() => handleOpenArcaModalForOrder(posCheckoutOrder)}
-                      className="w-full py-4 rounded-2xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#5C1D27]"
-                    >
-                      <FileText className="h-4 w-4 text-white" /> 🧾 CONFIRMAR VENTA & EMITIR FACTURA FISCAL (ARCA)
-                    </button>
-                  </div>
+                  <button 
+                    onClick={handleProcessPosCheckout}
+                    className="w-full py-4 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#4F735A]"
+                  >
+                    <CheckCircle className="h-4 w-4 text-white" /> 🟢 CONFIRMAR VENTA / COBRAR
+                  </button>
 
                   {/* Supporting Printing & Utility Actions */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">

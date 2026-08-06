@@ -11,9 +11,12 @@ export class ArcaBillingService {
   /**
    * Validates CUIT format using official Modulo 11 verification algorithm or DNI (8 digits)
    */
-  public static validateCuitOrDni(input: string): { isValid: boolean; message: string } {
+  public static validateCuitOrDni(input: string, isConsumidorFinal = false): { isValid: boolean; message: string } {
     const clean = input.replace(/\D/g, "");
     if (!clean) {
+      if (isConsumidorFinal) {
+        return { isValid: true, message: "Consumidor Final (sin documento registrado)." };
+      }
       return { isValid: false, message: "El CUIT/DNI no puede estar vacío." };
     }
 
