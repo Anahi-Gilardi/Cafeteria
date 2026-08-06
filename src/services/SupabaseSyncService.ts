@@ -157,10 +157,10 @@ export class SupabaseSyncService {
         return { success: true, order: mapOrder(rpcData) };
       }
 
-      // Fallback 1: Direct table insert into 'orders' if RPC requires auth or fails
+      // Fallback 1: Direct table upsert into 'orders' if RPC requires auth or fails
       const { data: directData, error: directError } = await supabase
         .from("orders")
-        .insert(payload)
+        .upsert(payload, { onConflict: "id" })
         .select()
         .single();
 
@@ -168,11 +168,24 @@ export class SupabaseSyncService {
         return { success: true, order: mapOrder(directData) };
       }
 
-      if (directError) {
-        console.error("Error al guardar comanda en Supabase:", directError.message);
-        return { success: false, error: directError.message, order };
+      // Fallback 2: Direct update by ID if upsert triggers RLS constraint
+      const { data: updateData, error: updateError } = await supabase
+        .from("orders")
+        .update(payload)
+        .eq("id", order.id)
+        .select()
+        .single();
+
+      if (!updateError && updateData) {
+        return { success: true, order: mapOrder(updateData) };
       }
-      return { success: true, order: mapOrder(directData) };
+
+      if (directError || updateError) {
+        const errMsg = directError?.message || updateError?.message || "Error al guardar la comanda";
+        console.error("Error al guardar comanda en Supabase:", errMsg);
+        return { success: false, error: errMsg, order };
+      }
+      return { success: true, order: mapOrder(directData || updateData) };
     } catch (error: any) {
       console.error("Excepción al guardar comanda en Supabase:", error);
       return { success: false, error: error?.message || "Error de red", order };

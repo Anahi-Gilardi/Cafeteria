@@ -57,7 +57,7 @@ export class OrderService {
 
     // 2. Transacción en Supabase / Local DB
     try {
-      await supabase.from("orders").insert([{
+      await supabase.from("orders").upsert([{
         id: newOrder.id,
         items: newOrder.items,
         total: newOrder.total,
@@ -65,7 +65,7 @@ export class OrderService {
         table_number: newOrder.tableNumber,
         status: newOrder.status,
         created_at: newOrder.createdAt
-      }]);
+      }], { onConflict: "id" });
     } catch (err) {
       console.warn("[OrderService] Guardado local alternativo por degradación de red:", err);
     }
