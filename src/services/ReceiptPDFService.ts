@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import { Order, FiscalDetails } from "../types";
 
 export function isAuthorizedFiscalDetails(fiscal: FiscalDetails): boolean {
@@ -11,29 +12,19 @@ export function isAuthorizedFiscalDetails(fiscal: FiscalDetails): boolean {
 export class ReceiptPDFService {
   private static async loadQrCodeBase64(qrUrl: string): Promise<string | null> {
     if (!qrUrl) return null;
-    const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrUrl)}`;
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = 300;
-          canvas.height = 300;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL("image/png"));
-            return;
-          }
-        } catch {
-          // ignore
+    try {
+      return await QRCode.toDataURL(qrUrl, {
+        margin: 1,
+        width: 300,
+        color: {
+          dark: "#5C1D27",
+          light: "#FFFFFF"
         }
-        resolve(null);
-      };
-      img.onerror = () => resolve(null);
-      img.src = apiUrl;
-    });
+      });
+    } catch (err) {
+      console.error("Error generating local QR code:", err);
+      return null;
+    }
   }
 
   /**
@@ -333,13 +324,13 @@ export class ReceiptPDFService {
     doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(40, 40, 40);
-    doc.text(`Importe Neto Gravado: $${netoCalc.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`, 14, currentY + 8);
-    doc.text(`IVA (21%): $${ivaCalc.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`, 14, currentY + 17);
+    doc.text(`Importe Neto Gravado: $${netoCalc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, currentY + 8);
+    doc.text(`IVA (21%): $${ivaCalc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, currentY + 17);
 
     doc.setFontSize(13);
     doc.setTextColor(92, 29, 39);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL FACTURADO: $${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`, pageWidth - 14, currentY + 15, { align: "right" });
+    doc.text(`TOTAL FACTURADO: $${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - 14, currentY + 15, { align: "right" });
 
     // Official AFIP / ARCA Fiscal Footer Box with QR Code (Y: 232mm)
     currentY = 232;
