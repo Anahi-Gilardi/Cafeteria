@@ -73,12 +73,14 @@ export class ReceiptPDFService {
     currentY += 4.5;
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
-
+    const tableStr = order.tableNumber
+      ? (order.tableNumber.toLowerCase().startsWith("mesa") ? order.tableNumber : `Mesa ${order.tableNumber}`)
+      : "Mesa 1";
     const orderChannel = order.priceList === "Takeaway" || order.type === "Llevar"
       ? "RETIRO EN LOCAL"
       : order.priceList === "Delivery" || order.fulfillmentType === "delivery"
       ? "DELIVERY A DOMICILIO"
-      : `SALÓN (${order.tableNumber || "Mesa 1"})`;
+      : `SALÓN (${tableStr})`;
 
     doc.text(`Modalidad: ${orderChannel}`, leftX, currentY);
 
@@ -129,19 +131,12 @@ export class ReceiptPDFService {
     doc.setLineWidth(0.3);
     doc.line(leftX, currentY, rightX, currentY);
 
-    // 5. Totals & Tax breakdown
+    // 5. Totals (Subtotal y Total ARS sin discriminación de IVA para consumo interno / Monotributo)
     currentY += 4.5;
-    const netoEst = order.total / 1.21;
-    const taxCalc = order.total - netoEst;
-
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
-    doc.text("Subtotal Neto (Est.):", leftX, currentY);
-    doc.text(`$${netoEst.toLocaleString("es-AR", { maximumFractionDigits: 2 })}`, rightX, currentY, { align: "right" });
-
-    currentY += 3.8;
-    doc.text("IVA (21% Est.):", leftX, currentY);
-    doc.text(`$${taxCalc.toLocaleString("es-AR", { maximumFractionDigits: 2 })}`, rightX, currentY, { align: "right" });
+    doc.text("Subtotal:", leftX, currentY);
+    doc.text(`$${order.subtotal.toLocaleString("es-AR")}`, rightX, currentY, { align: "right" });
 
     currentY += 4;
     doc.setLineWidth(0.5);

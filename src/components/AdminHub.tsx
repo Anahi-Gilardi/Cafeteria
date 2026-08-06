@@ -10790,7 +10790,7 @@ export default function AdminHub({
               <div>FECHA: {new Date().toLocaleDateString("es-AR")}</div>
               <div>HORA: {new Date().toLocaleTimeString("es-AR")}</div>
               <div>TICKET FACTURA NRO: {selectedOrderForTicket.id}</div>
-              <div>ORIGEN: {selectedOrderForTicket.tableNumber ? `SALÓN - Mesa ${selectedOrderForTicket.tableNumber}` : selectedOrderForTicket.type}</div>
+              <div>ORIGEN: {selectedOrderForTicket.tableNumber ? `SALÓN - ${selectedOrderForTicket.tableNumber.toLowerCase().startsWith("mesa") ? selectedOrderForTicket.tableNumber : `Mesa ${selectedOrderForTicket.tableNumber}`}` : selectedOrderForTicket.type}</div>
             </div>
 
             <div className="border-t border-dashed border-stone-800 py-3 text-[10px]">
@@ -10811,8 +10811,12 @@ export default function AdminHub({
               <div className="grid grid-cols-2 gap-1 font-bold pt-2 text-xs">
                 <span>SUBTOTAL:</span>
                 <span className="text-right">${selectedOrderForTicket.subtotal.toLocaleString()}</span>
-                <span>IVA (21%):</span>
-                <span className="text-right">${selectedOrderForTicket.tax.toLocaleString()}</span>
+                {selectedOrderForTicket.fiscal?.invoiceType === "A" && (
+                  <>
+                    <span>IVA (21%):</span>
+                    <span className="text-right">${selectedOrderForTicket.tax.toLocaleString()}</span>
+                  </>
+                )}
                 <span className="text-sm font-black border-t border-dashed border-stone-800 pt-1 mt-1">TOTAL ARS:</span>
                 <span className="text-sm font-black text-right border-t border-dashed border-stone-800 pt-1 mt-1">${selectedOrderForTicket.total.toLocaleString()}</span>
               </div>

@@ -376,7 +376,8 @@ export default function TicketPreviewModal({
     text += `TICKET COMPROBANTE Nro: ${order.fiscal?.invoiceNumber || order.id}\n`;
     text += `CANAL DE VENTA: ${order.priceList.toUpperCase()}\n`;
     if (order.tableNumber) {
-      text += `UBICACIÓN: ${order.tableNumber}\n`;
+      const tableStr = order.tableNumber.toLowerCase().startsWith("mesa") ? order.tableNumber : `Mesa ${order.tableNumber}`;
+      text += `UBICACIÓN: ${tableStr}\n`;
     }
     text += `------------------------------------------------\n`;
     text += `CANT  DESCRIPCIÓN                        IMPORTE\n`;
@@ -392,7 +393,9 @@ export default function TicketPreviewModal({
     });
     text += `------------------------------------------------\n`;
     text += `SUBTOTAL:                          $${subtotal.toFixed(2)}\n`;
-    text += `FISCAL IMPUESTOS (IVA):            $${tax.toFixed(2)}\n`;
+    if (invoiceType === "A") {
+      text += `FISCAL IMPUESTOS (IVA):            $${tax.toFixed(2)}\n`;
+    }
     text += `TOTAL COMPLETADO:                  $${total.toFixed(2)}\n`;
     if (splitType !== "none") {
       text += `------------------------------------------------\n`;
@@ -834,7 +837,7 @@ export default function TicketPreviewModal({
                   <div>Fecha: {new Date(order.createdAt).toLocaleString("es-AR")}</div>
                   <div>Comprobante: {order.fiscal?.invoiceNumber || order.id}</div>
                   <div>Canal de Precios: {order.priceList.toUpperCase()}</div>
-                  {order.tableNumber && <div className="font-bold text-stone-800">Ubicación: {order.tableNumber}</div>}
+                  {order.tableNumber && <div className="font-bold text-stone-800">Ubicación: {order.tableNumber.toLowerCase().startsWith("mesa") ? order.tableNumber : `Mesa ${order.tableNumber}`}</div>}
                   {invoiceType === "A" && customerName && (
                     <div className="border border-stone-400 p-1 mt-1 text-[8px] rounded">
                       <span className="font-bold block">Receptor:</span>
@@ -878,7 +881,7 @@ export default function TicketPreviewModal({
                     <span>SUBTOTAL:</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
-                  {isCaeAuthorized && afipCalculations.classified && (
+                  {isCaeAuthorized && invoiceType === "A" && afipCalculations.classified && (
                     <>
                       <div className="flex justify-between text-[9px] text-stone-600">
                         <span>Gravado (Neto):</span>
