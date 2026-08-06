@@ -10917,9 +10917,6 @@ export default function AdminHub({
                   className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
                 >
                   <option value="Consumidor Final">Consumidor Final (Factura C)</option>
-                  <option value="Responsable Inscripto">Responsable Inscripto (Factura C)</option>
-                  <option value="Monotributista">Monotributista (Factura C)</option>
-                  <option value="Exento">Exento (Factura C)</option>
                 </select>
               </div>
 
@@ -11023,9 +11020,6 @@ export default function AdminHub({
                     className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
                   >
                     <option value="Consumidor Final">Consumidor Final (Factura C)</option>
-                    <option value="Responsable Inscripto">Responsable Inscripto (Factura C)</option>
-                    <option value="Monotributista">Monotributista (Factura C)</option>
-                    <option value="Exento">Exento (Factura C)</option>
                   </select>
                 </div>
 
