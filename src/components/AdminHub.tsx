@@ -2215,7 +2215,7 @@ export default function AdminHub({
           observations: authorization.observations,
           errors: authorization.errors
         };
-        ReceiptPDFService.generateArcaInvoicePDF(
+        void ReceiptPDFService.generateArcaInvoicePDF(
           { ...selectedOrderForBilling, fiscal: safeDraft },
           safeDraft
         );
@@ -2267,7 +2267,7 @@ export default function AdminHub({
     onUpdateOrders?.(
       orders.map((order) => (order.id === updatedOrder.id ? updatedOrder : order))
     );
-    ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
+    void ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
 
     const thermalHtml = `
       <h2>CASTAÑO — RESTO BAR</h2>
@@ -2376,7 +2376,7 @@ export default function AdminHub({
         observations: authorization.observations,
         errors: authorization.errors
       };
-      ReceiptPDFService.generateArcaInvoicePDF(
+      void ReceiptPDFService.generateArcaInvoicePDF(
         { ...savedOrder.order, fiscal: safeDraft },
         safeDraft
       );
@@ -2418,7 +2418,7 @@ export default function AdminHub({
       return;
     }
     onUpdateOrders?.([updatedOrder, ...orders.filter((order) => order.id !== updatedOrder.id)]);
-    ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
+    void ReceiptPDFService.generateArcaInvoicePDF(updatedOrder, fiscalDetails);
 
     const itemsRows = manualItems.map(it => 
       `<tr><td>${it.qty}x</td><td>${it.description.slice(0, 20)}</td><td class="right">$${(it.unitPrice * it.qty).toLocaleString("es-AR")}</td></tr>`
@@ -10468,7 +10468,7 @@ export default function AdminHub({
               <button 
                 onClick={() => {
                   if (selectedOrderForTicket.fiscal) {
-                    ReceiptPDFService.generateArcaInvoicePDF(selectedOrderForTicket, selectedOrderForTicket.fiscal);
+                    void ReceiptPDFService.generateArcaInvoicePDF(selectedOrderForTicket, selectedOrderForTicket.fiscal);
                   } else {
                     ReceiptPDFService.generateTicketNoFiscalPDF(selectedOrderForTicket);
                   }
