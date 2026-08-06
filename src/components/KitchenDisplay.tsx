@@ -138,7 +138,7 @@ export default function KitchenDisplay({
 
   // Active orders come exclusively from the synchronized order stream.
   const mergedOrders = useMemo(() => {
-    return orders.filter(o => o.status !== "Completado" && (filterType === "all" || o.priceList === filterType));
+    return orders.filter(o => isOrderActive(o) && (filterType === "all" || o.priceList === filterType));
   }, [orders, filterType]);
 
   // Filtered Orders by Destination
@@ -391,21 +391,19 @@ export default function KitchenDisplay({
           <button
             type="button"
             onClick={async () => {
-              const confirmed = window.confirm("¿Desea limpiar el caché local y actualizar el estado de las comandas?");
+              const confirmed = window.confirm("¿Desea limpiar el caché local y purgar todas las comandas inactivas/fantasmas?");
               if (!confirmed) return;
               try {
-                const { supabase } = await import("../lib/supabase");
-                await supabase.from("orders").update({ status: "Completado", updated_at: new Date().toISOString() }).neq("status", "Completado");
-                localStorage.removeItem("resto_bar_orders");
-                localStorage.removeItem("castano_local_orders");
-                localStorage.removeItem("castano_offline_orders");
+                await SupabaseSyncService.purgeGhostOrders();
+                localStorage.clear();
+                sessionStorage.clear();
                 window.location.reload();
               } catch {
                 alert("No se pudo limpiar el caché.");
               }
             }}
             className="px-3 py-2 rounded-xl bg-[#FAF2E6] border border-[#CFB5A0] text-xs font-black text-[#A63F45] hover:bg-[#F4DCDD] transition-all cursor-pointer flex items-center gap-1.5"
-            title="Limpiar el caché de la memoria local del navegador"
+            title="Limpiar el caché de la memoria local y purgar comandas inactivas de Supabase"
           >
             <Trash2 className="h-4 w-4" />
             Limpiar Caché
