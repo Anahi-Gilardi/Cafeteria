@@ -1600,6 +1600,99 @@ export default function AdminHub({
 
   const [mermaLogs, setMermaLogs] = useState<{ id: string; date: string; name: string; qty: string; cost: string; reason: string; auditor: string }[]>([]);
 
+  const [dailyComboState, setDailyComboState] = useState<{
+    mains: string[];
+    mainImages?: string[];
+    sides: string[];
+    price: number;
+    saladTitle?: string;
+    saladDescription?: string;
+    saladImage?: string;
+    saladPriceSmall?: number;
+    saladPriceLarge?: number;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem("puglia_daily_combo");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.sides)) {
+          parsed.sides = parsed.sides.flatMap((s: string) =>
+            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+              ? ["Puré de papa", "Puré mixto"]
+              : s
+          );
+        }
+        return parsed;
+      }
+    } catch (e) {}
+    return {
+      mains: [
+        "Pollo al horno",
+        "Pasta ( tallarines, ñoquis, canelones )",
+        "Milanesa de pollo o ternera",
+        "Hamburguesa"
+      ],
+      mainImages: [
+        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
+      ],
+      sides: [
+        "Puré de papa",
+        "Puré mixto",
+        "Arroz con crema",
+        "Ensalada mixta"
+      ],
+      price: 8500,
+      saladTitle: "Ensalada Completa",
+      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
+      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
+      saladPriceSmall: 6500,
+      saladPriceLarge: 8500
+    };
+  });
+
+  const pendingOrders = useMemo(() => {
+    const activeList = orders.filter(o => isOrderActive(o));
+    const grouped: (Order & { relatedOrderIds?: string[] })[] = [];
+    const processedTables = new Set<string>();
+
+    for (const o of activeList) {
+      if (o.tableNumber && (o.type === "Mesa" || o.priceList === "Salon")) {
+        const tableKey = o.tableNumber.trim();
+        if (processedTables.has(tableKey)) continue;
+        processedTables.add(tableKey);
+
+        const tableOrders = activeList.filter(x => x.tableNumber && x.tableNumber.trim() === tableKey && (x.type === "Mesa" || x.priceList === "Salon"));
+        if (tableOrders.length === 1) {
+          grouped.push(tableOrders[0]);
+        } else {
+          const allItems = tableOrders.flatMap(x => x.items);
+          const totalSubtotal = tableOrders.reduce((sum, x) => sum + (x.subtotal || x.total), 0);
+          const totalTax = tableOrders.reduce((sum, x) => sum + (x.tax || 0), 0);
+          const totalAmount = tableOrders.reduce((sum, x) => sum + x.total, 0);
+          const relIds = tableOrders.map(x => x.id);
+
+          grouped.push({
+            ...tableOrders[0],
+            id: tableOrders[0].id,
+            items: allItems,
+            subtotal: totalSubtotal,
+            tax: totalTax,
+            total: totalAmount,
+            status: tableOrders.some(x => x.status === "Recibido") ? "Recibido" : tableOrders[0].status,
+            createdAt: tableOrders[0].createdAt,
+            relatedOrderIds: relIds
+          });
+        }
+      } else {
+        grouped.push(o);
+      }
+    }
+    return grouped;
+  }, [orders]);
+
   useEffect(() => {
     if (menuItems.length > 0 && !selectedMenuProduct) {
       setSelectedMenuProduct(menuItems[0]);
@@ -3915,59 +4008,6 @@ export default function AdminHub({
     );
   };
 
-  const [dailyComboState, setDailyComboState] = useState<{
-    mains: string[];
-    mainImages?: string[];
-    sides: string[];
-    price: number;
-    saladTitle?: string;
-    saladDescription?: string;
-    saladImage?: string;
-    saladPriceSmall?: number;
-    saladPriceLarge?: number;
-  }>(() => {
-    try {
-      const saved = localStorage.getItem("puglia_daily_combo");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.sides)) {
-          parsed.sides = parsed.sides.flatMap((s: string) =>
-            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
-              ? ["Puré de papa", "Puré mixto"]
-              : s
-          );
-        }
-        return parsed;
-      }
-    } catch (e) {}
-    return {
-      mains: [
-        "Pollo al horno",
-        "Pasta ( tallarines, ñoquis, canelones )",
-        "Milanesa de pollo o ternera",
-        "Hamburguesa"
-      ],
-      mainImages: [
-        "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=600",
-        "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600",
-        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
-        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
-      ],
-      sides: [
-        "Puré de papa",
-        "Puré mixto",
-        "Arroz con crema",
-        "Ensalada mixta"
-      ],
-      price: 8500,
-      saladTitle: "Ensalada Completa",
-      saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
-      saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
-      saladPriceSmall: 6500,
-      saladPriceLarge: 8500
-    };
-  });
-
   const renderDailyComboEditor = () => {
     const handleSaveCombo = async () => {
       try {
@@ -5238,46 +5278,6 @@ export default function AdminHub({
         item.category === selectedPosCategory
       )
     );
-
-    const pendingOrders = useMemo(() => {
-      const activeList = orders.filter(o => isOrderActive(o));
-      const grouped: (Order & { relatedOrderIds?: string[] })[] = [];
-      const processedTables = new Set<string>();
-
-      for (const o of activeList) {
-        if (o.tableNumber && (o.type === "Mesa" || o.priceList === "Salon")) {
-          const tableKey = o.tableNumber.trim();
-          if (processedTables.has(tableKey)) continue;
-          processedTables.add(tableKey);
-
-          const tableOrders = activeList.filter(x => x.tableNumber && x.tableNumber.trim() === tableKey && (x.type === "Mesa" || x.priceList === "Salon"));
-          if (tableOrders.length === 1) {
-            grouped.push(tableOrders[0]);
-          } else {
-            const allItems = tableOrders.flatMap(x => x.items);
-            const totalSubtotal = tableOrders.reduce((sum, x) => sum + (x.subtotal || x.total), 0);
-            const totalTax = tableOrders.reduce((sum, x) => sum + (x.tax || 0), 0);
-            const totalAmount = tableOrders.reduce((sum, x) => sum + x.total, 0);
-            const relIds = tableOrders.map(x => x.id);
-
-            grouped.push({
-              ...tableOrders[0],
-              id: tableOrders[0].id,
-              items: allItems,
-              subtotal: totalSubtotal,
-              tax: totalTax,
-              total: totalAmount,
-              status: tableOrders.some(x => x.status === "Recibido") ? "Recibido" : tableOrders[0].status,
-              createdAt: tableOrders[0].createdAt,
-              relatedOrderIds: relIds
-            });
-          }
-        } else {
-          grouped.push(o);
-        }
-      }
-      return grouped;
-    }, [orders]);
 
     const addToPosCart = (item: MenuItem) => {
       setPosCart(prev => {
