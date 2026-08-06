@@ -595,14 +595,30 @@ export class SupabaseSyncService {
       .from("orders")
       .select("*")
       .neq("status", "Eliminado")
+      .neq("status", "eliminado")
       .neq("status", "Anulado")
+      .neq("status", "anulado")
       .neq("status", "archivado")
       .order("created_at", { ascending: false })
       .limit(500);
 
     if (error) return { orders: [], error: `${error.message} (${error.code})` };
 
-    const remoteOrders = (data || []).map(mapOrder);
+    const remoteOrders = (data || [])
+      .map(mapOrder)
+      .filter((o) => {
+        const s = (o.status || "").toLowerCase().trim();
+        return (
+          s !== "eliminado" &&
+          s !== "eliminada" &&
+          s !== "anulado" &&
+          s !== "anulada" &&
+          s !== "archivado" &&
+          s !== "archivada" &&
+          s !== "borrado" &&
+          s !== "borrada"
+        );
+      });
 
     // Return strictly remote orders from Supabase without any local storage cache merging
     return { orders: remoteOrders };

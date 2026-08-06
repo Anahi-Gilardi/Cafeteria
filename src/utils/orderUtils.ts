@@ -7,15 +7,24 @@ import { Order } from "../types";
 export function isOrderActive(order: Partial<Order> | string | undefined | null): boolean {
   if (!order) return false;
   const status = typeof order === "string" ? order : order.status;
-  if (!status) return true;
+  if (!status) return false;
   
-  const s = status.toLowerCase().trim();
+  const s = String(status).toLowerCase().trim();
   if (
     s === "completado" ||
+    s === "completada" ||
     s === "cancelado" ||
+    s === "cancelada" ||
     s === "archivado" ||
+    s === "archivada" ||
     s === "anulado" ||
-    s === "archivada"
+    s === "anulada" ||
+    s === "eliminado" ||
+    s === "eliminada" ||
+    s === "borrado" ||
+    s === "borrada" ||
+    s === "deleted" ||
+    s === "purged"
   ) {
     return false;
   }
