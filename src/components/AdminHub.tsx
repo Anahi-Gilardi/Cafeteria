@@ -560,9 +560,8 @@ export default function AdminHub({
       if (onUpdateOrders) {
         onUpdateOrders(remainingOrders);
       }
-      localStorage.setItem("castano_orders", JSON.stringify(remainingOrders));
 
-      // Delete from Supabase Cloud
+      // Delete directly from Supabase Cloud as Single Source of Truth
       await supabase.from("orders").delete().in("id", idsToDelete);
       await supabase.from("archived_orders").delete().in("id", idsToDelete);
 

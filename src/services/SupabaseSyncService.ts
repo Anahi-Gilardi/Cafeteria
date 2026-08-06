@@ -168,16 +168,14 @@ export class SupabaseSyncService {
         return { success: true, order: mapOrder(directData) };
       }
 
-      // Fallback 2: Resilient local persistence when Supabase RLS returns authentication required (42501)
-      console.warn("⚠️ Fallback local de comanda activado por error de permisos Supabase 42501:", rpcError?.message || directError?.message);
-      try {
-        const existingLocal = JSON.parse(localStorage.getItem("castano_local_orders") || "[]");
-        localStorage.setItem("castano_local_orders", JSON.stringify([order, ...existingLocal]));
-      } catch {}
-      return { success: true, order };
-    } catch (error) {
-      console.warn("⚠️ Excepción al guardar comanda, retornando respaldo local:", error);
-      return { success: true, order };
+      if (directError) {
+        console.error("Error al guardar comanda en Supabase:", directError.message);
+        return { success: false, error: directError.message, order };
+      }
+      return { success: true, order: mapOrder(directData) };
+    } catch (error: any) {
+      console.error("Excepción al guardar comanda en Supabase:", error);
+      return { success: false, error: error?.message || "Error de red", order };
     }
   }
 
@@ -185,17 +183,6 @@ export class SupabaseSyncService {
     orderId: string,
     status: Order["status"]
   ): Promise<{ success: boolean; error?: string }> {
-    // 1. Instantly update local cache to prevent stale remote fetch overrides
-    try {
-      const saved = localStorage.getItem("resto_bar_orders");
-      if (saved) {
-        const localOrders: Order[] = JSON.parse(saved);
-        const updated = localOrders.map((o) => (o.id === orderId ? { ...o, status } : o));
-        localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
-      }
-    } catch {}
-
-    // 2. Perform remote update in Supabase
     try {
       const { error, data } = await supabase
         .from("orders")
@@ -238,16 +225,8 @@ export class SupabaseSyncService {
         archiveReason: data.archive_reason,
         order: mapOrder(data.order_snapshot)
       };
-      try {
-        const saved = localStorage.getItem("castano_archived_orders");
-        const current: ArchivedOrderRecord[] = saved ? JSON.parse(saved) : [];
-        localStorage.setItem(
-          "castano_archived_orders",
-          JSON.stringify([archivedOrder, ...current.filter((item) => item.orderId !== orderId)])
-        );
-      } catch {}
       return { success: true, archivedOrder };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         error: error instanceof Error ? error.message : "No fue posible archivar la comanda en Supabase"
@@ -551,32 +530,7 @@ export class SupabaseSyncService {
 
     const remoteOrders = (data || []).map(mapOrder);
 
-    // Merge with local storage status overrides to prevent resurrecting completed ghost orders
-    try {
-      const saved = localStorage.getItem("resto_bar_orders");
-      if (saved) {
-        const localOrders: Order[] = JSON.parse(saved);
-        const localStatusMap = new Map<string, Order["status"]>();
-        localOrders.forEach((o) => {
-          if (o.status === "Completado" || o.status === "Listo") {
-            localStatusMap.set(o.id, o.status);
-          }
-        });
-
-        remoteOrders.forEach((ro) => {
-          const localStatus = localStatusMap.get(ro.id);
-          if (localStatus && localStatus === "Completado" && ro.status !== "Completado") {
-            ro.status = "Completado";
-            // Fire-and-forget background sync to update remote Supabase DB record
-            void supabase
-              .from("orders")
-              .update({ status: "Completado", updated_at: new Date().toISOString() })
-              .eq("id", ro.id);
-          }
-        });
-      }
-    } catch {}
-
+    // Return strictly remote orders from Supabase without any local storage cache merging
     return { orders: remoteOrders };
   }
 

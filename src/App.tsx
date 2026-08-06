@@ -92,14 +92,7 @@ export default function App() {
     }
   });
   const [bookings, setBookings] = useState<Reservation[]>([]);
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem("resto_bar_orders");
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+  const [orders, setOrders] = useState<Order[]>([]);
   const ordersRef = useRef<Order[]>(orders);
   const [activeTrackedOrder, setActiveTrackedOrder] = useState<Order | null>(null);
   const [clientAccounts, setClientAccounts] = useState<ClientAccount[]>([]);
@@ -204,13 +197,10 @@ export default function App() {
           })));
         }
 
-        // 3. Supabase is canonical. Local data is only an offline fallback.
+        // 3. Supabase is single source of truth.
         const { orders: remoteOrders, error: fetchErr } = await SupabaseSyncService.fetchOrders();
         if (!fetchErr) {
           setOrders(remoteOrders);
-          try {
-            localStorage.setItem("resto_bar_orders", JSON.stringify(remoteOrders));
-          } catch {}
         } else {
           console.warn("⚠️ Advertencia al consultar comandas en Supabase:", fetchErr);
         }
@@ -239,12 +229,7 @@ export default function App() {
       const result = await SupabaseSyncService.fetchOrders();
       if (!active || result.error) return;
       
-      setOrders(() => {
-        try {
-          localStorage.setItem("resto_bar_orders", JSON.stringify(result.orders));
-        } catch {}
-        return result.orders;
-      });
+      setOrders(result.orders);
     };
 
     void refreshOrders();
@@ -459,12 +444,9 @@ export default function App() {
 
   // Direct backend comanda status modifier for Admin Panel & KDS
   const handleOrderStatusUpdate = async (orderId: string, status: OrderStatusType) => {
-    // 1. Optimistic Local State & Cache Update (Guarantees instant UI column shift in KDS)
+    // 1. Optimistic Local State Update (Guarantees instant UI column shift in KDS)
     setOrders((prev) => {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status } : o));
-      try {
-        localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
-      } catch (e) {}
       const targetOrder = updated.find((o) => o.id === orderId);
       if (targetOrder && status === "Listo") {
         WhatsAppOrderService.notifyOrderReady(targetOrder);
@@ -472,7 +454,7 @@ export default function App() {
       return updated;
     });
 
-    // 2. Async Network Sync with Supabase (Graceful fallback if unauthenticated or offline)
+    // 2. Async Network Sync with Supabase
     try {
       const result = await SupabaseSyncService.updateOrderStatus(orderId, status);
       if (!result.success) {
@@ -505,15 +487,11 @@ export default function App() {
         showNotification(`No se pudo archivar la comanda #${orderId}. Intente nuevamente.`, "warning");
         return false;
       }
-      setOrders((prev) => {
-        const updated = prev.map((order) =>
+      setOrders((prev) =>
+        prev.map((order) =>
           order.id === orderId ? { ...order, status: "Completado" as OrderStatusType } : order
-        );
-        try {
-          localStorage.setItem("resto_bar_orders", JSON.stringify(updated));
-        } catch {}
-        return updated;
-      });
+        )
+      );
       showNotification(`Comanda #${orderId} guardada en el archivo de Supabase.`, "success");
       return true;
     } catch (err) {
@@ -539,9 +517,6 @@ export default function App() {
     const updatedOrders = ordersRef.current.filter((order) => order.id !== orderId);
     ordersRef.current = updatedOrders;
     setOrders(updatedOrders);
-    try {
-      localStorage.setItem("resto_bar_orders", JSON.stringify(updatedOrders));
-    } catch {}
 
     showNotification(
       result.inventoryRestored
@@ -560,9 +535,6 @@ export default function App() {
 
     ordersRef.current = nextOrders;
     setOrders(nextOrders);
-    try {
-      localStorage.setItem("resto_bar_orders", JSON.stringify(nextOrders));
-    } catch {}
 
     void OrderPersistenceService.persistChanges(previousOrders, nextOrders).then((report) => {
       if (report.failedOrderIds.length > 0) {
