@@ -6,6 +6,7 @@ import {
   CreditCard, Coffee, Utensils, Flame, ChevronRight, User, MapPin, Tag
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { ThermalPrinterService } from "../services/ThermalPrinterService";
 
 export interface ProfessionalOrderTicketProps {
   order: Order;
@@ -292,7 +293,7 @@ export default function ProfessionalOrderTicket({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
           <button
             onClick={() => {
-              window.print();
+              ThermalPrinterService.printOrderThermalReceipt(order);
               if (onShowNotification) onShowNotification(`🖨️ Imprimiendo pre-ticket de comanda #${order.id.slice(-6).toUpperCase()}...`, "info");
             }}
             className="py-2 px-2 bg-[#EBDAC5] hover:bg-[#5C1D27] hover:text-white border border-[#CFB5A0] text-[#5C1D27] rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"

@@ -10839,7 +10839,8 @@ export default function AdminHub({
 
               <button 
                 onClick={() => {
-                  window.print();
+                  ThermalPrinterService.printOrderThermalReceipt(selectedOrderForTicket);
+                  onShowNotification("🖨️ Enviando comanda/ticket de compra a la impresora...", "info");
                 }} 
                 className="py-2.5 rounded-xl bg-[#EBDAC5] text-[#5C1D27] border border-[#CFB5A0] text-[10px] font-black cursor-pointer hover:bg-[#CFB5A0] transition-all flex items-center justify-center gap-1.5 shadow-xs uppercase tracking-wider"
               >
