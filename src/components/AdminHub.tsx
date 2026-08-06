@@ -398,6 +398,10 @@ export default function AdminHub({
   const [manualItems, setManualItems] = useState<
     { description: string; qty: number; unitPrice: number; ivaPct: number }[]
   >([]);
+  const [newManualDesc, setNewManualDesc] = useState<string>("");
+  const [newManualQty, setNewManualQty] = useState<number>(1);
+  const [newManualPrice, setNewManualPrice] = useState<string>("");
+  const [newManualIva, setNewManualIva] = useState<number>(21);
 
   // Mixed Payment Amounts State
   const [mixedCashAmount, setMixedCashAmount] = useState<string>("");
