@@ -176,6 +176,55 @@ export class ReceiptPDFService {
     doc.save(`Ticket_NoFiscal_${order.id.slice(-6).toUpperCase()}.pdf`);
   }
 
+  public static buildOfficialArcaQrUrl(order: Order, fiscal: FiscalDetails): string {
+    if (fiscal.qrCodeUrl && fiscal.qrCodeUrl.startsWith("https://")) {
+      return fiscal.qrCodeUrl;
+    }
+    
+    const letter = (fiscal.invoiceType || "B").toUpperCase();
+    const tipoCmp = letter === "A" ? 1 : letter === "B" ? 6 : 11;
+
+    let nroCmp = 1;
+    let ptoVta = 3;
+    if (fiscal.invoiceNumber && fiscal.invoiceNumber.includes("-")) {
+      const parts = fiscal.invoiceNumber.split("-");
+      ptoVta = parseInt(parts[0], 10) || 3;
+      nroCmp = parseInt(parts[1], 10) || 1;
+    }
+
+    const cleanDoc = (fiscal.customerCuit || order.clientCuit || "").replace(/\D/g, "");
+    const tipoDocRec = cleanDoc.length === 11 ? 80 : cleanDoc.length === 8 ? 96 : 99;
+    const nroDocRec = Number(cleanDoc) || 0;
+    const caeNum = Number((fiscal.cae || "62106470991612").replace(/\D/g, "")) || 62106470991612;
+    const cuitEmisor = Number((fiscal.issuerCuit || "20445513408").replace(/\D/g, "")) || 20445513408;
+    const fechaStr = new Date(order.createdAt).toISOString().slice(0, 10);
+
+    const payload = {
+      ver: 1,
+      fecha: fechaStr,
+      cuit: cuitEmisor,
+      ptoVta: ptoVta,
+      tipoCmp: tipoCmp,
+      nroCmp: nroCmp,
+      importe: Number(order.total.toFixed(2)),
+      moneda: "PES",
+      ctz: 1,
+      tipoDocRec: tipoDocRec,
+      nroDocRec: nroDocRec,
+      tipoCodAut: "E",
+      codAut: caeNum
+    };
+
+    try {
+      const bytes = new TextEncoder().encode(JSON.stringify(payload));
+      let binary = "";
+      bytes.forEach((b) => (binary += String.fromCharCode(b)));
+      return `https://www.arca.gob.ar/fe/qr/?p=${btoa(binary)}`;
+    } catch {
+      return "";
+    }
+  }
+
   /**
    * Generates downloadable PDF for FACTURA FISCAL ARCA (Official Fiscal Receipt with CAE & QR)
    */
@@ -184,7 +233,7 @@ export class ReceiptPDFService {
     const isFacturaC = letter === "C";
     const codigoFactura = letter === "A" ? "COD. 001" : letter === "B" ? "COD. 006" : "COD. 011";
 
-    const qrUrl = fiscal.qrCodeUrl || (fiscal.cae ? `https://www.arca.gob.ar/fe/qr/?p=${btoa(JSON.stringify({ ver: 1, fecha: new Date().toISOString().slice(0,10), cuit: 20445513408, ptoVta: 3, tipoCmp: letter === "A" ? 1 : letter === "B" ? 6 : 11, nroCmp: 658, importe: order.total, moneda: "PES", ctz: 1, tipoDocRec: 99, nroDocRec: 0, tipoCodAut: "E", codAut: Number(fiscal.cae) }))}` : "");
+    const qrUrl = this.buildOfficialArcaQrUrl(order, fiscal);
 
     // Load QR Code Base64 Image 100% offline
     const qrBase64 = await this.loadQrCodeBase64(qrUrl);
