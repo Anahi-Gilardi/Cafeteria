@@ -6,7 +6,7 @@ import {
   ArrowUp, CreditCard, Coffee, CheckCircle, Info, BookOpen, LogOut, 
   Search, Activity, Trash2, Calendar, FileText, LayoutDashboard, Sliders, X,
   Lock, Unlock, Percent, Printer, Scissors, Settings, Download, AlertTriangle, MessageCircle, Clock, PhoneCall, Flame, Menu,
-  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen, Loader2, ChevronDown, ChevronUp
+  HandPlatter, ChefHat, ReceiptText, CalendarCheck2, Armchair, BookOpenText, Boxes, Truck, UsersRound, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen, Loader2, ChevronDown, ChevronUp, ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { DailyExecutiveMenu } from "../types";
