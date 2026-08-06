@@ -5239,7 +5239,45 @@ export default function AdminHub({
       )
     );
 
-    const pendingOrders = orders.filter(o => isOrderActive(o));
+    const pendingOrders = useMemo(() => {
+      const activeList = orders.filter(o => isOrderActive(o));
+      const grouped: (Order & { relatedOrderIds?: string[] })[] = [];
+      const processedTables = new Set<string>();
+
+      for (const o of activeList) {
+        if (o.tableNumber && (o.type === "Mesa" || o.priceList === "Salon")) {
+          const tableKey = o.tableNumber.trim();
+          if (processedTables.has(tableKey)) continue;
+          processedTables.add(tableKey);
+
+          const tableOrders = activeList.filter(x => x.tableNumber && x.tableNumber.trim() === tableKey && (x.type === "Mesa" || x.priceList === "Salon"));
+          if (tableOrders.length === 1) {
+            grouped.push(tableOrders[0]);
+          } else {
+            const allItems = tableOrders.flatMap(x => x.items);
+            const totalSubtotal = tableOrders.reduce((sum, x) => sum + (x.subtotal || x.total), 0);
+            const totalTax = tableOrders.reduce((sum, x) => sum + (x.tax || 0), 0);
+            const totalAmount = tableOrders.reduce((sum, x) => sum + x.total, 0);
+            const relIds = tableOrders.map(x => x.id);
+
+            grouped.push({
+              ...tableOrders[0],
+              id: tableOrders[0].id,
+              items: allItems,
+              subtotal: totalSubtotal,
+              tax: totalTax,
+              total: totalAmount,
+              status: tableOrders.some(x => x.status === "Recibido") ? "Recibido" : tableOrders[0].status,
+              createdAt: tableOrders[0].createdAt,
+              relatedOrderIds: relIds
+            });
+          }
+        } else {
+          grouped.push(o);
+        }
+      }
+      return grouped;
+    }, [orders]);
 
     const addToPosCart = (item: MenuItem) => {
       setPosCart(prev => {
@@ -5451,8 +5489,14 @@ export default function AdminHub({
       });
 
       if (onUpdateOrders) {
+        const relIds: string[] = (posCheckoutOrder as any)?.relatedOrderIds || [orderId];
+        for (const relId of relIds) {
+          if (relId !== orderId) {
+            void SupabaseSyncService.updateOrderStatus(relId, "Completado");
+          }
+        }
         onUpdateOrders(
-          orders.map((order) => (order.id === orderId ? updatedPaidOrder : order))
+          orders.map((order) => (relIds.includes(order.id) ? { ...order, status: "Completado" as const } : order))
         );
       }
 
@@ -6979,8 +7023,22 @@ export default function AdminHub({
     }
     const MOZO_TABLES = activeTableObjs.filter(t => t.status === "Activo").map(t => t.name);
     
+    const getAllActiveOrdersForTable = (table: string) => {
+      return orders.filter(o => o.tableNumber === table && isOrderActive(o));
+    };
+
     const getActiveOrderForTable = (table: string) => {
-      return orders.find(o => o.tableNumber === table && o.status !== "Completado");
+      const activeList = getAllActiveOrdersForTable(table);
+      if (activeList.length === 0) return undefined;
+      if (activeList.length === 1) return activeList[0];
+      const allItems = activeList.flatMap(x => x.items);
+      const totalAmount = activeList.reduce((sum, x) => sum + x.total, 0);
+      return {
+        ...activeList[0],
+        items: allItems,
+        total: totalAmount,
+        subtotal: totalAmount
+      };
     };
 
     const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
@@ -6998,25 +7056,7 @@ export default function AdminHub({
 
     const handleSelectMozoTable = (table: string) => {
       setMozoSelectedTable(table);
-      const activeOrder = getActiveOrderForTable(table);
-      if (activeOrder) {
-        const cartItems = activeOrder.items.map(it => {
-          const menuItem = menuItems.find(m => m.name === it.name) || {
-            id: it.name,
-            name: it.name,
-            price: it.price,
-            description: "",
-            category: "coffee",
-            image: "",
-            customizable: false,
-            nutrition: { calories: 0, allergens: [] }
-          } as MenuItem;
-          return { item: menuItem, qty: it.quantity, notes: it.customizationSummary || "" };
-        });
-        setMozoCart(cartItems);
-      } else {
-        setMozoCart([]);
-      }
+      setMozoCart([]);
     };
 
     const handleAddMozoCart = (item: MenuItem, defaultNotes?: string) => {
@@ -7146,62 +7186,36 @@ export default function AdminHub({
         return;
       }
 
-      // Salón Flow
+      // Salón Flow: Emite siempre un nuevo ticket/ronda en estado Recibido para Cocina & Chef
       if (!mozoSelectedTable) return;
-      const activeOrder = getActiveOrderForTable(mozoSelectedTable);
-      if (activeOrder) {
-        const updatedOrderObj: Order = {
-          ...activeOrder,
-          items: mozoCart.map(c => ({
-            itemId: c.item.id,
-            name: c.item.name,
-            quantity: c.qty,
-            price: c.item.price,
-            customizationSummary: c.notes || ""
-          })),
-          subtotal,
-          tax,
-          total,
-          waiterName: currentUser.name,
-          source: "mozo"
-        };
-        const persisted = await SupabaseSyncService.saveOrder(updatedOrderObj);
-        if (!persisted.success || !persisted.order) {
-          onShowNotification(`⚠️ No se pudo actualizar la comanda: ${persisted.error || "error desconocido"}.`, "warning");
-          return;
-        }
-        onUpdateOrders?.(orders.map(o => o.id === activeOrder.id ? persisted.order! : o));
-        onShowNotification(`🍳 Comanda de la ${mozoSelectedTable} actualizada y enviada a cocina.`, "success");
-      } else {
-        const newOrder: Order = {
-          id: `PED-${crypto.randomUUID()}`,
-          tableNumber: mozoSelectedTable,
-          items: mozoCart.map(c => ({
-            itemId: c.item.id,
-            name: c.item.name,
-            quantity: c.qty,
-            price: c.item.price,
-            customizationSummary: c.notes || ""
-          })),
-          subtotal,
-          tax,
-          total,
-          status: "Recibido",
-          createdAt: new Date().toISOString(),
-          type: "Mesa",
-          priceList: "Salon",
-          estimatedMinutes: 15,
-          waiterName: currentUser.name,
-          source: "mozo"
-        };
-        const persisted = await SupabaseSyncService.saveOrder(newOrder);
-        if (!persisted.success || !persisted.order) {
-          onShowNotification(`⚠️ No se pudo guardar la comanda: ${persisted.error || "error desconocido"}.`, "warning");
-          return;
-        }
-        onUpdateOrders?.([persisted.order, ...orders]);
-        onShowNotification(`🍳 Nueva comanda para la ${mozoSelectedTable} enviada a cocina.`, "success");
+      const newOrder: Order = {
+        id: `PED-${crypto.randomUUID()}`,
+        tableNumber: mozoSelectedTable,
+        items: mozoCart.map(c => ({
+          itemId: c.item.id,
+          name: c.item.name,
+          quantity: c.qty,
+          price: c.item.price,
+          customizationSummary: c.notes || ""
+        })),
+        subtotal,
+        tax,
+        total,
+        status: "Recibido",
+        createdAt: new Date().toISOString(),
+        type: "Mesa",
+        priceList: "Salon",
+        estimatedMinutes: 15,
+        waiterName: currentUser.name,
+        source: "mozo"
+      };
+      const persisted = await SupabaseSyncService.saveOrder(newOrder);
+      if (!persisted.success || !persisted.order) {
+        onShowNotification(`⚠️ No se pudo guardar la comanda: ${persisted.error || "error desconocido"}.`, "warning");
+        return;
       }
+      onUpdateOrders?.([persisted.order, ...orders]);
+      onShowNotification(`🍳 Nueva ronda enviada a cocina para la ${mozoSelectedTable}.`, "success");
 
       setMozoCart([]);
       setMozoSelectedTable(null);
@@ -7767,6 +7781,29 @@ export default function AdminHub({
                           {mozoServiceType === "takeaway" ? "RETIRO" : mozoServiceType === "delivery" ? "DELIVERY" : activeOrder ? "Edición" : "Nueva"}
                         </span>
                       </div>
+                      {mozoServiceType === "salon" && mozoSelectedTable && (() => {
+                        const tableActiveOrders = orders.filter(o => o.tableNumber === mozoSelectedTable && isOrderActive(o));
+                        if (tableActiveOrders.length === 0) return null;
+                        const previousItems = tableActiveOrders.flatMap(o => o.items);
+                        const previousTotal = tableActiveOrders.reduce((sum, o) => sum + o.total, 0);
+
+                        return (
+                          <div className="bg-[#3A1017] border border-[#FFDF00]/30 rounded-2xl p-2.5 space-y-1.5 text-white/90 text-xs">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase text-[#FFDF00] tracking-wider">
+                              <span>📋 Consumos Enviados ({tableActiveOrders.length} {tableActiveOrders.length === 1 ? "ronda" : "rondas"})</span>
+                              <span className="font-mono font-bold">${previousTotal.toLocaleString("es-AR")}</span>
+                            </div>
+                            <div className="space-y-1 max-h-24 overflow-y-auto pr-1 text-[10px]">
+                              {previousItems.map((item, i) => (
+                                <div key={i} className="flex justify-between items-center text-white/80 border-b border-white/5 pb-0.5">
+                                  <span className="truncate pr-1">• {item.quantity}x {item.name} {item.customizationSummary ? `(${item.customizationSummary})` : ""}</span>
+                                  <span className="font-mono text-white/60 shrink-0">${(item.price * item.quantity).toLocaleString("es-AR")}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px]">
                         {mozoCart.length > 0 ? (
