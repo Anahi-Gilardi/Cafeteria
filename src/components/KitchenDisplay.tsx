@@ -391,7 +391,7 @@ export default function KitchenDisplay({
           <button
             type="button"
             onClick={async () => {
-              const confirmed = window.confirm("¿Desea limpiar y marcar como completadas todas las comandas de prueba actuales?");
+              const confirmed = window.confirm("¿Desea limpiar el caché local y actualizar el estado de las comandas?");
               if (!confirmed) return;
               try {
                 const { supabase } = await import("../lib/supabase");
@@ -401,14 +401,14 @@ export default function KitchenDisplay({
                 localStorage.removeItem("castano_offline_orders");
                 window.location.reload();
               } catch {
-                alert("No se pudieron limpiar las comandas.");
+                alert("No se pudo limpiar el caché.");
               }
             }}
             className="px-3 py-2 rounded-xl bg-[#FAF2E6] border border-[#CFB5A0] text-xs font-black text-[#A63F45] hover:bg-[#F4DCDD] transition-all cursor-pointer flex items-center gap-1.5"
-            title="Limpiar y completar todas las comandas fantasmas o de prueba"
+            title="Limpiar el caché de la memoria local del navegador"
           >
             <Trash2 className="h-4 w-4" />
-            Limpiar Fantasmas
+            Limpiar Caché
           </button>
 
           <button
