@@ -100,18 +100,18 @@ export class ARCAAdapter {
       console.warn("Edge Function arca-authorize warning:", error);
     }
 
-    // 2. Production Fallback Fiscal Generator with Verified CUIT & Punto de Venta 3
-    let issuerCuit = "20445513408";
-    let ptoVta = 3;
-    let issuerName = "Castaño — Resto Bar";
-    let issuerAddress = "Constitución 944, Río Cuarto, Córdoba";
+    // 2. Production Fallback Fiscal Generator reading directly from .env variables
+    let issuerCuit = (import.meta.env.VITE_ARCA_CUIT || "20445513408").replace(/\D/g, "");
+    let ptoVta = Number(import.meta.env.VITE_ARCA_POS_NUMBER) || 3;
+    let issuerName = import.meta.env.VITE_ARCA_BUSINESS_NAME || "castano_resto_bar";
+    let issuerAddress = import.meta.env.VITE_ARCA_ADDRESS || "Constitución 944, Río Cuarto, Córdoba";
 
     try {
       const savedProfile = localStorage.getItem("castano_business_profile");
       if (savedProfile) {
         const parsed = JSON.parse(savedProfile);
         if (parsed.cuit) issuerCuit = parsed.cuit.replace(/\D/g, "");
-        if (parsed.posNumber) ptoVta = Number(parsed.posNumber) || 3;
+        if (parsed.posNumber) ptoVta = Number(parsed.posNumber) || ptoVta;
         if (parsed.name) issuerName = parsed.name;
         if (parsed.address) issuerAddress = parsed.address;
       }
