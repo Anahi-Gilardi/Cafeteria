@@ -529,6 +529,55 @@ export default function AdminHub({
   const [closeShiftNotes, setCloseShiftNotes] = useState<string>("");
   const [selectedClosureForModal, setSelectedClosureForModal] = useState<any>(null);
 
+  // History ticket deletion states
+  const [selectedHistoryOrderIds, setSelectedHistoryOrderIds] = useState<string[]>([]);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
+  const [deleteTargetType, setDeleteTargetType] = useState<"single" | "selected" | "all">("selected");
+  const [targetOrderIdToDelete, setTargetOrderIdToDelete] = useState<string | null>(null);
+  const [isDeletingOrders, setIsDeletingOrders] = useState<boolean>(false);
+
+  const handleConfirmDeleteHistoryOrders = async () => {
+    setIsDeletingOrders(true);
+    let idsToDelete: string[] = [];
+    
+    if (deleteTargetType === "single" && targetOrderIdToDelete) {
+      idsToDelete = [targetOrderIdToDelete];
+    } else if (deleteTargetType === "selected") {
+      idsToDelete = [...selectedHistoryOrderIds];
+    } else if (deleteTargetType === "all") {
+      const completedOrders = orders.filter(o => o.status === "Completado" || o.status === "Entregado");
+      idsToDelete = completedOrders.map(o => o.id);
+    }
+
+    if (idsToDelete.length === 0) {
+      setIsDeleteConfirmOpen(false);
+      setIsDeletingOrders(false);
+      return;
+    }
+
+    try {
+      const remainingOrders = orders.filter(o => !idsToDelete.includes(o.id));
+      if (onUpdateOrders) {
+        onUpdateOrders(remainingOrders);
+      }
+      localStorage.setItem("castano_orders", JSON.stringify(remainingOrders));
+
+      // Delete from Supabase Cloud
+      await supabase.from("orders").delete().in("id", idsToDelete);
+      await supabase.from("archived_orders").delete().in("id", idsToDelete);
+
+      setSelectedHistoryOrderIds(prev => prev.filter(id => !idsToDelete.includes(id)));
+      onShowNotification(`🗑️ ${idsToDelete.length} ticket(s) eliminado(s) correctamente del historial.`, "success");
+    } catch (err) {
+      console.error("Error deleting orders:", err);
+      onShowNotification("✅ Comandas eliminadas localmente.", "success");
+    } finally {
+      setIsDeletingOrders(false);
+      setIsDeleteConfirmOpen(false);
+      setTargetOrderIdToDelete(null);
+    }
+  };
+
   // Split bill & billing details state
   const [discountPercentage, setDiscountPercentage] = useState<number>(0);
   const [cuitNumber, setCuitNumber] = useState<string>("");
@@ -6064,9 +6113,36 @@ export default function AdminHub({
 
         {/* Historial de Comandas Facturadas */}
         <div className="bg-[#FAF2E6] border border-[#CFB5A0] text-[#2D0E13] rounded-3xl p-6 shadow-sm space-y-4">
-          <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#5C1D27]">
-            <Receipt className="h-4 w-4 text-[#5C1D27]" /> Historial de Comandas Cobradas
-          </h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#CFB5A0]/40 pb-3">
+            <h3 className="font-serif text-base font-bold flex items-center gap-2 uppercase tracking-wider text-[#5C1D27]">
+              <Receipt className="h-4 w-4 text-[#5C1D27]" /> Historial de Comandas Cobradas
+            </h3>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {selectedHistoryOrderIds.length > 0 && (
+                <button
+                  onClick={() => {
+                    setDeleteTargetType("selected");
+                    setIsDeleteConfirmOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider animate-pulse"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Borrar Seleccionadas ({selectedHistoryOrderIds.length})
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  setDeleteTargetType("all");
+                  setIsDeleteConfirmOpen(true);
+                }}
+                className="px-3 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
+                title="Eliminar todo el historial de comandas cobradas"
+              >
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-300" /> Borrar Todo el Historial
+              </button>
+            </div>
+          </div>
 
           {/* Filters bar */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl text-[#2D0E13] text-xs font-semibold">
@@ -6113,6 +6189,34 @@ export default function AdminHub({
             <table className="w-full text-left border-collapse text-xs font-semibold text-[#2D0E13]">
               <thead>
                 <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] uppercase tracking-wider text-[#5E393F]">
+                  <th className="p-3 text-center w-8">
+                    {(() => {
+                      const filteredCompletedOrders = orders.filter(o => {
+                        if (o.status !== "Completado" && o.status !== "Entregado") return false;
+                        if (historySearchTable && !(o.tableNumber || "").toLowerCase().includes(historySearchTable.toLowerCase())) return false;
+                        if (historyFilterWaiter !== "todos" && o.waiterName !== historyFilterWaiter) return false;
+                        if (historyFilterPayment !== "todos" && (o.paymentMethod || "Efectivo").toLowerCase() !== historyFilterPayment.toLowerCase()) return false;
+                        return true;
+                      });
+                      const allIds = filteredCompletedOrders.map(o => o.id);
+                      const isAllChecked = allIds.length > 0 && allIds.every(id => selectedHistoryOrderIds.includes(id));
+                      return (
+                        <input
+                          type="checkbox"
+                          checked={isAllChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedHistoryOrderIds(allIds);
+                            } else {
+                              setSelectedHistoryOrderIds([]);
+                            }
+                          }}
+                          className="w-3.5 h-3.5 accent-[#5C1D27] cursor-pointer"
+                          title="Seleccionar todas las comandas"
+                        />
+                      );
+                    })()}
+                  </th>
                   <th className="p-3 font-black">Fecha y Hora</th>
                   <th className="p-3 font-black">Comanda ID</th>
                   <th className="p-3 font-black">Mesa / Tipo</th>
@@ -6135,7 +6239,7 @@ export default function AdminHub({
                   if (filteredCompletedOrders.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={7} className="p-6 text-center text-[#5E393F] font-medium italic">
+                        <td colSpan={8} className="p-6 text-center text-[#5E393F] font-medium italic">
                           No se encontraron comandas cobradas con los filtros seleccionados.
                         </td>
                       </tr>
@@ -6144,75 +6248,103 @@ export default function AdminHub({
 
                   const displayedOrders = showAllHistoryOrders ? filteredCompletedOrders : filteredCompletedOrders.slice(0, 2);
 
-                  return displayedOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-[#EBDAC5]/30 transition-colors">
-                      <td className="p-3 font-mono text-[10px] text-[#5E393F]">
-                        <span className="font-bold block text-[#5C1D27]">
-                          📅 {o.createdAt ? new Date(o.createdAt).toLocaleDateString("es-AR") : new Date().toLocaleDateString("es-AR")}
-                        </span>
-                        <span className="text-[9px] font-mono text-[#5E393F]">
-                          🕒 {o.createdAt ? new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
-                        </span>
-                      </td>
-                      <td className="p-3 font-mono font-bold text-[#5C1D27]">{o.id}</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-md bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[10px] font-bold">
-                          {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
-                        </span>
-                      </td>
-                      <td className="p-3 text-[#2D0E13] max-w-[280px]">
-                        <div className="flex flex-wrap gap-1">
-                          {o.items.map((it, idx) => (
-                            <span key={idx} className="inline-block bg-[#EBDAC5]/50 border border-[#CFB5A0] text-[#2D0E13] px-1.5 py-0.5 rounded text-[9px] font-bold">
-                              {it.quantity}x {it.name} (${(it.price * it.quantity).toLocaleString()})
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <select
-                          value={o.paymentMethod || "Efectivo"}
-                          onChange={(e) => {
-                            const newMethod = e.target.value as any;
-                            if (onUpdateOrders) {
-                              onUpdateOrders(orders.map(item => item.id === o.id ? { ...item, paymentMethod: newMethod } : item));
-                            }
-                            onShowNotification(`✅ Método de pago de comanda #${o.id.slice(-6)} actualizado a ${newMethod}.`, "success");
-                          }}
-                          className="p-1.5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#5C1D27] rounded-xl text-[10px] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
-                        >
-                          <option value="Efectivo">💵 Efectivo</option>
-                          <option value="MercadoPago">📱 MercadoPago / QR</option>
-                          <option value="Tarjeta Débito">💳 Tarjeta Débito</option>
-                          <option value="Tarjeta Crédito">💳 Tarjeta Crédito</option>
-                          <option value="Pago Mixto">🔀 Pago Mixto</option>
-                          <option value="Fiado / Cta Cte">🤝 Cta Cte / Fiado</option>
-                        </select>
-                      </td>
-                      <td className="p-3 text-right font-mono font-bold text-[#5C1D27]">${o.total.toLocaleString()}</td>
-                      <td className="p-3 text-center">
-                        <div className="flex items-center gap-1.5 justify-center">
-                          <button
-                            onClick={() => setSelectedOrderForTicket(o)}
-                            className="px-2.5 py-1 bg-[#EBDAC5] hover:bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
-                            title="Ver Ticket Térmico"
-                          >
-                            <Printer className="h-3 w-3" /> Ver
-                          </button>
-                          <button
-                            onClick={() => {
-                              ReceiptPDFService.generateTicketNoFiscalPDF(o);
-                              onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
+                  return displayedOrders.map((o) => {
+                    const isSelected = selectedHistoryOrderIds.includes(o.id);
+                    return (
+                      <tr key={o.id} className={`hover:bg-[#EBDAC5]/30 transition-colors ${isSelected ? "bg-[#EBDAC5]/50" : ""}`}>
+                        <td className="p-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedHistoryOrderIds(prev => [...prev, o.id]);
+                              } else {
+                                setSelectedHistoryOrderIds(prev => prev.filter(id => id !== o.id));
+                              }
                             }}
-                            className="px-2.5 py-1 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-lg transition-all cursor-pointer font-black text-[10px] uppercase shadow-2xs flex items-center gap-1"
-                            title="Descargar Ticket PDF (80mm)"
+                            className="w-3.5 h-3.5 accent-[#5C1D27] cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-3 font-mono text-[10px] text-[#5E393F]">
+                          <span className="font-bold block text-[#5C1D27]">
+                            📅 {o.createdAt ? new Date(o.createdAt).toLocaleDateString("es-AR") : new Date().toLocaleDateString("es-AR")}
+                          </span>
+                          <span className="text-[9px] font-mono text-[#5E393F]">
+                            🕒 {o.createdAt ? new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
+                          </span>
+                        </td>
+                        <td className="p-3 font-mono font-bold text-[#5C1D27]">{o.id}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-md bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[10px] font-bold">
+                            {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
+                          </span>
+                        </td>
+                        <td className="p-3 text-[#2D0E13] max-w-[280px]">
+                          <div className="flex flex-wrap gap-1">
+                            {o.items.map((it, idx) => (
+                              <span key={idx} className="inline-block bg-[#EBDAC5]/50 border border-[#CFB5A0] text-[#2D0E13] px-1.5 py-0.5 rounded text-[9px] font-bold">
+                                {it.quantity}x {it.name} (${(it.price * it.quantity).toLocaleString()})
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <select
+                            value={o.paymentMethod || "Efectivo"}
+                            onChange={(e) => {
+                              const newMethod = e.target.value as any;
+                              if (onUpdateOrders) {
+                                onUpdateOrders(orders.map(item => item.id === o.id ? { ...item, paymentMethod: newMethod } : item));
+                              }
+                              onShowNotification(`✅ Método de pago de comanda #${o.id.slice(-6)} actualizado a ${newMethod}.`, "success");
+                            }}
+                            className="p-1.5 bg-[#FAF2E6] border border-[#CFB5A0] text-[#5C1D27] rounded-xl text-[10px] font-bold cursor-pointer outline-none focus:border-[#5C1D27]"
                           >
-                            <Download className="h-3 w-3" /> PDF
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ));
+                            <option value="Efectivo">💵 Efectivo</option>
+                            <option value="MercadoPago">📱 MercadoPago / QR</option>
+                            <option value="Tarjeta Débito">💳 Tarjeta Débito</option>
+                            <option value="Tarjeta Crédito">💳 Tarjeta Crédito</option>
+                            <option value="Pago Mixto">🔀 Pago Mixto</option>
+                            <option value="Fiado / Cta Cte">🤝 Cta Cte / Fiado</option>
+                          </select>
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-[#5C1D27]">${o.total.toLocaleString()}</td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <button
+                              onClick={() => setSelectedOrderForTicket(o)}
+                              className="px-2 py-1 bg-[#EBDAC5] hover:bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                              title="Ver Ticket Térmico"
+                            >
+                              <Printer className="h-3 w-3" /> Ver
+                            </button>
+                            <button
+                              onClick={() => {
+                                ReceiptPDFService.generateTicketNoFiscalPDF(o);
+                                onShowNotification("📥 Ticket en formato PDF descargado con éxito.", "success");
+                              }}
+                              className="px-2 py-1 bg-[#5C1D27] hover:bg-[#4A151D] text-white rounded-lg transition-all cursor-pointer font-black text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                              title="Descargar Ticket PDF (80mm)"
+                            >
+                              <Download className="h-3 w-3" /> PDF
+                            </button>
+                            <button
+                              onClick={() => {
+                                setDeleteTargetType("single");
+                                setTargetOrderIdToDelete(o.id);
+                                setIsDeleteConfirmOpen(true);
+                              }}
+                              className="px-2 py-1 bg-red-700 hover:bg-red-800 text-white rounded-lg transition-all cursor-pointer font-bold text-[10px] uppercase shadow-2xs flex items-center gap-1"
+                              title="Borrar Ticket del Historial"
+                            >
+                              <Trash2 className="h-3 w-3" /> Borrar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  });
                 })()}
               </tbody>
             </table>
@@ -11025,6 +11157,72 @@ export default function AdminHub({
                   <FileText className="h-4 w-4" /> Emitir Factura Manual ARCA
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Eliminación de Comandas / Tickets */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/65 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-md shadow-2xl relative text-xs font-semibold text-[#2D0E13] space-y-4">
+            <button 
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13] cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-[#CFB5A0] pb-3">
+              <div className="p-2.5 rounded-2xl bg-red-100 border border-red-300 text-red-700">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-serif text-base font-bold text-[#5C1D27] uppercase tracking-wider">
+                  {deleteTargetType === "single"
+                    ? "Eliminar Ticket del Historial"
+                    : deleteTargetType === "selected"
+                    ? `Eliminar ${selectedHistoryOrderIds.length} Ticket(s) Seleccionado(s)`
+                    : "⚠️ ELIMINAR TODO EL HISTORIAL DE COMANDAS"}
+                </h3>
+                <p className="text-[10px] text-[#5E393F]">Confirmación de acción irreversible</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-2 text-xs text-[#2D0E13]">
+              <p>
+                {deleteTargetType === "single"
+                  ? `¿Está seguro de eliminar permanentemente la comanda #${targetOrderIdToDelete?.slice(-6)}?`
+                  : deleteTargetType === "selected"
+                  ? `¿Está seguro de eliminar permanentemente las ${selectedHistoryOrderIds.length} comandas seleccionadas?`
+                  : "⚠️ ¿Está seguro de eliminar ABSOLUTAMENTE TODAS las comandas cobradas del historial?"}
+              </p>
+              <p className="text-[10px] text-red-800 font-bold">
+                * Esta acción borrará la información de la memoria local y de la nube Supabase.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isDeletingOrders}
+                className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent uppercase tracking-wider"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void handleConfirmDeleteHistoryOrders()}
+                disabled={isDeletingOrders}
+                className="w-1/2 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 disabled:opacity-50 text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
+              >
+                {isDeletingOrders ? (
+                  <span>Eliminando...</span>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" /> Sí, Eliminar
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
