@@ -498,6 +498,32 @@ export default function AdminHub({
   // Modal open states
   const [isConfigRestaurantOpen, setIsConfigRestaurantOpen] = useState(false);
   const [isConfigTicketerisOpen, setIsConfigTicketerisOpen] = useState(false);
+  const [isConfigArcaOpen, setIsConfigArcaOpen] = useState(false);
+  const [arcaConfig, setArcaConfig] = useState<{
+    cuit: string;
+    posNumber: string;
+    businessName: string;
+    address: string;
+    ivaCondition: "Monotributista" | "Responsable Inscripto" | "Exento";
+    environment: "testing" | "production";
+    crtContent: string;
+    keyContent: string;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem("castano_arca_config");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      cuit: "20445513408",
+      posNumber: "3",
+      businessName: "Castaño — Resto Bar",
+      address: "Constitución 944, Río Cuarto, Córdoba",
+      ivaCondition: "Responsable Inscripto",
+      environment: "testing",
+      crtContent: "",
+      keyContent: ""
+    };
+  });
   const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState(false);
   const [closeShiftRealCash, setCloseShiftRealCash] = useState<string>("");
   const [closeShiftNotes, setCloseShiftNotes] = useState<string>("");
@@ -5493,6 +5519,12 @@ export default function AdminHub({
               </button>
             )}
             <button 
+              onClick={() => setIsConfigArcaOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-[#5C1D27] text-white border border-[#CFB5A0] hover:bg-[#4A151D] text-[10px] font-black transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-[#D4AF37]" /> CONFIGURAR ARCA (AFIP)
+            </button>
+            <button 
               onClick={() => setIsSupabaseSqlModalOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
@@ -10055,6 +10087,170 @@ export default function AdminHub({
                 <button onClick={() => setIsConfigRestaurantOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
                 <button onClick={() => void handleSaveBusinessProfile()} disabled={isBusinessProfileSaving} className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer">{isBusinessProfileSaving ? "Guardando…" : "Guardar"}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Configuración Fiscal ARCA (AFIP) Modal */}
+      {isConfigArcaOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#2D0E13] my-8 space-y-4">
+            <button 
+              onClick={() => setIsConfigArcaOpen(false)}
+              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13] cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-[#5C1D27] text-[#D4AF37] shadow-xs">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="font-serif text-lg font-bold text-[#5C1D27]">Configuración Fiscal ARCA (AFIP)</h4>
+                <p className="text-[10px] text-[#5E393F] font-normal">Parámetros de facturación electrónica, clave fiscal y certificados WSFE.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 bg-[#EBDAC5]/30 border border-[#CFB5A0] rounded-2xl p-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">CUIT Comercial (11 dígitos)</label>
+                  <input 
+                    type="text"
+                    value={arcaConfig.cuit}
+                    onChange={(e) => setArcaConfig(prev => ({ ...prev, cuit: e.target.value }))}
+                    placeholder="ej: 20445513408"
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-mono font-bold outline-none focus:border-[#5C1D27]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Punto de Venta Autorizado</label>
+                  <input 
+                    type="number"
+                    min="1"
+                    value={arcaConfig.posNumber}
+                    onChange={(e) => setArcaConfig(prev => ({ ...prev, posNumber: e.target.value }))}
+                    placeholder="ej: 3"
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-mono font-bold outline-none focus:border-[#5C1D27]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Razón Social / Nombre Comercial</label>
+                <input 
+                  type="text"
+                  value={arcaConfig.businessName}
+                  onChange={(e) => setArcaConfig(prev => ({ ...prev, businessName: e.target.value }))}
+                  placeholder="ej: Castaño — Resto Bar"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Domicilio Comercial</label>
+                <input 
+                  type="text"
+                  value={arcaConfig.address}
+                  onChange={(e) => setArcaConfig(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="ej: Constitución 944, Río Cuarto, Córdoba"
+                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Condición frente al IVA</label>
+                  <select 
+                    value={arcaConfig.ivaCondition}
+                    onChange={(e) => setArcaConfig(prev => ({ ...prev, ivaCondition: e.target.value as any }))}
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
+                  >
+                    <option value="Responsable Inscripto">Responsable Inscripto</option>
+                    <option value="Monotributista">Monotributista</option>
+                    <option value="Exento">Exento</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Ambiente AFIP / ARCA</label>
+                  <select 
+                    value={arcaConfig.environment}
+                    onChange={(e) => setArcaConfig(prev => ({ ...prev, environment: e.target.value as any }))}
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]"
+                  >
+                    <option value="testing">🧪 Simulación / Homologación Local</option>
+                    <option value="production">🟢 Producción Real (WSFE v1 AFIP)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Certificados Digitales (Punto de Vinculación .crt y .key) */}
+            <div className="space-y-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-2xl p-4">
+              <span className="text-[10px] font-black uppercase text-[#5C1D27] block">Carga de Certificados Digitales WSFE</span>
+              
+              <div>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Certificado Digital (`.crt` / `.pem` AFIP)</label>
+                <textarea 
+                  rows={2}
+                  value={arcaConfig.crtContent}
+                  onChange={(e) => setArcaConfig(prev => ({ ...prev, crtContent: e.target.value }))}
+                  placeholder="Pegue aquí el contenido del archivo .crt emitido por AFIP..."
+                  className="w-full p-2 border border-[#CFB5A0] rounded-xl text-[10px] bg-[#FAF2E6] text-[#2D0E13] font-mono outline-none focus:border-[#5C1D27]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Clave Privada (`.key` AFIP)</label>
+                <textarea 
+                  rows={2}
+                  value={arcaConfig.keyContent}
+                  onChange={(e) => setArcaConfig(prev => ({ ...prev, keyContent: e.target.value }))}
+                  placeholder="Pegue aquí la clave privada .key generada para el certificado..."
+                  className="w-full p-2 border border-[#CFB5A0] rounded-xl text-[10px] bg-[#FAF2E6] text-[#2D0E13] font-mono outline-none focus:border-[#5C1D27]"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setIsConfigArcaOpen(false)}
+                className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent uppercase tracking-wider"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  const cleanCuit = arcaConfig.cuit.replace(/\D/g, "");
+                  if (!cleanCuit || cleanCuit.length < 10) {
+                    onShowNotification("⚠️ Ingrese un CUIT comercial válido (11 dígitos).", "warning");
+                    return;
+                  }
+                  localStorage.setItem("castano_arca_config", JSON.stringify(arcaConfig));
+                  setBusinessProfile(prev => ({
+                    ...prev,
+                    cuit: cleanCuit,
+                    posNumber: arcaConfig.posNumber,
+                    name: arcaConfig.businessName,
+                    address: arcaConfig.address
+                  }));
+                  localStorage.setItem("castano_business_profile", JSON.stringify({
+                    ...businessProfile,
+                    cuit: cleanCuit,
+                    posNumber: arcaConfig.posNumber,
+                    name: arcaConfig.businessName,
+                    address: arcaConfig.address
+                  }));
+                  setIsConfigArcaOpen(false);
+                  onShowNotification("✅ Configuración Fiscal ARCA (AFIP) guardada correctamente.", "success");
+                }}
+                className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
+              >
+                <Check className="h-4 w-4 text-[#D4AF37]" /> Guardar ARCA
+              </button>
             </div>
           </div>
         </div>
