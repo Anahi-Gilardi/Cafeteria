@@ -27,7 +27,7 @@ import PasswordSetupScreen from "./components/PasswordSetupScreen";
 import { MenuSyncService } from "./services/MenuSyncService";
 import { isOrderActive } from "./utils/orderUtils";
 
-const AdminHub = lazy(() => import("./components/AdminHub"));
+import AdminHub from "./components/AdminHub";
 const BaristaAI = lazy(() => import("./components/BaristaAI"));
 const ManualPuglia = lazy(() => import("./components/ManualPuglia"));
 const TicketPreviewModal = lazy(() => import("./components/TicketPreviewModal"));
@@ -159,15 +159,23 @@ export default function App() {
     };
   }, []);
 
-  // Load private operational data only after Supabase Auth resolves.
+  // Load private operational data and subscribe to live changes after Supabase Auth resolves.
   useEffect(() => {
-    const loadSupabaseData = async () => {
-      if (!currentUser) return;
-      try {
+    if (!currentUser) return;
 
+    let active = true;
+
+    const refreshOrders = async () => {
+      const result = await SupabaseSyncService.fetchOrders();
+      if (!active || result.error) return;
+      setOrders(result.orders);
+    };
+
+    const loadSupabaseData = async () => {
+      try {
         // 1. Fetch Client Accounts
         const { data: clientData } = await supabase.from("client_accounts").select("*");
-        if (clientData && clientData.length > 0) {
+        if (active && clientData && clientData.length > 0) {
           setClientAccounts(clientData.map(c => ({
             id: c.id,
             name: c.name,
@@ -176,13 +184,13 @@ export default function App() {
             balance: Number(c.balance),
             creditLimit: Number(c.credit_limit)
           })));
-        } else {
+        } else if (active) {
           setClientAccounts([]);
         }
 
         // 2. Fetch Reservations
         const { data: bookingsData } = await supabase.from("reservations").select("*");
-        if (bookingsData) {
+        if (active && bookingsData) {
           setBookings(bookingsData.map(b => ({
             id: b.id,
             tableId: b.table_id,
@@ -197,42 +205,15 @@ export default function App() {
           })));
         }
 
-        // 3. Supabase is single source of truth.
-        const { orders: remoteOrders, error: fetchErr } = await SupabaseSyncService.fetchOrders();
-        if (!fetchErr) {
-          setOrders(remoteOrders);
-        } else {
-          console.warn("⚠️ Advertencia al consultar comandas en Supabase:", fetchErr);
-        }
-
+        // 3. Fetch Orders
+        await refreshOrders();
       } catch (err) {
         console.error("Error loading data from Supabase:", err);
       }
     };
 
-    loadSupabaseData();
-  }, [currentUser]);
+    void loadSupabaseData();
 
-  // Sync active tracked order
-  useEffect(() => {
-    const active = orders.find(isOrderActive);
-    setActiveTrackedOrder(active || null);
-    ordersRef.current = orders;
-  }, [orders]);
-
-  // Keep authenticated staff screens aligned with changes made by other terminals.
-  useEffect(() => {
-    if (!currentUser) return;
-
-    let active = true;
-    const refreshOrders = async () => {
-      const result = await SupabaseSyncService.fetchOrders();
-      if (!active || result.error) return;
-      
-      setOrders(result.orders);
-    };
-
-    void refreshOrders();
     const unsubscribe = SupabaseSyncService.subscribeToOrders(
       () => void refreshOrders(),
       (status) => {
@@ -247,6 +228,13 @@ export default function App() {
       unsubscribe();
     };
   }, [currentUser]);
+
+  // Sync active tracked order
+  useEffect(() => {
+    const active = orders.find(isOrderActive);
+    setActiveTrackedOrder(active || null);
+    ordersRef.current = orders;
+  }, [orders]);
 
   // Retry queued orders when connectivity returns and once on application start.
   useEffect(() => {
@@ -667,345 +655,23 @@ export default function App() {
     );
   }
 
-  if (activeTab === "admin") {
-    return (
-      <ErrorBoundary>
-        <div className="min-h-screen bg-[#F4E8D7] font-sans text-[#2D0E13] selection:bg-[#5C1D27] selection:text-white">
-          <Suspense fallback={<ModuleFallback />}>
-            <AdminHub
-              orders={orders}
-              onOrderStatusUpdate={handleOrderStatusUpdate}
-              onArchiveOrder={handleArchiveOrder}
-              onDeleteOrder={handleDeleteOrder}
-              onUpdateOrders={handleUpdateOrdersWithPersist}
-              menuItems={menuItems}
-              onUpdateMenu={setMenuItems}
-              onShowNotification={showNotification}
-              clientAccounts={clientAccounts}
-              onUpdateClientAccounts={setClientAccounts}
-              onClosePanel={() => setActiveTab("dashboard")}
-              currentUser={currentUser}
-              bookings={bookings}
-            />
-          </Suspense>
-          {renderNotificationStack()}
-        </div>
-      </ErrorBoundary>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#F4E8D7] font-sans text-[#2D0E13] selection:bg-[#5C1D27] selection:text-white">
-      <Suspense fallback={<ModuleFallback />}>
-        <AdminHub
-          orders={orders}
-          onOrderStatusUpdate={handleOrderStatusUpdate}
-          onArchiveOrder={handleArchiveOrder}
-          onDeleteOrder={handleDeleteOrder}
-          onUpdateOrders={handleUpdateOrdersWithPersist}
-          menuItems={menuItems}
-          onUpdateMenu={setMenuItems}
-          onShowNotification={showNotification}
-          clientAccounts={clientAccounts}
-          onUpdateClientAccounts={setClientAccounts}
-          onClosePanel={handleLogout}
-          currentUser={currentUser}
-          bookings={bookings}
-        />
-      </Suspense>
-
-      <div className="hidden">
-        {/* Sidebar Navigation */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        cartCount={cartItems.reduce((acc, curr) => acc + curr.quantity, 0)}
-        onCartClick={() => setIsCartOpen(true)}
-        onLogout={handleLogout}
+      <AdminHub
+        orders={orders}
+        onOrderStatusUpdate={handleOrderStatusUpdate}
+        onArchiveOrder={handleArchiveOrder}
+        onDeleteOrder={handleDeleteOrder}
+        onUpdateOrders={handleUpdateOrdersWithPersist}
+        menuItems={menuItems}
+        onUpdateMenu={setMenuItems}
+        onShowNotification={showNotification}
+        clientAccounts={clientAccounts}
+        onUpdateClientAccounts={setClientAccounts}
+        onClosePanel={handleLogout}
         currentUser={currentUser}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
+        bookings={bookings}
       />
-
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? "md:pl-80" : "pl-0"}`}>
-        <div className="flex-1">
-          {/* Sliding Bag Drawer */}
-          <CartDrawer
-            isOpen={isCartOpen}
-            onClose={() => setIsCartOpen(false)}
-            cartItems={cartItems}
-            onUpdateQuantity={handleUpdateQuantity}
-            onRemoveItem={handleRemoveItem}
-            onCheckout={handleCheckoutComplete}
-            activeBookings={bookings}
-            clientAccounts={clientAccounts}
-          />
-
-          {/* Content routing based on activeTab */}
-          <main className="pb-24">
-          <AnimatePresence mode="wait">
-            {activeTab === "dashboard" && (
-              <Dashboard
-                onGoToCaja={() => setActiveTab("admin")}
-                onGoToInventario={() => setActiveTab("admin")}
-                onShowNotification={showNotification}
-                orders={orders}
-                menuItems={menuItems}
-              />
-            )}
-
-            {activeTab === "salon" && (
-              <SalonMap
-                orders={orders}
-                activeBookings={bookings}
-                onSelectTableForOrder={(tableNumber) => {
-                  setActiveTab("menu");
-                  setIsCartOpen(true);
-                }}
-                onShowNotification={showNotification}
-              />
-            )}
-
-            {activeTab === "menu" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="menu-tab-content"
-              >
-                <InteractiveMenu onAddToBag={handleAddToBag} menuItems={availableMenuItems} />
-              </motion.div>
-            )}
-
-            {activeTab === "carta-digital" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="carta-digital-tab-content"
-              >
-                <CartaDigital menuItems={availableMenuItems} onAddToBag={handleAddToBag} onShowNotification={showNotification} />
-              </motion.div>
-            )}
-
-            {activeTab === "reservas" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="reservas-tab-content"
-              >
-                <TableReservation bookings={bookings} onConfirmReservation={handleConfirmReservation} />
-              </motion.div>
-            )}
-
-            {activeTab === "manual" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="manual-tab-content"
-              >
-                <Suspense fallback={<ModuleFallback />}>
-                  <ManualPuglia />
-                </Suspense>
-              </motion.div>
-            )}
-
-            {activeTab === "barista-ia" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="barista-tab-content"
-              >
-                <Suspense fallback={<ModuleFallback />}>
-                  <BaristaAI onAddToBag={handleAddToBag} menuItems={availableMenuItems} />
-                </Suspense>
-              </motion.div>
-            )}
-
-            {activeTab === "admin" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="admin-tab-content"
-              >
-                <Suspense fallback={<ModuleFallback />}>
-              <AdminHub
-                orders={orders}
-                onOrderStatusUpdate={handleOrderStatusUpdate}
-                onArchiveOrder={handleArchiveOrder}
-                onDeleteOrder={handleDeleteOrder}
-                    onUpdateOrders={handleUpdateOrdersWithPersist}
-                    menuItems={menuItems}
-                    onUpdateMenu={setMenuItems}
-                    onShowNotification={showNotification}
-                    clientAccounts={clientAccounts}
-                    onUpdateClientAccounts={setClientAccounts}
-                    onClosePanel={() => setActiveTab("dashboard")}
-                    currentUser={currentUser}
-                    bookings={bookings}
-                  />
-                </Suspense>
-              </motion.div>
-            )}
-
-            {activeTab === "cocina" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="cocina-tab-content"
-              >
-                <KitchenDisplay
-                  orders={orders}
-                  menuItems={menuItems}
-                  onOrderStatusUpdate={handleOrderStatusUpdate}
-                  onArchiveOrder={handleArchiveOrder}
-                  onDeleteOrder={handleDeleteOrder}
-                  canDeleteOrders={["administrador", "dueño"].includes(currentUser?.role || "")}
-                />
-              </motion.div>
-            )}
-
-            {activeTab === "historial" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                key="history-tab-content"
-                className="space-y-8"
-              >
-                {/* Active Tracking Status (if any) */}
-                {activeTrackedOrder && (
-                  <section className="bg-paper border-b border-coffee py-6">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                      <div className="text-center mb-4">
-                        <h3 className="font-serif text-xl font-bold text-espresso">Seguimiento de su pedido actual</h3>
-                        <p className="text-xs text-espresso/60 mt-1">Siga el estado de preparación de su café en tiempo real.</p>
-                      </div>
-                      <OrderStatus
-                        activeOrder={activeTrackedOrder}
-                        onOrderCompleted={handleOrderStatusCompleted}
-                      />
-                    </div>
-                  </section>
-                )}
-
-                {/* History Lists */}
-                <HistoryHub
-                  bookings={bookings}
-                  orders={orders}
-                  onCancelBooking={handleCancelBooking}
-                  onReorder={handleReorder}
-                  onViewTicket={(order) => {
-                    setOrderToPreview(order);
-                    setIsPreviewOpen(true);
-                  }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </main>
-      </div>
-
-      {/* Persistent Live Order Tracking Notification Bar (Floating at bottom if order is not completed) */}
-      <AnimatePresence>
-        {activeTrackedOrder && activeTab !== "historial" && (
-          <motion.div
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            className="fixed bottom-4 inset-x-4 md:left-auto md:right-4 md:w-96 z-30"
-          >
-            <div 
-              onClick={() => setActiveTab("historial")}
-              className="bg-espresso border border-coffee text-paper rounded-2xl p-4 shadow-xl hover:scale-101 cursor-pointer transition-all flex items-center justify-between gap-4"
-            >
-              <div className="flex items-center space-x-3 min-w-0">
-                <div className="h-9 w-9 rounded-full bg-caramel text-paper flex items-center justify-center shrink-0">
-                  <Coffee className="h-4.5 w-4.5 animate-bounce" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase font-bold text-caramel tracking-wider">Pedido en preparación</p>
-                  <h4 className="text-xs font-bold truncate">Estado: {activeTrackedOrder.status}</h4>
-                </div>
-              </div>
-              <button
-                id="floating-tracker-go-btn"
-                className="text-xs font-bold text-espresso bg-paper px-3.5 py-1.5 rounded-full hover:bg-white shrink-0 shadow-sm flex items-center gap-1 cursor-pointer"
-              >
-                <span>Ver mapa</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Castaño Footer */}
-      <footer className="bg-[#EBDAC5] text-[#2D0E13] border-t border-[#D1AD95] py-10 px-4 mt-auto">
-        <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-          {/* Brand Info */}
-          <div>
-            <div className="flex items-center justify-center md:justify-start mb-3">
-              <RestoBarLogo size="md" />
-            </div>
-            <p className="text-xs text-[#5E393F] leading-relaxed max-w-xs mx-auto md:mx-0">
-              Gastronomía de Autor, Menú Ejecutivo y Cafetería en Río Cuarto. Una propuesta única frente al Teatro Municipal con excelencia y calidez.
-            </p>
-          </div>
-
-          {/* Opening Hours */}
-          <div className="flex flex-col items-center md:items-start text-xs font-medium">
-            <h4 className="text-[#5C1D27] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-[#5C1D27]" /> Horarios de Atención
-            </h4>
-            <div className="space-y-1 text-[#2D0E13]">
-              <p>Lunes a Viernes: <span className="font-semibold">07:30 - 00:30 hs</span></p>
-              <p>Sábados y Domingos: <span className="font-semibold">08:30 - 02:00 hs</span></p>
-              <p className="text-[10px] text-[#5C1D27] mt-2 font-bold uppercase tracking-wider">Menú Ejecutivo del Día: $12.500 (Incluye Entrada, Principal, Bebida y Postre)</p>
-            </div>
-          </div>
-
-          {/* Contact Details */}
-          <div className="flex flex-col items-center md:items-start text-xs font-medium">
-            <h4 className="text-[#5C1D27] font-bold uppercase tracking-[0.15em] mb-3 flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-[#5C1D27]" /> Ubicación & Contacto
-            </h4>
-            <div className="space-y-1 text-[#2D0E13]">
-              <p>Constitución 944 (Frente al Teatro Municipal)</p>
-              <p>Río Cuarto, Provincia de Córdoba, Argentina</p>
-              <p>Teléfono / Reservas: 358 5042311 / 4651847</p>
-              <p>Instagram: @castano_restobar</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mx-auto max-w-7xl border-t border-[#D1AD95] mt-8 pt-4 text-center text-[10px] text-[#5E393F] font-semibold tracking-wider uppercase">
-          © 2026 Castaño — Resto Bar. Todos los derechos reservados.
-        </div>
-      </footer>
-      </div>
-    </div>
-
-      {/* Interactive Ticket & AFIP Invoice Preview Modal */}
-      <Suspense fallback={null}>
-        <TicketPreviewModal
-          order={orderToPreview}
-          isOpen={isPreviewOpen}
-          onClose={() => {
-            setIsPreviewOpen(false);
-            setOrderToPreview(null);
-          }}
-          clientAccounts={clientAccounts}
-          onUpdateClientAccounts={setClientAccounts}
-          onShowNotification={showNotification}
-        />
-      </Suspense>
-
       {renderNotificationStack()}
     </div>
   );

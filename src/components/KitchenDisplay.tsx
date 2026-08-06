@@ -148,7 +148,7 @@ export default function KitchenDisplay({
         if (destinationFilter === "all") return true;
         return o.items && o.items.some(it => getItemDestination(it.name) === destinationFilter);
       })
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      .sort((a, b) => (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0));
   }, [mergedOrders, destinationFilter]);
 
   // Split active orders into 3 Kanban Columns (exclusively excluding "Completado")
@@ -157,7 +157,7 @@ export default function KitchenDisplay({
   const completedOrders = useMemo(() => activeOrders.filter(o => o.status === "Listo"), [activeOrders]);
   const allArchivedList = useMemo(() => {
     return [...archivedOrders].sort(
-      (a, b) => new Date(b.archivedAt).getTime() - new Date(a.archivedAt).getTime()
+      (a, b) => (new Date(b.archivedAt || 0).getTime() || 0) - (new Date(a.archivedAt || 0).getTime() || 0)
     );
   }, [archivedOrders]);
 
