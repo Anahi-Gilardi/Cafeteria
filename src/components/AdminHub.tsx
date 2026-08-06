@@ -630,6 +630,9 @@ export default function AdminHub({
   const [selectedMainMozo, setSelectedMainMozo] = useState<string>("");
   const [selectedSideMozo, setSelectedSideMozo] = useState<string>("");
   const [saladSizeMozo, setSaladSizeMozo] = useState<"chica" | "grande">("chica");
+  const [comboDetailMozo, setComboDetailMozo] = useState<string>("");
+  const [platoDiaNoteMozo, setPlatoDiaNoteMozo] = useState<string>("");
+  const [saladNoteMozo, setSaladNoteMozo] = useState<string>("");
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -7016,7 +7019,7 @@ export default function AdminHub({
       }
     };
 
-    const handleAddMozoCart = (item: MenuItem) => {
+    const handleAddMozoCart = (item: MenuItem, defaultNotes?: string) => {
       if (mozoServiceType === "salon" && !mozoSelectedTable) {
         onShowNotification("⚠️ Seleccione una mesa a la izquierda antes de añadir productos.", "warning");
         return;
@@ -7024,11 +7027,19 @@ export default function AdminHub({
       setMozoCart(prev => {
         const match = prev.find(c => c.item.id === item.id);
         if (match) {
-          return prev.map(c => c.item.id === item.id ? { ...c, qty: c.qty + 1 } : c);
+          return prev.map(c => {
+            if (c.item.id === item.id) {
+              const combined = defaultNotes
+                ? (c.notes ? `${c.notes} | ${defaultNotes}` : defaultNotes)
+                : c.notes;
+              return { ...c, qty: c.qty + 1, notes: combined };
+            }
+            return c;
+          });
         }
-        return [...prev, { item, qty: 1 }];
+        return [...prev, { item, qty: 1, notes: defaultNotes || "" }];
       });
-      onShowNotification(`🛒 ${item.name} añadido a la comanda de ${mozoServiceType === "takeaway" ? "Retiro" : mozoServiceType === "delivery" ? "Delivery" : mozoSelectedTable}.`, "success");
+      onShowNotification(`🛒 ${item.name} añadido a la comanda.`, "success");
     };
 
     const handleUpdateMozoCartQty = (itemId: string, val: number) => {
@@ -7434,24 +7445,34 @@ export default function AdminHub({
                   <span className="text-xl font-mono font-black text-[#5C1D27] block">${todayMenu.price.toLocaleString("es-AR")}</span>
                 </div>
               </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const itemToCart: MenuItem = {
-                      id: `menu_dia_${Date.now()}`,
-                      name: `⭐ Menú del Día (${todayMenu.title})`,
-                      price: todayMenu.price,
-                      category: "menu_diario",
-                      description: todayMenu.description,
-                      image: todayMenu.image
-                    };
-                    handleAddMozoCart(itemToCart);
-                  }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4" /> Agregar Plato del Día a Comanda
-                </button>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={platoDiaNoteMozo}
+                  onChange={(e) => setPlatoDiaNoteMozo(e.target.value)}
+                  placeholder="📝 Especificar aclaración (ej: Tallarines tuco, sin sal, bien cocido...)"
+                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none focus:border-[#5C1D27] placeholder:text-[#5E393F]/50"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const itemToCart: MenuItem = {
+                        id: `menu_dia_${Date.now()}`,
+                        name: `⭐ Menú del Día (${todayMenu.title})`,
+                        price: todayMenu.price,
+                        category: "menu_diario",
+                        description: todayMenu.description,
+                        image: todayMenu.image
+                      };
+                      handleAddMozoCart(itemToCart, platoDiaNoteMozo);
+                      setPlatoDiaNoteMozo("");
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" /> Agregar Plato del Día a Comanda
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -7503,6 +7524,18 @@ export default function AdminHub({
                     ))}
                   </select>
                 </div>
+
+                {/* 3. Specific Custom Details (e.g. Pasta type, sauces, toppings, sin sal) */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[9px] font-black uppercase text-[#5C1D27] block font-bold">3. Especificación de la Opción / Notas:</label>
+                  <input
+                    type="text"
+                    value={comboDetailMozo}
+                    onChange={(e) => setComboDetailMozo(e.target.value)}
+                    placeholder="ej: Tallarines tuco, Ñoquis c/ salsa blanca, sin sal, queso extra..."
+                    className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none focus:border-[#5C1D27] placeholder:text-[#5E393F]/50"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end pt-1">
@@ -7511,14 +7544,18 @@ export default function AdminHub({
                   onClick={() => {
                     const mainChoice = selectedMainMozo || dailyComboState.mains[0] || "Pollo al horno";
                     const sideChoice = selectedSideMozo || (dailyComboState.sides && dailyComboState.sides[0] ? dailyComboState.sides[0] : "Puré de papa");
+                    const displayName = comboDetailMozo
+                      ? `🍱 Menú Diario (${mainChoice}: ${comboDetailMozo} c/ ${sideChoice})`
+                      : `🍱 Menú Diario (${mainChoice} c/ ${sideChoice})`;
                     const itemToCart: MenuItem = {
                       id: `combo_diario_${Date.now()}`,
-                      name: `🍱 Menú Diario (${mainChoice} c/ ${sideChoice})`,
+                      name: displayName,
                       price: dailyComboState.price,
                       category: "executive",
                       description: `Plato: ${mainChoice} | Guarnición: ${sideChoice}`
                     };
-                    handleAddMozoCart(itemToCart);
+                    handleAddMozoCart(itemToCart, comboDetailMozo);
+                    setComboDetailMozo("");
                   }}
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
@@ -7551,51 +7588,64 @@ export default function AdminHub({
                 </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#5C1D27] uppercase tracking-wider">Tamaño:</span>
-                  <button
-                    type="button"
-                    onClick={() => setSaladSizeMozo("chica")}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
-                      saladSizeMozo === "chica"
-                        ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
-                        : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
-                    }`}
-                  >
-                    Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSaladSizeMozo("grande")}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
-                      saladSizeMozo === "grande"
-                        ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
-                        : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
-                    }`}
-                  >
-                    Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
-                  </button>
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#5C1D27] uppercase tracking-wider">Tamaño:</span>
+                    <button
+                      type="button"
+                      onClick={() => setSaladSizeMozo("chica")}
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                        saladSizeMozo === "chica"
+                          ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
+                          : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
+                      }`}
+                    >
+                      Chica (${(dailyComboState.saladPriceSmall ?? 6500).toLocaleString("es-AR")})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSaladSizeMozo("grande")}
+                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                        saladSizeMozo === "grande"
+                          ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
+                          : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
+                      }`}
+                    >
+                      Grande (${(dailyComboState.saladPriceLarge ?? 8500).toLocaleString("es-AR")})
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const price = saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500);
-                    const title = `${dailyComboState.saladTitle || "Ensalada Completa"} (${saladSizeMozo === "chica" ? "Chica" : "Grande"})`;
-                    const itemToCart: MenuItem = {
-                      id: `ensalada_completa_${saladSizeMozo}_${Date.now()}`,
-                      name: `🥗 ${title}`,
-                      price: price,
-                      category: "executive",
-                      description: dailyComboState.saladDescription
-                    };
-                    handleAddMozoCart(itemToCart);
-                  }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4" /> Agregar Ensalada a Comanda
-                </button>
+                <input
+                  type="text"
+                  value={saladNoteMozo}
+                  onChange={(e) => setSaladNoteMozo(e.target.value)}
+                  placeholder="📝 Aderezos / Modificaciones (ej: Sin huevo, aderezo mostaza aparte, sin sal...)"
+                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none focus:border-[#5C1D27] placeholder:text-[#5E393F]/50"
+                />
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const price = saladSizeMozo === "chica" ? (dailyComboState.saladPriceSmall ?? 6500) : (dailyComboState.saladPriceLarge ?? 8500);
+                      const title = `${dailyComboState.saladTitle || "Ensalada Completa"} (${saladSizeMozo === "chica" ? "Chica" : "Grande"})`;
+                      const itemToCart: MenuItem = {
+                        id: `ensalada_completa_${saladSizeMozo}_${Date.now()}`,
+                        name: `🥗 ${title}`,
+                        price: price,
+                        category: "executive",
+                        description: dailyComboState.saladDescription
+                      };
+                      handleAddMozoCart(itemToCart, saladNoteMozo);
+                      setSaladNoteMozo("");
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" /> Agregar Ensalada a Comanda
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -7751,16 +7801,48 @@ export default function AdminHub({
                                   </button>
                                 </div>
                               </div>
-                              <input 
-                                type="text"
-                                value={cart.notes || ""}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
-                                }}
-                                placeholder="Añadir aclaración (ej: bien cocido, sin hielo...)"
-                                className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#4A151D] text-white placeholder-white/50 outline-none font-medium"
-                              />
+                              <div className="space-y-1">
+                                <input 
+                                  type="text"
+                                  value={cart.notes || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
+                                  }}
+                                  placeholder="📝 Añadir aclaración (ej: bien cocido, sin sal, toppings...)"
+                                  className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#4A151D] text-white placeholder-white/50 outline-none font-medium"
+                                />
+                                <div className="flex flex-wrap gap-1 pt-0.5">
+                                  {[
+                                    "Sin Sal",
+                                    "Punto Medio",
+                                    "Bien Cocido",
+                                    "Sin Cebolla",
+                                    "Almendra",
+                                    "Extra Queso",
+                                    "Salsa Tuco",
+                                    "Salsa Blanca"
+                                  ].map(tag => (
+                                    <button
+                                      key={tag}
+                                      type="button"
+                                      onClick={() => {
+                                        setMozoCart(prev => prev.map((c, i) => {
+                                          if (i === idx) {
+                                            const existing = (c.notes || "").trim();
+                                            const updated = existing ? (existing.includes(tag) ? existing : `${existing}, ${tag}`) : tag;
+                                            return { ...c, notes: updated };
+                                          }
+                                          return c;
+                                        }));
+                                      }}
+                                      className="px-2 py-0.5 rounded-lg bg-[#4A151D] hover:bg-[#6C222E] text-white/90 hover:text-white border border-white/20 text-[9px] font-bold cursor-pointer transition-all"
+                                    >
+                                      + {tag}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           ))
                         ) : (

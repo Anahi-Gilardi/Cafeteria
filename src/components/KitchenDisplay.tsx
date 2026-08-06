@@ -280,17 +280,24 @@ export default function KitchenDisplay({
               return (
                 <div 
                   key={idx} 
-                  className="text-xs font-semibold leading-relaxed border-b border-[#CFB5A0]/20 pb-1.5 flex justify-between items-center"
+                  className="text-xs font-semibold leading-relaxed border-b border-[#CFB5A0]/20 pb-1.5 flex justify-between items-start"
                 >
-                  <div className="flex items-center gap-1.5 flex-1">
-                    <span className="text-[#5C1D27] font-bold font-mono text-xs">{it.quantity}x</span>
-                    <span className="text-[#2D0E13] text-xs font-medium">{it.name}</span>
+                  <div className="flex flex-col flex-1 pr-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[#5C1D27] font-bold font-mono text-xs">{it.quantity}x</span>
+                      <span className="text-[#2D0E13] text-xs font-bold">{it.name}</span>
+                    </div>
+                    {it.customizationSummary && (
+                      <span className="text-[10px] text-[#5C1D27] font-bold italic mt-0.5 pl-5 block">
+                        📝 {it.customizationSummary}
+                      </span>
+                    )}
                   </div>
                   {catalogItem && (
                     <button
                       type="button"
                       onClick={() => setSelectedItemForRecipe(catalogItem)}
-                      className="text-[9px] bg-[#EBDAC5] text-[#5C1D27] hover:bg-[#5C1D27] hover:text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+                      className="text-[9px] bg-[#EBDAC5] text-[#5C1D27] hover:bg-[#5C1D27] hover:text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider transition-colors cursor-pointer shrink-0 mt-0.5"
                     >
                       Receta
                     </button>
