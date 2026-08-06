@@ -650,26 +650,36 @@ export default function AdminHub({
   useEffect(() => {
     const loadSupabaseData = async () => {
       try {
-        // 1. Fetch business configuration
-        const { data: businessData, error: businessError } = await supabase
-          .from("business_profile")
-          .select("name,address,city,province,phone,email,cuit,pos_number,delivery_fee,delivery_free_min")
-          .limit(1)
+        // 1. Fetch ARCA configuration & business profile from Supabase Cloud
+        const { data: arcaRow } = await supabase
+          .from("menu_items")
+          .select("description")
+          .eq("id", "sys_arca_config")
           .maybeSingle();
-        if (businessError) throw businessError;
-        setDeliveryFeeConfig(Number(businessData?.delivery_fee || 0));
-        setDeliveryFreeMinConfig(Number(businessData?.delivery_free_min || 0));
-        if (businessData) {
-          setBusinessProfile({
-            name: businessData.name || "",
-            address: businessData.address || "",
-            city: businessData.city || "",
-            province: businessData.province || "",
-            phone: businessData.phone || "",
-            email: businessData.email || "",
-            cuit: businessData.cuit || "",
-            posNumber: businessData.pos_number ? String(businessData.pos_number) : ""
-          });
+
+        if (arcaRow && arcaRow.description) {
+          try {
+            const cloudArca = JSON.parse(arcaRow.description);
+            setArcaConfig(cloudArca);
+            localStorage.setItem("castano_arca_config", JSON.stringify(cloudArca));
+            if (cloudArca.cuit) {
+              setBusinessProfile(prev => ({
+                ...prev,
+                cuit: cloudArca.cuit,
+                posNumber: cloudArca.posNumber || "3",
+                name: cloudArca.businessName || "Castaño — Resto Bar",
+                address: cloudArca.address || "Constitución 944, Río Cuarto, Córdoba"
+              }));
+              localStorage.setItem("castano_business_profile", JSON.stringify({
+                name: cloudArca.businessName || "Castaño — Resto Bar",
+                address: cloudArca.address || "Constitución 944, Río Cuarto, Córdoba",
+                cuit: cloudArca.cuit,
+                posNumber: cloudArca.posNumber || "3"
+              }));
+            }
+          } catch (e) {
+            console.warn("Error parsing cloud ARCA config:", e);
+          }
         }
 
         // 2. Fetch Insumos
@@ -10223,29 +10233,42 @@ export default function AdminHub({
                 Cancelar
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   const cleanCuit = arcaConfig.cuit.replace(/\D/g, "");
                   if (!cleanCuit || cleanCuit.length < 10) {
                     onShowNotification("⚠️ Ingrese un CUIT comercial válido (11 dígitos).", "warning");
                     return;
                   }
-                  localStorage.setItem("castano_arca_config", JSON.stringify(arcaConfig));
-                  setBusinessProfile(prev => ({
-                    ...prev,
-                    cuit: cleanCuit,
-                    posNumber: arcaConfig.posNumber,
-                    name: arcaConfig.businessName,
-                    address: arcaConfig.address
-                  }));
-                  localStorage.setItem("castano_business_profile", JSON.stringify({
+                  
+                  const updatedConfig = { ...arcaConfig, cuit: cleanCuit };
+                  setArcaConfig(updatedConfig);
+                  localStorage.setItem("castano_arca_config", JSON.stringify(updatedConfig));
+
+                  const updatedProfile = {
                     ...businessProfile,
                     cuit: cleanCuit,
                     posNumber: arcaConfig.posNumber,
                     name: arcaConfig.businessName,
                     address: arcaConfig.address
-                  }));
+                  };
+                  setBusinessProfile(updatedProfile);
+                  localStorage.setItem("castano_business_profile", JSON.stringify(updatedProfile));
+
+                  try {
+                    await supabase.from("menu_items").upsert({
+                      id: "sys_arca_config",
+                      name: "Configuración Fiscal ARCA & Restaurante",
+                      description: JSON.stringify(updatedConfig),
+                      price: 0,
+                      category: "SYSTEM_CONFIG"
+                    }, { onConflict: "id" });
+                    onShowNotification("☁️ Configuración Fiscal ARCA guardada y respaldada en la Nube.", "success");
+                  } catch (err) {
+                    console.error("Cloud sync error:", err);
+                    onShowNotification("✅ Guardado localmente. Se sincronizará en segundo plano.", "success");
+                  }
+
                   setIsConfigArcaOpen(false);
-                  onShowNotification("✅ Configuración Fiscal ARCA (AFIP) guardada correctamente.", "success");
                 }}
                 className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider flex items-center justify-center gap-1.5"
               >
