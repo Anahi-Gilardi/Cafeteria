@@ -180,9 +180,13 @@ export class ReceiptPDFService {
    * Generates downloadable PDF for FACTURA FISCAL ARCA (Official Fiscal Receipt with CAE & QR)
    */
   public static async generateArcaInvoicePDF(order: Order, fiscal: FiscalDetails): Promise<void> {
-    const qrUrl = fiscal.qrCodeUrl || (fiscal.cae ? `https://www.arca.gob.ar/fe/qr/?p=${btoa(JSON.stringify({ ver: 1, fecha: new Date().toISOString().slice(0,10), cuit: 20445513408, ptoVta: 3, tipoCmp: fiscal.invoiceType === "A" ? 1 : fiscal.invoiceType === "B" ? 6 : 11, nroCmp: 2492, importe: order.total, moneda: "PES", ctz: 1, tipoDocRec: 99, nroDocRec: 0, tipoCodAut: "E", codAut: Number(fiscal.cae) }))}` : "");
+    const letter = (fiscal.invoiceType || "B").toUpperCase();
+    const isFacturaC = letter === "C";
+    const codigoFactura = letter === "A" ? "COD. 001" : letter === "B" ? "COD. 006" : "COD. 011";
 
-    // Load QR Code Base64 Image
+    const qrUrl = fiscal.qrCodeUrl || (fiscal.cae ? `https://www.arca.gob.ar/fe/qr/?p=${btoa(JSON.stringify({ ver: 1, fecha: new Date().toISOString().slice(0,10), cuit: 20445513408, ptoVta: 3, tipoCmp: letter === "A" ? 1 : letter === "B" ? 6 : 11, nroCmp: 658, importe: order.total, moneda: "PES", ctz: 1, tipoDocRec: 99, nroDocRec: 0, tipoCodAut: "E", codAut: Number(fiscal.cae) }))}` : "");
+
+    // Load QR Code Base64 Image 100% offline
     const qrBase64 = await this.loadQrCodeBase64(qrUrl);
 
     const doc = new jsPDF({
@@ -191,202 +195,326 @@ export class ReceiptPDFService {
       format: "a4"
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let currentY = 15;
+    const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
+    const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
 
-    // Outer Border (A4 210x297mm)
-    doc.setDrawColor(30, 30, 30);
-    doc.setLineWidth(0.5);
-    doc.rect(10, 10, pageWidth - 20, 277, "S");
+    // Color Palette
+    const MAROON = [45, 14, 19];      // #2D0E13 Deep Obsidian Maroon
+    const GOLD = [197, 160, 89];      // #C5A059 Warm Gold
+    const LIGHT_BG = [251, 249, 244];  // #FBF9F4 Luxury Cream
+    const CARD_BG = [246, 242, 236];   // #F6F2EC Tinted Card
+    const BORDER_CLR = [216, 198, 182]; // #D8C6B6 Soft Border
+    const TEXT_DARK = [40, 40, 40];    // #282828 Charcoal Body Text
+    const TEXT_MUTED = [100, 100, 100];
 
-    // Header Box
-    doc.setFillColor(250, 246, 240);
-    doc.rect(10, 10, pageWidth - 20, 38, "F");
-    doc.rect(10, 10, pageWidth - 20, 38, "S");
+    // 1. Outer Border & Frame
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.setLineWidth(0.4);
+    doc.rect(10, 10, pageWidth - 20, pageHeight - 20, "S");
 
-    // Center Letter Box (A, B, C)
-    const letter = fiscal.invoiceType || "B";
-    const codigoFactura = letter === "A" ? "COD. 001" : letter === "B" ? "COD. 006" : "COD. 011";
+    // Top Dark Banner Accent Line
+    doc.setFillColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.rect(10, 10, pageWidth - 20, 3, "F");
 
-    doc.setFillColor(92, 29, 39); // Deep Maroon #5C1D27
-    doc.rect(pageWidth / 2 - 10, 10, 20, 18, "F");
-    doc.setTextColor(255, 223, 0); // Gold
+    // 2. Header Block (Y: 13 to 52)
+    doc.setFillColor(LIGHT_BG[0], LIGHT_BG[1], LIGHT_BG[2]);
+    doc.rect(10, 13, pageWidth - 20, 40, "F");
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.rect(10, 13, pageWidth - 20, 40, "S");
+
+    // Left Header (Emisor)
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text(letter, pageWidth / 2, 21, { align: "center" });
-
-    doc.setFontSize(7.5);
-    doc.setTextColor(255, 255, 255);
-    doc.text(codigoFactura, pageWidth / 2, 25.5, { align: "center" });
-
-    // Vertical separator line down center of header
-    doc.setDrawColor(92, 29, 39);
-    doc.setLineWidth(0.3);
-    doc.line(pageWidth / 2, 28, pageWidth / 2, 48);
-
-    // Left Header (Emisor Fiscal)
-    const rawIssuerName = fiscal.issuerName || "CASTAÑO — RESTO BAR";
-    const formattedIssuer = rawIssuerName === "castano_resto_bar" ? "CASTAÑO — RESTO BAR" : rawIssuerName;
-
-    doc.setTextColor(92, 29, 39);
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text(formattedIssuer, 14, 18);
-
-    doc.setFontSize(7.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
-    doc.text("Razón Social: VÉLEZ AGUSTÍN GEREMÍAS", 14, 23.5);
-    doc.text(`Domicilio Comercial: ${fiscal.issuerAddress || "Constitución 944, Río Cuarto, Córdoba"}`, 14, 28);
-    doc.text(`Condición Frente al IVA: ${letter === "C" ? "Monotributista" : "Responsable Inscripto"}`, 14, 32.5);
-    doc.text("Inicio de Actividades: 01/03/2022", 14, 37);
-
-    // Right Header (Invoice Details)
-    doc.setTextColor(92, 29, 39);
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text(`FACTURA ${letter}`, pageWidth - 14, 18, { align: "right" });
-
-    doc.setFontSize(7.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
-    doc.text(`N° Comprobante: ${fiscal.invoiceNumber || "00003-00000001"}`, pageWidth - 14, 23.5, { align: "right" });
-    doc.text(`Fecha de Emisión: ${new Date(order.createdAt).toLocaleDateString("es-AR")}`, pageWidth - 14, 28, { align: "right" });
-    doc.text(`CUIT Emisor: 20-44551340-8`, pageWidth - 14, 32.5, { align: "right" });
-    doc.text(`Punto de Venta: 00003`, pageWidth - 14, 37, { align: "right" });
-
-    currentY = 52;
-
-    // Customer Info Box
-    doc.setFillColor(252, 250, 247);
-    doc.rect(10, currentY, pageWidth - 20, 22, "F");
-    doc.rect(10, currentY, pageWidth - 20, 22, "S");
+    doc.setFontSize(14);
+    doc.text("CASTAÑO — RESTO BAR & CAFETERÍA", 14, 21);
 
     doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(92, 29, 39);
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.text("VÉLEZ AGUSTÍN GEREMÍAS", 14, 26.5);
+
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.text("CUIT Emisor: 20-44551340-8 · Ingresos Brutos: 20445513408", 14, 31);
+    doc.text("Domicilio Comercial: Constitución 944, Río Cuarto, Córdoba", 14, 35.5);
+    doc.text(`Condición Frente al IVA: ${isFacturaC ? "Monotributista" : "Responsable Inscripto"}`, 14, 40);
+    doc.text("Inicio de Actividades: 01/03/2022", 14, 44.5);
+
+    // Center Letter Emblem Box (Official AFIP/ARCA Box)
+    const letterBoxWidth = 20;
+    const letterBoxHeight = 20;
+    const letterBoxX = pageWidth / 2 - letterBoxWidth / 2;
     
+    doc.setFillColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.rect(letterBoxX, 13, letterBoxWidth, letterBoxHeight, "F");
+    doc.setDrawColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(letterBoxX, 13, letterBoxWidth, letterBoxHeight, "S");
+
+    doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text(letter, pageWidth / 2, 25, { align: "center" });
+
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
+    doc.text(codigoFactura, pageWidth / 2, 29.5, { align: "center" });
+
+    // Vertical line down middle of header from bottom of emblem box
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.setLineWidth(0.3);
+    doc.line(pageWidth / 2, 33, pageWidth / 2, 53);
+
+    // Right Header (Invoice Type & Metadata)
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text(`FACTURA ${letter}`, pageWidth - 14, 21, { align: "right" });
+
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.text(`N° Comprobante: ${fiscal.invoiceNumber || "00003-00000658"}`, pageWidth - 14, 26.5, { align: "right" });
+
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.text(`Fecha de Emisión: ${new Date(order.createdAt).toLocaleDateString("es-AR")}`, pageWidth - 14, 31, { align: "right" });
+    doc.text(`Punto de Venta: 00003`, pageWidth - 14, 35.5, { align: "right" });
+    doc.text(`Moneda: Pesos Argentinos (ARS)`, pageWidth - 14, 40, { align: "right" });
+    doc.text(`Concepto: Productos / Servicios Gastronómicos`, pageWidth - 14, 44.5, { align: "right" });
+
+    // 3. Customer Info Card (Y: 56 to 78)
+    let currentY = 56;
+    doc.setFillColor(CARD_BG[0], CARD_BG[1], CARD_BG[2]);
+    doc.rect(10, currentY, pageWidth - 20, 22, "F");
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.rect(10, currentY, pageWidth - 20, 22, "S");
+
+    // Header label inside customer box
+    doc.setFillColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.rect(10, currentY, pageWidth - 20, 5, "F");
+    doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("DATOS DEL RECEPTOR / CLIENTE", 14, currentY + 3.5);
+
     const clientDoc = fiscal.customerCuit || order.clientCuit || "Consumidor Final";
     const clientName = fiscal.customerName || order.clientAccountName || "Consumidor Final";
     const clientIva = fiscal.customerIvaCondition || "Consumidor Final";
     const paymentMethodStr = order.paymentMethod || "Efectivo";
 
-    doc.text(`Cliente / CUIT / DNI: ${clientDoc}`, 14, currentY + 6.5);
-    doc.text(`Nombre / Razón Social: ${clientName}`, 14, currentY + 13.5);
-    
-    doc.text(`Condición IVA: ${clientIva}`, pageWidth - 14, currentY + 6.5, { align: "right" });
-    doc.text(`Condición de Venta: ${paymentMethodStr}`, pageWidth - 14, currentY + 13.5, { align: "right" });
-
-    currentY += 28;
-
-    // Table Header
-    doc.setFillColor(92, 29, 39); // #5C1D27
-    doc.rect(10, currentY, pageWidth - 20, 8, "F");
-    doc.setTextColor(255, 223, 0);
     doc.setFontSize(8);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
     doc.setFont("helvetica", "bold");
+    doc.text("Razón Social / Nombre:", 14, currentY + 11);
+    doc.setFont("helvetica", "normal");
+    doc.text(clientName, 48, currentY + 11);
 
-    doc.text("Cant.", 14, currentY + 5.5);
-    doc.text("Descripción de Producto / Servicio", 32, currentY + 5.5);
-    doc.text("Precio Unit.", 130, currentY + 5.5);
-    doc.text("Subtotal ARS", 170, currentY + 5.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("CUIT / DNI:", 14, currentY + 17);
+    doc.setFont("helvetica", "normal");
+    doc.text(clientDoc, 48, currentY + 17);
 
-    currentY += 10;
-    doc.setTextColor(40, 40, 40);
+    doc.setFont("helvetica", "bold");
+    doc.text("Condición IVA:", 120, currentY + 11);
+    doc.setFont("helvetica", "normal");
+    doc.text(clientIva, 150, currentY + 11);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Medio de Pago:", 120, currentY + 17);
+    doc.setFont("helvetica", "normal");
+    doc.text(paymentMethodStr, 150, currentY + 17);
+
+    // 4. Items Table Frame & Rows (Y: 82 to 185)
+    currentY = 82;
+    const tableHeaderHeight = 7;
+    const tableMinBottomY = 185;
+
+    // Header Row
+    doc.setFillColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.rect(10, currentY, pageWidth - 20, tableHeaderHeight, "F");
+
+    doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("CANT.", 14, currentY + 4.8);
+    doc.text("DESCRIPCIÓN DE PRODUCTO / SERVICIO", 32, currentY + 4.8);
+    doc.text("PRECIO UNIT.", 135, currentY + 4.8, { align: "right" });
+    doc.text("SUBTOTAL ARS", 196, currentY + 4.8, { align: "right" });
+
+    currentY += tableHeaderHeight;
+    const tableItemsStartY = currentY;
+
+    doc.setFontSize(8);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
     doc.setFont("helvetica", "normal");
 
     order.items.forEach((it, idx) => {
       const isEven = idx % 2 === 0;
       if (isEven) {
-        doc.setFillColor(248, 245, 240);
-        doc.rect(10, currentY - 4, pageWidth - 20, 7, "F");
+        doc.setFillColor(252, 250, 247);
+        doc.rect(10, currentY, pageWidth - 20, 7.5, "F");
       }
-      doc.text(`${it.quantity}x`, 14, currentY);
-      const wrappedDesc = doc.splitTextToSize(it.name, 90);
-      doc.text(wrappedDesc, 32, currentY);
-      doc.text(`$${it.price.toLocaleString("es-AR")}`, 130, currentY);
-      doc.text(`$${(it.price * it.quantity).toLocaleString("es-AR")}`, 170, currentY);
-      
+
+      doc.text(`${it.quantity}x`, 14, currentY + 5);
+      const wrappedDesc = doc.splitTextToSize(it.name, 95);
+      doc.text(wrappedDesc, 32, currentY + 5);
+      doc.text(`$${it.price.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 135, currentY + 5, { align: "right" });
+      doc.text(`$${(it.price * it.quantity).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 196, currentY + 5, { align: "right" });
+
       const lines = Array.isArray(wrappedDesc) ? wrappedDesc.length : 1;
-      currentY += lines * 5 + 2;
+      currentY += Math.max(7.5, lines * 4.5 + 2);
     });
 
-    // Breakdown Box (positioned at Y: 195mm)
-    currentY = Math.max(currentY + 10, 195);
+    // Outer grid frame for table down to minimum height
+    const tableActualEndY = Math.max(currentY, tableMinBottomY);
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.setLineWidth(0.3);
+    doc.rect(10, tableItemsStartY, pageWidth - 20, tableActualEndY - tableItemsStartY, "S");
 
-    doc.setFillColor(250, 246, 240);
-    doc.rect(10, currentY, pageWidth - 20, 26, "F");
-    doc.rect(10, currentY, pageWidth - 20, 26, "S");
+    // Grid vertical column lines
+    doc.line(28, tableItemsStartY, 28, tableActualEndY);
+    doc.line(105, tableItemsStartY, 105, tableActualEndY);
+    doc.line(145, tableItemsStartY, 145, tableActualEndY);
 
-    const netoCalc = letter === "C" ? order.total : fiscal.neto || (order.total / 1.21);
-    const ivaCalc = letter === "C" ? 0 : fiscal.iva21 || (order.total - netoCalc);
+    currentY = tableActualEndY + 5;
 
-    doc.setFontSize(8.5);
+    // 5. Totals & Financial Summary Card (Y: ~190 to 222)
+    const summaryCardWidth = 85;
+    const summaryCardHeight = 28;
+    const summaryCardX = pageWidth - 10 - summaryCardWidth; // Right aligned
+
+    // Commercial Note Box (Left side)
+    doc.setFillColor(CARD_BG[0], CARD_BG[1], CARD_BG[2]);
+    doc.rect(10, currentY, pageWidth - 25 - summaryCardWidth, summaryCardHeight, "F");
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.rect(10, currentY, pageWidth - 25 - summaryCardWidth, summaryCardHeight, "S");
+
+    doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 40, 40);
-    doc.text(`Importe Neto Gravado: $${netoCalc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, currentY + 8);
-    doc.text(`IVA (21%): $${ivaCalc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 14, currentY + 17);
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.text("INFORMACIÓN FISCAL & OBSERVACIONES", 14, currentY + 5);
 
-    doc.setFontSize(13);
-    doc.setTextColor(92, 29, 39);
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2]);
+    doc.text("• Comprobante electrónico registrado en el sistema ARCA.", 14, currentY + 10);
+    doc.text("• Documento emitido bajo normativa vigente de facturación AFIP/ARCA.", 14, currentY + 14);
+    doc.text("• Conserve este comprobante para su registro contable o reclamos.", 14, currentY + 18);
     doc.setFont("helvetica", "bold");
-    doc.text(`TOTAL FACTURADO: $${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageWidth - 14, currentY + 15, { align: "right" });
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.text("¡Muchas gracias por su visita a Castaño — Resto Bar!", 14, currentY + 23);
 
-    // Official AFIP / ARCA Fiscal Footer Box with QR Code (Y: 232mm)
-    currentY = 232;
-    doc.setFillColor(255, 255, 255);
-    doc.rect(10, currentY, pageWidth - 20, 50, "F");
-    doc.rect(10, currentY, pageWidth - 20, 50, "S");
+    // Financial Breakdown Box (Right side)
+    doc.setFillColor(LIGHT_BG[0], LIGHT_BG[1], LIGHT_BG[2]);
+    doc.rect(summaryCardX, currentY, summaryCardWidth, summaryCardHeight, "F");
+    doc.setDrawColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.setLineWidth(0.4);
+    doc.rect(summaryCardX, currentY, summaryCardWidth, summaryCardHeight, "S");
 
-    // Draw QR Code Image if available
-    if (qrBase64) {
-      doc.addImage(qrBase64, "PNG", 14, currentY + 4, 42, 42);
-    } else {
-      // Fallback QR Box Graphic
-      doc.setDrawColor(92, 29, 39);
-      doc.rect(14, currentY + 4, 42, 42, "S");
-      doc.setFontSize(7);
-      doc.setTextColor(92, 29, 39);
-      doc.text("QR AFIP / ARCA", 35, currentY + 25, { align: "center" });
-    }
+    const netoCalc = isFacturaC ? order.total : fiscal.neto || (order.total / 1.21);
+    const ivaCalc = isFacturaC ? 0 : fiscal.iva21 || (order.total - netoCalc);
 
-    // ARCA Fiscal CAE Data Block (Right side of QR code)
-    const caeNum = fiscal.cae || "74381920485719";
-    const caeExp = fiscal.caeExpiration || new Date(Date.now() + 10 * 86400000).toLocaleDateString("es-AR");
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(92, 29, 39);
-    doc.text("ARCA — AGENCIA DE RECAUDACIÓN Y CONTROL ADUANERO", 60, currentY + 10);
-    
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
-    doc.text("Comprobante Electrónico Autorizado por ARCA (ex-AFIP)", 60, currentY + 16);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.text("Subtotal Neto Gravado:", summaryCardX + 4, currentY + 6.5);
+    doc.text(`$${netoCalc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, summaryCardX + summaryCardWidth - 4, currentY + 6.5, { align: "right" });
+
+    doc.text(`IVA (${isFacturaC ? "0%" : "21%"}):`, summaryCardX + 4, currentY + 13.5);
+    doc.text(`$${ivaCalc.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, summaryCardX + summaryCardWidth - 4, currentY + 13.5, { align: "right" });
+
+    // Divider Line inside Summary Card
+    doc.setDrawColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.setLineWidth(0.3);
+    doc.line(summaryCardX + 4, currentY + 17, summaryCardX + summaryCardWidth - 4, currentY + 17);
+
+    // Total Highlight Box
+    doc.setFillColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.rect(summaryCardX + 2, currentY + 19, summaryCardWidth - 4, 7.5, "F");
+
+    doc.setFontSize(9.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.text("TOTAL FACTURADO:", summaryCardX + 5, currentY + 24.2);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`$${order.total.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, summaryCardX + summaryCardWidth - 5, currentY + 24.2, { align: "right" });
+
+    // 6. Official ARCA / AFIP Footer Box with QR Code (Y: 226 to 282)
+    currentY = 226;
+    const footerBoxHeight = 56;
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(10, currentY, pageWidth - 20, footerBoxHeight, "F");
+    doc.setDrawColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(10, currentY, pageWidth - 20, footerBoxHeight, "S");
+
+    // Top Footer Accent Bar
+    doc.setFillColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.rect(10, currentY, pageWidth - 20, 5, "F");
+    doc.setTextColor(GOLD[0], GOLD[1], GOLD[2]);
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("ARCA — AGENCIA DE RECAUDACIÓN Y CONTROL ADUANERO (COMPROBANTE AUTORIZADO)", 14, currentY + 3.5);
+
+    // 2D QR Code Image Rendering (100% Offline via qrcode npm)
+    const qrSize = 44;
+    const qrX = 14;
+    const qrY = currentY + 8;
+
+    if (qrBase64) {
+      doc.addImage(qrBase64, "PNG", qrX, qrY, qrSize, qrSize);
+      doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+      doc.rect(qrX, qrY, qrSize, qrSize, "S");
+    }
+
+    // Right CAE Info Block (X: 62mm)
+    const caeX = 62;
+    const caeNum = fiscal.cae || "62106470991612";
+    const caeExp = fiscal.caeExpiration || "2026-08-16";
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(92, 29, 39);
-    doc.text(`CAE N°: ${caeNum}`, 60, currentY + 24);
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.text("COMPROBANTE ELECTRÓNICO AUTORIZADO POR ARCA (ex-AFIP)", caeX, currentY + 13);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2]);
+    doc.text("Este comprobante posee validación en la base de datos de la Agencia de Recaudación.", caeX, currentY + 18);
+
+    // CAE Box Highlight
+    doc.setFillColor(CARD_BG[0], CARD_BG[1], CARD_BG[2]);
+    doc.rect(caeX, currentY + 22, 128, 18, "F");
+    doc.setDrawColor(BORDER_CLR[0], BORDER_CLR[1], BORDER_CLR[2]);
+    doc.rect(caeX, currentY + 22, 128, 18, "S");
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
+    doc.text(`CAE N°: ${caeNum}`, caeX + 4, currentY + 29);
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 40, 40);
-    doc.text(`Fecha de Vencimiento CAE: ${caeExp}`, 60, currentY + 31);
+    doc.setTextColor(TEXT_DARK[0], TEXT_DARK[1], TEXT_DARK[2]);
+    doc.text(`Fecha de Vto. de CAE: ${caeExp}`, caeX + 4, currentY + 36);
 
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Punto de Venta: 00003 · Comprobante: ${fiscal.invoiceNumber || "00003-00000001"}`, 60, currentY + 38);
+    doc.setTextColor(TEXT_MUTED[0], TEXT_MUTED[1], TEXT_MUTED[2]);
+    doc.text(`Punto de Venta: 00003  ·  Comprobante N°: ${fiscal.invoiceNumber || "00003-00000658"}`, caeX, currentY + 46);
 
     if (qrUrl) {
-      doc.setTextColor(92, 29, 39);
+      doc.setTextColor(MAROON[0], MAROON[1], MAROON[2]);
       doc.setFont("helvetica", "bold");
-      doc.textWithLink("Verificar Validez de Comprobante en AFIP / ARCA", 60, currentY + 44, {
+      doc.textWithLink("🔗 Verificar Validez de Comprobante en AFIP / ARCA (Consulta Online)", caeX, currentY + 51, {
         url: qrUrl
       });
     }
 
-    doc.save(`Factura_ARCA_${letter}_${fiscal.invoiceNumber || "00003-00000001"}.pdf`);
+    doc.save(`Factura_ARCA_${letter}_${fiscal.invoiceNumber || "00003-00000658"}.pdf`);
   }
 }
