@@ -5604,7 +5604,7 @@ export default function AdminHub({
             {currentUser.role !== "barista" && (
               <button 
                 onClick={() => {
-                  if (posCheckoutOrder) {
+                  if (posCheckoutOrder && posCheckoutOrder.items && posCheckoutOrder.items.length > 0) {
                     setManualItems(
                       posCheckoutOrder.items.map(it => ({
                         description: it.name,
@@ -5619,6 +5619,14 @@ export default function AdminHub({
                       ivaCondition: (posIvaConditionInput as any) || "Consumidor Final"
                     });
                     setManualPaymentMethod(paymentMethod || "Efectivo");
+                  } else {
+                    setManualItems([]);
+                    setManualCustomerInfo({
+                      cuitOrDni: "",
+                      nameOrReason: "Consumidor Final",
+                      ivaCondition: "Consumidor Final"
+                    });
+                    setManualPaymentMethod("Efectivo");
                   }
                   setIsManualArcaModalOpen(true);
                 }}
@@ -10651,166 +10659,7 @@ export default function AdminHub({
         </div>
       )}
 
-      {/* Detalle de Cierre de Caja Modal */}
-      {false && selectedClosureForModal && (
-        <div className="fixed inset-0 bg-[#2C1810]/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FDFBF7] border border-[#2C1810]/15 rounded-3xl p-6 w-full max-w-lg shadow-2xl relative text-xs font-semibold text-[#2C1810]/80">
-            <button 
-              onClick={() => setSelectedClosureForModal(null)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-stone-200/50 text-[#2C1810]/40 hover:text-[#2C1810]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <h4 className="font-serif text-lg font-bold text-[#2C1810] mb-1">Auditoría de Cierre de Caja</h4>
-            <p className="text-[10px] text-[#2C1810]/50 mb-4 font-normal">Arqueo fiscal homologado por el personal de Resto Bar Del Teatro.</p>
-            
-            <div className="grid grid-cols-2 gap-4 mb-4 text-[10px] text-[#2C1810]/70 border-b border-[#2C1810]/10 pb-4">
-              <div>
-                <span className="text-[#2C1810]/40 font-bold block">Responsable:</span>
-                <strong>{selectedClosureForModal.user}</strong>
-              </div>
-              <div>
-                <span className="text-[#2C1810]/40 font-bold block">Observaciones:</span>
-                <strong>"{selectedClosureForModal.observaciones}"</strong>
-              </div>
-              <div>
-                <span className="text-[#2C1810]/40 font-bold block">Fecha Apertura:</span>
-                <strong>{selectedClosureForModal.apertura}</strong>
-              </div>
-              <div>
-                <span className="text-[#2C1810]/40 font-bold block">Fecha Cierre:</span>
-                <strong>{selectedClosureForModal.cierre}</strong>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-3 p-4 bg-stone-50 border border-stone-150 rounded-2xl text-center mb-6">
-              <div>
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Ventas Turno</span>
-                <strong className="text-lg font-serif text-[#2C1810] font-mono block mt-0.5">${selectedClosureForModal.ventasTurno.toLocaleString()}</strong>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Monto Real</span>
-                <strong className="text-lg font-serif text-[#2C1810] font-mono block mt-0.5">${selectedClosureForModal.montoReal.toLocaleString()}</strong>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold text-[#2C1810]/40 uppercase tracking-wider block">Diferencia</span>
-                <strong className={`text-lg font-serif font-mono block mt-0.5 ${selectedClosureForModal.diferencia >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                  ${selectedClosureForModal.diferencia.toLocaleString()}
-                </strong>
-              </div>
-            </div>
-
-            <h5 className="font-bold text-[10px] uppercase tracking-wider text-[#2C1810]/50 mb-2.5">Historial de Transacciones del Turno</h5>
-          </div>
-        </div>
-      )}
-
-      {/* Configuración Ticketera Modal */}
-      {false && isConfigTicketerisOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
-            <button 
-              onClick={() => setIsConfigTicketerisOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Configurar Ticketera</h4>
-            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Establezca la interfaz y parámetros de la impresora térmica.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Interfaz de Conexión</label>
-                <select className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]">
-                  <option>USB Thermal Printer (Predeterminado)</option>
-                  <option>Bluetooth clover-thermal-58</option>
-                  <option>Ethernet (IP: 192.168.1.150)</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Ancho de Papel</label>
-                <select className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold cursor-pointer outline-none focus:border-[#5C1D27]">
-                  <option>80 mm (Recomendado)</option>
-                  <option>58 mm</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Texto de Pie de Página</label>
-                <input type="text" defaultValue="¡Gracias por su visita! Castaño — Resto Bar" className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] font-bold outline-none focus:border-[#5C1D27]" />
-              </div>
-              <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsConfigTicketerisOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button onClick={() => { setIsConfigTicketerisOpen(false); onShowNotification("🖨️ Configuración de impresora térmica guardada.", "success"); }} className="w-1/2 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-bold shadow-xs cursor-pointer">Guardar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cerrar Turno de Caja Modal */}
-      {false && isCloseShiftModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-6 w-full max-w-sm shadow-xl relative text-xs font-semibold text-[#2D0E13]">
-            <button 
-              onClick={() => setIsCloseShiftModalOpen(false)}
-              className="absolute right-4 top-4 p-1 rounded-full hover:bg-[#EBDAC5] text-[#5E393F] hover:text-[#2D0E13]"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <h4 className="font-serif text-lg font-bold text-[#5C1D27] mb-1">Cerrar Turno de Caja Diaria</h4>
-            <p className="text-[10px] text-[#5E393F] mb-4 font-normal">Declare el monto real e ingrese observaciones para el arqueo final.</p>
-            
-            <div className="my-4 p-4 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl">
-              <span className="text-[9px] font-bold text-[#5E393F] uppercase tracking-wider block">Ventas Turno Teórico</span>
-              <div className="text-2xl font-serif font-black text-[#5C1D27] mt-1 font-mono">${cashLedger.totalCollected.toLocaleString()}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-[9px] text-[#5E393F] font-bold border-t border-[#CFB5A0] pt-2.5">
-                <div>Efectivo: <span className="font-mono text-[#5C1D27]">${cashLedger.cash.toLocaleString()}</span></div>
-                <div>Tarjeta: <span className="font-mono text-[#5C1D27]">${cashLedger.card.toLocaleString()}</span></div>
-                <div>MP: <span className="font-mono text-[#5C1D27]">${cashLedger.mercadopago.toLocaleString()}</span></div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Monto Real en Caja ($)</label>
-                <input 
-                  type="number" 
-                  placeholder="Ingrese el monto físico contado" 
-                  value={closeShiftRealCash} 
-                  onChange={(e) => setCloseShiftRealCash(e.target.value)}
-                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#5C1D27] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-bold font-mono" 
-                />
-              </div>
-              <div>
-                <label className="text-[9px] font-bold text-[#5E393F] uppercase block mb-1">Observaciones</label>
-                <textarea 
-                  placeholder="Facturación normal del turno, diferencias de arqueo, etc." 
-                  value={closeShiftNotes} 
-                  onChange={(e) => setCloseShiftNotes(e.target.value)}
-                  rows={3}
-                  className="w-full p-2.5 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] focus:ring-1 focus:ring-[#5C1D27] focus:outline-none font-semibold resize-none"
-                />
-              </div>
-              <div className="flex gap-3 pt-3">
-                <button onClick={() => setIsCloseShiftModalOpen(false)} className="w-1/2 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] transition-all cursor-pointer bg-transparent">Cancelar</button>
-                <button 
-                  onClick={() => {
-                    const realCash = parseFloat(closeShiftRealCash);
-                    if (isNaN(realCash) || realCash < 0) {
-                      onShowNotification("⚠️ Ingrese un monto real válido.", "warning");
-                      return;
-                    }
-                    void handleConfirmCloseShift(realCash, closeShiftNotes);
-                  }} 
-                  disabled={isShiftOperationPending}
-                  className="w-1/2 py-2.5 rounded-xl bg-[#A63F45] hover:bg-[#8A3338] disabled:opacity-60 disabled:cursor-wait text-white text-xs font-bold shadow-xs cursor-pointer"
-                >
-                  {isShiftOperationPending ? "Cerrando…" : "Confirmar Arqueo ✓"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Detalle de Cierre de Caja Modal */}
       {selectedClosureForModal && (
