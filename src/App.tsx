@@ -45,7 +45,7 @@ interface ToastNotification {
 }
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserRoleProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserRoleProfile | null>(() => AuthService.getCachedUser());
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() =>
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reset-password") === "1"
   );

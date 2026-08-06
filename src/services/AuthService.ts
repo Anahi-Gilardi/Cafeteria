@@ -56,6 +56,28 @@ export class AuthService {
     return null;
   }
 
+  public static getCachedUser(): UserRoleProfile | null {
+    try {
+      const saved = localStorage.getItem("castano_staff_profile");
+      if (!saved) return null;
+      const parsed: UserRoleProfile = JSON.parse(saved);
+      if (parsed && ALLOWED_ROLES.has(parsed.role)) {
+        return parsed;
+      }
+    } catch {}
+    return null;
+  }
+
+  public static setCachedUser(profile: UserRoleProfile | null): void {
+    try {
+      if (profile) {
+        localStorage.setItem("castano_staff_profile", JSON.stringify(profile));
+      } else {
+        localStorage.removeItem("castano_staff_profile");
+      }
+    } catch {}
+  }
+
   public static async loginWithCredentials(
     emailInput: string,
     passwordInput: string
@@ -79,16 +101,15 @@ export class AuthService {
        rawPassword === "1998" ||
        rawPassword.toLowerCase() === "superadmin1998")
     ) {
-      return {
-        success: true,
-        user: {
-          id: "usr-admin-super",
-          authUserId: "usr-admin-super-auth",
-          email: "Super@admin.com",
-          name: "Super Admin (Dueño)",
-          role: "administrador"
-        }
+      const superAdminUser: UserRoleProfile = {
+        id: "usr-admin-super",
+        authUserId: "usr-admin-super-auth",
+        email: "Super@admin.com",
+        name: "Super Admin (Dueño)",
+        role: "administrador"
       };
+      this.setCachedUser(superAdminUser);
+      return { success: true, user: superAdminUser };
     }
 
     // 2. Intento vía Supabase Auth nativo
@@ -102,6 +123,7 @@ export class AuthService {
         if (!error && data?.user) {
           const profile = await this.profileFromAuthUser(data.user);
           if (profile) {
+            this.setCachedUser(profile);
             return { success: true, user: profile };
           }
         }
@@ -129,16 +151,15 @@ export class AuthService {
         );
 
         if (match) {
-          return {
-            success: true,
-            user: {
-              id: match.id,
-              authUserId: match.id,
-              email: match.email || rawEmail,
-              name: match.name || "Usuario Staff",
-              role: (match.role as StaffRole) || "administrador"
-            }
+          const staffUser: UserRoleProfile = {
+            id: match.id,
+            authUserId: match.id,
+            email: match.email || rawEmail,
+            name: match.name || "Usuario Staff",
+            role: (match.role as StaffRole) || "administrador"
           };
+          this.setCachedUser(staffUser);
+          return { success: true, user: staffUser };
         }
       }
     } catch (e) {
@@ -190,19 +211,26 @@ export class AuthService {
   }
 
   public static async getCurrentUser(): Promise<UserRoleProfile | null> {
-    this.clearLegacySessionCache();
     const {
       data: { user },
       error
     } = await supabase.auth.getUser();
 
-    if (error || !user) return null;
+    if (!error && user) {
+      const profile = await this.profileFromAuthUser(user);
+      if (profile) {
+        this.setCachedUser(profile);
+        return profile;
+      }
+    }
 
-    const profile = await this.profileFromAuthUser(user);
-    if (!profile) {
+    const cached = this.getCachedUser();
+    if (cached) return cached;
+
+    if (user) {
       await supabase.auth.signOut().catch(() => undefined);
     }
-    return profile;
+    return null;
   }
 
   public static onAuthStateChange(
@@ -212,14 +240,19 @@ export class AuthService {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) {
-        this.clearLegacySessionCache();
+        const cached = this.getCachedUser();
+        if (cached) {
+          listener(cached);
+          return;
+        }
         listener(null);
         return;
       }
 
       void this.profileFromAuthUser(session.user).then((profile) => {
-        listener(profile);
-        if (!profile) void supabase.auth.signOut();
+        const finalProfile = profile || this.getCachedUser();
+        listener(finalProfile);
+        if (!finalProfile) void supabase.auth.signOut();
       });
     });
 
@@ -238,6 +271,7 @@ export class AuthService {
 
   public static async logout(): Promise<void> {
     this.clearLegacySessionCache();
+    this.setCachedUser(null);
     await supabase.auth.signOut().catch(() => undefined);
   }
 }
