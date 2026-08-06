@@ -52,12 +52,8 @@ export class ArcaBillingService {
   public static generateDraftInvoice(order: Order, customer: FiscalCustomerInfo): FiscalDetails {
     const cleanCuit = customer.cuitOrDni.replace(/\D/g, "");
     
-    // Determine Invoice Type (A, B, C)
-    const invoiceType: "A" | "B" | "C" = customer.invoiceTypeChoice
-      ? customer.invoiceTypeChoice
-      : customer.ivaCondition === "Responsable Inscripto"
-        ? "A"
-        : "B";
+    // Emisor Monotributista emite exclusivamente Factura C (COD. 011) para todas las condiciones IVA
+    const invoiceType: "A" | "B" | "C" = customer.invoiceTypeChoice || "C";
 
     const draftNumber = "BORRADOR-" + order.id.slice(-6).toUpperCase();
 

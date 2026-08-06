@@ -75,13 +75,13 @@ describe("fiscal safety", () => {
     expect(ArcaBillingService.validateCuitOrDni("123").isValid).toBe(false);
   });
 
-  it("does not choose Factura C from the recipient condition", () => {
+  it("generates Factura C for Monotributo issuer profile", () => {
     const fiscal = ArcaBillingService.generateDraftInvoice(order, {
       cuitOrDni: "30123456780",
       nameOrReason: "Cliente monotributista",
       ivaCondition: "Monotributo"
     });
-    expect(fiscal.invoiceType).toBe("B");
+    expect(fiscal.invoiceType).toBe("C");
   });
 
   it("never treats a CAE-looking draft or an incomplete authorization as fiscal", () => {
