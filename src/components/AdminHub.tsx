@@ -556,20 +556,24 @@ export default function AdminHub({
     }
 
     try {
+      // Execute robust cloud deletion / status update in Supabase
+      const result = await SupabaseSyncService.deleteOrders(idsToDelete);
+
       const remainingOrders = orders.filter(o => !idsToDelete.includes(o.id));
       if (onUpdateOrders) {
         onUpdateOrders(remainingOrders);
       }
 
-      // Delete directly from Supabase Cloud as Single Source of Truth
-      await supabase.from("orders").delete().in("id", idsToDelete);
-      await supabase.from("archived_orders").delete().in("id", idsToDelete);
-
       setSelectedHistoryOrderIds(prev => prev.filter(id => !idsToDelete.includes(id)));
-      onShowNotification(`🗑️ ${idsToDelete.length} ticket(s) eliminado(s) correctamente del historial.`, "success");
+      
+      if (result.success) {
+        onShowNotification(`🗑️ ${idsToDelete.length} ticket(s) eliminado(s) correctamente del historial.`, "success");
+      } else {
+        onShowNotification(`⚠️ Error al eliminar en la nube: ${result.error || "desconocido"}.`, "warning");
+      }
     } catch (err) {
       console.error("Error deleting orders:", err);
-      onShowNotification("✅ Comandas eliminadas localmente.", "success");
+      onShowNotification("⚠️ Excepción al eliminar comandas del historial.", "warning");
     } finally {
       setIsDeletingOrders(false);
       setIsDeleteConfirmOpen(false);

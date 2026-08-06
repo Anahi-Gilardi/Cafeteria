@@ -551,10 +551,52 @@ export class SupabaseSyncService {
     };
   }
 
+  static async deleteOrders(
+    idsToDelete: string[]
+  ): Promise<{ success: boolean; count: number; error?: string }> {
+    if (!idsToDelete || idsToDelete.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    try {
+      // 1. Clear archived_orders foreign key references if possible (order_id column)
+      await supabase.from("archived_orders").delete().in("order_id", idsToDelete);
+
+      // 2. Direct delete from orders table (id column)
+      const { data: deleted, error: delErr } = await supabase
+        .from("orders")
+        .delete()
+        .in("id", idsToDelete)
+        .select("id");
+
+      if (!delErr && deleted && deleted.length > 0) {
+        return { success: true, count: deleted.length };
+      }
+
+      // 3. Fallback: Mark status as 'Eliminado' in Supabase so they are permanently excluded
+      const { data: updated, error: updErr } = await supabase
+        .from("orders")
+        .update({ status: "Eliminado", updated_at: new Date().toISOString() })
+        .in("id", idsToDelete)
+        .select("id");
+
+      if (updErr) {
+        return { success: false, count: 0, error: updErr.message };
+      }
+
+      return { success: true, count: updated?.length || idsToDelete.length };
+    } catch (err: any) {
+      return { success: false, count: 0, error: err?.message || "Error al eliminar comandas" };
+    }
+  }
+
   static async fetchOrders(): Promise<{ orders: Order[]; error?: string }> {
     const { data, error } = await supabase
       .from("orders")
       .select("*")
+      .neq("status", "Eliminado")
+      .neq("status", "Anulado")
+      .neq("status", "archivado")
       .order("created_at", { ascending: false })
       .limit(500);
 
