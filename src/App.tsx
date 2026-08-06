@@ -865,7 +865,7 @@ export default function App() {
                   onOrderStatusUpdate={handleOrderStatusUpdate}
                   onArchiveOrder={handleArchiveOrder}
                   onDeleteOrder={handleDeleteOrder}
-                  canDeleteOrders={["administrador", "dueño"].includes(currentUser.role)}
+                  canDeleteOrders={["administrador", "dueño"].includes(currentUser?.role || "")}
                 />
               </motion.div>
             )}

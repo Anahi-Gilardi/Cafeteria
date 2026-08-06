@@ -9958,14 +9958,22 @@ export default function AdminHub({
           {activeSubTab === "reservas" && renderReservas()}
           {activeSubTab === "pedidos_mozo" && renderPedidosMozo()}
           {activeSubTab === "kds_cocina" && (
-            <KitchenDisplay
-              orders={orders}
-              menuItems={menuItems}
-              onOrderStatusUpdate={onOrderStatusUpdate}
-              onArchiveOrder={onArchiveOrder}
-              onDeleteOrder={onDeleteOrder}
-              canDeleteOrders={["administrador", "dueño", "cajero"].includes(currentUser.role)}
-            />
+            <motion.div
+              key="kds-cocina-view"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="space-y-8 animate-fade-in text-[#2D0E13]"
+            >
+              <KitchenDisplay
+                orders={orders}
+                menuItems={menuItems}
+                onOrderStatusUpdate={onOrderStatusUpdate}
+                onArchiveOrder={onArchiveOrder}
+                onDeleteOrder={onDeleteOrder}
+                canDeleteOrders={["administrador", "dueño", "cajero"].includes(currentUser?.role || "")}
+              />
+            </motion.div>
           )}
           {activeSubTab === "caja" && renderCaja()}
           {activeSubTab === "proveedores" && renderProveedores()}
