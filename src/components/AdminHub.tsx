@@ -2181,7 +2181,8 @@ export default function AdminHub({
   const handleConfirmArcaBilling = async () => {
     if (!selectedOrderForBilling) return;
 
-    const val = ArcaBillingService.validateCuitOrDni(fiscalForm.cuitOrDni);
+    const isConsumidorFinal = fiscalForm.ivaCondition === "Consumidor Final" || !fiscalForm.cuitOrDni.trim();
+    const val = ArcaBillingService.validateCuitOrDni(fiscalForm.cuitOrDni, isConsumidorFinal);
     if (!val.isValid) {
       onShowNotification(`⚠️ ${val.message}`, "warning");
       return;
@@ -2276,6 +2277,16 @@ export default function AdminHub({
       <div class="center italic">Comprobante electrónico autorizado por ARCA</div>
     `;
     ThermalPrinterService.printRawText(thermalHtml, `Factura_${fiscalDetails.invoiceType}`);
+
+    const method = updatedOrder.paymentMethod || paymentMethod || "Efectivo";
+    void CashShiftService.recordPaymentToLedger(updatedOrder.total, method, updatedOrder.id);
+    setCashLedger(prev => ({
+      ...prev,
+      cash: prev.cash + (method === "Efectivo" ? updatedOrder.total : 0),
+      card: prev.card + (["Tarjeta", "Tarjeta Débito", "Tarjeta Crédito"].includes(method) ? updatedOrder.total : 0),
+      mercadopago: prev.mercadopago + (method === "MercadoPago" ? updatedOrder.total : 0),
+      totalCollected: prev.totalCollected + updatedOrder.total
+    }));
 
     onOrderStatusUpdate(selectedOrderForBilling.id, "Completado");
     setIsArcaModalOpen(false);
@@ -5453,7 +5464,25 @@ export default function AdminHub({
           <div className="flex flex-wrap gap-2">
             {currentUser.role !== "barista" && (
               <button 
-                onClick={() => setIsManualArcaModalOpen(true)}
+                onClick={() => {
+                  if (posCheckoutOrder) {
+                    setManualItems(
+                      posCheckoutOrder.items.map(it => ({
+                        description: it.name,
+                        qty: it.quantity,
+                        unitPrice: it.price,
+                        ivaPct: 21
+                      }))
+                    );
+                    setManualCustomerInfo({
+                      cuitOrDni: posCheckoutOrder.clientCuit || posCustomerCuitInput.trim() || "",
+                      nameOrReason: posCheckoutOrder.clientAccountName || posCustomerNameInput.trim() || "Consumidor Final",
+                      ivaCondition: (posIvaConditionInput as any) || "Consumidor Final"
+                    });
+                    setManualPaymentMethod(paymentMethod || "Efectivo");
+                  }
+                  setIsManualArcaModalOpen(true);
+                }}
                 className="px-3.5 py-2 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
               >
                 <Plus className="h-3.5 w-3.5" /> FACTURACIÓN MANUAL ARCA
@@ -5937,14 +5966,25 @@ export default function AdminHub({
                   </div>
                 </div>
 
-                {/* Final receipt emission action - Single Main Checkout Action */}
+                {/* Final receipt emission actions - Checkout or Fiscal Invoice */}
                 <div className="border-t border-[#CFB5A0] pt-5 space-y-3.5">
-                  <button 
-                    onClick={handleProcessPosCheckout}
-                    className="w-full py-4 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#4F735A]"
-                  >
-                    <CheckCircle className="h-4 w-4 text-white" /> 🟢 CONFIRMAR VENTA / COBRAR
-                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {/* Mode 1: Simple Payment */}
+                    <button 
+                      onClick={handleProcessPosCheckout}
+                      className="w-full py-4 rounded-2xl bg-[#4F735A] hover:bg-[#3D5B46] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#4F735A]"
+                    >
+                      <CheckCircle className="h-4 w-4 text-white" /> 🟢 CONFIRMAR VENTA / COBRAR
+                    </button>
+
+                    {/* Mode 2: Fiscal Invoice via ARCA */}
+                    <button 
+                      onClick={() => handleOpenArcaModalForOrder(posCheckoutOrder)}
+                      className="w-full py-4 rounded-2xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black shadow-md cursor-pointer uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-[#5C1D27]"
+                    >
+                      <FileText className="h-4 w-4 text-white" /> 🧾 EMITIR FACTURA FISCAL ARCA
+                    </button>
+                  </div>
 
                   {/* Supporting Printing & Utility Actions */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
