@@ -28,14 +28,32 @@ export class MenuSyncService {
       .from("product_images")
       .select("product_id,image_base64");
 
+    // Local & system_settings fallback cache map
+    let localCacheMap = new Map<string, string>();
+    try {
+      const savedLocal = localStorage.getItem("castano_menu_cache");
+      if (savedLocal) {
+        const parsed = JSON.parse(savedLocal);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item: MenuItem) => {
+            if (item.id && item.image) {
+              localCacheMap.set(item.id, item.image);
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
     const imagesByProduct = new Map(
-      (imageData || []).map((image) => [image.product_id, image.image_base64])
+      (imageData || []).filter(img => img.product_id && img.image_base64).map((image) => [image.product_id, image.image_base64])
     );
+
     const items = (menuData || []).map((row) => {
       const item = mapDbMenuItem(row);
+      const customImg = imagesByProduct.get(item.id) || item.image || localCacheMap.get(item.id) || "";
       return {
         ...item,
-        image: imagesByProduct.get(item.id) || item.image
+        image: customImg
       };
     });
 

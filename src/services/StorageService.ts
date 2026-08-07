@@ -1,9 +1,51 @@
 import { supabase } from "../lib/supabase";
 
+function compressImageFile(file: File, maxWidth = 800, maxHeight = 800, quality = 0.75): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string;
+      if (!rawDataUrl) {
+        resolve("");
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        } else {
+          resolve(rawDataUrl);
+        }
+      };
+      img.onerror = () => resolve(rawDataUrl);
+      img.src = rawDataUrl;
+    };
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+}
+
 export class StorageService {
   /**
    * Uploads an image file to Supabase Storage bucket 'product-images'.
-   * Returns public URL on success, or base64 fallback string if bucket is not created yet.
+   * Returns public URL on success, or lightweight compressed base64 fallback string if bucket is not public/created.
    */
   public static async uploadProductImage(file: File): Promise<string> {
     try {
@@ -26,17 +68,12 @@ export class StorageService {
         }
       }
 
-      console.warn("Supabase Storage info (using Base64 fallback):", error?.message);
+      console.warn("Supabase Storage info (using compressed Base64 fallback):", error?.message);
     } catch (e) {
-      console.warn("Storage exception, using Base64 fallback:", e);
+      console.warn("Storage exception, using compressed Base64 fallback:", e);
     }
 
-    // 2. Fallback: Convert file to Base64 data URL
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
+    // 2. Fallback: Compress file to lightweight Base64 data URL (< 60KB)
+    return compressImageFile(file, 800, 800, 0.75);
   }
 }

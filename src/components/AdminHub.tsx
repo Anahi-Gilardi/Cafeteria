@@ -1645,6 +1645,14 @@ export default function AdminHub({
 
       const updatedMenu = menuItems.map(item => item.id === itemId ? updatedProduct : item);
       onUpdateMenu(updatedMenu);
+      try {
+        localStorage.setItem("castano_menu_cache", JSON.stringify(updatedMenu));
+        void supabase.from("system_settings").upsert({
+          key: "custom_menu_items",
+          value: JSON.stringify(updatedMenu),
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
       setSelectedMenuProduct(updatedProduct);
       setIsEditingProduct(false);
       onShowNotification("✅ Ficha de producto guardada y sincronizada.", "success");
