@@ -4823,7 +4823,8 @@ export default function AdminHub({
           {[
             { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
-            { id: "executive", label: "🍱 Menú Ejecutivo" },
+            { id: "menu_semanal", label: "🍱 Menú Semanal" },
+            { id: "executive", label: "📋 Menú Ejecutivo" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
             { id: "promos", label: "🏷️ Promos" },
             { id: "empanadas", label: "🥟 Empanadas" },
@@ -4855,7 +4856,7 @@ export default function AdminHub({
 
         {selectedPosCategory === "menu_diario" ? (
           renderDailyMenuEditor()
-        ) : selectedPosCategory === "menu_ejecutivo" ? (
+        ) : selectedPosCategory === "menu_semanal" || selectedPosCategory === "menu_ejecutivo" || selectedPosCategory === "executive" ? (
           renderDailyComboEditor()
         ) : selectedPosCategory === "delivery_config" ? (
           renderDeliveryConfig()

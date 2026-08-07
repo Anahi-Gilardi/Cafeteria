@@ -113,7 +113,8 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
   const categories = [
     { id: "all", label: "Todos", emoji: "🍽️" },
     { id: "menu_diario", label: "Menú del Día", emoji: "⭐" },
-    { id: "executive", label: "Menú Ejecutivo", emoji: "🍱" },
+    { id: "menu_semanal", label: "Menú Semanal", emoji: "🍱" },
+    { id: "executive", label: "Menú Ejecutivo", emoji: "📋" },
     { id: "desayunos_meriendas", label: "Desayunos & Meriendas", emoji: "☕" },
     { id: "promos", label: "Promos", emoji: "🏷️" },
     { id: "empanadas", label: "Empanadas", emoji: "🥟" },
