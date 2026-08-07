@@ -4824,7 +4824,6 @@ export default function AdminHub({
             { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
             { id: "menu_semanal", label: "🍱 Menú Semanal" },
-            { id: "executive", label: "📋 Menú Ejecutivo" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
             { id: "promos", label: "🏷️ Promos" },
             { id: "empanadas", label: "🥟 Empanadas" },
