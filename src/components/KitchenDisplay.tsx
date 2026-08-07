@@ -398,19 +398,40 @@ export default function KitchenDisplay({
           <button
             type="button"
             onClick={async () => {
-              const confirmed = window.confirm("¿Desea limpiar el caché local y purgar todas las comandas inactivas/fantasmas?");
+              const confirmed = window.confirm("¿Desea limpiar el caché local manteniendo iniciada la sesión del personal?");
               if (!confirmed) return;
               try {
                 await SupabaseSyncService.purgeGhostOrders();
+                
+                // Preserve active user session credentials
+                const keysToPreserve = [
+                  "castano_staff_profile",
+                  "castano_active_user",
+                  "castano_session_cache"
+                ];
+                const preserved: Record<string, string | null> = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key && (keysToPreserve.includes(key) || key.startsWith("sb-"))) {
+                    preserved[key] = localStorage.getItem(key);
+                  }
+                }
+
                 localStorage.clear();
                 sessionStorage.clear();
+
+                // Restore user session
+                Object.entries(preserved).forEach(([k, v]) => {
+                  if (v !== null) localStorage.setItem(k, v);
+                });
+
                 window.location.reload();
               } catch {
                 alert("No se pudo limpiar el caché.");
               }
             }}
             className="px-3 py-2 rounded-xl bg-[#FAF2E6] border border-[#CFB5A0] text-xs font-black text-[#A63F45] hover:bg-[#F4DCDD] transition-all cursor-pointer flex items-center gap-1.5"
-            title="Limpiar el caché de la memoria local y purgar comandas inactivas de Supabase"
+            title="Limpiar el caché local manteniendo iniciada la sesión del personal"
           >
             <Trash2 className="h-4 w-4" />
             Limpiar Caché
