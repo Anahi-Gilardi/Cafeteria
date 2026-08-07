@@ -144,6 +144,18 @@ export class SupabaseSyncService {
   static async saveOrder(
     order: Order
   ): Promise<{ success: boolean; order?: Order; error?: string }> {
+    console.trace("¡INSERCIÓN DE COMANDA DETECTADA!", {
+      id: order?.id,
+      table: order?.tableNumber,
+      total: order?.total,
+      itemsCount: order?.items?.length
+    });
+
+    if (!order || !order.id || !Array.isArray(order.items) || order.items.length === 0) {
+      console.warn("⚠️ [INSERCIÓN BLOQUEADA] Se bloqueó la inserción de una comanda vacía o sin ítems válidos:", order);
+      return { success: false, error: "Comanda inválida o vacía bloqueada." };
+    }
+
     const payload = orderPayload(order);
 
     try {
