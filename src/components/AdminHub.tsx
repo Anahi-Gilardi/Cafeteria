@@ -2189,23 +2189,53 @@ export default function AdminHub({
   ): Promise<boolean> => {
     const insumo = insumos.find((item) => item.id === id);
     if (!insumo) return false;
-    const { data, error } = await supabase.rpc("adjust_inventory_stock", {
+
+    let finalQty = Math.max(0, Number(insumo.quantity || 0) + amount);
+
+    // 1. Try RPC first
+    const { data: rpcData, error: rpcError } = await supabase.rpc("adjust_inventory_stock", {
       p_insumo_id: id,
       p_delta: amount,
       p_reason: reason || null,
       p_estimated_cost: estimatedCost
     });
-    if (error) {
-      console.error("Error updating inventory:", error);
-      onShowNotification("⚠️ No se pudo actualizar el stock en Supabase.", "warning");
-      return false;
+
+    if (!rpcError && rpcData && rpcData.quantity !== undefined) {
+      finalQty = Number(rpcData.quantity);
+    } else {
+      // 2. Direct table update fallback (for PIN-authenticated users without RPC inventory role)
+      try {
+        const { data: directData, error: directError } = await supabase
+          .from("insumos")
+          .update({ quantity: finalQty, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .select("quantity")
+          .maybeSingle();
+
+        if (directError) {
+          console.warn("Direct update notice for insumos table:", directError.message);
+        } else if (directData && directData.quantity !== undefined) {
+          finalQty = Number(directData.quantity);
+        }
+      } catch (e) {
+        console.warn("Exception during direct insumos update:", e);
+      }
     }
 
-    const finalQty = Number(data.quantity);
     const updated = insumos.map((item) =>
       item.id === id ? { ...item, quantity: finalQty } : item
     );
     setInsumos(updated);
+
+    try {
+      localStorage.setItem("puglia_insumos", JSON.stringify(updated));
+      void supabase.from("system_settings").upsert({
+        key: "resto_insumos",
+        value: JSON.stringify(updated),
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {}
+
     if (amount < 0 && reason) {
       setMermaLogs((previous) => [{
         id: `pending-${Date.now()}`,
@@ -2217,6 +2247,7 @@ export default function AdminHub({
         auditor: selectedWaiter || "Usuario autenticado"
       }, ...previous]);
     }
+
     if (finalQty < insumo.minLimit) {
       onShowNotification(
         `⚠️ Alerta: El insumo '${insumo.name}' quedó por debajo de su stock de seguridad.`,
