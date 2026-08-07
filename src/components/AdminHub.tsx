@@ -83,6 +83,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Pastas",
     description: "Pasta fresca artesanal acompañada de abundante tuco de ternera a la cacerola.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Tallarines Caseros con Tuco de Ternera"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -95,6 +98,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Carne",
     description: "Jugosa costeleta de cerdo dorada con papas fritas, huevo frito, pimientos y arvejas.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Costeleta de Cerdo a la Riojana"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -107,6 +113,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Guisos & Tradicional",
     description: "Tradicional guiso criollo con panceta, chorizo colorado, carne trozada y verduras de estación.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Guiso de Lentejas Especial"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -119,6 +128,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Opción Saludable",
     description: "Tarta casera a elección (Jamón y Queso, Acelga o Pollo) acompañada de ensalada fresca.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Tartas Individuales (Jamón y Queso / Acelga / Pollo)"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -131,6 +143,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Minutas",
     description: "Milanesa tierna gratinada con salsa de tomate, jamón cocido, queso mozzarella y orégano, con papas fritas.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Milanesa de Ternera a la Napolitana c/ Papas Fritas"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -143,6 +158,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Carne",
     description: "Cuarto de pollo marinado a las finas hierbas horneado al punto justo con papas rústicas al romero.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Pollo al Horno con Papas Rústicas"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -155,6 +173,9 @@ const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
     type: "Pastas",
     description: "Canelones caseros rellenos de acelga fresca y ricota artesanal, gratinados con salsa rosa mixta.",
     price: 8500,
+    execWithDrinkPrice: 12000,
+    execWithDrinkAndDessertPrice: 15000,
+    image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=800",
     starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
     mains: ["Canelones de Verdura y Ricota c/ Salsa Mixta"],
     drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
@@ -763,6 +784,10 @@ export default function AdminHub({
               description: menu.description || defaultMenu.description,
               price: Number(menu.price) || defaultMenu.price,
               image: menu.image || menu.image_url || defaultMenu.image,
+              execWithDrinkPrice: Number(menu.exec_with_drink_price || menu.execWithDrinkPrice) || defaultMenu.execWithDrinkPrice || 12000,
+              execWithDrinkAndDessertPrice: Number(menu.exec_with_drink_dessert_price || menu.execWithDrinkAndDessertPrice) || defaultMenu.execWithDrinkAndDessertPrice || 15000,
+              execWithDrinkImage: menu.exec_with_drink_image || menu.execWithDrinkImage || undefined,
+              execWithDrinkAndDessertImage: menu.exec_with_drink_dessert_image || menu.execWithDrinkAndDessertImage || undefined,
               starters: Array.isArray(menu.starters) && menu.starters.length > 0 ? menu.starters : defaultMenu.starters,
               mains: Array.isArray(menu.mains) && menu.mains.length > 0 ? menu.mains : defaultMenu.mains,
               drinks: Array.isArray(menu.drinks) && menu.drinks.length > 0 ? menu.drinks : defaultMenu.drinks,
@@ -4435,6 +4460,10 @@ export default function AdminHub({
             description: m.description,
             price: m.price,
             image: m.image || null,
+            exec_with_drink_price: m.execWithDrinkPrice || 12000,
+            exec_with_drink_dessert_price: m.execWithDrinkAndDessertPrice || 15000,
+            exec_with_drink_image: m.execWithDrinkImage || null,
+            exec_with_drink_dessert_image: m.execWithDrinkAndDessertImage || null,
             active: m.active ?? true,
             updated_at: new Date().toISOString()
           };
@@ -4693,10 +4722,10 @@ export default function AdminHub({
         {/* OPCIONES DE MENÚ EJECUTIVO CON BEBIDA Y POSTRE */}
         <div className="p-6 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-4">
           <div className="border-b border-[#CFB5A0] pb-3">
-            <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Opciones Modificables de Menú Ejecutivo</span>
-            <h4 className="font-serif text-lg font-bold text-[#5C1D27]">Precios & Combos Ejecutivos Especiales</h4>
+            <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Opciones Modificables de Menú Ejecutivo — {activeMenu.dayOfWeek}</span>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27]">Precios & Combos Ejecutivos Especiales ({activeMenu.dayOfWeek})</h4>
             <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">
-              Configure los precios promocionales para las opciones de Menú Ejecutivo con Bebida y Postre incluidos.
+              Configure los precios e imágenes promocionales para las opciones de Menú Ejecutivo con Bebida y Postre del {activeMenu.dayOfWeek}.
             </p>
           </div>
 
@@ -4708,22 +4737,19 @@ export default function AdminHub({
                 <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 bg-[#DFEADF] text-[#4F735A] rounded-md border border-[#4F735A]/30">Activo</span>
               </div>
               <p className="text-[11px] text-[#5E393F] font-medium leading-snug">
-                Incluye el plato principal del día + 1 bebida a elección (gaseosa 500ml / agua / copa de vino).
+                Incluye el plato principal del día ({activeMenu.dayOfWeek}: {activeMenu.title || "Plato del día"}) + 1 bebida a elección.
               </p>
               <div>
-                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Modificable ($ ARS) *</label>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Promocional ({activeMenu.dayOfWeek}) ($ ARS) *</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-2.5 text-xs font-bold text-[#5C1D27]">$</span>
                   <input
                     type="number"
                     step="500"
-                    value={dailyComboState.execWithDrinkPrice ?? 12000}
+                    value={activeMenu.execWithDrinkPrice ?? 12000}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 12000;
-                      const updated = { ...dailyComboState, execWithDrinkPrice: val };
-                      setDailyComboState(updated);
-                      try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
-                      void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                      updateCurrentDayMenu({ execWithDrinkPrice: val });
                     }}
                     className="w-full pl-8 pr-4 py-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-mono font-black text-[#5C1D27] outline-none focus:border-[#5C1D27]"
                   />
@@ -4732,30 +4758,19 @@ export default function AdminHub({
 
               {/* Imagen Opción 1 */}
               <div className="space-y-2 pt-2 border-t border-[#CFB5A0]">
-                <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa (URL o Cargar Foto)</label>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa ({activeMenu.dayOfWeek})</label>
                 <div className="flex items-center gap-3">
-                  {dailyComboState.execWithDrinkImage ? (
-                    <img
-                      src={dailyComboState.execWithDrinkImage}
-                      alt="Menú Ejecutivo + Bebida"
-                      className="h-16 w-20 rounded-xl object-cover border border-[#CFB5A0] shadow-xs shrink-0"
-                    />
-                  ) : (
-                    <div className="h-16 w-20 rounded-xl bg-[#EBDAC5] text-[#5C1D27] font-bold text-[10px] flex items-center justify-center shrink-0 border border-dashed border-[#CFB5A0]">
-                      🍷 SIN FOTO
-                    </div>
-                  )}
+                  <img
+                    src={activeMenu.execWithDrinkImage || activeMenu.image || "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=800"}
+                    alt="Menú Ejecutivo + Bebida"
+                    className="h-16 w-20 rounded-xl object-cover border border-[#CFB5A0] shadow-xs shrink-0"
+                  />
                   <div className="flex-1 space-y-1.5">
                     <input
                       type="text"
-                      value={dailyComboState.execWithDrinkImage || ""}
-                      onChange={(e) => {
-                        const updated = { ...dailyComboState, execWithDrinkImage: e.target.value };
-                        setDailyComboState(updated);
-                        try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
-                        void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
-                      }}
-                      placeholder="URL de la imagen..."
+                      value={activeMenu.execWithDrinkImage || ""}
+                      onChange={(e) => updateCurrentDayMenu({ execWithDrinkImage: e.target.value })}
+                      placeholder={`Usando foto del plato (${activeMenu.title || "Plato del día"})...`}
                       className="w-full p-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none"
                     />
                     <input
@@ -4767,10 +4782,7 @@ export default function AdminHub({
                           onShowNotification("⏳ Subiendo imagen a Supabase Storage...", "info");
                           try {
                             const imgUrl = await StorageService.uploadProductImage(file);
-                            const updated = { ...dailyComboState, execWithDrinkImage: imgUrl };
-                            setDailyComboState(updated);
-                            try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
-                            void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                            updateCurrentDayMenu({ execWithDrinkImage: imgUrl });
                             onShowNotification("📸 Foto subida con éxito.", "success");
                           } catch (err) {
                             console.error("Error al subir foto:", err);
@@ -4791,22 +4803,19 @@ export default function AdminHub({
                 <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 bg-[#DFEADF] text-[#4F735A] rounded-md border border-[#4F735A]/30">Activo</span>
               </div>
               <p className="text-[11px] text-[#5E393F] font-medium leading-snug">
-                Incluye el plato principal del día + 1 bebida a elección + postre casero a elección.
+                Incluye el plato principal del día ({activeMenu.dayOfWeek}: {activeMenu.title || "Plato del día"}) + 1 bebida + postre casero.
               </p>
               <div>
-                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Modificable ($ ARS) *</label>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Promocional ({activeMenu.dayOfWeek}) ($ ARS) *</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-2.5 text-xs font-bold text-[#5C1D27]">$</span>
                   <input
                     type="number"
                     step="500"
-                    value={dailyComboState.execWithDrinkAndDessertPrice ?? 15000}
+                    value={activeMenu.execWithDrinkAndDessertPrice ?? 15000}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 15000;
-                      const updated = { ...dailyComboState, execWithDrinkAndDessertPrice: val };
-                      setDailyComboState(updated);
-                      try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
-                      void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                      updateCurrentDayMenu({ execWithDrinkAndDessertPrice: val });
                     }}
                     className="w-full pl-8 pr-4 py-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-mono font-black text-[#5C1D27] outline-none focus:border-[#5C1D27]"
                   />
@@ -4815,30 +4824,19 @@ export default function AdminHub({
 
               {/* Imagen Opción 2 */}
               <div className="space-y-2 pt-2 border-t border-[#CFB5A0]">
-                <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa (URL o Cargar Foto)</label>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa ({activeMenu.dayOfWeek})</label>
                 <div className="flex items-center gap-3">
-                  {dailyComboState.execWithDrinkAndDessertImage ? (
-                    <img
-                      src={dailyComboState.execWithDrinkAndDessertImage}
-                      alt="Menú Ejecutivo + Bebida + Postre"
-                      className="h-16 w-20 rounded-xl object-cover border border-[#CFB5A0] shadow-xs shrink-0"
-                    />
-                  ) : (
-                    <div className="h-16 w-20 rounded-xl bg-[#EBDAC5] text-[#5C1D27] font-bold text-[10px] flex items-center justify-center shrink-0 border border-dashed border-[#CFB5A0]">
-                      🍮 SIN FOTO
-                    </div>
-                  )}
+                  <img
+                    src={activeMenu.execWithDrinkAndDessertImage || activeMenu.image || "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=800"}
+                    alt="Menú Ejecutivo + Bebida + Postre"
+                    className="h-16 w-20 rounded-xl object-cover border border-[#CFB5A0] shadow-xs shrink-0"
+                  />
                   <div className="flex-1 space-y-1.5">
                     <input
                       type="text"
-                      value={dailyComboState.execWithDrinkAndDessertImage || ""}
-                      onChange={(e) => {
-                        const updated = { ...dailyComboState, execWithDrinkAndDessertImage: e.target.value };
-                        setDailyComboState(updated);
-                        try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
-                        void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
-                      }}
-                      placeholder="URL de la imagen..."
+                      value={activeMenu.execWithDrinkAndDessertImage || ""}
+                      onChange={(e) => updateCurrentDayMenu({ execWithDrinkAndDessertImage: e.target.value })}
+                      placeholder={`Usando foto del plato (${activeMenu.title || "Plato del día"})...`}
                       className="w-full p-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none"
                     />
                     <input
@@ -4850,10 +4848,7 @@ export default function AdminHub({
                           onShowNotification("⏳ Subiendo imagen a Supabase Storage...", "info");
                           try {
                             const imgUrl = await StorageService.uploadProductImage(file);
-                            const updated = { ...dailyComboState, execWithDrinkAndDessertImage: imgUrl };
-                            setDailyComboState(updated);
-                            try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
-                            void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                            updateCurrentDayMenu({ execWithDrinkAndDessertImage: imgUrl });
                             onShowNotification("📸 Foto subida con éxito.", "success");
                           } catch (err) {
                             console.error("Error al subir foto:", err);
@@ -7983,23 +7978,31 @@ export default function AdminHub({
             <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
                 <div className="flex items-center gap-3">
-                  {dailyComboState.execWithDrinkImage ? (
-                    <img src={dailyComboState.execWithDrinkImage} alt="Menú Ejecutivo + Bebida" className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0" />
+                  {todayMenu?.execWithDrinkImage || todayMenu?.image ? (
+                    <img
+                      src={todayMenu.execWithDrinkImage || todayMenu.image}
+                      alt="Menú Ejecutivo + Bebida"
+                      className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0"
+                    />
                   ) : (
                     <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
                       🍷 BEBIDA
                     </div>
                   )}
                   <div>
-                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Menú Ejecutivo Promocional</span>
+                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">
+                      Menú Ejecutivo Promocional ({todayMenu?.dayOfWeek || "Hoy"})
+                    </span>
                     <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Ejecutivo + Bebida</h4>
-                    <p className="text-xs text-[#5E393F] italic">Incluye el plato principal del día + 1 bebida a elección (gaseosa 500ml / agua / copa de vino).</p>
+                    <p className="text-xs text-[#5E393F] italic">
+                      Incluye el plato del día ({todayMenu?.title || "Plato especial"}) + 1 bebida a elección (gaseosa 500ml / agua / copa de vino).
+                    </p>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <span className="text-xs text-[#5E393F] block font-bold">Precio</span>
                   <span className="text-xl font-mono font-black text-[#5C1D27] block">
-                    ${(dailyComboState.execWithDrinkPrice ?? 12000).toLocaleString("es-AR")}
+                    ${(todayMenu?.execWithDrinkPrice || dailyComboState.execWithDrinkPrice || 12000).toLocaleString("es-AR")}
                   </span>
                 </div>
               </div>
@@ -8015,14 +8018,14 @@ export default function AdminHub({
                   <button
                     type="button"
                     onClick={() => {
-                      const drinkPrice = dailyComboState.execWithDrinkPrice ?? 12000;
+                      const drinkPrice = todayMenu?.execWithDrinkPrice || dailyComboState.execWithDrinkPrice || 12000;
                       const itemToCart: MenuItem = {
                         id: `menu_ejecutivo_bebida_${Date.now()}`,
-                        name: `Menú Ejecutivo + Bebida`,
+                        name: `Menú Ejecutivo + Bebida (${todayMenu?.title || "Plato del Día"})`,
                         price: drinkPrice,
                         category: "menu_diario",
-                        description: "Incluye plato principal del día + 1 bebida a elección",
-                        image: dailyComboState.execWithDrinkImage
+                        description: `Plato: ${todayMenu?.title || "Especial del día"} | Incluye 1 bebida a elección`,
+                        image: todayMenu?.execWithDrinkImage || todayMenu?.image
                       };
                       handleAddMozoCart(itemToCart, execDrinkNoteMozo);
                       setExecDrinkNoteMozo("");
@@ -8041,23 +8044,31 @@ export default function AdminHub({
             <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
                 <div className="flex items-center gap-3">
-                  {dailyComboState.execWithDrinkAndDessertImage ? (
-                    <img src={dailyComboState.execWithDrinkAndDessertImage} alt="Menú Ejecutivo + Bebida + Postre" className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0" />
+                  {todayMenu?.execWithDrinkAndDessertImage || todayMenu?.image ? (
+                    <img
+                      src={todayMenu.execWithDrinkAndDessertImage || todayMenu.image}
+                      alt="Menú Ejecutivo + Bebida + Postre"
+                      className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0"
+                    />
                   ) : (
                     <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
                       🍮 COMPLETO
                     </div>
                   )}
                   <div>
-                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Menú Ejecutivo Completo</span>
+                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">
+                      Menú Ejecutivo Completo ({todayMenu?.dayOfWeek || "Hoy"})
+                    </span>
                     <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Ejecutivo + Bebida + Postre</h4>
-                    <p className="text-xs text-[#5E393F] italic">Incluye el plato principal del día + 1 bebida a elección + postre casero a elección.</p>
+                    <p className="text-xs text-[#5E393F] italic">
+                      Incluye el plato del día ({todayMenu?.title || "Plato especial"}) + 1 bebida a elección + postre casero.
+                    </p>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <span className="text-xs text-[#5E393F] block font-bold">Precio</span>
                   <span className="text-xl font-mono font-black text-[#5C1D27] block">
-                    ${(dailyComboState.execWithDrinkAndDessertPrice ?? 15000).toLocaleString("es-AR")}
+                    ${(todayMenu?.execWithDrinkAndDessertPrice || dailyComboState.execWithDrinkAndDessertPrice || 15000).toLocaleString("es-AR")}
                   </span>
                 </div>
               </div>
@@ -8073,14 +8084,14 @@ export default function AdminHub({
                   <button
                     type="button"
                     onClick={() => {
-                      const fullPrice = dailyComboState.execWithDrinkAndDessertPrice ?? 15000;
+                      const fullPrice = todayMenu?.execWithDrinkAndDessertPrice || dailyComboState.execWithDrinkAndDessertPrice || 15000;
                       const itemToCart: MenuItem = {
                         id: `menu_ejecutivo_completo_${Date.now()}`,
-                        name: `Menú Ejecutivo + Bebida + Postre`,
+                        name: `Menú Ejecutivo + Bebida + Postre (${todayMenu?.title || "Plato del Día"})`,
                         price: fullPrice,
                         category: "menu_diario",
-                        description: "Incluye plato principal del día + 1 bebida a elección + postre casero",
-                        image: dailyComboState.execWithDrinkAndDessertImage
+                        description: `Plato: ${todayMenu?.title || "Especial del día"} | Incluye 1 bebida + postre casero`,
+                        image: todayMenu?.execWithDrinkAndDessertImage || todayMenu?.image
                       };
                       handleAddMozoCart(itemToCart, execDrinkDessertNoteMozo);
                       setExecDrinkDessertNoteMozo("");

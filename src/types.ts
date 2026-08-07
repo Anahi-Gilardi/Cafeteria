@@ -74,6 +74,10 @@ export interface DailyExecutiveMenu {
   description: string;
   price: number;
   image?: string;
+  execWithDrinkPrice?: number;
+  execWithDrinkAndDessertPrice?: number;
+  execWithDrinkImage?: string;
+  execWithDrinkAndDessertImage?: string;
   starters: string[];
   mains: string[];
   drinks: string[];
