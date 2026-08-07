@@ -29,15 +29,35 @@ export class MenuSyncService {
       .select("product_id,image_base64");
 
     // Local & system_settings fallback cache map
-    let localCacheMap = new Map<string, string>();
+    let customImageMap = new Map<string, string>();
+
+    try {
+      const { data: sysSetting } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "custom_menu_items")
+        .maybeSingle();
+
+      if (sysSetting && sysSetting.value) {
+        const parsed = typeof sysSetting.value === "string" ? JSON.parse(sysSetting.value) : sysSetting.value;
+        if (Array.isArray(parsed)) {
+          parsed.forEach((item: MenuItem) => {
+            if (item.id && item.image) {
+              customImageMap.set(item.id, item.image);
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
     try {
       const savedLocal = localStorage.getItem("castano_menu_cache");
       if (savedLocal) {
         const parsed = JSON.parse(savedLocal);
         if (Array.isArray(parsed)) {
           parsed.forEach((item: MenuItem) => {
-            if (item.id && item.image) {
-              localCacheMap.set(item.id, item.image);
+            if (item.id && item.image && !customImageMap.has(item.id)) {
+              customImageMap.set(item.id, item.image);
             }
           });
         }
@@ -50,7 +70,7 @@ export class MenuSyncService {
 
     const items = (menuData || []).map((row) => {
       const item = mapDbMenuItem(row);
-      const customImg = imagesByProduct.get(item.id) || item.image || localCacheMap.get(item.id) || "";
+      const customImg = imagesByProduct.get(item.id) || customImageMap.get(item.id) || item.image || "";
       return {
         ...item,
         image: customImg
