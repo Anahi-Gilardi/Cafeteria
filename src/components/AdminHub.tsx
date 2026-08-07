@@ -7708,6 +7708,30 @@ export default function AdminHub({
             </div>
           </div>
 
+          {/* ⚙️ Direct Owner Link to Weekly Editor when viewing Menú del Día */}
+          {mozoCategory === "menu_diario" && (
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-[#EBDAC5] p-3.5 rounded-2xl border border-[#CFB5A0] gap-3">
+              <div className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-[#5C1D27] shrink-0" />
+                <div>
+                  <span className="text-xs font-black text-[#5C1D27] uppercase tracking-wider block">Panel de Administración del Dueño</span>
+                  <span className="text-[11px] text-[#5E393F] font-bold">Carga y modifica la propuesta de Lunes a Domingo aquí:</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubTab("precios");
+                  setSelectedPosCategory("menu_diario");
+                  window.location.hash = "#/carta";
+                }}
+                className="w-full sm:w-auto px-4 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+              >
+                ⚙️ ABRIR EDITOR SEMANAL (7 DÍAS)
+              </button>
+            </div>
+          )}
+
           {/* ⭐ Menú del Día (Plato Único Semanal) Card for Waiters */}
           {(mozoCategory === "todos" || mozoCategory === "menu_diario") && todayMenu && (
             <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
@@ -10342,6 +10366,7 @@ export default function AdminHub({
                     if (link.id === "daily_menu_editor") {
                       setActiveSubTab("precios");
                       setSelectedPosCategory("menu_diario");
+                      window.location.hash = "#/carta";
                     } else {
                       setActiveSubTab(link.id as any);
                     }
