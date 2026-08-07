@@ -7468,18 +7468,20 @@ export default function AdminHub({
     const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
 
     const filteredMenuItems = menuItems.filter(item => {
-      // Exclude legacy promotional item
-      if (item.id === "menu_ejecutivo_promocional") {
+      // Exclude legacy promotional and executive items (managed via top interactive cards)
+      if (
+        item.id === "menu_ejecutivo_promocional" ||
+        item.id.startsWith("exe-") ||
+        item.category === "executive" ||
+        item.category === "menu_diario"
+      ) {
         return false;
       }
       const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
                             item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
       let matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
-      if (mozoCategory === "menu_diario") {
-        // Plato Único Rotativo del Día is managed via daily_menu, not in the fixed catalog grid.
+      if (mozoCategory === "menu_diario" || mozoCategory === "executive") {
         matchesCategory = false;
-      } else if (mozoCategory === "executive") {
-        matchesCategory = item.category === "executive";
       }
       return item.isAvailable !== false && matchesSearch && matchesCategory;
     });
