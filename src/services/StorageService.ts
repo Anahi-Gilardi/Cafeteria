@@ -2,44 +2,58 @@ import { supabase } from "../lib/supabase";
 
 function compressImageFile(file: File, maxWidth = 800, maxHeight = 800, quality = 0.75): Promise<string> {
   return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const rawDataUrl = e.target?.result as string;
-      if (!rawDataUrl) {
-        resolve("");
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = Math.round((width * maxHeight) / height);
+        height = maxHeight;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width || 400;
+      canvas.height = height || 400;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        URL.revokeObjectURL(objectUrl);
+        resolve(dataUrl);
         return;
       }
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = Math.round((width * maxHeight) / height);
-          height = maxHeight;
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL("image/jpeg", quality));
-        } else {
-          resolve(rawDataUrl);
-        }
-      };
-      img.onerror = () => resolve(rawDataUrl);
-      img.src = rawDataUrl;
+      URL.revokeObjectURL(objectUrl);
+      fallbackFileReader(file, resolve);
     };
-    reader.onerror = () => resolve("");
-    reader.readAsDataURL(file);
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      fallbackFileReader(file, resolve);
+    };
+
+    img.src = objectUrl;
   });
+}
+
+function fallbackFileReader(file: File, resolve: (val: string) => void) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let result = (e.target?.result as string) || "";
+    if (result.startsWith("data:")) {
+      result = result.replace(/^data:(image\/[a-zA-Z0-9.-]+|application\/octet-stream);/, "data:image/jpeg;");
+    }
+    resolve(result);
+  };
+  reader.onerror = () => resolve("");
+  reader.readAsDataURL(file);
 }
 
 export class StorageService {
