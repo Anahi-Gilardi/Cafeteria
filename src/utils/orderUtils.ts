@@ -29,14 +29,6 @@ export function isOrderActive(order: Partial<Order> | string | undefined | null)
     return false;
   }
 
-  // Extra guard against test ghost orders (e.g. PED-8CE2 or 1932fd8d)
-  if (typeof order === "object") {
-    const id = String(order.id || "").toLowerCase();
-    if (id.includes("8ce2") || id.includes("1932fd8d")) {
-      return false;
-    }
-  }
-
   return true;
 }
 

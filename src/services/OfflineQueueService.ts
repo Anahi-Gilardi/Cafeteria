@@ -119,6 +119,24 @@ export class OfflineQueueService {
     this.persist(this.getPendingQueue().filter((item) => item.orderId !== orderId));
   }
 
+  clearOrphanQueue(): void {
+    try {
+      localStorage.removeItem("castano_offline_orders");
+      localStorage.removeItem("castano_local_orders");
+      const current = this.getPendingQueue();
+      const valid = current.filter((item) => {
+        if (!item.orderId) return false;
+        const ts = new Date(item.timestamp).getTime();
+        return !isNaN(ts) && (Date.now() - ts) < 24 * 60 * 60 * 1000;
+      });
+      if (valid.length !== current.length) {
+        this.persist(valid);
+      }
+    } catch (e) {
+      console.warn("Error clearing orphan offline queue:", e);
+    }
+  }
+
   private persist(queue: PendingOfflineOrder[]): void {
     localStorage.setItem(this.queueKey, JSON.stringify(queue));
     window.dispatchEvent(

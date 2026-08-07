@@ -238,6 +238,7 @@ export default function App() {
 
   // Retry queued orders when connectivity returns and once on application start.
   useEffect(() => {
+    offlineQueueService.clearOrphanQueue();
     const syncQueue = async () => {
       const result = await offlineQueueService.syncPendingQueue();
       if (result.synced > 0) {
