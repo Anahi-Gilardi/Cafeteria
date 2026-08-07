@@ -1730,6 +1730,8 @@ export default function AdminHub({
     mainImages?: string[];
     sides: string[];
     price: number;
+    execWithDrinkPrice?: number;
+    execWithDrinkAndDessertPrice?: number;
     saladTitle?: string;
     saladDescription?: string;
     saladImage?: string;
@@ -1770,6 +1772,8 @@ export default function AdminHub({
         "Ensalada mixta"
       ],
       price: 8500,
+      execWithDrinkPrice: 12000,
+      execWithDrinkAndDessertPrice: 15000,
       saladTitle: "Ensalada Completa",
       saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
       saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
@@ -4679,6 +4683,79 @@ export default function AdminHub({
             </button>
           </div>
         </form>
+
+        {/* OPCIONES DE MENÚ EJECUTIVO CON BEBIDA Y POSTRE */}
+        <div className="p-6 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-4">
+          <div className="border-b border-[#CFB5A0] pb-3">
+            <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Opciones Modificables de Menú Ejecutivo</span>
+            <h4 className="font-serif text-lg font-bold text-[#5C1D27]">Precios & Combos Ejecutivos Especiales</h4>
+            <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">
+              Configure los precios promocionales para las opciones de Menú Ejecutivo con Bebida y Postre incluidos.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Opción 1 */}
+            <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl space-y-3 shadow-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black text-[#5C1D27] uppercase tracking-wider">1) Menú Ejecutivo + Bebida</span>
+                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 bg-[#DFEADF] text-[#4F735A] rounded-md border border-[#4F735A]/30">Activo</span>
+              </div>
+              <p className="text-[11px] text-[#5E393F] font-medium leading-snug">
+                Incluye el plato principal del día + 1 bebida a elección (gaseosa 500ml / agua / copa de vino).
+              </p>
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Modificable ($ ARS) *</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-[#5C1D27]">$</span>
+                  <input
+                    type="number"
+                    step="500"
+                    value={dailyComboState.execWithDrinkPrice ?? 12000}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 12000;
+                      const updated = { ...dailyComboState, execWithDrinkPrice: val };
+                      setDailyComboState(updated);
+                      try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
+                      void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                    }}
+                    className="w-full pl-8 pr-4 py-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-mono font-black text-[#5C1D27] outline-none focus:border-[#5C1D27]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Opción 2 */}
+            <div className="p-4 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl space-y-3 shadow-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black text-[#5C1D27] uppercase tracking-wider">2) Menú Ejecutivo + Bebida + Postre</span>
+                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 bg-[#DFEADF] text-[#4F735A] rounded-md border border-[#4F735A]/30">Activo</span>
+              </div>
+              <p className="text-[11px] text-[#5E393F] font-medium leading-snug">
+                Incluye el plato principal del día + 1 bebida a elección + postre casero a elección.
+              </p>
+              <div>
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Modificable ($ ARS) *</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-xs font-bold text-[#5C1D27]">$</span>
+                  <input
+                    type="number"
+                    step="500"
+                    value={dailyComboState.execWithDrinkAndDessertPrice ?? 15000}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 15000;
+                      const updated = { ...dailyComboState, execWithDrinkAndDessertPrice: val };
+                      setDailyComboState(updated);
+                      try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
+                      void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                    }}
+                    className="w-full pl-8 pr-4 py-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-mono font-black text-[#5C1D27] outline-none focus:border-[#5C1D27]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
