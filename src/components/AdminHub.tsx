@@ -5603,22 +5603,33 @@ export default function AdminHub({
             {currentUser.role !== "barista" && (
               <button 
                 onClick={() => {
-                  if (posCheckoutOrder && posCheckoutOrder.items && posCheckoutOrder.items.length > 0) {
-                    setManualItems(
-                      posCheckoutOrder.items.map(it => ({
-                        description: it.name,
-                        qty: it.quantity,
-                        unitPrice: it.price,
-                        ivaPct: 21
-                      }))
-                    );
-                    setManualCustomerInfo({
-                      cuitOrDni: posCheckoutOrder.clientCuit || posCustomerCuitInput.trim() || "",
-                      nameOrReason: posCheckoutOrder.clientAccountName || posCustomerNameInput.trim() || "Consumidor Final",
-                      ivaCondition: (posIvaConditionInput as any) || "Consumidor Final"
-                    });
-                    setManualPaymentMethod(paymentMethod || "Efectivo");
-                  } else {
+                  try {
+                    if (posCheckoutOrder && posCheckoutOrder.items && posCheckoutOrder.items.length > 0) {
+                      setManualItems(
+                        posCheckoutOrder.items.map(it => ({
+                          description: it.name || "Producto",
+                          qty: it.quantity || 1,
+                          unitPrice: it.price || 0,
+                          ivaPct: 21
+                        }))
+                      );
+                      setManualCustomerInfo({
+                        cuitOrDni: posCheckoutOrder.clientCuit || cuitNumber || "",
+                        nameOrReason: posCheckoutOrder.clientAccountName || cuitName || "Consumidor Final",
+                        ivaCondition: (ivaCondition as any) || "Consumidor Final"
+                      });
+                      setManualPaymentMethod(paymentMethod || "Efectivo");
+                    } else {
+                      setManualItems([]);
+                      setManualCustomerInfo({
+                        cuitOrDni: cuitNumber || "",
+                        nameOrReason: cuitName || "Consumidor Final",
+                        ivaCondition: (ivaCondition as any) || "Consumidor Final"
+                      });
+                      setManualPaymentMethod(paymentMethod || "Efectivo");
+                    }
+                  } catch (err) {
+                    console.error("Error setting up manual ARCA invoice:", err);
                     setManualItems([]);
                     setManualCustomerInfo({
                       cuitOrDni: "",
@@ -5626,8 +5637,9 @@ export default function AdminHub({
                       ivaCondition: "Consumidor Final"
                     });
                     setManualPaymentMethod("Efectivo");
+                  } finally {
+                    setIsManualArcaModalOpen(true);
                   }
-                  setIsManualArcaModalOpen(true);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-[10px] transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider shadow-xs"
               >
