@@ -1963,6 +1963,7 @@ export default function AdminHub({
     });
 
     if (payment.order) {
+      onOrderStatusUpdate(orderId, "Completado");
       onUpdateOrders?.(
         orders.map((order) => (order.id === payment.order?.id ? payment.order : order))
       );
@@ -5491,9 +5492,7 @@ export default function AdminHub({
       if (onUpdateOrders) {
         const relIds: string[] = (posCheckoutOrder as any)?.relatedOrderIds || [orderId];
         for (const relId of relIds) {
-          if (relId !== orderId) {
-            void SupabaseSyncService.updateOrderStatus(relId, "Completado");
-          }
+          void onOrderStatusUpdate(relId, "Completado");
         }
         onUpdateOrders(
           orders.map((order) => (relIds.includes(order.id) ? { ...order, status: "Completado" as const } : order))
