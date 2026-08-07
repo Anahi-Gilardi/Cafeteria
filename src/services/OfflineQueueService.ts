@@ -121,6 +121,7 @@ export class OfflineQueueService {
 
   clearOrphanQueue(): void {
     try {
+      if (typeof window === "undefined" || typeof localStorage === "undefined") return;
       localStorage.removeItem("castano_offline_orders");
       localStorage.removeItem("castano_local_orders");
       const current = this.getPendingQueue();

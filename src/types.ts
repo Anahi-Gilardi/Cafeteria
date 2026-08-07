@@ -70,6 +70,7 @@ export interface MenuItemCustomization {
 export interface DailyExecutiveMenu {
   dayOfWeek: "Lunes" | "Martes" | "Miércoles" | "Jueves" | "Viernes" | "Sábado" | "Domingo";
   title: string;
+  type?: string;
   description: string;
   price: number;
   image?: string;

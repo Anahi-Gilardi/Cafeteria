@@ -76,19 +76,94 @@ interface BusinessProfileForm {
   posNumber: string;
 }
 
-const EMPTY_WEEKLY_MENUS: DailyExecutiveMenu[] = (
-  ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] as const
-).map((dayOfWeek) => ({
-  dayOfWeek,
-  title: "",
-  description: "",
-  price: 0,
-  starters: [],
-  mains: [],
-  drinks: [],
-  desserts: [],
-  active: true
-}));
+const DEFAULT_WEEKLY_MENUS: DailyExecutiveMenu[] = [
+  {
+    dayOfWeek: "Lunes",
+    title: "Tallarines Caseros con Tuco de Ternera",
+    type: "Pastas",
+    description: "Pasta fresca artesanal acompañada de abundante tuco de ternera a la cacerola.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Tallarines Caseros con Tuco de Ternera"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  },
+  {
+    dayOfWeek: "Martes",
+    title: "Costeleta de Cerdo a la Riojana",
+    type: "Carne",
+    description: "Jugosa costeleta de cerdo dorada con papas fritas, huevo frito, pimientos y arvejas.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Costeleta de Cerdo a la Riojana"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  },
+  {
+    dayOfWeek: "Miércoles",
+    title: "Guiso de Lentejas Especial",
+    type: "Guisos & Tradicional",
+    description: "Tradicional guiso criollo con panceta, chorizo colorado, carne trozada y verduras de estación.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Guiso de Lentejas Especial"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  },
+  {
+    dayOfWeek: "Jueves",
+    title: "Tartas Individuales de Estación con Ensalada",
+    type: "Opción Saludable",
+    description: "Tarta casera a elección (Jamón y Queso, Acelga o Pollo) acompañada de ensalada fresca.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Tartas Individuales (Jamón y Queso / Acelga / Pollo)"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  },
+  {
+    dayOfWeek: "Viernes",
+    title: "Milanesa de Ternera a la Napolitana c/ Papas",
+    type: "Minutas",
+    description: "Milanesa tierna gratinada con salsa de tomate, jamón cocido, queso mozzarella y orégano, con papas fritas.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Milanesa de Ternera a la Napolitana c/ Papas Fritas"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  },
+  {
+    dayOfWeek: "Sábado",
+    title: "Pollo al Horno con Papas Rústicas",
+    type: "Carne",
+    description: "Cuarto de pollo marinado a las finas hierbas horneado al punto justo con papas rústicas al romero.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Pollo al Horno con Papas Rústicas"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  },
+  {
+    dayOfWeek: "Domingo",
+    title: "Canelones de Verdura y Ricota c/ Salsa Mixta",
+    type: "Pastas",
+    description: "Canelones caseros rellenos de acelga fresca y ricota artesanal, gratinados con salsa rosa mixta.",
+    price: 8500,
+    starters: ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
+    mains: ["Canelones de Verdura y Ricota c/ Salsa Mixta"],
+    drinks: ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
+    desserts: ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
+    active: true
+  }
+];
+
+const EMPTY_WEEKLY_MENUS = DEFAULT_WEEKLY_MENUS;
 
 const PRODUCT_CATEGORY_LABELS: Partial<Record<MenuItem["category"], string>> = {
   desayunos_meriendas: "Desayunos & Meriendas",
@@ -623,7 +698,7 @@ export default function AdminHub({
   // Waiter ordering (Mozo module) states
   const [selectedWaiter, setSelectedWaiter] = useState<string>(currentUser.name);
   const [mozoSelectedTable, setMozoSelectedTable] = useState<string | null>(null);
-  const [mozoCart, setMozoCart] = useState<{ item: MenuItem; qty: number; notes?: string }[]>([]);
+  const [mozoCart, setMozoCart] = useState<{ item: MenuItem; qty: number; notes?: string; variant?: string; includedDetail?: string }[]>([]);
   const [mozoCategory, setMozoCategory] = useState<string>("todos");
   const [mozoSearchQuery, setMozoSearchQuery] = useState<string>("");
   const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
@@ -633,6 +708,12 @@ export default function AdminHub({
   const [comboDetailMozo, setComboDetailMozo] = useState<string>("");
   const [platoDiaNoteMozo, setPlatoDiaNoteMozo] = useState<string>("");
   const [saladNoteMozo, setSaladNoteMozo] = useState<string>("");
+
+  // Desayunos & Meriendas Modal Personalización State
+  const [desayunoCustomizingItem, setDesayunoCustomizingItem] = useState<MenuItem | null>(null);
+  const [desayunoSelectedVariant, setDesayunoSelectedVariant] = useState<string>("");
+  const [desayunoSelectedNotes, setDesayunoSelectedNotes] = useState<string[]>([]);
+  const [desayunoCustomNoteText, setDesayunoCustomNoteText] = useState<string>("");
 
   // Local Storage state for Raw Materials Insumos
   const [insumos, setInsumos] = useState<Insumo[]>([]);
@@ -659,6 +740,49 @@ export default function AdminHub({
     const todayDayName = days[new Date().getDay()];
     return weeklyMenus.find(m => m.dayOfWeek && m.dayOfWeek.toLowerCase().trim() === todayDayName.toLowerCase().trim() && m.title && m.title.trim() !== "") || null;
   }, [weeklyMenus]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchDailyMenuUnconditional = async () => {
+      try {
+        const { data: dailyMenusData, error: dailyMenusError } = await supabase
+          .from("daily_menu")
+          .select("*");
+        if (!active) return;
+        if (!dailyMenusError && dailyMenusData && dailyMenusData.length > 0) {
+          const mappedList = DEFAULT_WEEKLY_MENUS.map((defaultMenu) => {
+            const menu = dailyMenusData.find((candidate) =>
+              candidate.day_of_week && candidate.day_of_week.toString().toLowerCase().trim() === defaultMenu.dayOfWeek.toLowerCase().trim()
+            );
+            return menu ? {
+              dayOfWeek: defaultMenu.dayOfWeek,
+              title: menu.title || defaultMenu.title,
+              type: menu.type || defaultMenu.type,
+              description: menu.description || defaultMenu.description,
+              price: Number(menu.price) || defaultMenu.price,
+              image: menu.image || menu.image_url || defaultMenu.image,
+              starters: Array.isArray(menu.starters) && menu.starters.length > 0 ? menu.starters : defaultMenu.starters,
+              mains: Array.isArray(menu.mains) && menu.mains.length > 0 ? menu.mains : defaultMenu.mains,
+              drinks: Array.isArray(menu.drinks) && menu.drinks.length > 0 ? menu.drinks : defaultMenu.drinks,
+              desserts: Array.isArray(menu.desserts) && menu.desserts.length > 0 ? menu.desserts : defaultMenu.desserts,
+              active: menu.active ?? menu.is_active ?? true
+            } : defaultMenu;
+          });
+          setWeeklyMenus(mappedList);
+          try { localStorage.setItem("puglia_weekly_menus", JSON.stringify(mappedList)); } catch (e) {}
+        }
+      } catch (e) {}
+    };
+
+    void fetchDailyMenuUnconditional();
+
+    const handleUpdate = () => void fetchDailyMenuUnconditional();
+    window.addEventListener("daily_menus_updated", handleUpdate);
+    return () => {
+      active = false;
+      window.removeEventListener("daily_menus_updated", handleUpdate);
+    };
+  }, []);
 
   const [selectedDayTab, setSelectedDayTab] = useState<DailyExecutiveMenu["dayOfWeek"]>("Lunes");
 
@@ -914,14 +1038,15 @@ export default function AdminHub({
               return menu ? {
                 dayOfWeek: emptyMenu.dayOfWeek,
                 title: menu.title || "",
+                type: menu.type || "Minutas",
                 description: menu.description || "",
-                price: Number(menu.price) || 0,
-                image: menu.image || undefined,
+                price: Number(menu.price) || 8500,
+                image: menu.image || menu.image_url || undefined,
                 starters: Array.isArray(menu.starters) && menu.starters.length > 0 ? menu.starters : ["Ensalada Mixta de Estación", "Sopa Casera de Verduras"],
                 mains: Array.isArray(menu.mains) && menu.mains.length > 0 ? menu.mains : [menu.title || "Plato Principal del Día"],
                 drinks: Array.isArray(menu.drinks) && menu.drinks.length > 0 ? menu.drinks : ["Copa de Vino Malbec", "Limonada de la Casa", "Agua Mineral / Gaseosa"],
                 desserts: Array.isArray(menu.desserts) && menu.desserts.length > 0 ? menu.desserts : ["Flan Casero con Dulce de Leche", "Helado Artesanal (2 bochas)", "Café Espresso o Cortado"],
-                active: menu.active ?? true
+                active: menu.active ?? menu.is_active ?? true
               } : emptyMenu;
             });
             setWeeklyMenus(mappedList);
@@ -4273,15 +4398,15 @@ export default function AdminHub({
       setWeeklyMenus(newList);
     };
 
-    const handleSaveDailyMenuToSupabase = async (e?: FormEvent) => {
+    const handleSaveDailyMenuToSupabase = async (e?: FormEvent, saveAll = false) => {
       if (e) e.preventDefault();
 
-      // Save locally first so the UI and app reflect changes instantly
+      // Save locally first
       try {
         localStorage.setItem("puglia_weekly_menus", JSON.stringify(weeklyMenus));
       } catch (err) {}
 
-      // Dual-sync to system_settings table as cloud fallback
+      // Dual-sync to system_settings
       try {
         await supabase.from("system_settings").upsert({
           key: "weekly_menus",
@@ -4289,32 +4414,47 @@ export default function AdminHub({
         });
       } catch (sysErr) {}
 
-      try {
-        const { error } = await supabase.from("daily_menu").upsert({
-          day_of_week: activeMenu.dayOfWeek,
-          title: activeMenu.title,
-          description: activeMenu.description,
-          price: activeMenu.price,
-          image: activeMenu.image || null,
-          starters: activeMenu.starters,
-          mains: activeMenu.mains,
-          drinks: activeMenu.drinks,
-          desserts: activeMenu.desserts,
-          active: true,
-          updated_at: new Date().toISOString()
-        }, { onConflict: "day_of_week" });
+      const itemsToSave = saveAll ? weeklyMenus : [activeMenu];
 
-        if (!error) {
-          onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase con éxito.`, "success");
-        } else {
-          console.warn("Supabase daily_menu upsert warning:", error.message);
-          onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase.`, "success");
+      for (const m of itemsToSave) {
+        try {
+          const payload = {
+            day_of_week: m.dayOfWeek,
+            title: m.title,
+            type: m.type || "Minutas",
+            description: m.description,
+            price: m.price,
+            image: m.image || null,
+            active: m.active ?? true,
+            updated_at: new Date().toISOString()
+          };
+
+          const { error } = await supabase.from("daily_menu").upsert(payload, { onConflict: "day_of_week" });
+          if (error) {
+            // Fallback if type column is missing in older schema
+            const fallbackPayload = {
+              day_of_week: m.dayOfWeek,
+              title: m.title,
+              description: m.description,
+              price: m.price,
+              image: m.image || null,
+              active: m.active ?? true,
+              updated_at: new Date().toISOString()
+            };
+            await supabase.from("daily_menu").upsert(fallbackPayload, { onConflict: "day_of_week" });
+          }
+        } catch (err) {
+          console.warn(`Excepción al guardar menú de ${m.dayOfWeek}:`, err);
         }
-      } catch (err) {
-        console.warn("Excepción al guardar menú del día:", err);
-        onShowNotification(`💾 Menú del ${activeMenu.dayOfWeek} guardado con éxito.`, "success");
       }
+
       window.dispatchEvent(new Event("daily_menus_updated"));
+      onShowNotification(
+        saveAll
+          ? "💾 Menú semanal completo (7 días) guardado e integrado en Supabase."
+          : `💾 Menú del ${activeMenu.dayOfWeek} guardado e integrado en Supabase con éxito.`,
+        "success"
+      );
     };
 
     return (
@@ -4322,48 +4462,106 @@ export default function AdminHub({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#CFB5A0] pb-4">
           <div>
             <span className="text-[10px] font-black uppercase text-[#5E393F] tracking-widest block">Configuración de Rotación Diaria & Portada</span>
-            <h3 className="font-serif text-2xl font-bold text-[#5C1D27]">Pizarra & Menú del Día (Plato Único)</h3>
+            <h3 className="font-serif text-2xl font-bold text-[#5C1D27]">Pizarra & Menú del Día Semanal (Lunes a Domingo)</h3>
             <p className="text-xs text-[#5E393F] italic mt-0.5 font-medium">
-              Configure el plato estrella del día de Lunes a Domingo. Se sincroniza en vivo con la Portada Publicitaria y Menú Digital.
+              Configure las propuestas del día para cada día de la semana. Se sincronizan automáticamente con el POS del Mozo y la Portada Publicitaria.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => handleSaveDailyMenuToSupabase()}
-            className="px-5 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
-          >
-            GUARDAR MENÚ DEL DÍA ({selectedDayTab})
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => handleSaveDailyMenuToSupabase(e, false)}
+              className="px-4 py-2.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+            >
+              💾 GUARDAR ({selectedDayTab})
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSaveDailyMenuToSupabase(e, true)}
+              className="px-4 py-2.5 bg-[#2D0E13] hover:bg-[#1A080B] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 border border-[#CFB5A0]"
+            >
+              🌐 GUARDAR SEMANA COMPLETA
+            </button>
+          </div>
         </div>
 
         {/* Day of Week Selector Tabs */}
-        <div className="flex flex-wrap gap-2">
-          {(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] as const).map((day) => (
-            <button
-              key={day}
-              type="button"
-              onClick={() => setSelectedDayTab(day)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
-                selectedDayTab === day
-                  ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-sm scale-[1.03]"
-                  : "bg-[#EBDAC5] border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5]"
-              }`}
-            >
-              {day}
-            </button>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+          {(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] as const).map((day) => {
+            const dayMenu = weeklyMenus.find(m => m.dayOfWeek === day);
+            const isSelected = selectedDayTab === day;
+            const isActive = dayMenu?.active !== false;
+
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setSelectedDayTab(day)}
+                className={`p-3 rounded-2xl text-left transition-all cursor-pointer border flex flex-col justify-between ${
+                  isSelected
+                    ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-md scale-[1.02]"
+                    : isActive
+                    ? "bg-[#EBDAC5] border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5]/80"
+                    : "bg-[#FAF2E6] border-[#CFB5A0]/60 text-gray-400 opacity-65"
+                }`}
+              >
+                <div className="flex justify-between items-center w-full mb-1">
+                  <span className="text-xs font-black uppercase tracking-wider">{day}</span>
+                  <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-md ${
+                    isSelected
+                      ? "bg-white/20 text-white"
+                      : isActive
+                      ? "bg-[#5C1D27]/10 text-[#5C1D27]"
+                      : "bg-gray-200 text-gray-500"
+                  }`}>
+                    {isActive ? "ON" : "OFF"}
+                  </span>
+                </div>
+                <span className={`text-[10px] font-bold truncate block ${isSelected ? "text-white/90" : "text-[#2D0E13]"}`}>
+                  {dayMenu?.title || "Sin configurar"}
+                </span>
+                <span className={`text-[9px] font-mono font-black block mt-0.5 ${isSelected ? "text-[#EBDAC5]" : "text-[#5C1D27]"}`}>
+                  ${(dayMenu?.price || 0).toLocaleString("es-AR")}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Plato Único Form for the selected day */}
-        <form onSubmit={handleSaveDailyMenuToSupabase} className="p-5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-4">
-          <div className="border-b border-[#CFB5A0] pb-2">
-            <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Detalles del Plato Único — {selectedDayTab}</span>
+        {/* Plato Form for the selected day */}
+        <form onSubmit={(e) => handleSaveDailyMenuToSupabase(e, false)} className="p-5 bg-[#EBDAC5]/40 border border-[#CFB5A0] rounded-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#CFB5A0] pb-3 gap-2">
+            <div>
+              <span className="text-[9px] font-black uppercase text-[#5E393F] tracking-widest block">Edición de Menú — {selectedDayTab}</span>
+              <h4 className="font-serif text-lg font-bold text-[#5C1D27]">{activeMenu.title || `Menú del ${selectedDayTab}`}</h4>
+            </div>
+
+            {/* Active ON/OFF Toggle */}
+            <div className="flex items-center gap-3 bg-white px-3.5 py-2 border border-[#CFB5A0] rounded-xl shadow-xs">
+              <span className="text-xs font-black uppercase text-[#2D0E13]">Estado del Día:</span>
+              <button
+                type="button"
+                onClick={() => updateCurrentDayMenu({ active: !activeMenu.active })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                  activeMenu.active ? "bg-green-600" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    activeMenu.active ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span className={`text-xs font-black uppercase ${activeMenu.active ? "text-green-700" : "text-gray-500"}`}>
+                {activeMenu.active ? "Activo [ON]" : "Inactivo [OFF]"}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-8">
-              <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Nombre del Plato del Día *</label>
+            <div className="md:col-span-6">
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Nombre / Título del Plato *</label>
               <input
                 type="text"
                 required
@@ -4374,7 +4572,24 @@ export default function AdminHub({
               />
             </div>
 
-            <div className="md:col-span-4">
+            <div className="md:col-span-3">
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Tipo de Menú / Categoría *</label>
+              <select
+                value={activeMenu.type || "Minutas"}
+                onChange={(e) => updateCurrentDayMenu({ type: e.target.value })}
+                className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
+              >
+                <option value="Pastas">🍝 Pastas Caseras</option>
+                <option value="Carne">🥩 Carne / Al Plato</option>
+                <option value="Minutas">🍳 Minutas & Especiales</option>
+                <option value="Opción Saludable">🥗 Opción Saludable</option>
+                <option value="Pescado">🐟 Pescados / Mar</option>
+                <option value="Gourmet">⭐ Especial del Chef</option>
+                <option value="Guisos & Tradicional">🍲 Guisos & Tradicional</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-3">
               <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Precio Promocional ($ ARS) *</label>
               <input
                 type="number"
@@ -4388,25 +4603,25 @@ export default function AdminHub({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Descripción Gourmet Tentadora *</label>
+            <label className="text-[10px] font-black uppercase text-[#5E393F] block mb-1">Descripción de la Propuesta *</label>
             <textarea
               rows={3}
               required
               value={activeMenu.description}
               onChange={(e) => updateCurrentDayMenu({ description: e.target.value })}
-              placeholder="Describa la preparación, ingredientes premium y propuesta de maridaje..."
+              placeholder="Describa la preparación, ingredientes premium e incluyas opcionales..."
               className="w-full p-3 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none resize-none leading-relaxed focus:border-[#5C1D27]"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-2">
             <div className="md:col-span-7 space-y-2">
-              <label className="text-[10px] font-black uppercase text-[#5E393F] block">Foto HD del Plato (Subida a Supabase Storage)</label>
+              <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa (URL o Cargar Foto HD)</label>
               <input
                 type="text"
                 value={activeMenu.image || ""}
                 onChange={(e) => updateCurrentDayMenu({ image: e.target.value })}
-                placeholder="URL pública de la imagen de Unsplash o Supabase Storage..."
+                placeholder="URL pública de la imagen..."
                 className="w-full p-2.5 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none"
               />
 
@@ -4419,13 +4634,13 @@ export default function AdminHub({
                     const file = e.target.files?.[0];
                     if (file) {
                       setIsUploadingImage(true);
-                      onShowNotification("⏳ Subiendo imagen del Menú del Día a Supabase Storage...", "info");
+                      onShowNotification("⏳ Subiendo imagen a Supabase Storage...", "info");
                       try {
                         const imgUrl = await StorageService.uploadProductImage(file);
                         updateCurrentDayMenu({ image: imgUrl });
-                        onShowNotification("📸 Foto del plato subida con éxito.", "success");
+                        onShowNotification("📸 Foto subida con éxito.", "success");
                       } catch (err) {
-                        console.error("Error al subir foto de menú diario:", err);
+                        console.error("Error al subir foto:", err);
                       } finally {
                         setIsUploadingImage(false);
                       }
@@ -4437,7 +4652,7 @@ export default function AdminHub({
             </div>
 
             <div className="md:col-span-5 text-center">
-              <span className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Vista Previa Portada Publicitaria</span>
+              <span className="text-[9px] font-black uppercase text-[#5E393F] block mb-1">Vista Previa (Publicidad y Menú)</span>
               {activeMenu.image ? (
                 <img
                   src={activeMenu.image}
@@ -4452,14 +4667,15 @@ export default function AdminHub({
             </div>
           </div>
 
-
-
-          <div className="pt-3 flex justify-end">
+          <div className="pt-3 flex justify-between items-center border-t border-[#CFB5A0]">
+            <span className="text-[10px] font-bold text-[#5E393F] italic">
+              * Cambios guardados para {selectedDayTab} impactan inmediatamente en el menú del día.
+            </span>
             <button
               type="submit"
-              className="px-6 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer"
+              className="px-6 py-3 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2"
             >
-              GUARDAR MENÚ DEL DÍA ({selectedDayTab})
+              💾 GUARDAR MENÚ DE {selectedDayTab.toUpperCase()}
             </button>
           </div>
         </form>
@@ -4811,7 +5027,7 @@ export default function AdminHub({
                   if (selectedPosCategory === "desayunos_meriendas") {
                     return item.category === "desayunos_meriendas" && (!item.tags || !item.tags.includes("Promo"));
                   }
-                  if (selectedPosCategory === "executive" || selectedPosCategory === "menu_ejecutivo") return item.category === "executive";
+                  if (selectedPosCategory === "executive" || selectedPosCategory === "menu_ejecutivo" || selectedPosCategory === "menu_diario") return item.category === "executive" || item.category === "menu_diario";
                   if (selectedPosCategory === "bebidas_sa") return item.category === "bebidas_sa";
                   if (selectedPosCategory === "bebidas_alcohol") return item.category === "bebidas_alcohol";
                   if (selectedPosCategory === "postres") return item.category === "postres";
@@ -5272,7 +5488,7 @@ export default function AdminHub({
         (selectedPosCategory === "hamburguesas" && item.tags && item.tags.includes("Hamburguesa")) ||
         (selectedPosCategory === "sandwiches" && item.tags && (item.tags.includes("Sándwich") || item.tags.includes("Pebete") || item.tags.includes("Pebetón") || item.tags.includes("Miga") || item.tags.includes("Árabe"))) ||
         (selectedPosCategory === "desayunos_meriendas" && item.category === "desayunos_meriendas" && (!item.tags || !item.tags.includes("Promo"))) ||
-        ((selectedPosCategory === "executive" || selectedPosCategory === "menu_ejecutivo") && item.category === "executive") ||
+        ((selectedPosCategory === "executive" || selectedPosCategory === "menu_ejecutivo" || selectedPosCategory === "menu_diario") && (item.category === "executive" || item.category === "menu_diario")) ||
         (selectedPosCategory === "bebidas_sa" && item.category === "bebidas_sa") ||
         (selectedPosCategory === "bebidas_alcohol" && item.category === "bebidas_alcohol") ||
         (selectedPosCategory === "postres" && item.category === "postres") ||
@@ -7063,13 +7279,19 @@ export default function AdminHub({
     const occupiedTablesCount = MOZO_TABLES.filter(t => getActiveOrderForTable(t) !== undefined).length;
 
     const filteredMenuItems = menuItems.filter(item => {
-      // Exclude legacy executive items and old static menu_diario items
-      if (item.category === "executive" || item.category === "menu_diario" || item.id === "menu_ejecutivo_promocional" || item.name.toLowerCase().includes("menú ejecutivo")) {
+      // Exclude legacy promotional item
+      if (item.id === "menu_ejecutivo_promocional") {
         return false;
       }
       const matchesSearch = item.name.toLowerCase().includes(mozoSearchQuery.toLowerCase()) || 
                             item.description.toLowerCase().includes(mozoSearchQuery.toLowerCase());
-      const matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
+      let matchesCategory = mozoCategory === "todos" || item.category === mozoCategory;
+      if (mozoCategory === "menu_diario") {
+        // Plato Único Rotativo del Día is managed via daily_menu, not in the fixed catalog grid.
+        matchesCategory = false;
+      } else if (mozoCategory === "executive") {
+        matchesCategory = item.category === "executive";
+      }
       return item.isAvailable !== false && matchesSearch && matchesCategory;
     });
 
@@ -7078,25 +7300,55 @@ export default function AdminHub({
       setMozoCart([]);
     };
 
-    const handleAddMozoCart = (item: MenuItem, defaultNotes?: string) => {
+    const handleAddMozoCart = (
+      item: MenuItem, 
+      defaultNotes?: string, 
+      customVariant?: string, 
+      customIncludedDetail?: string
+    ) => {
       if (mozoServiceType === "salon" && !mozoSelectedTable) {
         onShowNotification("⚠️ Seleccione una mesa a la izquierda antes de añadir productos.", "warning");
         return;
       }
+      
+      // If it's a breakfast/merienda item and no variant was explicitly passed, open customization modal!
+      if (item.category === "desayunos_meriendas" && !customVariant) {
+        setDesayunoCustomizingItem(item);
+        let defaultVar = "Cortado";
+        if (item.id === "des-submarino-capuchino" || item.name.toLowerCase().includes("submarino")) {
+          defaultVar = "Capuchino";
+        } else if (item.id === "des-te" || item.name.toLowerCase().includes("té")) {
+          defaultVar = "Té Negro";
+        } else if (item.id === "des-doble-super" || item.name.toLowerCase().includes("doble")) {
+          defaultVar = "Café Doble";
+        }
+        setDesayunoSelectedVariant(defaultVar);
+        setDesayunoSelectedNotes([]);
+        setDesayunoCustomNoteText("");
+        return;
+      }
+
       setMozoCart(prev => {
-        const match = prev.find(c => c.item.id === item.id);
+        const itemKey = customVariant ? `${item.id}_${customVariant}_${defaultNotes || ""}` : item.id;
+        const match = prev.find(c => (c.item.id === itemKey || (c.item.id === item.id && c.variant === customVariant && c.notes === defaultNotes)));
         if (match) {
           return prev.map(c => {
-            if (c.item.id === item.id) {
-              const combined = defaultNotes
-                ? (c.notes ? `${c.notes} | ${defaultNotes}` : defaultNotes)
-                : c.notes;
-              return { ...c, qty: c.qty + 1, notes: combined };
+            if (c === match) {
+              return { ...c, qty: c.qty + 1 };
             }
             return c;
           });
         }
-        return [...prev, { item, qty: 1, notes: defaultNotes || "" }];
+        return [...prev, {
+          item: {
+            ...item,
+            id: itemKey
+          },
+          qty: 1,
+          notes: defaultNotes || "",
+          variant: customVariant,
+          includedDetail: customIncludedDetail || item.description
+        }];
       });
       onShowNotification(`🛒 ${item.name} añadido a la comanda.`, "success");
     };
@@ -7109,6 +7361,25 @@ export default function AdminHub({
 
     const handleRemoveFromMozoCart = (itemId: string) => {
       setMozoCart(prev => prev.filter(c => c.item.id !== itemId));
+    };
+
+    const mapCartItemToOrderItem = (c: { item: MenuItem; qty: number; notes?: string; variant?: string; includedDetail?: string }) => {
+      const summaryParts: string[] = [];
+      if (c.variant) summaryParts.push(c.variant);
+      if (c.includedDetail) summaryParts.push(`Incluye: ${c.includedDetail}`);
+      if (c.notes) summaryParts.push(`Aclaración: ${c.notes}`);
+
+      const cleanName = c.item.name.includes("(")
+        ? c.item.name.split("(")[0].trim()
+        : c.item.name;
+
+      return {
+        itemId: c.item.id,
+        name: cleanName,
+        quantity: c.qty,
+        price: c.item.price,
+        customizationSummary: summaryParts.join(" | ") || c.notes || ""
+      };
     };
 
     const handleSubmitMozoOrder = async () => {
@@ -7129,13 +7400,7 @@ export default function AdminHub({
         }
         const newTakeawayOrder: Order = {
           id: stableTakeawayId,
-          items: mozoCart.map(c => ({
-            itemId: c.item.id,
-            name: c.item.name,
-            quantity: c.qty,
-            price: c.item.price,
-            customizationSummary: c.notes || ""
-          })),
+          items: mozoCart.map(mapCartItemToOrderItem),
           subtotal,
           tax,
           total,
@@ -7167,13 +7432,7 @@ export default function AdminHub({
         }
         const newDeliveryOrder: Order = {
           id: stableDeliveryId,
-          items: mozoCart.map(c => ({
-            itemId: c.item.id,
-            name: c.item.name,
-            quantity: c.qty,
-            price: c.item.price,
-            customizationSummary: c.notes || ""
-          })),
+          items: mozoCart.map(mapCartItemToOrderItem),
           subtotal,
           tax,
           total,
@@ -7210,13 +7469,7 @@ export default function AdminHub({
       const newOrder: Order = {
         id: `PED-${crypto.randomUUID()}`,
         tableNumber: mozoSelectedTable,
-        items: mozoCart.map(c => ({
-          itemId: c.item.id,
-          name: c.item.name,
-          quantity: c.qty,
-          price: c.item.price,
-          customizationSummary: c.notes || ""
-        })),
+        items: mozoCart.map(mapCartItemToOrderItem),
         subtotal,
         tax,
         total,
@@ -7718,6 +7971,9 @@ export default function AdminHub({
                   <div className="p-4 flex justify-between items-center gap-3 bg-[#6C222E] border-t border-white/10">
                     <div className="space-y-1 overflow-hidden">
                       <strong className="text-xs font-serif font-bold text-white block truncate">{item.name}</strong>
+                      {item.description && (
+                        <span className="text-[10px] text-[#EBDAC5]/80 block truncate font-sans font-medium">{item.description}</span>
+                      )}
                       <span className="text-sm font-mono font-black text-[#FAF2E6] block">${item.price.toLocaleString("es-AR")}</span>
                     </div>
                     <button
@@ -7826,81 +8082,117 @@ export default function AdminHub({
 
                       <div className="space-y-3 overflow-y-auto flex-1 pr-1 max-h-[340px]">
                         {mozoCart.length > 0 ? (
-                          mozoCart.map((cart, idx) => (
-                            <div key={idx} className="bg-[#5C1D27]/80 border border-white/10 rounded-2xl p-3 space-y-2 text-white">
-                              <div className="flex justify-between items-center text-xs font-semibold">
-                                <div className="space-y-0.5 truncate pr-2">
-                                  <strong className="text-white block truncate font-serif">{cart.item.name}</strong>
-                                  <span className="text-[10px] text-white/70 font-mono font-bold">${cart.item.price.toLocaleString("es-AR")} c/u</span>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <div className="flex items-center gap-1 bg-[#4A151D] border border-white/20 rounded-xl p-1">
+                          mozoCart.map((cart, idx) => {
+                            const cleanItemTitle = cart.item.name.includes("(")
+                              ? cart.item.name.split("(")[0].trim()
+                              : cart.item.name;
+                            const hasTreeDetails = Boolean(cart.variant || cart.includedDetail || cart.notes);
+
+                            return (
+                              <div key={idx} className="bg-[#5C1D27]/80 border border-white/10 rounded-2xl p-3 space-y-2 text-white shadow-xs">
+                                <div className="flex justify-between items-start text-xs font-semibold gap-2">
+                                  <div className="space-y-0.5 overflow-hidden">
+                                    <strong className="text-white block truncate font-serif text-sm">
+                                      {cleanItemTitle} — ${cart.item.price.toLocaleString("es-AR")}
+                                    </strong>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <div className="flex items-center gap-1 bg-[#4A151D] border border-white/20 rounded-xl p-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
+                                        className="h-6 w-6 bg-[#5C1D27] hover:bg-white hover:text-[#4A151D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="font-mono font-bold w-5 text-center text-white">{cart.qty}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
+                                        className="h-6 w-6 bg-[#5C1D27] hover:bg-white hover:text-[#4A151D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
                                     <button
-                                      onClick={() => handleUpdateMozoCartQty(cart.item.id, -1)}
-                                      className="h-6 w-6 bg-[#5C1D27] hover:bg-white hover:text-[#4A151D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
+                                      type="button"
+                                      onClick={() => handleRemoveFromMozoCart(cart.item.id)}
+                                      className="p-1.5 text-[#EBDAC5] hover:text-white transition-all cursor-pointer"
                                     >
-                                      -
-                                    </button>
-                                    <span className="font-mono font-bold w-5 text-center text-white">{cart.qty}</span>
-                                    <button
-                                      onClick={() => handleUpdateMozoCartQty(cart.item.id, 1)}
-                                      className="h-6 w-6 bg-[#5C1D27] hover:bg-white hover:text-[#4A151D] text-white flex items-center justify-center rounded-lg text-xs font-black cursor-pointer"
-                                    >
-                                      +
+                                      <Trash2 className="h-4 w-4" />
                                     </button>
                                   </div>
-                                  <button
-                                    onClick={() => handleRemoveFromMozoCart(cart.item.id)}
-                                    className="p-1.5 text-[#EBDAC5] hover:text-white transition-all cursor-pointer"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
                                 </div>
-                              </div>
-                              <div className="space-y-1">
-                                <input 
-                                  type="text"
-                                  value={cart.notes || ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
-                                  }}
-                                  placeholder="📝 Añadir aclaración (ej: bien cocido, sin sal, toppings...)"
-                                  className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#4A151D] text-white placeholder-white/50 outline-none font-medium"
-                                />
-                                <div className="flex flex-wrap gap-1 pt-0.5">
-                                  {[
-                                    "Sin Sal",
-                                    "Punto Medio",
-                                    "Bien Cocido",
-                                    "Sin Cebolla",
-                                    "Almendra",
-                                    "Extra Queso",
-                                    "Salsa Tuco",
-                                    "Salsa Blanca"
-                                  ].map(tag => (
-                                    <button
-                                      key={tag}
-                                      type="button"
-                                      onClick={() => {
-                                        setMozoCart(prev => prev.map((c, i) => {
-                                          if (i === idx) {
-                                            const existing = (c.notes || "").trim();
-                                            const updated = existing ? (existing.includes(tag) ? existing : `${existing}, ${tag}`) : tag;
-                                            return { ...c, notes: updated };
-                                          }
-                                          return c;
-                                        }));
+
+                                {/* Structured Tree View breakdown requested by user */}
+                                {hasTreeDetails ? (
+                                  <div className="bg-[#3A1017] border border-[#CFB5A0]/20 rounded-xl p-2 text-[10.5px] font-sans space-y-1 text-white/90">
+                                    {cart.variant && (
+                                      <div className="flex items-start gap-1.5 font-bold text-[#EBDAC5]">
+                                        <span className="text-[#CFB5A0]">├─</span>
+                                        <span>{cart.variant}</span>
+                                      </div>
+                                    )}
+                                    {cart.includedDetail && (
+                                      <div className="flex items-start gap-1.5 text-white/80">
+                                        <span className="text-[#CFB5A0]">├─</span>
+                                        <span>Incluye: {cart.includedDetail}</span>
+                                      </div>
+                                    )}
+                                    {cart.notes && (
+                                      <div className="flex items-start gap-1.5 text-yellow-200 font-medium">
+                                        <span className="text-[#CFB5A0]">└─</span>
+                                        <span>Aclaración: {cart.notes}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <input 
+                                      type="text"
+                                      value={cart.notes || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setMozoCart(prev => prev.map((c, i) => i === idx ? { ...c, notes: val } : c));
                                       }}
-                                      className="px-2 py-0.5 rounded-lg bg-[#4A151D] hover:bg-[#6C222E] text-white/90 hover:text-white border border-white/20 text-[9px] font-bold cursor-pointer transition-all"
-                                    >
-                                      + {tag}
-                                    </button>
-                                  ))}
-                                </div>
+                                      placeholder="📝 Añadir aclaración (ej: bien cocido, sin sal...)"
+                                      className="w-full text-[10px] p-2 border border-white/20 rounded-xl bg-[#4A151D] text-white placeholder-white/50 outline-none font-medium"
+                                    />
+                                    <div className="flex flex-wrap gap-1 pt-0.5">
+                                      {[
+                                        "Sin Sal",
+                                        "Punto Medio",
+                                        "Bien Cocido",
+                                        "Sin Cebolla",
+                                        "Almendra",
+                                        "Extra Queso",
+                                        "Salsa Tuco",
+                                        "Salsa Blanca"
+                                      ].map(tag => (
+                                        <button
+                                          key={tag}
+                                          type="button"
+                                          onClick={() => {
+                                            setMozoCart(prev => prev.map((c, i) => {
+                                              if (i === idx) {
+                                                const existing = (c.notes || "").trim();
+                                                const updated = existing ? (existing.includes(tag) ? existing : `${existing}, ${tag}`) : tag;
+                                                return { ...c, notes: updated };
+                                              }
+                                              return c;
+                                            }));
+                                          }}
+                                          className="px-2 py-0.5 rounded-lg bg-[#4A151D] hover:bg-[#6C222E] text-white/90 hover:text-white border border-white/20 text-[9px] font-bold cursor-pointer transition-all"
+                                        >
+                                          + {tag}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
                           <div className="flex flex-col items-center justify-center py-16 text-white/70 text-center space-y-2">
                             <ClipboardList className="h-8 w-8 text-white stroke-1.5" />
@@ -7950,6 +8242,159 @@ export default function AdminHub({
               })()}
           </div>
         </div>
+
+        {/* Modal de Personalización de Desayunos & Meriendas */}
+        {desayunoCustomizingItem && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-6 w-full max-w-md shadow-2xl relative text-xs text-[#2D0E13] space-y-4 my-8">
+              <button 
+                type="button"
+                onClick={() => setDesayunoCustomizingItem(null)}
+                className="absolute right-4 top-4 p-1.5 rounded-full hover:bg-[#EBDAC5] text-[#5C1D27] cursor-pointer"
+              >
+                <X className="h-4 w-4 font-bold" />
+              </button>
+
+              <div className="flex items-center gap-3 border-b border-[#CFB5A0] pb-3">
+                {desayunoCustomizingItem.image ? (
+                  <img src={desayunoCustomizingItem.image} alt={desayunoCustomizingItem.name} className="h-14 w-16 rounded-xl object-cover border border-[#5C1D27] shrink-0" />
+                ) : (
+                  <div className="h-14 w-16 rounded-xl bg-[#5C1D27] text-white flex items-center justify-center text-xl shrink-0">☕</div>
+                )}
+                <div>
+                  <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Personalizar Desayuno / Merienda</span>
+                  <h3 className="font-serif text-base font-bold text-[#2D0E13]">{desayunoCustomizingItem.name}</h3>
+                  <span className="text-sm font-mono font-black text-[#5C1D27]">${desayunoCustomizingItem.price.toLocaleString("es-AR")}</span>
+                </div>
+              </div>
+
+              {/* 1. Variante de Infusión */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#5C1D27] block tracking-wider font-sans">
+                  1. Seleccione Variante de Infusión:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(() => {
+                    const itemId = desayunoCustomizingItem.id;
+                    let options = ["Café", "Cortado", "Lágrima"];
+                    if (itemId === "des-submarino-capuchino" || desayunoCustomizingItem.name.toLowerCase().includes("submarino")) {
+                      options = ["Submarino", "Capuchino"];
+                    } else if (itemId === "des-te" || desayunoCustomizingItem.name.toLowerCase().includes("té")) {
+                      options = ["Té Negro", "Té Verde", "Té de Tilo", "Té de Manzanilla", "Té Rojo"];
+                    } else if (itemId === "des-doble-super" || desayunoCustomizingItem.name.toLowerCase().includes("doble")) {
+                      options = ["Café Doble", "Submarino", "Capuchino", "Té"];
+                    }
+                    return options.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setDesayunoSelectedVariant(opt)}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer text-center ${
+                          desayunoSelectedVariant === opt
+                            ? "bg-[#5C1D27] text-white border-[#5C1D27] shadow-xs font-black"
+                            : "bg-white text-[#2D0E13] border-[#CFB5A0] hover:bg-[#EBDAC5]"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* 2. Texto Informativo de Acompañamiento Incluido */}
+              <div className="p-3 bg-[#EBDAC5]/50 border border-[#CFB5A0] rounded-2xl flex items-start gap-2.5 text-[#2D0E13]">
+                <Coffee className="h-4 w-4 text-[#5C1D27] shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-[9px] font-black uppercase text-[#5C1D27] block tracking-wider">Acompañamiento incluido:</span>
+                  <span className="text-xs font-semibold text-[#2D0E13] block mt-0.5">
+                    {desayunoCustomizingItem.description || "Sin acompañamientos adicionales"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. Aclaraciones Predefinidas de Cafetería */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-[#5C1D27] block tracking-wider font-sans">
+                  3. Aclaraciones / Notas Predefinidas:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Edulcorante",
+                    "Caliente",
+                    "Frío",
+                    "Leche descremada",
+                    "Sin TACC",
+                    "En jarrito",
+                    "Sin azúcar",
+                    "Extra caliente",
+                    "Medialuna de manteca",
+                    "Criollo hojaldrado"
+                  ].map((chip) => {
+                    const isSelected = desayunoSelectedNotes.includes(chip);
+                    return (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => {
+                          setDesayunoSelectedNotes(prev => 
+                            isSelected ? prev.filter(c => c !== chip) : [...prev, chip]
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-[#5C1D27] text-white border-[#5C1D27]"
+                            : "bg-white text-[#5E393F] border-[#CFB5A0] hover:bg-[#EBDAC5]"
+                        }`}
+                      >
+                        {isSelected ? `✓ ${chip}` : `+ ${chip}`}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <input 
+                  type="text"
+                  value={desayunoCustomNoteText}
+                  onChange={(e) => setDesayunoCustomNoteText(e.target.value)}
+                  placeholder="📝 Otra aclaración manual..."
+                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none focus:border-[#5C1D27] placeholder:text-[#5E393F]/50"
+                />
+              </div>
+
+              {/* Botón de Confirmación */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDesayunoCustomizingItem(null)}
+                  className="w-1/3 py-2.5 rounded-xl border border-[#CFB5A0] text-xs font-bold text-[#5E393F] hover:bg-[#EBDAC5] cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allNotes = [...desayunoSelectedNotes];
+                    if (desayunoCustomNoteText.trim()) allNotes.push(desayunoCustomNoteText.trim());
+                    const finalNotes = allNotes.join(", ");
+                    const itemToCart = desayunoCustomizingItem;
+                    setDesayunoCustomizingItem(null);
+
+                    handleAddMozoCart(
+                      itemToCart,
+                      finalNotes,
+                      desayunoSelectedVariant || "Cortado",
+                      itemToCart.description
+                    );
+                  }}
+                  className="w-2/3 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="h-4 w-4" /> Agregar a Comanda
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   };

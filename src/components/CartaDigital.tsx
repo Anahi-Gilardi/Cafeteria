@@ -73,6 +73,7 @@ export default function CartaDigital({ menuItems, onAddToBag, onShowNotification
     if (selectedCategory === "hamburguesas") matchesCategory = (item.tags && item.tags.includes("Hamburguesa")) || false;
     if (selectedCategory === "sandwiches") matchesCategory = (item.tags && (item.tags.includes("Sándwich") || item.tags.includes("Pebete") || item.tags.includes("Pebetón") || item.tags.includes("Miga") || item.tags.includes("Árabe"))) || false;
     if (selectedCategory === "desayunos_meriendas") matchesCategory = item.category === "desayunos_meriendas" && (!item.tags || !item.tags.includes("Promo"));
+    if (selectedCategory === "menu_diario") matchesCategory = false;
     if (selectedCategory === "executive" || selectedCategory === "menu_ejecutivo") matchesCategory = item.category === "executive";
 
     const matchesSearch = !normQuery || normalizeStr(item.name).includes(normQuery) || 

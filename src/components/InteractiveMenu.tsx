@@ -55,7 +55,13 @@ export default function InteractiveMenu({ onAddToBag, menuItems = MENU_ITEMS }: 
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
       // Category Match
-      if (selectedCategory !== "all" && item.category !== selectedCategory) {
+      let matchesCat = selectedCategory === "all" || item.category === selectedCategory;
+      if (selectedCategory === "menu_diario") {
+        matchesCat = false;
+      } else if (selectedCategory === "executive") {
+        matchesCat = item.category === "executive";
+      }
+      if (!matchesCat) {
         return false;
       }
       // Search Match
