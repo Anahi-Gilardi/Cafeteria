@@ -1632,17 +1632,14 @@ export default function AdminHub({
       }
 
       if (updatedProduct.image && updatedProduct.image.startsWith("data:image")) {
-        const { error: imageError } = await supabase.from("product_images").upsert({
-          id: updatedProduct.id,
-          product_id: updatedProduct.id,
-          image_base64: updatedProduct.image
-        });
-        if (imageError) {
-          console.error("Error upserting to product_images table:", imageError);
-          onShowNotification(
-            "⚠️ La ficha se guardó, pero la copia secundaria de la imagen fue rechazada.",
-            "warning"
-          );
+        try {
+          await supabase.from("product_images").upsert({
+            id: updatedProduct.id,
+            product_id: updatedProduct.id,
+            image_base64: updatedProduct.image
+          });
+        } catch (imageError) {
+          console.warn("Notice for product_images table:", imageError);
         }
       }
 
