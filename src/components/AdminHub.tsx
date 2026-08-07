@@ -707,6 +707,8 @@ export default function AdminHub({
   const [saladSizeMozo, setSaladSizeMozo] = useState<"chica" | "grande">("chica");
   const [comboDetailMozo, setComboDetailMozo] = useState<string>("");
   const [platoDiaNoteMozo, setPlatoDiaNoteMozo] = useState<string>("");
+  const [execDrinkNoteMozo, setExecDrinkNoteMozo] = useState<string>("");
+  const [execDrinkDessertNoteMozo, setExecDrinkDessertNoteMozo] = useState<string>("");
   const [saladNoteMozo, setSaladNoteMozo] = useState<string>("");
 
   // Desayunos & Meriendas Modal Personalización State
@@ -7858,6 +7860,112 @@ export default function AdminHub({
                     className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Plus className="h-4 w-4" /> Agregar Plato del Día a Comanda
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🍷 Menú Ejecutivo + Bebida Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "menu_diario") && (
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
+                    🍷 BEBIDA
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Menú Ejecutivo Promocional</span>
+                    <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Ejecutivo + Bebida</h4>
+                    <p className="text-xs text-[#5E393F] italic">Incluye el plato principal del día + 1 bebida a elección (gaseosa 500ml / agua / copa de vino).</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs text-[#5E393F] block font-bold">Precio</span>
+                  <span className="text-xl font-mono font-black text-[#5C1D27] block">
+                    ${(dailyComboState.execWithDrinkPrice ?? 12000).toLocaleString("es-AR")}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={execDrinkNoteMozo}
+                  onChange={(e) => setExecDrinkNoteMozo(e.target.value)}
+                  placeholder="📝 Especificar bebida / aclaración (ej: Coca-Cola Zero, Copa de vino tinto...)"
+                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none focus:border-[#5C1D27] placeholder:text-[#5E393F]/50"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const drinkPrice = dailyComboState.execWithDrinkPrice ?? 12000;
+                      const itemToCart: MenuItem = {
+                        id: `menu_ejecutivo_bebida_${Date.now()}`,
+                        name: `Menú Ejecutivo + Bebida`,
+                        price: drinkPrice,
+                        category: "menu_diario",
+                        description: "Incluye plato principal del día + 1 bebida a elección"
+                      };
+                      handleAddMozoCart(itemToCart, execDrinkNoteMozo);
+                      setExecDrinkNoteMozo("");
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" /> Agregar Menú + Bebida a Comanda
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🍮 Menú Ejecutivo + Bebida + Postre Card for Waiters */}
+          {(mozoCategory === "todos" || mozoCategory === "menu_diario") && (
+            <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
+                    🍮 COMPLETO
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Menú Ejecutivo Completo</span>
+                    <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Ejecutivo + Bebida + Postre</h4>
+                    <p className="text-xs text-[#5E393F] italic">Incluye el plato principal del día + 1 bebida a elección + postre casero a elección.</p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs text-[#5E393F] block font-bold">Precio</span>
+                  <span className="text-xl font-mono font-black text-[#5C1D27] block">
+                    ${(dailyComboState.execWithDrinkAndDessertPrice ?? 15000).toLocaleString("es-AR")}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={execDrinkDessertNoteMozo}
+                  onChange={(e) => setExecDrinkDessertNoteMozo(e.target.value)}
+                  placeholder="📝 Especificar bebida y postre (ej: Sprite + Flan casero con dulce de leche...)"
+                  className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-medium text-[#2D0E13] outline-none focus:border-[#5C1D27] placeholder:text-[#5E393F]/50"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fullPrice = dailyComboState.execWithDrinkAndDessertPrice ?? 15000;
+                      const itemToCart: MenuItem = {
+                        id: `menu_ejecutivo_completo_${Date.now()}`,
+                        name: `Menú Ejecutivo + Bebida + Postre`,
+                        price: fullPrice,
+                        category: "menu_diario",
+                        description: "Incluye plato principal del día + 1 bebida a elección + postre casero"
+                      };
+                      handleAddMozoCart(itemToCart, execDrinkDessertNoteMozo);
+                      setExecDrinkDessertNoteMozo("");
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#5C1D27] hover:bg-[#4A151D] text-white text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" /> Agregar Menú Completo a Comanda
                   </button>
                 </div>
               </div>
