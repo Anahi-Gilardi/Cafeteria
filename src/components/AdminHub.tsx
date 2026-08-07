@@ -5145,11 +5145,22 @@ export default function AdminHub({
                   <label className="text-[10px] font-black uppercase tracking-wider block mb-1 text-[#5E393F]">Foto (URL o Subir desde Dispositivo) *</label>
                   <input 
                     type="text" 
-                    value={newProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : newProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage" : newProdImage} 
+                    value={newProdImage || ""} 
                     onChange={(e) => setNewProdImage(e.target.value)} 
-                    placeholder="Pegar URL pública de imagen..." 
-                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-[11px] font-medium" 
+                    placeholder="Pegar URL pública de imagen (ej: https://...)..." 
+                    className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-[11px] font-mono" 
                   />
+                  {newProdImage && (
+                    <div className="mt-1.5 flex items-center justify-between text-[9px] font-bold text-[#5E393F]">
+                      <span className="px-2 py-0.5 bg-[#EBDAC5] rounded-md border border-[#CFB5A0]">
+                        {newProdImage.startsWith("data:image") 
+                          ? "📸 Foto cargada desde dispositivo (comprimida)" 
+                          : newProdImage.includes("supabase.co") 
+                            ? "☁️ Foto en Supabase Storage" 
+                            : "🔗 URL de imagen asignada"}
+                      </span>
+                    </div>
+                  )}
                   <div className="mt-2 space-y-1 bg-[#FAF2E6] p-3 rounded-2xl border border-[#CFB5A0]">
                     <label className="text-[9px] font-black uppercase tracking-wider block text-[#5C1D27]">📷 Cargar Foto desde Celular / PC</label>
                     <input 
@@ -5451,11 +5462,22 @@ export default function AdminHub({
                     <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5 text-[#5E393F]">Foto (URL o Subir desde Dispositivo) *</label>
                     <input 
                       type="text" 
-                      value={editProdImage.startsWith("data:image") ? "Foto subida localmente (Base64)" : editProdImage.includes("supabase.co") ? "Foto alojada en Supabase Storage ☁️" : editProdImage} 
+                      value={editProdImage || ""} 
                       onChange={(e) => setEditProdImage(e.target.value)} 
-                      placeholder="Pegar URL pública de imagen..." 
-                      className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-[11px] font-medium focus:border-[#5C1D27]" 
+                      placeholder="Pegar URL pública de imagen (ej: https://...)..." 
+                      className="w-full p-2.5 border border-[#CFB5A0] rounded-xl bg-[#FAF2E6] text-[#2D0E13] outline-none text-[11px] font-mono focus:border-[#5C1D27]" 
                     />
+                    {editProdImage && (
+                      <div className="mt-1.5 flex items-center justify-between text-[9px] font-bold text-[#5E393F]">
+                        <span className="px-2 py-0.5 bg-[#EBDAC5] rounded-md border border-[#CFB5A0]">
+                          {editProdImage.startsWith("data:image") 
+                            ? "📸 Foto cargada desde dispositivo (comprimida)" 
+                            : editProdImage.includes("supabase.co") 
+                              ? "☁️ Foto en Supabase Storage" 
+                              : "🔗 URL de imagen asignada"}
+                        </span>
+                      </div>
+                    )}
                     <div className="mt-2 space-y-1 bg-[#EBDAC5]/40 p-3 rounded-2xl border border-[#CFB5A0]">
                       <label className="text-[9px] font-black uppercase tracking-wider block text-[#5C1D27]">📷 Cargar Foto desde Celular / Cámara / PC</label>
                       <input 
