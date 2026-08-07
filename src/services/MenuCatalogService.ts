@@ -50,12 +50,16 @@ export class MenuCatalogService {
     };
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("menu_items")
-        .upsert({ id: item.id, ...payload });
+        .update(payload)
+        .eq("id", item.id)
+        .select("id");
 
-      if (error && error.code === "42501") {
-        console.warn("Supabase RLS notice for menu_items:", error.message);
+      if (error || !data || data.length === 0) {
+        await supabase
+          .from("menu_items")
+          .upsert({ id: item.id, ...payload });
       }
     } catch (e) {
       console.warn("Supabase saveProduct exception (handled):", e);

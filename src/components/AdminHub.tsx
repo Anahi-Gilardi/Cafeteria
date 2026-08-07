@@ -1614,7 +1614,7 @@ export default function AdminHub({
       stock: stockVal,
       category: editProdCategory as any,
       description: editProdDescription.trim(),
-      image: editProdImage.trim() || original.image,
+      image: editProdImage.trim(),
       recipeRequired: editProdRecipeRequired,
       vatRate: parsedVatRate as MenuItem["vatRate"],
       arcaItemCode: editProdArcaItemCode.trim() || undefined,
