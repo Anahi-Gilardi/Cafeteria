@@ -10316,6 +10316,7 @@ export default function AdminHub({
             {[
               { id: "reportes", label: "Reportes & Analíticas", icon: ChartNoAxesCombined, roles: ["administrador"] },
               { id: "precios", label: "Carta & Recetas", icon: BookOpenText, roles: ["administrador"] },
+              { id: "daily_menu_editor", label: "⭐ Menú del Día Semanal", icon: Calendar, roles: ["administrador"] },
               { id: "inventario", label: "Stock & Insumos", icon: Boxes, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
               { id: "proveedores", label: "Proveedores", icon: Truck, roles: ["administrador"] },
               { id: "personal", label: "Personal", icon: UsersRound, roles: ["administrador", "barista"] }
@@ -10325,12 +10326,12 @@ export default function AdminHub({
               }
               const meta = usersMetadata[currentUser.id];
               const userPerms = currentUser.permissions || meta?.permissions || [];
-              if (userPerms.includes("all") || userPerms.includes("*") || userPerms.includes(link.id)) {
+              if (userPerms.includes("all") || userPerms.includes("*") || userPerms.includes(link.id) || link.id === "daily_menu_editor") {
                 return true;
               }
               return link.roles.includes(currentUser.role);
             }).map((link) => {
-              const active = activeSubTab === link.id;
+              const active = activeSubTab === link.id || (link.id === "daily_menu_editor" && activeSubTab === "precios" && selectedPosCategory === "menu_diario");
               const Icon = link.icon;
               return (
                 <button
@@ -10338,7 +10339,12 @@ export default function AdminHub({
                   title={isSidebarCollapsed ? `${link.label}${link.badge ? ` (${link.badge} insumos bajos)` : ""}` : undefined}
                   aria-label={`${link.label}${link.badge ? `, ${link.badge} insumos bajos` : ""}`}
                   onClick={() => {
-                    setActiveSubTab(link.id as any);
+                    if (link.id === "daily_menu_editor") {
+                      setActiveSubTab("precios");
+                      setSelectedPosCategory("menu_diario");
+                    } else {
+                      setActiveSubTab(link.id as any);
+                    }
                     setIsMobileDrawerOpen(false);
                   }}
                   className={`w-full flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"} px-3 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
