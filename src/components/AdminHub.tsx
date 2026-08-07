@@ -1016,20 +1016,23 @@ export default function AdminHub({
           .select("*")
           .order("closed_at", { ascending: false })
           .limit(100);
-        if (closuresError) throw closuresError;
-        setClosuresHistory(
-          (closuresData || []).map((closure) => ({
-            id: closure.id,
-            user: closure.user_name,
-            apertura: closure.opened_at,
-            cierre: closure.closed_at,
-            observaciones: closure.notes || "",
-            ventasTurno: Number(closure.sales_total),
-            montoReal: Number(closure.declared_cash),
-            diferencia: Number(closure.difference),
-            transactions: closure.transactions || []
-          }))
-        );
+        if (!closuresError && closuresData) {
+          setClosuresHistory(
+            closuresData.map((closure) => ({
+              id: closure.id,
+              user: closure.user_name,
+              apertura: closure.opened_at,
+              cierre: closure.closed_at,
+              observaciones: closure.notes || "",
+              ventasTurno: Number(closure.sales_total),
+              montoReal: Number(closure.declared_cash),
+              diferencia: Number(closure.difference),
+              transactions: closure.transactions || []
+            }))
+          );
+        } else if (closuresError) {
+          console.warn("Notice loading cash_closures from Supabase:", closuresError.message);
+        }
 
         // 6. Fetch Barista Calibration Data
         const { data: calData } = await supabase.from("barista_calibrations").select("*").order("id", { ascending: false }).limit(1);
@@ -1113,8 +1116,9 @@ export default function AdminHub({
           .select("*")
           .order("created_at", { ascending: false })
           .limit(250);
-        if (attendanceError) throw attendanceError;
-        setAttendanceLogs(attendanceData || []);
+        if (!attendanceError && attendanceData) {
+          setAttendanceLogs(attendanceData);
+        }
       } catch (err) {
         console.error("Error fetching admin data from Supabase:", err);
       }
