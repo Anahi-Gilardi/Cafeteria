@@ -46,3 +46,23 @@ export function isOrderActive(order: Partial<Order> | string | undefined | null)
 export function isOrderCompleted(order: Partial<Order> | string | undefined | null): boolean {
   return !isOrderActive(order);
 }
+
+/**
+ * Formats a complex UUID or long order ID string into a simple short human-readable identifier (e.g. #PED-DC2C, #PED-64A9).
+ */
+export function formatOrderId(id: string | undefined | null): string {
+  if (!id) return "#PED-0001";
+  const cleanId = String(id).trim();
+
+  // If it is already a short formatted ID like #PED-64A9 or PED-64A9
+  if (/^#?PED-[A-Z0-9]{4}$/i.test(cleanId)) {
+    return cleanId.startsWith("#") ? cleanId.toUpperCase() : `#${cleanId.toUpperCase()}`;
+  }
+
+  // Extract alphanumeric suffix or first chunk
+  const withoutPrefix = cleanId.replace(/^PED-|^ord-|^FAC-MAN-|^RET-|^DEL-/i, "");
+  const parts = withoutPrefix.split("-");
+  const code = parts[0]?.length >= 4 ? parts[0].slice(0, 4) : parts[parts.length - 1]?.slice(-4) || cleanId.slice(-4);
+
+  return `#PED-${code.toUpperCase()}`;
+}

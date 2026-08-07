@@ -18,7 +18,7 @@ import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
-import { isOrderActive } from "../utils/orderUtils";
+import { isOrderActive, formatOrderId } from "../utils/orderUtils";
 import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";
 import { ArcaBillingService, FiscalCustomerInfo } from "../services/ArcaBillingService";
@@ -5865,7 +5865,7 @@ export default function AdminHub({
                     <h3 className="font-serif text-lg font-bold text-[#5C1D27]">Detalle de Facturación - Mesa {posCheckoutOrder.tableNumber?.replace("Mesa ", "") || "1"}</h3>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black uppercase text-[#5E393F] font-mono block">Orden #{posCheckoutOrder.id}</span>
+                    <span className="text-[9px] font-black uppercase text-[#5E393F] font-mono block">Orden {formatOrderId(posCheckoutOrder.id)}</span>
                     <div className="text-2xl font-serif font-black text-[#5C1D27] font-mono mt-0.5">${activeCheckoutTotal.toLocaleString()}</div>
                   </div>
                 </div>
@@ -6331,7 +6331,7 @@ export default function AdminHub({
                             🕒 {o.createdAt ? new Date(o.createdAt).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' }) : "19:45"} hs
                           </span>
                         </td>
-                        <td className="p-3 font-mono font-bold text-[#5C1D27]">{o.id}</td>
+                        <td className="p-3 font-mono font-bold text-[#5C1D27]">{formatOrderId(o.id)}</td>
                         <td className="p-3">
                           <span className="px-2 py-0.5 rounded-md bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] text-[10px] font-bold">
                             {o.tableNumber ? `Mesa ${o.tableNumber.replace("Mesa ", "")}` : o.type}
@@ -10764,7 +10764,7 @@ export default function AdminHub({
             <div className="border-t border-dashed border-stone-800 py-2 space-y-1 text-[10px]">
               <div>FECHA: {new Date().toLocaleDateString("es-AR")}</div>
               <div>HORA: {new Date().toLocaleTimeString("es-AR")}</div>
-              <div>TICKET FACTURA NRO: {selectedOrderForTicket.id}</div>
+              <div>TICKET FACTURA NRO: {formatOrderId(selectedOrderForTicket.id)}</div>
               <div>ORIGEN: {selectedOrderForTicket.tableNumber ? `SALÓN - ${selectedOrderForTicket.tableNumber.toLowerCase().startsWith("mesa") ? selectedOrderForTicket.tableNumber : `Mesa ${selectedOrderForTicket.tableNumber}`}` : selectedOrderForTicket.type}</div>
             </div>
 
