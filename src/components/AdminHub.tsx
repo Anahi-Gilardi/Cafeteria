@@ -1734,6 +1734,8 @@ export default function AdminHub({
     price: number;
     execWithDrinkPrice?: number;
     execWithDrinkAndDessertPrice?: number;
+    execWithDrinkImage?: string;
+    execWithDrinkAndDessertImage?: string;
     saladTitle?: string;
     saladDescription?: string;
     saladImage?: string;
@@ -1776,6 +1778,8 @@ export default function AdminHub({
       price: 8500,
       execWithDrinkPrice: 12000,
       execWithDrinkAndDessertPrice: 15000,
+      execWithDrinkImage: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
+      execWithDrinkAndDessertImage: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600",
       saladTitle: "Ensalada Completa",
       saladDescription: "Mix de verdes, pollo desmenuzado, queso, huevo, tomates cherry y aderezo especial.",
       saladImage: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600",
@@ -4725,6 +4729,59 @@ export default function AdminHub({
                   />
                 </div>
               </div>
+
+              {/* Imagen Opción 1 */}
+              <div className="space-y-2 pt-2 border-t border-[#CFB5A0]">
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa (URL o Cargar Foto)</label>
+                <div className="flex items-center gap-3">
+                  {dailyComboState.execWithDrinkImage ? (
+                    <img
+                      src={dailyComboState.execWithDrinkImage}
+                      alt="Menú Ejecutivo + Bebida"
+                      className="h-16 w-20 rounded-xl object-cover border border-[#CFB5A0] shadow-xs shrink-0"
+                    />
+                  ) : (
+                    <div className="h-16 w-20 rounded-xl bg-[#EBDAC5] text-[#5C1D27] font-bold text-[10px] flex items-center justify-center shrink-0 border border-dashed border-[#CFB5A0]">
+                      🍷 SIN FOTO
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      type="text"
+                      value={dailyComboState.execWithDrinkImage || ""}
+                      onChange={(e) => {
+                        const updated = { ...dailyComboState, execWithDrinkImage: e.target.value };
+                        setDailyComboState(updated);
+                        try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
+                        void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                      }}
+                      placeholder="URL de la imagen..."
+                      className="w-full p-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          onShowNotification("⏳ Subiendo imagen a Supabase Storage...", "info");
+                          try {
+                            const imgUrl = await StorageService.uploadProductImage(file);
+                            const updated = { ...dailyComboState, execWithDrinkImage: imgUrl };
+                            setDailyComboState(updated);
+                            try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
+                            void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                            onShowNotification("📸 Foto subida con éxito.", "success");
+                          } catch (err) {
+                            console.error("Error al subir foto:", err);
+                          }
+                        }
+                      }}
+                      className="w-full text-[9px] text-[#5E393F] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-[#5C1D27] file:text-white hover:file:bg-[#4A151D] cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Opción 2 */}
@@ -4753,6 +4810,59 @@ export default function AdminHub({
                     }}
                     className="w-full pl-8 pr-4 py-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-sm font-mono font-black text-[#5C1D27] outline-none focus:border-[#5C1D27]"
                   />
+                </div>
+              </div>
+
+              {/* Imagen Opción 2 */}
+              <div className="space-y-2 pt-2 border-t border-[#CFB5A0]">
+                <label className="text-[10px] font-black uppercase text-[#5E393F] block">Imagen Representativa (URL o Cargar Foto)</label>
+                <div className="flex items-center gap-3">
+                  {dailyComboState.execWithDrinkAndDessertImage ? (
+                    <img
+                      src={dailyComboState.execWithDrinkAndDessertImage}
+                      alt="Menú Ejecutivo + Bebida + Postre"
+                      className="h-16 w-20 rounded-xl object-cover border border-[#CFB5A0] shadow-xs shrink-0"
+                    />
+                  ) : (
+                    <div className="h-16 w-20 rounded-xl bg-[#EBDAC5] text-[#5C1D27] font-bold text-[10px] flex items-center justify-center shrink-0 border border-dashed border-[#CFB5A0]">
+                      🍮 SIN FOTO
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      type="text"
+                      value={dailyComboState.execWithDrinkAndDessertImage || ""}
+                      onChange={(e) => {
+                        const updated = { ...dailyComboState, execWithDrinkAndDessertImage: e.target.value };
+                        setDailyComboState(updated);
+                        try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
+                        void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                      }}
+                      placeholder="URL de la imagen..."
+                      className="w-full p-2 bg-[#FAF2E6] border border-[#CFB5A0] rounded-xl text-xs font-mono text-[#2D0E13] outline-none"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          onShowNotification("⏳ Subiendo imagen a Supabase Storage...", "info");
+                          try {
+                            const imgUrl = await StorageService.uploadProductImage(file);
+                            const updated = { ...dailyComboState, execWithDrinkAndDessertImage: imgUrl };
+                            setDailyComboState(updated);
+                            try { localStorage.setItem("puglia_daily_combo", JSON.stringify(updated)); } catch(err){}
+                            void supabase.from("system_settings").upsert({ key: "daily_combo", value: JSON.stringify(updated) });
+                            onShowNotification("📸 Foto subida con éxito.", "success");
+                          } catch (err) {
+                            console.error("Error al subir foto:", err);
+                          }
+                        }
+                      }}
+                      className="w-full text-[9px] text-[#5E393F] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:bg-[#5C1D27] file:text-white hover:file:bg-[#4A151D] cursor-pointer"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -7871,9 +7981,13 @@ export default function AdminHub({
             <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
-                    🍷 BEBIDA
-                  </div>
+                  {dailyComboState.execWithDrinkImage ? (
+                    <img src={dailyComboState.execWithDrinkImage} alt="Menú Ejecutivo + Bebida" className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0" />
+                  ) : (
+                    <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
+                      🍷 BEBIDA
+                    </div>
+                  )}
                   <div>
                     <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Menú Ejecutivo Promocional</span>
                     <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Ejecutivo + Bebida</h4>
@@ -7905,7 +8019,8 @@ export default function AdminHub({
                         name: `Menú Ejecutivo + Bebida`,
                         price: drinkPrice,
                         category: "menu_diario",
-                        description: "Incluye plato principal del día + 1 bebida a elección"
+                        description: "Incluye plato principal del día + 1 bebida a elección",
+                        image: dailyComboState.execWithDrinkImage
                       };
                       handleAddMozoCart(itemToCart, execDrinkNoteMozo);
                       setExecDrinkNoteMozo("");
@@ -7924,9 +8039,13 @@ export default function AdminHub({
             <div className="bg-[#FAF2E6] border-2 border-[#5C1D27] rounded-3xl p-5 shadow-sm space-y-3">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#CFB5A0] pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
-                    🍮 COMPLETO
-                  </div>
+                  {dailyComboState.execWithDrinkAndDessertImage ? (
+                    <img src={dailyComboState.execWithDrinkAndDessertImage} alt="Menú Ejecutivo + Bebida + Postre" className="h-16 w-20 rounded-2xl object-cover border border-[#5C1D27] shadow-xs shrink-0" />
+                  ) : (
+                    <div className="h-16 w-20 rounded-2xl bg-[#5C1D27] text-white font-bold text-xs flex items-center justify-center shrink-0 text-center p-1">
+                      🍮 COMPLETO
+                    </div>
+                  )}
                   <div>
                     <span className="text-[9px] font-black uppercase text-[#5C1D27] tracking-widest block">Menú Ejecutivo Completo</span>
                     <h4 className="font-serif text-lg font-bold text-[#2D0E13]">Menú Ejecutivo + Bebida + Postre</h4>
@@ -7958,7 +8077,8 @@ export default function AdminHub({
                         name: `Menú Ejecutivo + Bebida + Postre`,
                         price: fullPrice,
                         category: "menu_diario",
-                        description: "Incluye plato principal del día + 1 bebida a elección + postre casero"
+                        description: "Incluye plato principal del día + 1 bebida a elección + postre casero",
+                        image: dailyComboState.execWithDrinkAndDessertImage
                       };
                       handleAddMozoCart(itemToCart, execDrinkDessertNoteMozo);
                       setExecDrinkDessertNoteMozo("");
