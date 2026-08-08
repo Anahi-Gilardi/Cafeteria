@@ -720,7 +720,7 @@ export default function AdminHub({
   const [selectedWaiter, setSelectedWaiter] = useState<string>(currentUser.name);
   const [mozoSelectedTable, setMozoSelectedTable] = useState<string | null>(null);
   const [mozoCart, setMozoCart] = useState<{ item: MenuItem; qty: number; notes?: string; variant?: string; includedDetail?: string }[]>([]);
-  const [mozoCategory, setMozoCategory] = useState<string>("todos");
+  const [mozoCategory, setMozoCategory] = useState<string>("menu_diario");
   const [mozoSearchQuery, setMozoSearchQuery] = useState<string>("");
   const [mozoDinersCount, setMozoDinersCount] = useState<number>(2);
   const [selectedMainMozo, setSelectedMainMozo] = useState<string>("");
@@ -7928,7 +7928,6 @@ export default function AdminHub({
 
             <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin">
               {[
-                { id: "todos", label: "🍽️ Todos" },
                 { id: "menu_diario", label: "⭐ Menú del Día" },
                 { id: "executive", label: "🍱 Menú Diario" },
                 { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
