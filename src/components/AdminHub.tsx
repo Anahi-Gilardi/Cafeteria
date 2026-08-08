@@ -1686,7 +1686,7 @@ export default function AdminHub({
   const [selectedMenuProduct, setSelectedMenuProduct] = useState<MenuItem | null>(null);
   const [simulatedPrice, setSimulatedPrice] = useState<number>(0);
   const [posCart, setPosCart] = useState<{ item: MenuItem; qty: number }[]>([]);
-  const [selectedPosCategory, setSelectedPosCategory] = useState<string>("todos");
+  const [selectedPosCategory, setSelectedPosCategory] = useState<string>("menu_diario");
   const [posTable, setPosTable] = useState<string>("Mesa 1");
   const [searchInsumoQuery, setSearchInsumoQuery] = useState<string>("");
   const [posCheckoutOrder, setPosCheckoutOrder] = useState<Order | null>(null);
@@ -5045,7 +5045,6 @@ export default function AdminHub({
 
         <div className="flex overflow-x-auto pb-3 gap-2 border-b border-[#CFB5A0] mb-6 scrollbar-thin scrollbar-thumb-[#CFB5A0]">
           {[
-            { id: "todos", label: "🍽️ Todos" },
             { id: "menu_diario", label: "⭐ Menú del Día" },
             { id: "menu_semanal", label: "🍱 Menú Semanal" },
             { id: "desayunos_meriendas", label: "☕ Desayunos & Meriendas" },
