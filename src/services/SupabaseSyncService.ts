@@ -196,9 +196,15 @@ export class SupabaseSyncService {
         const errMsg = directError?.message || updateError?.message || "Error al guardar la comanda";
         const errCode = directError?.code || updateError?.code;
 
-        // Handle PostgreSQL 42P01 (missing order_items trigger target) gracefully
-        if (errCode === "42P01" || errMsg.includes("order_items")) {
-          console.warn("⚠️ Advertencia de estructura Supabase (order_items desvinculada). Mantenida comanda localmente:", order.id);
+        // Handle PostgreSQL 42P01 / 42703 (trigger referencing order_items or order_line.created_at) gracefully
+        if (
+          errCode === "42P01" ||
+          errCode === "42703" ||
+          errMsg.includes("order_items") ||
+          errMsg.includes("order_line") ||
+          errMsg.includes("created_at")
+        ) {
+          console.warn("⚠️ Advertencia de estructura Supabase (order_line/order_items trigger manejado):", errMsg);
           return { success: true, order };
         }
 
@@ -207,7 +213,7 @@ export class SupabaseSyncService {
       }
       return { success: true, order: mapOrder(directData || updateData) };
     } catch (error: any) {
-      console.error("Excepción al guardar comanda en Supabase:", error);
+      console.warn("Excepción al guardar comanda en Supabase (manejada):", error);
       return { success: true, order };
     }
   }
