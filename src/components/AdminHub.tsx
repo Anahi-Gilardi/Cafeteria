@@ -18,6 +18,7 @@ import WaiterCallService, { WaiterCall } from "../services/WaiterCallService";
 import { DeliveryZoneService, RIO_CUARTO_ZONES } from "../services/DeliveryZoneService";
 import { AuditPDFService } from "../services/AuditPDFService";
 import { StaffAttendancePDFService, AttendanceRecord } from "../services/StaffAttendancePDFService";
+import { playNewOrderSound } from "../utils/sound";
 import { isOrderActive, formatOrderId } from "../utils/orderUtils";
 import ProfessionalOrderTicket from "./ProfessionalOrderTicket";
 import { ThermalPrinterService, PrinterConfig } from "../services/ThermalPrinterService";

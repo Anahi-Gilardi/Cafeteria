@@ -26,6 +26,7 @@ import { OrderPersistenceService } from "./services/OrderPersistenceService";
 import PasswordSetupScreen from "./components/PasswordSetupScreen";
 import { MenuSyncService } from "./services/MenuSyncService";
 import { isOrderActive } from "./utils/orderUtils";
+import { playNewOrderSound } from "./utils/sound";
 
 import AdminHub from "./components/AdminHub";
 const BaristaAI = lazy(() => import("./components/BaristaAI"));
@@ -229,10 +230,21 @@ export default function App() {
     };
   }, [currentUser]);
 
-  // Sync active tracked order
+  // Track known order IDs for sound notification
+  const knownOrderIdsRef = useRef<Set<string> | null>(null);
+
+  // Sync active tracked order & play chime on new order
   useEffect(() => {
     const active = orders.find(isOrderActive);
     setActiveTrackedOrder(active || null);
+
+    if (knownOrderIdsRef.current !== null) {
+      const hasNewIncoming = orders.some(o => !knownOrderIdsRef.current!.has(o.id));
+      if (hasNewIncoming) {
+        playNewOrderSound();
+      }
+    }
+    knownOrderIdsRef.current = new Set(orders.map(o => o.id));
     ordersRef.current = orders;
   }, [orders]);
 

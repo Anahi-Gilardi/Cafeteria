@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { WhatsAppNotificationService } from "../services/WhatsAppNotificationService";
 import { ArchivedOrderRecord, SupabaseSyncService } from "../services/SupabaseSyncService";
 import { isOrderActive } from "../utils/orderUtils";
+import { playNewOrderSound } from "../utils/sound";
 
 interface KitchenDisplayProps {
   orders: Order[];
@@ -26,9 +27,7 @@ export default function KitchenDisplay({
   const [filterType, setFilterType] = useState<"all" | "Salon" | "Takeaway" | "Delivery">("all");
   const [destinationFilter, setDestinationFilter] = useState<"all" | "barra" | "cocina" | "parrilla" | "cocina_fria" | "barra_tragos">("all");
   const [activeMobileTab, setActiveMobileTab] = useState<"pendientes" | "preparando" | "finalizadas">("pendientes");
-  const knownPendingOrderIds = useRef(
-    new Set(orders.filter((order) => order.status === "Recibido").map((order) => order.id))
-  );
+  const knownPendingOrderIds = useRef<Set<string>>(new Set(orders.filter((order) => order.status === "Recibido").map((order) => order.id)));
   const [showArchive, setShowArchive] = useState(false);
   const [archivedOrders, setArchivedOrders] = useState<ArchivedOrderRecord[]>([]);
   const [archiveSearch, setArchiveSearch] = useState("");
@@ -254,9 +253,19 @@ export default function KitchenDisplay({
           <div className="flex items-start justify-between border-b border-[#CFB5A0]/40 pb-2.5 mb-2.5">
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-black uppercase px-3 py-1 rounded-xl bg-[#5C1D27] text-white font-mono shadow-xs">
-                  {order.tableNumber ? `🪑 MESA ${order.tableNumber.toString().replace(/mesa\s*/i, "")}` : (order.priceList === "Takeaway" || order.type === "Llevar" ? "🛍️ RETIRO BARRA" : "🛵 DELIVERY")}
-                </span>
+                {(() => {
+                  const clientDisplayName = order.customerName || order.clientAccountName || (order as any).clientName || "";
+                  const badgeText = order.tableNumber
+                    ? `🪑 MESA ${order.tableNumber.toString().replace(/mesa\s*/i, "")}${clientDisplayName ? ` — ${clientDisplayName}` : ""}`
+                    : (order.priceList === "Takeaway" || order.type === "Llevar"
+                        ? `🛍️ RETIRO BARRA${clientDisplayName ? ` — ${clientDisplayName}` : ""}`
+                        : `🛵 DELIVERY${clientDisplayName ? ` — ${clientDisplayName}` : ""}`);
+                  return (
+                    <span className="text-xs font-black uppercase px-3 py-1 rounded-xl bg-[#5C1D27] text-white font-mono shadow-xs">
+                      {badgeText}
+                    </span>
+                  );
+                })()}
                 {order.waiterName && (
                   <span className="text-[10px] font-bold text-[#5E393F] bg-[#EBDAC5] px-2 py-0.5 rounded-lg border border-[#CFB5A0]">
                     Mozo: {order.waiterName}
