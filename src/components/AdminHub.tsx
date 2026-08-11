@@ -216,7 +216,7 @@ export default function AdminHub({
   currentUser,
   bookings = []
 }: AdminHubProps) {
-  const hashMap: Record<string, "dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal" | "reportes"> = {
+  const hashMap: Record<string, "dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal"> = {
     "#mozo": "pedidos_mozo",
     "#/mozo": "pedidos_mozo",
     "#cocina": "kds_cocina",
@@ -237,8 +237,8 @@ export default function AdminHub({
     "#/proveedores": "proveedores",
     "#personal": "personal",
     "#/personal": "personal",
-    "#reportes": "reportes",
-    "#/reportes": "reportes"
+    "#reportes": "precios",
+    "#/reportes": "precios"
   };
 
   const getInitialTabFromHash = () => {
@@ -247,8 +247,8 @@ export default function AdminHub({
     return currentUser.role === "barista" ? "inventario" : "pedidos_mozo";
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal" | "reportes">(
-    getInitialTabFromHash
+  const [activeSubTab, setActiveSubTab] = useState<"dashboard" | "inventario" | "precios" | "caja" | "salon" | "reservas" | "pedidos_mozo" | "kds_cocina" | "proveedores" | "personal">(
+    getInitialTabFromHash as any
   );
 
   useEffect(() => {
@@ -273,8 +273,7 @@ export default function AdminHub({
       precios: "#/carta",
       inventario: "#/stock",
       proveedores: "#/proveedores",
-      personal: "#/personal",
-      reportes: "#/reportes"
+      personal: "#/personal"
     };
     if (reverseMap[activeSubTab]) {
       window.history.replaceState(null, "", reverseMap[activeSubTab]);
@@ -10716,7 +10715,6 @@ export default function AdminHub({
 
             {/* 2. MÓDULOS DE ADMINISTRACIÓN Y GESTIÓN */}
             {[
-              { id: "reportes", label: "Reportes & Analíticas", icon: ChartNoAxesCombined, roles: ["administrador"] },
               { id: "precios", label: "Carta & Recetas", icon: BookOpenText, roles: ["administrador"] },
               { id: "inventario", label: "Stock & Insumos", icon: Boxes, badge: insumos.filter(i => i.quantity <= i.minLimit).length, roles: ["administrador", "barista"] },
               { id: "proveedores", label: "Proveedores", icon: Truck, roles: ["administrador"] },
@@ -10844,7 +10842,6 @@ export default function AdminHub({
           {activeSubTab === "caja" && renderCaja()}
           {activeSubTab === "proveedores" && renderProveedores()}
           {activeSubTab === "personal" && renderPersonal()}
-          {activeSubTab === "reportes" && renderReportes()}
         </AnimatePresence>
       </div>
 
