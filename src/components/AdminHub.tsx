@@ -1789,7 +1789,10 @@ export default function AdminHub({
         "Puré de papa",
         "Puré mixto",
         "Arroz con crema",
-        "Ensalada mixta"
+        "Ensalada mixta",
+        "Salsa bolognesa",
+        "Salsa Blanca",
+        "Salsa Mixta"
       ],
       price: 8500,
       execWithDrinkPrice: 12000,
@@ -4220,9 +4223,9 @@ export default function AdminHub({
           "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600",
           "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600"
         ];
-    const sidesList = dailyComboState.sides && dailyComboState.sides.length >= 4
+    const sidesList = dailyComboState.sides && dailyComboState.sides.length >= 7
       ? dailyComboState.sides 
-      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"];
+      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta", "Salsa bolognesa", "Salsa Blanca", "Salsa Mixta"];
 
     return (
       <div className="space-y-6 bg-[#FAF2E6] border-2 border-[#5C1D27] text-[#2D0E13] rounded-3xl p-6 shadow-xl">
@@ -4317,7 +4320,7 @@ export default function AdminHub({
           <div className="pt-3 border-t border-[#CFB5A0]/60">
             <label className="text-[11px] font-black uppercase text-[#5C1D27] block mb-2">🥗 GUARNICIONES ELEGIBLES (OPCIONES DE ACOMPAÑAMIENTO)</label>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {[0, 1, 2, 3].map((idx) => (
+              {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[#5C1D27] w-6 shrink-0">{idx + 1}.</span>
                   <input
@@ -8188,7 +8191,7 @@ export default function AdminHub({
                             ? ["Puré de papa", "Puré mixto"]
                             : s
                         )
-                      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"]
+                      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta", "Salsa bolognesa", "Salsa Blanca", "Salsa Mixta"]
                     ).map((g) => (
                       <option key={g} value={g}>{g}</option>
                     ))}

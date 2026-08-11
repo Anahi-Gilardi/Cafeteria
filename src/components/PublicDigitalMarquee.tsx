@@ -87,7 +87,10 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
         "Puré de papa",
         "Puré mixto",
         "Arroz con crema",
-        "Ensalada mixta"
+        "Ensalada mixta",
+        "Salsa bolognesa",
+        "Salsa Blanca",
+        "Salsa Mixta"
       ],
       price: 8500,
       saladTitle: "Ensalada Completa",
@@ -525,7 +528,7 @@ export const PublicDigitalMarquee: React.FC<PublicDigitalMarqueeProps> = ({
                 >
                   {(dailyComboState.sides && dailyComboState.sides.length > 0
                     ? dailyComboState.sides
-                    : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta"]
+                    : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta", "Salsa bolognesa", "Salsa Blanca", "Salsa Mixta"]
                   ).map((g) => (
                     <option key={g} value={g}>{g}</option>
                   ))}
