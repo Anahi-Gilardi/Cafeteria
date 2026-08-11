@@ -440,6 +440,11 @@ export default function AdminHub({
       const health = await SupabaseSyncService.healthCheck();
       if (active) {
         setCloudHealth(health);
+        if (health.state === "online") {
+          try {
+            await offlineQueueService.syncPendingQueue();
+          } catch (e) {}
+        }
         setPendingSyncCount(offlineQueueService.getPendingQueue().length);
       }
     };

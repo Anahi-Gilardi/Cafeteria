@@ -80,11 +80,6 @@ export class OfflineQueueService {
     const now = Date.now();
 
     for (const item of queue) {
-      if (new Date(item.nextRetryAt).getTime() > now) {
-        remaining.push(item);
-        continue;
-      }
-
       const result = item.operation === "update_status"
         ? item.status
           ? await SupabaseSyncService.updateOrderStatus(item.orderId, item.status)
@@ -113,6 +108,10 @@ export class OfflineQueueService {
 
     this.persist(remaining);
     return { synced, pending: remaining.length };
+  }
+
+  clearAllPendingQueue(): void {
+    this.persist([]);
   }
 
   remove(orderId: string): void {
