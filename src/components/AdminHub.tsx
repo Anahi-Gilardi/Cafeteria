@@ -6691,7 +6691,7 @@ export default function AdminHub({
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#CFB5A0] rounded-2xl border border-[#CFB5A0]/60">
             <table className="w-full text-left border-collapse text-xs font-semibold text-[#2D0E13]">
               <thead>
                 <tr className="bg-[#EBDAC5] border-b border-[#CFB5A0] text-[9px] uppercase tracking-wider text-[#5E393F]">
@@ -6925,7 +6925,7 @@ export default function AdminHub({
               </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#CFB5A0]">
               {closuresHistory.map((cls, idx) => (
                 <div 
                   key={cls.id || idx}
