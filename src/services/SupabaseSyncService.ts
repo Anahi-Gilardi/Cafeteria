@@ -615,10 +615,32 @@ export class SupabaseSyncService {
     }
   }
 
+  static async purgeOrdersOlderThan(days = 20): Promise<void> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      const cutoffIso = cutoffDate.toISOString();
+
+      await supabase
+        .from("orders")
+        .delete()
+        .lt("created_at", cutoffIso);
+    } catch (e) {
+      console.warn("Background order purge notice:", e);
+    }
+  }
+
   static async fetchOrders(): Promise<{ orders: Order[]; error?: string }> {
+    void this.purgeOrdersOlderThan(20);
+
+    const twentyDaysAgo = new Date();
+    twentyDaysAgo.setDate(twentyDaysAgo.getDate() - 20);
+    const iso20DaysAgo = twentyDaysAgo.toISOString();
+
     const { data, error } = await supabase
       .from("orders")
       .select("*")
+      .gte("created_at", iso20DaysAgo)
       .neq("status", "Eliminado")
       .neq("status", "eliminado")
       .neq("status", "Anulado")
@@ -645,7 +667,7 @@ export class SupabaseSyncService {
         );
       });
 
-    // Return strictly remote orders from Supabase without any local storage cache merging
+    // Return strictly remote active orders from the last 20 days
     return { orders: remoteOrders };
   }
 
