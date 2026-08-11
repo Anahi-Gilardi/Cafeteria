@@ -6925,7 +6925,7 @@ export default function AdminHub({
               </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#CFB5A0]">
+            <div className="space-y-3 max-h-[275px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#CFB5A0]">
               {closuresHistory.map((cls, idx) => (
                 <div 
                   key={cls.id || idx}
