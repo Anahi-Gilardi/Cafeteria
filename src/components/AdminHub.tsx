@@ -1501,17 +1501,6 @@ export default function AdminHub({
     try {
       const { error } = await supabase.from("menu_items").insert(newProduct);
       if (!error) {
-        if (newProduct.image && newProduct.image.startsWith("data:image")) {
-          try {
-            await supabase.from("product_images").upsert({
-              id: newProduct.id,
-              product_id: newProduct.id,
-              image_base64: newProduct.image
-            });
-          } catch (imgErr) {
-            console.error("Error inserting custom image to product_images table:", imgErr);
-          }
-        }
         // Map database object structure to client model structure
         const mappedProduct: MenuItem = {
           id: newProduct.id,
@@ -1632,18 +1621,6 @@ export default function AdminHub({
       if (!result.success) {
         onShowNotification(`❌ ${result.error || "No se pudo guardar la ficha."}`, "warning");
         return;
-      }
-
-      if (updatedProduct.image && updatedProduct.image.startsWith("data:image")) {
-        try {
-          await supabase.from("product_images").upsert({
-            id: updatedProduct.id,
-            product_id: updatedProduct.id,
-            image_base64: updatedProduct.image
-          });
-        } catch (imageError) {
-          console.warn("Notice for product_images table:", imageError);
-        }
       }
 
       const updatedMenu = menuItems.map(item => item.id === itemId ? updatedProduct : item);

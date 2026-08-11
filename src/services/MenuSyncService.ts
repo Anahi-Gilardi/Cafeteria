@@ -24,10 +24,6 @@ export class MenuSyncService {
       };
     }
 
-    const { data: imageData, error: imageError } = await supabase
-      .from("product_images")
-      .select("product_id,image_base64");
-
     // Local & system_settings fallback cache map
     let customImageMap = new Map<string, string>();
 
@@ -64,13 +60,9 @@ export class MenuSyncService {
       }
     } catch (e) {}
 
-    const imagesByProduct = new Map(
-      (imageData || []).filter(img => img.product_id && img.image_base64).map((image) => [image.product_id, image.image_base64])
-    );
-
     const items = (menuData || []).map((row) => {
       const item = mapDbMenuItem(row);
-      const customImg = imagesByProduct.get(item.id) || customImageMap.get(item.id) || item.image || "";
+      const customImg = customImageMap.get(item.id) || item.image || "";
       return {
         ...item,
         image: customImg
@@ -78,10 +70,7 @@ export class MenuSyncService {
     });
 
     return {
-      items,
-      imageWarning: imageError
-        ? `${imageError.message} (${imageError.code || "sin código"})`
-        : undefined
+      items
     };
   }
 
@@ -94,11 +83,6 @@ export class MenuSyncService {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "menu_items" },
-        () => onChanged()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "product_images" },
         () => onChanged()
       )
       .subscribe((status) => onStatus?.(status));
