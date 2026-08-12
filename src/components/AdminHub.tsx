@@ -7903,7 +7903,7 @@ export default function AdminHub({
         <div className="lg:col-span-6 space-y-6">
           {/* Categories card with search */}
           <div className="bg-[#FAF2E6] border border-[#CFB5A0] rounded-3xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[9px] font-black uppercase tracking-wider text-[#5E393F] block">Carta & Menú Digital POS</span>
@@ -7912,16 +7912,6 @@ export default function AdminHub({
                   </span>
                 </div>
                 <h3 className="font-serif text-lg font-bold text-[#5C1D27] mt-0.5">Catálogo de Productos</h3>
-              </div>
-              <div className="relative w-full sm:w-52">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-[#5C1D27]" />
-                <input
-                  type="text"
-                  placeholder="Buscar producto o bebida..."
-                  value={mozoSearchQuery}
-                  onChange={(e) => setMozoSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-[#CFB5A0] rounded-xl text-xs bg-[#FAF2E6] text-[#2D0E13] placeholder-[#5E393F]/60 font-semibold focus:border-[#5C1D27] outline-none"
-                />
               </div>
             </div>
 
