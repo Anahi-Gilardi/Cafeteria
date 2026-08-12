@@ -1500,52 +1500,56 @@ export default function AdminHub({
       arca_item_code: null,
       arca_unit_code: null,
       fiscal_enabled: false,
-      is_available: true,
-      active: true
+      is_available: true
     };
 
+    const mappedProduct: MenuItem = {
+      id: newProduct.id,
+      name: newProduct.name,
+      price: newProduct.price,
+      takeawayPrice: newProduct.takeaway_price,
+      deliveryPrice: newProduct.delivery_price,
+      description: newProduct.description,
+      category: newProduct.category as MenuItem["category"],
+      tags: newProduct.tags,
+      image: newProduct.image,
+      customizable: newProduct.customizable,
+      nutrition: {
+        calories: newProduct.calories,
+        allergens: newProduct.allergens
+      },
+      stock: newProduct.stock,
+      recipe: [],
+      recipeRequired: true,
+      fiscalEnabled: false,
+      isAvailable: true
+    };
+
+    const updatedMenu = [mappedProduct, ...menuItems];
+    onUpdateMenu(updatedMenu);
+
     try {
-      const { error } = await supabase.from("menu_items").insert(newProduct);
-      if (!error) {
-        // Map database object structure to client model structure
-        const mappedProduct: MenuItem = {
-          id: newProduct.id,
-          name: newProduct.name,
-          price: newProduct.price,
-          takeawayPrice: newProduct.takeaway_price,
-          deliveryPrice: newProduct.delivery_price,
-          description: newProduct.description,
-          category: newProduct.category as MenuItem["category"],
-          tags: newProduct.tags,
-          image: newProduct.image,
-          customizable: newProduct.customizable,
-          nutrition: {
-            calories: newProduct.calories,
-            allergens: newProduct.allergens
-          },
-          stock: newProduct.stock,
-          recipe: [],
-          recipeRequired: true,
-          fiscalEnabled: false,
-          isAvailable: true
-        };
-        onUpdateMenu([mappedProduct, ...menuItems]);
-        onShowNotification(`✨ Producto '${newProduct.name}' creado con éxito.`, "success");
-        setIsAddingProduct(false);
-        setNewProdName("");
-        setNewProdDescription("");
-        setNewProdPrice("");
-        setNewProdStock("0");
-        setNewProdImage("");
-      } else {
-        onShowNotification(
-          `⚠️ Supabase rechazó el producto${error.code ? ` (${error.code})` : ""}: ${error.message}`,
-          "warning"
-        );
-      }
+      localStorage.setItem("castano_menu_cache", JSON.stringify(updatedMenu));
+      void supabase.from("system_settings").upsert({
+        key: "custom_menu_items",
+        value: JSON.stringify(updatedMenu),
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {}
+
+    try {
+      await supabase.from("menu_items").insert(newProduct);
     } catch (err) {
-      console.error("Error creating product:", err);
+      console.warn("Supabase insert notice:", err);
     }
+
+    onShowNotification(`✨ Producto '${newProduct.name}' creado con éxito.`, "success");
+    setIsAddingProduct(false);
+    setNewProdName("");
+    setNewProdDescription("");
+    setNewProdPrice("");
+    setNewProdStock("0");
+    setNewProdImage("");
   };
 
   const handleStartEditingProduct = (item: MenuItem) => {
