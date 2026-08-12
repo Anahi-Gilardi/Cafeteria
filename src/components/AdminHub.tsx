@@ -1768,6 +1768,20 @@ export default function AdminHub({
               ? ["Puré de papa", "Puré mixto"]
               : s
           );
+          const defaultSides = [
+            "Puré de papa",
+            "Puré mixto",
+            "Arroz con crema",
+            "Ensalada mixta",
+            "Salsa bolognesa",
+            "Salsa Blanca",
+            "Salsa Mixta"
+          ];
+          defaultSides.forEach((ds) => {
+            if (!parsed.sides.some((s: string) => s.toLowerCase() === ds.toLowerCase())) {
+              parsed.sides.push(ds);
+            }
+          });
         }
         return parsed;
       }
@@ -8185,14 +8199,23 @@ export default function AdminHub({
                     onChange={(e) => setSelectedSideMozo(e.target.value)}
                     className="w-full p-2.5 bg-white border border-[#CFB5A0] rounded-xl text-xs font-bold text-[#2D0E13] outline-none focus:border-[#5C1D27]"
                   >
-                    {(dailyComboState.sides && dailyComboState.sides.length > 0
-                      ? dailyComboState.sides.flatMap((s: string) =>
-                          s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
-                            ? ["Puré de papa", "Puré mixto"]
-                            : s
-                        )
-                      : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta", "Salsa bolognesa", "Salsa Blanca", "Salsa Mixta"]
-                    ).map((g) => (
+                    {(() => {
+                      const baseSides = (dailyComboState.sides && dailyComboState.sides.length > 0)
+                        ? dailyComboState.sides.flatMap((s: string) =>
+                            s.toLowerCase().includes("puré de papa o mixto") || s.toLowerCase().includes("pure de papa o mixto")
+                              ? ["Puré de papa", "Puré mixto"]
+                              : s
+                          )
+                        : ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta", "Salsa bolognesa", "Salsa Blanca", "Salsa Mixta"];
+                      const defaultSides = ["Puré de papa", "Puré mixto", "Arroz con crema", "Ensalada mixta", "Salsa bolognesa", "Salsa Blanca", "Salsa Mixta"];
+                      const combined = [...baseSides];
+                      defaultSides.forEach(ds => {
+                        if (!combined.some(s => s.toLowerCase() === ds.toLowerCase())) {
+                          combined.push(ds);
+                        }
+                      });
+                      return combined;
+                    })().map((g) => (
                       <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
