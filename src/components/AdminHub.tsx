@@ -6113,12 +6113,6 @@ export default function AdminHub({
               <ShieldCheck className="h-3.5 w-3.5 text-[#D4AF37]" /> CONFIGURAR ARCA (AFIP)
             </button>
             <button 
-              onClick={() => setIsSupabaseSqlModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5C1D27] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
-            >
-              <Layers className="h-3.5 w-3.5 text-[#5C1D27]" /> ESQUEMA DE DATOS
-            </button>
-            <button 
               onClick={() => setIsConfigRestaurantOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-[#EBDAC5] border border-[#CFB5A0] text-[#5E393F] hover:text-[#2D0E13] hover:bg-[#EBDAC5] text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1.5 uppercase tracking-wider"
             >
@@ -9596,24 +9590,9 @@ export default function AdminHub({
             <button
               type="button"
               onClick={() => setFloorViewMode("map2d")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                floorViewMode === "map2d"
-                  ? "bg-[#5C1D27] text-white shadow-md font-black"
-                  : "text-[#2D0E13] hover:bg-[#EBDAC5]"
-              }`}
+              className="px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-[#5C1D27] text-white shadow-md font-black"
             >
               <span>🗺️ Mapa Arquitectónico 2D</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFloorViewMode("cards")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                floorViewMode === "cards"
-                  ? "bg-[#5C1D27] text-white shadow-md font-black"
-                  : "text-[#2D0E13] hover:bg-[#EBDAC5]"
-              }`}
-            >
-              <span>📋 Vista de Tarjetas</span>
             </button>
           </div>
         </div>
