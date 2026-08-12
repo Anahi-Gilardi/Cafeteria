@@ -1692,6 +1692,40 @@ export default function AdminHub({
     }
   };
 
+  const handleDeleteMenuItem = async (itemId: string, itemName: string) => {
+    if (!window.confirm(`¿Está seguro de eliminar el producto '${itemName}' de la carta?\nEsta acción eliminará el producto del menú.`)) {
+      return;
+    }
+
+    try {
+      const updatedMenu = menuItems.filter(item => item.id !== itemId);
+      onUpdateMenu(updatedMenu);
+
+      if (selectedMenuProduct?.id === itemId) {
+        setSelectedMenuProduct(null);
+        setIsEditingProduct(false);
+      }
+
+      try {
+        localStorage.setItem("castano_menu_cache", JSON.stringify(updatedMenu));
+        void supabase.from("system_settings").upsert({
+          key: "custom_menu_items",
+          value: JSON.stringify(updatedMenu),
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+
+      try {
+        await supabase.from("menu_items").delete().eq("id", itemId);
+      } catch (e) {}
+
+      onShowNotification(`🗑️ Producto '${itemName}' eliminado de la carta.`, "success");
+    } catch (err) {
+      console.error("Error deleting menu item:", err);
+      onShowNotification("⚠️ No se pudo eliminar el producto.", "warning");
+    }
+  };
+
   useEffect(() => {
     if (activeSubTab === "reservas" || activeSubTab === "salon") {
       fetchBookings();
@@ -5374,19 +5408,32 @@ export default function AdminHub({
                             )}
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedMenuProduct(item);
-                            setSimulatedPrice(item.price);
-                            handleStartEditingProduct(item);
-                          }}
-                          className="px-3 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs shrink-0"
-                          title="Editar Ficha de Producto"
-                        >
-                          Editar
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMenuProduct(item);
+                              setSimulatedPrice(item.price);
+                              handleStartEditingProduct(item);
+                            }}
+                            className="px-3 py-1.5 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs"
+                            title="Editar Ficha de Producto"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMenuItem(item.id, item.name);
+                            }}
+                            className="p-1.5 bg-[#F4DCDD] hover:bg-[#A63F45] text-[#A63F45] hover:text-white border border-[#A63F45]/30 text-[10px] font-black rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center"
+                            title="Eliminar producto de la carta"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -5577,22 +5624,31 @@ export default function AdminHub({
                       <img src={editProdImage} alt="Vista previa" className="h-28 w-auto rounded-2xl border border-[#CFB5A0] mx-auto object-cover shadow-xs" />
                     </div>
                   )}
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-[#CFB5A0]">
-                    <button 
-                      type="button" 
-                      onClick={() => setIsEditingProduct(false)} 
-                      className="px-4 py-2 border border-[#CFB5A0] text-[#2D0E13] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold"
+                  <div className="pt-4 border-t border-[#CFB5A0]/60 flex justify-between items-center">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMenuItem(currentItem.id, currentItem.name)}
+                      className="px-3.5 py-2 bg-[#F4DCDD] hover:bg-[#A63F45] text-[#A63F45] hover:text-white font-black text-xs rounded-xl shadow-xs cursor-pointer uppercase tracking-wider border border-[#A63F45]/30 flex items-center gap-1.5 transition-all"
                     >
-                      Cancelar
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Eliminar Producto</span>
                     </button>
-                    <button 
-                      type="submit" 
-                      disabled={isSavingProduct}
-                      className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black rounded-xl shadow-xs cursor-pointer uppercase tracking-wider disabled:cursor-wait disabled:opacity-60"
-                    >
-                      {isSavingProduct ? "Guardando…" : "Guardar Ficha"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        type="button" 
+                        onClick={() => setIsEditingProduct(false)} 
+                        className="px-4 py-2 border border-[#CFB5A0] text-[#2D0E13] rounded-xl hover:bg-[#EBDAC5] cursor-pointer font-bold text-xs"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={isSavingProduct}
+                        className="px-5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white font-black rounded-xl shadow-xs cursor-pointer text-xs uppercase tracking-wider disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {isSavingProduct ? "Guardando…" : "Guardar Ficha"}
+                      </button>
+                    </div>
                   </div>
                 </form>
               ) : !currentItem ? (
@@ -5609,12 +5665,22 @@ export default function AdminHub({
                       <h3 className="font-serif text-2xl font-bold text-[#5C1D27] mt-1">{currentItem.name}</h3>
                       <p className="text-xs text-[#5E393F] mt-1 leading-relaxed font-medium">{currentItem.description}</p>
                     </div>
-                    <button
-                      onClick={() => handleStartEditingProduct(currentItem)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
-                    >
-                      ✏️ Editar Ficha
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleStartEditingProduct(currentItem)}
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-[#5C1D27] hover:bg-[#4A151D] text-white text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-xs border-none"
+                      >
+                        ✏️ Editar Ficha
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMenuItem(currentItem.id, currentItem.name)}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-[#F4DCDD] hover:bg-[#A63F45] text-[#A63F45] hover:text-white text-[10px] font-black rounded-xl transition-all cursor-pointer uppercase shadow-xs border border-[#A63F45]/30"
+                        title="Eliminar producto de la carta"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
