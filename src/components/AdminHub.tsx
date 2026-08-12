@@ -8439,16 +8439,16 @@ export default function AdminHub({
                         <div>
                           <h4 className="font-serif text-base font-bold text-white">
                             {mozoServiceType === "takeaway"
-                              ? `RETIRO LOCAL (#${stableTakeawayId})`
+                              ? `RETIRO LOCAL — ${mozoTakeawayForm.customerName || "Consumidor Final"}`
                               : mozoServiceType === "delivery"
-                              ? `DELIVERY (#${stableDeliveryId})`
+                              ? `DELIVERY — ${mozoDeliveryForm.customerName || "Consumidor Final"}`
                               : `Comanda ${mozoSelectedTable}`}
                           </h4>
                           <span className="text-[10px] font-bold text-white/80 block mt-0.5">
                             {mozoServiceType === "takeaway"
-                              ? `Cliente: ${mozoTakeawayForm.customerName || "Consumidor Final"}`
+                              ? `Teléfono: ${mozoTakeawayForm.customerPhone || "Sin teléfono"}`
                               : mozoServiceType === "delivery"
-                              ? `Cliente: ${mozoDeliveryForm.customerName || "Consumidor Final"}`
+                              ? `Teléfono: ${mozoDeliveryForm.customerPhone || "Sin teléfono"}`
                               : `Mozo: ${selectedWaiter}`}
                           </span>
                         </div>
