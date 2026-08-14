@@ -7786,7 +7786,7 @@ export default function AdminHub({
           total,
           status: "Recibido",
           createdAt: new Date().toISOString(),
-          type: "Llevar",
+          type: "Delivery",
           priceList: "Delivery",
           fulfillmentType: "delivery",
           deliveryFee: mozoDeliveryForm.deliveryFee,

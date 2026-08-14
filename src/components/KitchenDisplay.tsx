@@ -255,11 +255,12 @@ export default function KitchenDisplay({
               <div className="flex items-center gap-1.5 flex-wrap">
                 {(() => {
                   const clientDisplayName = order.customerName || order.clientAccountName || (order as any).clientName || "";
+                  const isDelivery = order.fulfillmentType === "delivery" || order.priceList === "Delivery" || order.type === "Delivery" || (order.deliveryAddress && (order.deliveryAddress.street || order.deliveryAddress.number));
                   const badgeText = order.tableNumber
                     ? `🪑 MESA ${order.tableNumber.toString().replace(/mesa\s*/i, "")}${clientDisplayName ? ` — ${clientDisplayName}` : ""}`
-                    : (order.priceList === "Takeaway" || order.type === "Llevar"
-                        ? `🛍️ RETIRO BARRA${clientDisplayName ? ` — ${clientDisplayName}` : ""}`
-                        : `🛵 DELIVERY${clientDisplayName ? ` — ${clientDisplayName}` : ""}`);
+                    : (isDelivery
+                        ? `🛵 DELIVERY${clientDisplayName ? ` — ${clientDisplayName}` : ""}`
+                        : `🛍️ RETIRO BARRA${clientDisplayName ? ` — ${clientDisplayName}` : ""}`);
                   return (
                     <span className="text-xs font-black uppercase px-3 py-1 rounded-xl bg-[#5C1D27] text-white font-mono shadow-xs">
                       {badgeText}
@@ -273,6 +274,13 @@ export default function KitchenDisplay({
                 )}
               </div>
               <h4 className="text-[11px] font-mono font-bold mt-1 text-[#5C1D27]">{formatOrderId(order.id)}</h4>
+              {order.deliveryAddress && (order.deliveryAddress.street || order.deliveryAddress.number) && (
+                <div className="text-[10px] font-semibold text-[#5C1D27] bg-[#EBDAC5]/70 px-2 py-1 rounded-lg border border-[#CFB5A0]/80 mt-1.5 flex items-center gap-1.5 flex-wrap">
+                  <span>📍 {order.deliveryAddress.street} {order.deliveryAddress.number}</span>
+                  {order.deliveryAddress.notes && <span className="italic text-[#5E393F]">({order.deliveryAddress.notes})</span>}
+                  {order.customerPhone && <span className="font-mono font-bold">📞 {order.customerPhone}</span>}
+                </div>
+              )}
             </div>
 
             <div className="text-right">
